@@ -1,0 +1,15 @@
+AKIRA / GitHub Actions - Solución de WinError 32
+
+Reemplaza en la carpeta del repositorio clonado los archivos
+strategy_research.py
+tests/test_v1632_integrated_research_voice.py
+ARCHIVOS_SHA256_16_3_2.json
+PACKAGE_SHA256.json
+
+Se reemplazaron context managers de sqlite3.connect con sesiones que SIEMPRE
+cierran la conexion antes de limpiar las carpetas temporales de las pruebas.
+Se agrego una prueba de regresion que verifica el cierre de conexiones.
+NO contiene secretos ni modifica la estrategia ni el motor MT5.
+
+GitHub Desktop: Commit to main -> Push origin.
+GitHub Actions: AKIRA Windows - verificar y compilar -> Run workflow.

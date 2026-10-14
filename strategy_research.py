@@ -1,7 +1,22 @@
 """Citable research ledger for strategy hypotheses. Never executes, approves or changes live MT5 orders."""
 import hashlib,json,sqlite3,time
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
+
+@contextmanager
+def _database(path, *, timeout):
+    """Commit/rollback and CLOSE SQLite before removing a temporary directory.
+
+    sqlite3.Connection.__exit__ commits or rolls back but does NOT close the
+    connection; this matters on Windows, where open files cannot be unlinked.
+    """
+    connection = sqlite3.connect(path, timeout=timeout)
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
 
 ALLOWED_SYMBOLS=('BTCUSDm','XAUUSDm')
 MAX_BODY=24000
@@ -20,7 +35,7 @@ class ResearchLedger:
     def __init__(self,root,clock=time.time):
         self.path=Path(root)/'state'/'research_sources.sqlite3';self.clock=clock
         self.path.parent.mkdir(parents=True,exist_ok=True)
-        with sqlite3.connect(self.path,timeout=2) as db:
+        with _database(self.path, timeout=2) as db:
             db.execute('CREATE TABLE IF NOT EXISTS sources (id TEXT PRIMARY KEY,url TEXT,kind TEXT,seen REAL,body TEXT)')
             db.execute('CREATE INDEX IF NOT EXISTS research_seen ON sources(seen)')
     def add(self,*,url,kind,title='',author='',body='',status='',source_time=None,symbols=(),claims=()):
@@ -41,12 +56,12 @@ class ResearchLedger:
                 'hypotheses':claims,'experiment_only':True,'live_authorized':False,
                 'note':'Una fuente no verifica reglas, rentabilidad ni autoriza operar.'}
         key=hashlib.sha256((kind+'|'+url).encode()).hexdigest()[:24]
-        with sqlite3.connect(self.path,timeout=3) as db:
+        with _database(self.path, timeout=3) as db:
             db.execute('INSERT OR REPLACE INTO sources VALUES (?,?,?,?,?)',(key,url,kind,record['observed_at'],json.dumps(record,ensure_ascii=False)))
             db.execute('DELETE FROM sources WHERE id NOT IN (SELECT id FROM sources ORDER BY seen DESC LIMIT 1000)')
         return record
     def recent(self,limit=30):
-        with sqlite3.connect(self.path,timeout=3) as db:
+        with _database(self.path, timeout=3) as db:
             rows=db.execute('SELECT body FROM sources ORDER BY seen DESC LIMIT ?',(max(1,min(int(limit),100)),)).fetchall()
         return [json.loads(r[0]) for r in rows]
     def summary(self):

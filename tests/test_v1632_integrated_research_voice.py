@@ -1,10 +1,36 @@
-import tempfile,unittest
+import tempfile,unittest,sqlite3
+from unittest.mock import patch
+import strategy_research
 from pathlib import Path
 from strategy_research import ResearchLedger
 from akira_live2d import expression_for_voice_event,expression_for_dialogue
 
 class ResearchTests(unittest.TestCase):
  def setUp(self):self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.ledger=ResearchLedger(self.temp.name)
+ def test_all_sqlite_connections_closed_on_windows(self):
+  """Windows WinError 32: closed SQLite connection must release the temp DB."""
+  actual_connect=sqlite3.connect
+  opened=[]
+  class TrackedConnection(sqlite3.Connection):
+   was_closed=False
+   def close(self):
+    self.was_closed=True
+    return super().close()
+  def tracked_connect(*args,**kwargs):
+   kwargs['factory']=TrackedConnection
+   connection=actual_connect(*args,**kwargs)
+   opened.append(connection)
+   return connection
+  with tempfile.TemporaryDirectory() as folder:
+   with patch('strategy_research.sqlite3.connect',side_effect=tracked_connect):
+    ledger=strategy_research.ResearchLedger(folder)
+    ledger.add(url='https://www.youtube.com/watch?v=abcdefghijk',kind='youtube_discovered')
+    ledger.recent()
+    ledger.summary()
+   self.assertGreaterEqual(len(opened),4)
+   self.assertTrue(all(c.was_closed for c in opened))
+   ledger.path.unlink()  # Must also work on Windows; no SQLite file locks remain.
+
  def test_many_channels_and_news_without_authorizing_orders(self):
   for n in range(5):
    r=self.ledger.add(url=f'https://www.youtube.com/watch?v=test{n}',kind='youtube_discovered',title=f'Trader {n}',body='scalp and gold',status='discovered')
