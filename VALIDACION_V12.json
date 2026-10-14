@@ -1,0 +1,12 @@
+{
+  "build": "AKIRA_16_3_2_ANTI_CHURN_CANDIDATA",
+  "tests": 1019,
+  "result": "96 passed, 1 skipped on selected tests; full suite interrupted at 71% due to runtime limit",
+  "status": "VALIDACION_NUEVA_PENDIENTE",
+  "date": "2026-10-14",
+  "skipped": 2,
+  "scope": "La integración de nuevos recursos no tiene todavía resultado Windows/MT5. No usar estas cifras como prueba de instalador aprobado.",
+  "audit": "AUDITORIA_INSTALACION_16_2_10_2026_10_13.md",
+  "test_report": "PRUEBAS_16_3_2_RESULTADO.json",
+  "selected_tests_report": "PRUEBAS_INTEGRACION_SELECCIONADAS.txt"
+}

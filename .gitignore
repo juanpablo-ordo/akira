@@ -1,0 +1,36 @@
+# Secretos, cuentas y datos privados
+AKIRA_SECRETS.json
+.env
+.env.*
+!.env.example
+*credentials*
+*.pem
+*.key
+state/
+logs/
+exports/
+Akira_Datos_Conservados/
+Akira_Diagnostico_Instalacion/
+# Runtime y compilaciones
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+native/
+dist/
+build/
+*.spec
+*.part
+*.tmp
+*.log
+*.exe
+*.msi
+# Modelos IA grandes
+*.gguf
+*.safetensors
+*.onnx
+# Exports y reportes
+*ReportHistory*.xlsx
+*_20*.csv
