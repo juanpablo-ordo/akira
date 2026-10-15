@@ -30,7 +30,8 @@ class DesktopServices:
         from windows_identity import apply_window_icon,apply_dark_titlebar
         win=tk.Toplevel(self.root);win.title('AKIRA · '+title);win.configure(bg=BG);apply_window_icon(win,self.folder)
         win.after(120,lambda:apply_dark_titlebar(win))
-        win.geometry(f'{min(width,win.winfo_screenwidth()-40)}x{min(height,win.winfo_screenheight()-90)}');win.minsize(min(450,width),min(340,height))
+        w,h,_,_=fitted_geometry(width,height,win.winfo_screenwidth(),win.winfo_screenheight())
+        w=min(width,w);h=min(height,h);win.geometry(f'{w}x{h}');win.minsize(min(450,w),min(340,h))
         label(win,title.upper(),CYAN,17,True,anchor='w').pack(fill='x',padx=18,pady=(16,8))
         return win
 
