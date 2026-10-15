@@ -1,5 +1,7 @@
 # AKIRA 16.3.4 R7
 
+Corrección de las seis regresiones de la ejecución Windows 12: instrucciones en `LEEME_FIX_R7_WINDOWS.md`. La verificación de este parche está en `VERIFICACION_R7_WINDOWS_FIX`; la nueva ejecución Windows queda pendiente.
+
 Código completo de la corrección de IA local, fuentes y expresiones. El código ha superado la verificación local R7. Todavía no se ha compilado ni probado el instalador R7 en Windows.
 
 Para crear el instalador, copia **todo el contenido** de este ZIP en la raíz de tu repositorio `akira`, incluyendo `.github`, `assets`, `installer`, `tests` y `third_party`. Conserva los datos de usuario fuera del repositorio. En GitHub Desktop haz Commit y Push. Después abre Actions → AKIRA Windows - verificar y compilar → Run workflow.
@@ -21,6 +23,6 @@ El Directorio de estrategias → VER APRENDIZAJE muestra fuentes, reglas, tamañ
 
 La comprobación local no equivale a probar el PC del usuario, ejecutar órdenes reales ni demostrar beneficios. Los informes R6 se conservan como antecedentes; los resultados de esta revisión se guardan en VERIFICACION_R7.
 
-La conexión a GitHub permite leer, pero devuelve 403 al crear la rama de esta revisión. R7 se entrega en este ZIP y aún no está publicado en el repositorio. En Actions, una ejecución nueva de este código mostrará el nombre «AKIRA 16.3.4 R7 · IA incluida». Repetir una ejecución antigua usa el código de su commit antiguo.
+El código base R7 está en el commit c67f322e9a540afd64dc9f377667d98d8e6a4bb3. Para aplicar este parche se necesita un nuevo Commit y Push, seguido de Run workflow. En Actions, una ejecución nueva de este código mostrará el nombre «AKIRA 16.3.4 R7 · IA incluida». Repetir una ejecución antigua usa el código de su commit antiguo.
 
-Verificación local final: 1.094 pruebas pytest y 83 subpruebas; 1.091 pruebas unittest con la red bloqueada, sin fallos, errores ni omisiones; autocontrol nativo v7; 108 celdas distintas; 24 combinaciones de pantalla. También se comprobó conservación de pendientes con una muestra de cotizaciones aportadas por el usuario. Las cifras no son métricas de acierto ni de rentabilidad.
+Verificación inicial R7: 1.094 pruebas pytest y 83 subpruebas; 1.091 pruebas unittest con la red bloqueada; autocontrol nativo v7; 108 celdas distintas; 24 combinaciones de pantalla. También se comprobó conservación de pendientes con una muestra de cotizaciones aportadas por el usuario. Verificación local del parche Windows: 1.096 pruebas pytest y 83 subpruebas, y 1.093 pruebas unittest sin red, sin fallos, errores ni omisiones. Las cifras no son métricas de acierto ni de rentabilidad.

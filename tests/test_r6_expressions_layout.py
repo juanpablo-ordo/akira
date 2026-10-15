@@ -119,7 +119,8 @@ class TkRegressions(unittest.TestCase):
     def test_all_108_faces_are_actually_displayable_with_bounded_cache(self):
         avatar = AkiraLive2D(self.root, width=170, height=125)
         avatar.pack()
-        self.root.update_idletasks()
+        self.root.update()
+        self.assertTrue(avatar.winfo_ismapped())
         seen = set()
         for entry in avatar.catalog.entries:
             avatar.set_expression(entry.id)

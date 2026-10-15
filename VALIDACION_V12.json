@@ -1,11 +1,11 @@
 {
   "build": "AKIRA_16_3_4_R7",
-  "tests": 1091,
-  "status": "VALIDACION_LOCAL_R7_COMPLETA_WINDOWS_PENDIENTE",
+  "tests": 1093,
+  "status": "VALIDACION_LOCAL_R7_WINDOWS_FIX_COMPLETA_WINDOWS_PENDIENTE",
   "date": "2026-10-15",
   "skipped": 0,
-  "scope": "Pytest completo, unittest con red bloqueada, autocontrol nativo v7 y matriz de 24 pantallas superados en Linux. Instalador R7 Windows y MT5 real no verificados.",
-  "test_report": "VERIFICACION_R7/PRUEBAS_COMPLETAS.xml",
-  "pytest_tests": 1094,
+  "scope": "Linux: pytest completo, unittest con red bloqueada, autocontrol nativo v7 y reproducción de los cinco fallos mediante alias de carpeta aprobados. Nueva compilación e instalador Windows pendientes.",
+  "test_report": "VERIFICACION_R7_WINDOWS_FIX/PRUEBAS_COMPLETAS.xml",
+  "pytest_tests": 1096,
   "pytest_subtests": 83
 }

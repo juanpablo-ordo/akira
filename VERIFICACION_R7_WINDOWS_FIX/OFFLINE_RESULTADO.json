@@ -1,0 +1,16 @@
+{
+  "build": "AKIRA_16_3_4_R7",
+  "collected": 1093,
+  "tests_run": 1093,
+  "successful": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "expected_failures": 0,
+  "unexpected_successes": 0,
+  "failed_tests": [],
+  "failure_details": [],
+  "skipped_tests": [],
+  "seconds": 33.993,
+  "network": "blocked"
+}

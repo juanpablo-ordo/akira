@@ -1,0 +1,59 @@
+{
+  "build": "AKIRA_16_3_4_R7",
+  "correction": "WINDOWS_REGRESSION_FIX",
+  "source_base": "c67f322e9a540afd64dc9f377667d98d8e6a4bb3",
+  "failed_workflow_run": 38737403684,
+  "status": "LOCAL_PASSED_WINDOWS_PENDING",
+  "pytest": {
+    "passed": 1096,
+    "subtests_passed": 83,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "offline": {
+    "passed": 1093,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "network": "blocked"
+  },
+  "native_ui": "PASSED",
+  "distinct_expressions": 108,
+  "path_alias_reproduction": {
+    "status": "PASSED",
+    "platform": "Linux",
+    "scope": "Two paths to the same directory reproduce Windows short/long path identity; not execution on Windows.",
+    "before": {
+      "tests": 5,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0
+    },
+    "after": {
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "windows_tested": false,
+  "windows_installer_tested": false,
+  "github_patch_published": false,
+  "changed_files": [
+    "akira_live2d.py",
+    "tests/test_install_release.py",
+    "tests/test_r6_expressions_layout.py",
+    "tests/test_v16210_install_uninstall.py",
+    "tests/test_v1630_install_safety.py",
+    "tests/test_r7_avatar_sync.py",
+    "VALIDACION_V12.json",
+    "PACKAGE_SHA256.json",
+    "ARCHIVOS_SHA256_16_3_2.json",
+    "R7_INTEGRIDAD_SHA256.json",
+    "README.md",
+    "LEEME_FIX_R7_WINDOWS.md"
+  ],
+  "manifest_files": 227,
+  "applied_to_original_r7_zip": "PASSED"
+}

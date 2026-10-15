@@ -1,0 +1,17 @@
+{
+  "status": "PASSED",
+  "platform": "Linux",
+  "scope": "Two paths to the same directory reproduce Windows short/long path identity; not execution on Windows.",
+  "before": {
+    "tests": 5,
+    "failures": 5,
+    "errors": 0,
+    "skipped": 0
+  },
+  "after": {
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

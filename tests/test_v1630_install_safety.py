@@ -14,7 +14,7 @@ class InstallerLifecycleSafety(unittest.TestCase):
     def setUp(self):
         self.t = tempfile.TemporaryDirectory()
         self.addCleanup(self.t.cleanup)
-        self.home = Path(self.t.name)
+        self.home = Path(self.t.name).resolve()
         self.runtime = self.home / '.akira_runtime'
         self.releases = self.runtime / 'releases'
         self.active = self.releases / 'Akira_active'
@@ -32,7 +32,7 @@ class InstallerLifecycleSafety(unittest.TestCase):
     def test_locked_old_release_is_deferred_without_affecting_active(self):
         original = Path.rename
         def locked(path, target):
-            if path == self.old:
+            if path.resolve() == self.old.resolve():
                 raise PermissionError('simulated Windows file lock')
             return original(path, target)
         with patch.object(Path, 'rename', autospec=True, side_effect=locked):

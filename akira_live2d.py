@@ -164,6 +164,9 @@ class AkiraLive2D(tk.Frame):
         self.bind('<Map>',lambda e:self._draw(),add='+')
         self.bind('<Destroy>',self._destroy,add='+')
         director.subscribe(self)
+        # Windows can defer <Map> beyond update_idletasks(). Give the canvas
+        # its first frame now; later hidden updates still avoid image work.
+        self._paint(self._image(self.selected))
         self._tick_job=self.after(self._tick_interval_ms,self._tick)
 
     def _image(self,entry):

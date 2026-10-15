@@ -8,6 +8,32 @@ from akira_expressions import get_catalog
 
 
 class SharedExpression(unittest.TestCase):
+    def test_first_frame_exists_before_the_window_is_mapped(self):
+        root=tk.Tk();self.addCleanup(root.destroy);root.withdraw()
+        avatar=AkiraLive2D(root,width=150,height=120);avatar.pack()
+        self.assertFalse(avatar.winfo_ismapped())
+        image=avatar.canvas.itemcget(avatar.sprite,'image')
+        self.assertTrue(image)
+        self.assertGreater(root.tk.call('image','width',image),0)
+        self.assertGreater(root.tk.call('image','height',image),0)
+
+    def test_hidden_changes_wait_until_map_without_decoding_or_painting(self):
+        root=tk.Tk();self.addCleanup(root.destroy);root.withdraw()
+        avatar=AkiraLive2D(root,width=150,height=120);avatar.pack()
+        first_image=avatar.canvas.itemcget(avatar.sprite,'image')
+        with patch.object(avatar,'_image',wraps=avatar._image) as decode, \
+             patch.object(avatar,'_paint',wraps=avatar._paint) as paint:
+            for name in ('AKIRA_001','AKIRA_046','AKIRA_108'):
+                avatar.set_expression(name)
+            decode.assert_not_called();paint.assert_not_called()
+            self.assertEqual(avatar.selected.id,'AKIRA_108')
+            self.assertEqual(avatar.canvas.itemcget(avatar.sprite,'image'),first_image)
+            root.deiconify();root.update()
+            self.assertTrue(avatar.winfo_ismapped())
+            self.assertTrue(decode.called);self.assertTrue(paint.called)
+            self.assertEqual(decode.call_args.args[0].id,'AKIRA_108')
+            self.assertNotEqual(avatar.canvas.itemcget(avatar.sprite,'image'),first_image)
+
     def test_all_panels_and_call_share_face_and_playback_priority(self):
         root=tk.Tk();self.addCleanup(root.destroy)
         first=AkiraLive2D(root,width=150,height=120);first.pack()

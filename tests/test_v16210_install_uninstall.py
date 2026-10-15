@@ -105,7 +105,8 @@ class DetachedMaintenanceTests(unittest.TestCase):
 class PreservedDataRecoveryTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
-        self.home=Path(self.tmp.name);self.runtime=self.home/'.akira_runtime';self.runtime.mkdir()
+        # Use the same canonical path as current_install on Windows (8.3 TEMP).
+        self.home=Path(self.tmp.name).resolve();self.runtime=self.home/'.akira_runtime';self.runtime.mkdir()
         self.snapshot=self.home/'Akira_Datos_Conservados/TEST.123/versiones/002';self.snapshot.mkdir(parents=True)
         self.cfg=load_config(DEFAULT);self.cfg['expected_login']=123;self.cfg['mode']='observe';self.cfg['risk']['max_trade_money']=2.17
         save_config(self.cfg,self.snapshot/'akira_config.json')

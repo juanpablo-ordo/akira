@@ -45,7 +45,8 @@ class ReleaseInstallerTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory(prefix='Akira actualización ')
         self.addCleanup(temp.cleanup)
-        self.root = Path(temp.name)
+        # Windows TEMP can use RUNNER~1 while the installer resolves runneradmin.
+        self.root = Path(temp.name).resolve()
         self.source = self.root / 'payload'
         self.source.mkdir()
         self.runtime = self.root / '.akira_runtime'
@@ -149,7 +150,7 @@ class ReleaseInstallerTests(unittest.TestCase):
         real = installer.atomic_bytes
         pointer = self.runtime / 'active_install.json'
         def fail_pointer(path, content):
-            if Path(path) == pointer:
+            if Path(path).resolve() == pointer.resolve():
                 raise PermissionError('pointer denied')
             return real(path, content)
         with patch('install_release.atomic_bytes', side_effect=fail_pointer):
@@ -162,7 +163,7 @@ class ReleaseInstallerTests(unittest.TestCase):
         release = self.prepare()
         real = installer.atomic_bytes
         def fail_shortcut(path, content):
-            if Path(path) == self.shortcut:
+            if Path(path).resolve() == self.shortcut.resolve():
                 raise PermissionError('shortcut held open')
             return real(path, content)
         with patch('install_release.atomic_bytes', side_effect=fail_shortcut):
