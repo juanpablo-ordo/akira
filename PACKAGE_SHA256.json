@@ -164,7 +164,7 @@
   "tests/test_public_ai.py": "8fa91eb7df3924d1fc9c1b0b64b89a12c9e05216904873ac6640ac1d063d91d4",
   "tests/test_quality_first_v121.py": "2d7f326ada303e83e4a6b94da44119d5b2e5702db579b006ff725b4316f5290e",
   "tests/test_r5_user_video_regressions.py": "5d7a638cfa9f8c2159fa5fb4c80a054a1ddd3c355c9ab41dd5831ea6c61e8777",
-  "tests/test_r6_expressions_layout.py": "051fe48d60e03cfbab7b6838c3a89a69f910fe9b8bc82739a94e88190429be97",
+  "tests/test_r6_expressions_layout.py": "d7512b5a93f03c9f2aafc46b411b43db93f0779bff7761f067abd233eac90548",
   "tests/test_restored_akira.py": "bcc7cb0f10316a803a457af24078fd519191a046264ed3602494fada56948d42",
   "tests/test_v122_always_on.py": "76dec9f9cf6b1bb6034be975067981ddf496841bd5827d4f09adae14634930bc",
   "tests/test_v123_atlas.py": "630b880bca6b6dfbbd8cf0407273f66366d360b8d360e1f047726a4ba094bef1",

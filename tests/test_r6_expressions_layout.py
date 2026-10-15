@@ -41,12 +41,12 @@ class CatalogTests(unittest.TestCase):
         self.assertLessEqual(len(catalog._atlases), 2)
 
     def test_an_incomplete_catalog_is_rejected_instead_of_reusing_old_faces(self):
-        original = json.loads((ROOT / 'assets/expressions/catalog.json').read_text())
+        original = json.loads((ROOT / 'assets/expressions/catalog.json').read_text(encoding='utf-8'))
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp) / 'assets/expressions'
             folder.mkdir(parents=True)
             original['expressions'] = original['expressions'][:9]
-            (folder / 'catalog.json').write_text(json.dumps(original))
+            (folder / 'catalog.json').write_text(json.dumps(original, ensure_ascii=False), encoding='utf-8')
             with self.assertRaisesRegex(ValueError, '99'):
                 ExpressionCatalog(tmp)
 
