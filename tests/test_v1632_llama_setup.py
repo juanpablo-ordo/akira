@@ -32,11 +32,13 @@ class LlamaSetupTests(unittest.TestCase):
             args=managed.command(endpoint,{'model_use_gpu':True})
             self.assertIn('127.0.0.1',args)
             self.assertIn('18987',args)
-            self.assertEqual(args[0],str(exe))
+            # Windows can return the long path even when tempfile used an 8.3 alias.
+            # Compare file identity instead of textual spellings of the same path.
+            self.assertTrue(Path(args[0]).samefile(exe))
             self.assertEqual(int(args[args.index('--n-gpu-layers')+1]),12)
             managed._force_cpu=True
             args=managed.command(endpoint,{'model_use_gpu':True})
-            self.assertEqual(args[0],str(cpu))
+            self.assertTrue(Path(args[0]).samefile(cpu))
             self.assertEqual(int(args[args.index('--n-gpu-layers')+1]),0)
             with self.assertRaises(ValueError):managed.command('http://remote.example/v1/chat/completions')
 
