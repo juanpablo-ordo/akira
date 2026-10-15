@@ -1,0 +1,28 @@
+AKIRA R4.1 - Reparar prueba de respuesta visible de Qwen3 (GitHub Actions #5)
+
+CAUSA OBSERVADA:
+llama-server respondio, pero la respuesta a chat/completions no tuvo texto visible.
+La prueba anterior limitaba la generacion a 24 tokens, que Qwen3 puede gastar
+antes de completar su razonamiento. El error por si solo no demuestra por que
+el contenido quedo vacio.
+
+CAMBIOS:
+- installer/smoke_local_ai.py: llama-server --jinja, Qwen3 /no_think,
+  chat_template_kwargs(enable_thinking=false), max_tokens=256,
+  error con finish_reason y recuento de tokens, sin aceptar respuestas vacias.
+- tests/test_v1632_llama_smoke_contract.py: 6 pruebas locales de contrato.
+- .github/workflows/build-windows.yml: ejecutar las seis pruebas nuevas.
+
+COMO SUBIR:
+1. Descomprime este ZIP.
+2. Copia TODO el contenido al repositorio 'akira' abierto desde GitHub Desktop,
+   conservando las carpetas .github, installer y tests.
+3. Commit to main: 'R4.1 verificar respuesta visible de Qwen3'.
+4. Push origin.
+5. GitHub Actions > AKIRA Windows - verificar y compilar > Run workflow (main).
+
+VALIDACION:
+Compilacion de sintaxis Python aprobada.
+6 pruebas simuladas del nuevo contrato aprobadas localmente.
+NO se ha ejecutado llama-server real ni Inno Setup en esta computadora.
+No usar trading real mientras se valida el instalador.
