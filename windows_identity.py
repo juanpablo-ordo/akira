@@ -107,7 +107,13 @@ def set_identity():
 def application_root():
  explicit=os.environ.get('AKIRA_APP_ROOT')
  if explicit:return Path(explicit).resolve()
- if getattr(sys,'frozen',False):return Path(sys.executable).resolve().parents[2]
+ if getattr(sys,'frozen',False):
+  # A portable AKIRA.exe must never mistake the user's home folder for the
+  # application data directory. Explicit --app-root remains supported for
+  # older managed installations and is handled above.
+  local=os.environ.get('LOCALAPPDATA')
+  base=Path(local) if local else Path.home()/'AppData'/'Local'
+  return (base/'AKIRA').resolve()
  return Path(__file__).resolve().parent
 
 if __name__=='__main__':

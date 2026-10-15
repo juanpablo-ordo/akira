@@ -48,6 +48,23 @@ def main():
  report=json.loads(check.read_text(encoding='utf-8'))
  require_render_check(report)
  if report.get('status')!='PASSED' or report.get('build')!=BUILD_ID or report.get('frozen') is not True or report.get('window_icon') is not True or report.get('app_id')!='AKIRA.Desktop.16':raise RuntimeError('La identidad o las dependencias de la aplicación no coinciden con el paquete')
+ # A working --self-check is insufficient: launch from a genuinely empty
+ # directory to reproduce the user's first-run FileNotFoundError.
+ import tempfile
+ with tempfile.TemporaryDirectory(prefix='akira-first-run-') as tempdir:
+  first=diag/'NATIVE_FIRST_RUN.json'
+  # No --app-root: this reproduces the user's double-click on a fresh ZIP.
+  env=os.environ.copy()
+  env.pop('AKIRA_APP_ROOT',None)
+  env['LOCALAPPDATA']=str(Path(tempdir)/'LocalAppData')
+  p=subprocess.run([str(exe),'--first-run-check',str(first)],
+                   cwd=tempdir,env=env,timeout=90,capture_output=True,text=True,errors='replace')
+  if p.returncode or not first.is_file():
+   raise RuntimeError('Falló el primer inicio de AKIRA.exe sin configuración previa: '+p.stderr[-800:])
+  first_result=json.loads(first.read_text(encoding='utf-8'))
+  target=Path(env['LOCALAPPDATA'])/'AKIRA'/'akira_config.json'
+  if first_result.get('status')!='PASSED' or not first_result.get('config_created') or not target.is_file():
+   raise RuntimeError('AKIRA.exe no generó una configuración inicial segura en LocalAppData')
  (diag/'NATIVE_APPLICATION.json').write_text(json.dumps({'status':'PASSED','build':BUILD_ID,'executable':str(exe),'sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'self_check':report},indent=2),encoding='utf-8')
  print(str(exe))
 

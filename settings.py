@@ -7,6 +7,29 @@ from pathlib import Path
 DEFAULT=json.loads((Path(__file__).parent/'default_config.json').read_text(encoding='utf-8'))
 
 
+def ensure_user_config(folder):
+    """Create a safe observe-only configuration on the FIRST run.
+
+    Never overwrite an existing configuration, even if it cannot be parsed:
+    user data and risk preferences must not be silently reset.
+    """
+    folder=Path(folder)
+    folder.mkdir(parents=True,exist_ok=True)
+    path=folder/'akira_config.json'
+    if not path.exists():
+        cfg=copy.deepcopy(DEFAULT)
+        cfg['mode']='observe'
+        cfg['expected_login']=0
+        # Exclusive create: another AKIRA startup must not overwrite this one.
+        try:
+            with path.open('x',encoding='utf-8') as handle:
+                json.dump(cfg,handle,ensure_ascii=False,indent=2)
+                handle.write('\n')
+        except FileExistsError:
+            pass
+    return path
+
+
 def merge(base,source):
     out=copy.deepcopy(base)
     if not isinstance(source,dict):return out

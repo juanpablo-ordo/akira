@@ -2163,4 +2163,8 @@ class Desktop(DesktopServices,StrategyDirectory):
 
 def main(preview=False):
     from windows_identity import application_root,set_identity
-    set_identity();root=tk.Tk();Desktop(root,application_root(),preview);root.mainloop()
+    from settings import ensure_user_config
+    folder=application_root()
+    # A fresh portable build has no user config until its first launch.
+    ensure_user_config(folder)
+    set_identity();root=tk.Tk();Desktop(root,folder,preview);root.mainloop()

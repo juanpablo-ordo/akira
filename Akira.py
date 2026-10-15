@@ -6,8 +6,20 @@ from windows_identity import set_identity,application_root
 
 if __name__=='__main__':
     set_identity()
-    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');args=parser.parse_args()
     if args.app_root:os.environ['AKIRA_APP_ROOT']=str(Path(args.app_root).resolve())
+    if args.first_run_check:
+        # Non-interactive installed-application smoke test, also used in CI.
+        import json
+        from settings import ensure_user_config,load_config
+        folder=application_root()
+        config=ensure_user_config(folder)
+        loaded=load_config(config)
+        result={'status':'PASSED' if loaded['mode']=='observe' and loaded['expected_login']==0 else 'FAILED',
+                'config_created':config.is_file(),'mode':loaded.get('mode'),
+                'expected_login':loaded.get('expected_login')}
+        Path(args.first_run_check).write_text(json.dumps(result,indent=2),encoding='utf-8')
+        sys.exit(0 if result['status']=='PASSED' else 1)
     if args.speech_worker:
         from voice_session import speech_worker
         speech_worker(args.speech_worker);sys.exit(0)

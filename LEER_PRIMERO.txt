@@ -1,15 +1,14 @@
-AKIRA / GitHub Actions - Solución de WinError 32
+AKIRA 16.3.2 — Corrección de primer arranque en Windows
 
-Reemplaza en la carpeta del repositorio clonado los archivos
-strategy_research.py
-tests/test_v1632_integrated_research_voice.py
-ARCHIVOS_SHA256_16_3_2.json
-PACKAGE_SHA256.json
+PROBLEMA: Al abrir el AKIRA.exe portable, buscaba C:\Users\<usuario>\akira_config.json y fallaba con FileNotFoundError.
 
-Se reemplazaron context managers de sqlite3.connect con sesiones que SIEMPRE
-cierran la conexion antes de limpiar las carpetas temporales de las pruebas.
-Se agrego una prueba de regresion que verifica el cierre de conexiones.
-NO contiene secretos ni modifica la estrategia ni el motor MT5.
+CAMBIOS:
+* Las compilaciones portables guardan sus datos en %LOCALAPPDATA%\AKIRA, sin usar el directorio principal del usuario.
+* Si no hay configuración, AKIRA crea una inicial en modo OBSERVE y sin cuenta autorizada.
+* Nunca reescribe una configuración que ya existe (aunque sea inválida).
+* El workflow de Windows prueba el arranque sin configuración y sin --app-root antes de publicar el ejecutable.
+* Los instaladores antiguos con --app-root siguen admitidos.
 
-GitHub Desktop: Commit to main -> Push origin.
-GitHub Actions: AKIRA Windows - verificar y compilar -> Run workflow.
+PARA SUBIR: Extrae el contenido de este ZIP dentro de tu carpeta GitHub Desktop "akira" y acepta reemplazar; no metas una carpeta extra dentro. GitHub Desktop -> Commit to main -> Push origin. En Actions lanza un Run workflow NUEVO sobre main. Descarga el nuevo build (no re-run del commit antiguo).
+
+NO modifica la estrategia ni elimina operaciones de MT5; no contiene instalador final ni modelo de IA.
