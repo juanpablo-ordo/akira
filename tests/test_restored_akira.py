@@ -18,6 +18,8 @@ class AssistantRestorationTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
         self.cfg=load_config(DEFAULT);self.calls=[]
+        # Tests below mock the legacy endpoint; new installations select llama.cpp.
+        self.cfg['assistant']['local_runtime_enabled']=False
         def execute(cmd):
             self.calls.append(cmd);return {'results':[{'symbol':'BTCUSDm','levels':[{'ticket':123,'confirmed':True,'side':'BUY','kind':'LIMIT','entry':59000,'sl':58900,'tp':59200}]}]}
         self.bot=AkiraAssistant(self.cfg,self.root,execute)

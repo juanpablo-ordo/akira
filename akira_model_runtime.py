@@ -7,7 +7,7 @@ only; zero network/model downloads; financial Engine never imports this module.
 from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
-import os, subprocess, threading, time
+import os, subprocess, sys, threading, time
 from urllib.parse import urlsplit
 from urllib.request import urlopen
 
@@ -39,12 +39,18 @@ class ManagedLlamaProcess:
         self.active=0
         self.last_use=clock()
         self._watcher=None
+        self._force_cpu=False  # Automatic fallback if Vulkan cannot start on this PC.
 
     def _paths(self):
-        exe=Path(str(self.settings.get('local_runtime_exe') or ''))
-        model=Path(str(self.settings.get('local_runtime_model') or ''))
-        if not str(self.settings.get('local_runtime_exe') or '').strip() or not str(self.settings.get('local_runtime_model') or '').strip():
-            return None
+        exe_value=str(self.settings.get('local_runtime_exe') or '').strip()
+        model_value=str(self.settings.get('local_runtime_model') or '').strip()
+        if not exe_value or not model_value:return None
+        # Resolve against AKIRA.exe, never the user's current working directory.
+        # The bundled files sit next to the application, outside PyInstaller's _internal.
+        app_dir=Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent
+        exe=Path(exe_value);model=Path(model_value)
+        if not exe.is_absolute():exe=app_dir/exe
+        if not model.is_absolute():model=app_dir/model
         if not (exe.is_file() and model.is_file()):return None
         if exe.suffix.lower() not in ('.exe','') or model.suffix.lower()!='.gguf':return None
         return exe.resolve(),model.resolve()
@@ -67,13 +73,18 @@ class ManagedLlamaProcess:
 
     def command(self,endpoint,desktop=None):
         paths=self._paths()
-        if paths is None:raise FileNotFoundError('Faltan llama-server.exe y el modelo GGUF. Akira no los descarga ni instala silenciosamente.')
+        if paths is None:raise FileNotFoundError('Faltan llama-server.exe y el modelo GGUF. Ejecuta el instalador de AKIRA completo.')
         port=self._port(endpoint)
         desktop=desktop or {}
         profile=self.profile
         ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))))
-        gpu=max(0,int(profile['gpu_layers'])) if bool(desktop.get('model_use_gpu',True)) else 0
-        return [str(paths[0]),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
+        use_gpu=bool(desktop.get('model_use_gpu',True)) and not self._force_cpu
+        gpu=max(0,int(profile['gpu_layers'])) if use_gpu else 0
+        exe=paths[0]
+        if not use_gpu:
+            cpu=exe.parent.parent/'cpu'/'llama-server.exe'
+            if cpu.is_file():exe=cpu
+        return [str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
                 '--threads',str(profile['cpu_threads']),'--parallel','1']
 
@@ -128,13 +139,19 @@ class ManagedLlamaProcess:
             self.start(endpoint,desktop)
             # Give the server a short bootstrap window, never block MT5.
             port=self._port(endpoint)
-            deadline=self.clock()+25
+            deadline=self.clock()+90
             while self.clock()<deadline and not self._health(port):
                 with self.lock:
                     if self.proc is None or self.proc.poll() is not None:
-                        raise RuntimeError('El motor local terminó durante el arranque')
+                        if not self._force_cpu and bool((desktop or {}).get('model_use_gpu',True)):
+                            # Retry only our own process with the CPU binary;
+                            # never terminate servers owned by other applications.
+                            self._force_cpu=True
+                            self.start(endpoint,desktop)
+                        else:
+                            raise RuntimeError('El motor local no pudo iniciar, ni con CPU')
                 time.sleep(.4)
-            if not self._health(port):raise TimeoutError('llama.cpp no completó el inicio en 25 s')
+            if not self._health(port):raise TimeoutError('llama.cpp no completó el inicio en 90 s')
             yield
         finally:
             with self.lock:

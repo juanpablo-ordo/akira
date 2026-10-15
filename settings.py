@@ -2,6 +2,7 @@
 import copy
 import json
 import math
+import sys
 from pathlib import Path
 
 DEFAULT=json.loads((Path(__file__).parent/'default_config.json').read_text(encoding='utf-8'))
@@ -43,6 +44,20 @@ def load_config(path):
     raw=copy.deepcopy(path) if isinstance(path,dict) else json.loads(Path(path).read_text(encoding='utf-8-sig'))
     if not isinstance(raw,dict):raise ValueError('Configuración: se requiere un objeto JSON')
     cfg=merge(DEFAULT,raw)
+    # Migrate only the legacy default Ollama endpoint when a complete, local
+    # llama.cpp runtime is actually bundled alongside AKIRA.exe. This does not
+    # download programs or change an explicitly selected custom endpoint.
+    previous_assistant=raw.get('assistant') or {}
+    if isinstance(previous_assistant,dict):
+        previous_endpoint=str(previous_assistant.get('local_endpoint') or '')
+        legacy_default=previous_endpoint in ('http://127.0.0.1:11434/api/chat','http://localhost:11434/api/chat')
+        if legacy_default and not bool(previous_assistant.get('legacy_ollama_opt_in',False)) and getattr(sys,'frozen',False):
+            app_dir=Path(sys.executable).resolve().parent
+            if (app_dir/'local_ai/bin/llama-server.exe').is_file() and (app_dir/'local_ai/models/Qwen3-4B-Q4_K_M.gguf').is_file():
+                for key in ('local_endpoint','local_model','local_model_lite','fast_chat_model',
+                            'local_runtime_enabled','local_runtime_exe','local_runtime_model',
+                            'auto_install_local_ai'):
+                    cfg['assistant'][key]=copy.deepcopy(DEFAULT['assistant'][key])
     # This update makes amounts visible. Later explicit privacy choices persist.
     if not (raw.get('desktop') or {}).get('visibility_preference_saved',False):cfg['desktop']['privacy']=False
     cfg['desktop']['visibility_preference_saved']=True

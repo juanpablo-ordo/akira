@@ -64,7 +64,8 @@ class AtlasV123Tests(unittest.TestCase):
 
     def test_aggressive_research_uses_multiple_web_queries_and_youtube(self):
         with tempfile.TemporaryDirectory() as td:
-            cfg=copy.deepcopy(DEFAULT); bot=AkiraAssistant(cfg,Path(td)); calls=[]
+            cfg=copy.deepcopy(DEFAULT); cfg['assistant']['local_runtime_enabled']=False
+            bot=AkiraAssistant(cfg,Path(td)); calls=[]
             def source(name,args):
                 calls.append((name,args.get('query','')))
                 if name=='research_public_web': return {'results':[{'title':'Web','url':'https://example.com/'+str(len(calls)),'text':'dato'}]}

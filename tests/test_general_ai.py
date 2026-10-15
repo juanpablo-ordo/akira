@@ -14,6 +14,8 @@ class AkiraGeneralAIRegressions(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name); self.cfg=copy.deepcopy(DEFAULT)
+        # Legacy Ollama mocks test assistant logic; production defaults use managed llama.cpp.
+        self.cfg["assistant"]["local_runtime_enabled"]=False
 
     def test_search_prefers_diverse_non_wikipedia_sources(self):
         rows=[

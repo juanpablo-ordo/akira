@@ -64,6 +64,7 @@ class AkiraAssistant:
         self._status={'ready':False,'mode':'CONSULTANDO','phase':'CHECKING','models':[]}
         self.startup=AssistantStartup(self.root,self.cfg,enabled=auto_prepare)
         self._managed_model=ManagedLlamaProcess(self.cfg.get("assistant") or {},hardware_profile())
+        self._managed_model_boot_attempted=False
         self._cancel_event=threading.Event()
         self._research_cache={}
         self._source_cache={};self._source_cache_lock=threading.Lock()
@@ -1118,7 +1119,28 @@ class AkiraAssistant:
             with self._status_lock:generation=self._status_generation
         try:
             cfg=self.cfg.get('assistant') or {}
-            row=ollama_status(str(cfg.get('local_endpoint') or 'http://127.0.0.1:11434/api/chat'),force=True)
+            endpoint=str(cfg.get('local_endpoint') or 'http://127.0.0.1:18987/v1/chat/completions')
+            # A status poll runs in AkiraModelStatus, never in Tk or the MT5 actor.
+            # Warm the installed model only once; after idle unload, the next chat
+            # will start it on demand instead of repeatedly consuming VRAM.
+            if self._managed_model.enabled():
+                if self._managed_model._paths() is None:
+                    row={'ready':False,'mode':'IA LOCAL SIN INSTALAR','phase':'MISSING',
+                         'detail':'Faltan llama-server.exe o Qwen GGUF en la instalación. No se abrirá Ollama.',
+                         'models':[]}
+                    with self._status_lock:
+                        if generation==self._status_generation:
+                            self._status=row;self._status_due=time.monotonic()+15;self._status_loading=False
+                    return
+                if bool(cfg.get('local_runtime_start_on_launch',True)) and not self._managed_model_boot_attempted:
+                    self._managed_model_boot_attempted=True
+                    with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
+                        pass
+            row=ollama_status(endpoint,force=True)
+            if self._managed_model.enabled() and not row.get('ok'):
+                row={'ready':False,'mode':'IA LOCAL EN REPOSO','phase':'IDLE',
+                     'detail':'El modelo se descargó de memoria para ahorrar GPU; se iniciará al conversar.',
+                     'models':[]}
             model=self.startup.conversation_model(row.get('models',[]))
             row['ready']=bool(row.get('ok') and model in row.get('models',[]))
             row['selected_model']=model
@@ -1133,7 +1155,17 @@ class AkiraAssistant:
     def retry_local_preparation(self):
         def work():
             try:
-                result=self.startup.retry() or {'accepted':False,'phase':'FAILED','detail':'La preparación no confirmó el inicio.'}
+                if self._managed_model.enabled():
+                    if self._managed_model._paths() is None:
+                        result={'accepted':False,'phase':'MISSING',
+                                'detail':'No se encontró el motor llama.cpp o el modelo GGUF instalado.'}
+                    else:
+                        endpoint=str((self.cfg.get('assistant') or {}).get('local_endpoint'))
+                        with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
+                            result={'accepted':True,'phase':'READY',
+                                    'detail':'IA local llama.cpp comprobada. Sin Ollama.'}
+                else:
+                    result=self.startup.retry() or {'accepted':False,'phase':'FAILED','detail':'La preparación no confirmó el inicio.'}
             except Exception as exc:
                 from notification_center import safe_text
                 result={'accepted':False,'phase':'FAILED','error':safe_text(exc),'detail':safe_text(exc)}

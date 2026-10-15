@@ -1,0 +1,33 @@
+AKIRA 16.3.2 — ACTUALIZACIÓN ÚNICA DE GITHUB (integración de IA + instalador)
+
+Esta es una modificación de código fuente y del pipeline; NO es un instalador ya probado.
+No copia secretos, datos de Exness, chats ni archivos SQLite de tu computadora.
+
+CÓMO APLICARLA
+1. Descomprime este ZIP en otra carpeta.
+2. En GitHub Desktop, abre el repositorio local AKIRA con Show in Explorer.
+3. Copia los archivos y las carpetas de ESTE ZIP dentro del repositorio, manteniendo rutas.
+4. No borres .git ni ninguna configuración personal fuera del repositorio.
+5. Revisa en GitHub Desktop los archivos cambiados; Commit to main; Push origin.
+6. GitHub -> Actions -> AKIRA Windows - verificar y compilar -> Run workflow -> main.
+7. La compilación debe probar el arranque Windows, pruebas unitarias, descargar binarios llama.cpp verificados y crear el instalador vía Inno Setup.
+8. Descarga ÚNICAMENTE el artefacto AKIRA-16.3.2-instalador-Windows cuando GitHub lo muestre en verde.
+
+QUÉ CONTIENE
+- Nuevo logo de AKIRA pixel art con huesito, convertido a ICO y arte del asistente de instalación.
+- Inno Setup (ventanas nativas, Instalar, Cancelar, acceso directo, desinstalador).
+- Descarga del GGUF oficial mediante página Inno responsive con Cancelar, borrado de parcial y SHA-256.
+- Descarga de llama.cpp oficial Vulkan/CPU con hashes verificados EN GITHUB (no en el PC durante instalación).
+- Preferencia local llama.cpp localhost (puerto 18987), sin inicio automático de Ollama.
+- Alternativa CPU si la carga Vulkan falla, límites moderados para RTX 5060 Ti / 8 GB.
+- Verificación de IA local real en el runner Windows: servidor CPU + chat con Qwen3 GGUF.
+- Conserva el motor financiero y la configuración de riesgo en modo observación para nuevas instalaciones.
+
+LIMITACIONES / CRITERIOS DE ENTREGA
+- El primer build puede tardar por descargar GGUF de 2.5GB para smoke CI.
+- Instalador online: el GGUF de 2.5GB se obtiene durante la instalación. Si no hay Internet no declara éxito.
+- Esta actualización NO se ha compilado con Inno Setup en Windows ni comprobado con la RTX real.
+- Si falla el pipeline, copia el log de la etapa roja. NO habilites trading en real.
+- Los sprites de la IA y los módulos de investigación ya se conservaron en el repositorio previo;
+  esta entrega no asegura que el rediseño visual completo del tablero esté terminado.
+- El repositorio actualmente es público: revisa si deseas hacerlo privado una vez subido.
