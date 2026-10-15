@@ -78,6 +78,36 @@ class LayoutBounds(unittest.TestCase):
             self.assertLessEqual(mh, height)
 
 
+class NativeBuildDiagnostics(unittest.TestCase):
+    def test_windowed_failure_uses_json_when_stderr_is_empty(self):
+        from build_windows import read_self_check_report
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'NATIVE_SELF_CHECK.json'
+            path.write_text(json.dumps({'status':'FAILED','error':'No se completó compact_controls'},ensure_ascii=False),encoding='utf-8')
+            for code in (0,1):
+                with self.subTest(code=code),self.assertRaisesRegex(RuntimeError,'compact_controls'):
+                    read_self_check_report(path,code,'')
+
+    def test_missing_or_invalid_report_never_passes_with_a_zero_exit(self):
+        from build_windows import read_self_check_report
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'NATIVE_SELF_CHECK.json'
+            for contents in (None,'not JSON','[]'):
+                if contents is not None:path.write_text(contents,encoding='utf-8')
+                with self.subTest(contents=contents),self.assertRaisesRegex(RuntimeError,'ausente o ilegible'):
+                    read_self_check_report(path,0)
+
+    def test_success_requires_both_report_and_zero_exit(self):
+        from build_windows import read_self_check_report
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'NATIVE_SELF_CHECK.json'
+            expected={'status':'PASSED','build':'AKIRA_16_3_3_R6_108_EXPRESIONES'}
+            path.write_text(json.dumps(expected),encoding='utf-8')
+            self.assertEqual(read_self_check_report(path,0),expected)
+            with self.assertRaisesRegex(RuntimeError,'Código de salida: 1'):
+                read_self_check_report(path,1)
+
+
 class TkRegressions(unittest.TestCase):
     def setUp(self):
         try:
@@ -117,6 +147,28 @@ class TkRegressions(unittest.TestCase):
             layout.dragging.add('outer')
             layout.queue_restore('inner')
             self.assertNotIn('inner', layout.restore_jobs)
+
+    def test_compact_controls_accept_small_fonts_and_reject_clipping(self):
+        from native_ui_check import control_geometry
+        self.root.tk.call('tk','scaling',1.0)
+        self.root.geometry('400x250+0+0')
+        control=tk.Button(self.root,text='OCULTAR',font=('DejaVu Sans',-7),
+            borderwidth=0,highlightthickness=1,padx=5,pady=3)
+        control.pack()
+        title=tk.Label(self.root,text='¿Qué necesitas?',font=('DejaVu Sans',-11),wraplength=300)
+        title.pack()
+        self.root.update()
+        self.assertLess(control.winfo_width(),100)
+        self.assertLess(title.winfo_reqwidth(),150)
+        self.assertTrue(control_geometry(self.root,control,True)['passed'])
+        self.assertTrue(control_geometry(self.root,title,True)['passed'])
+        control.configure(width=1)
+        self.root.update_idletasks()
+        self.assertFalse(control_geometry(self.root,control,True)['readable'])
+        control.configure(width=0)
+        control.pack_forget();control.place(x=390,y=0)
+        self.root.update_idletasks()
+        self.assertFalse(control_geometry(self.root,control,True)['inside'])
 
 
 if __name__ == '__main__':

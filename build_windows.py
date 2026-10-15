@@ -4,6 +4,22 @@ import argparse,hashlib,json,os,subprocess,sys
 from akira_version import BUILD_ID
 from frozen_ui_contract import UI_MODULES,require_render_check
 
+def read_self_check_report(path,returncode,stderr=''):
+ """Windowed executables write failures to JSON even when stderr is empty."""
+ path=Path(path);report={};read_error=''
+ try:
+  report=json.loads(path.read_text(encoding='utf-8-sig'))
+  if not isinstance(report,dict):raise ValueError('El diagnóstico no es un objeto JSON')
+ except (OSError,ValueError) as error:
+  report={};read_error='Diagnóstico ausente o ilegible: '+str(error)
+ if returncode or report.get('status')!='PASSED':
+  parts=['Código de salida: '+str(returncode)]
+  if report.get('error'):parts.append(str(report['error']))
+  if read_error:parts.append(read_error)
+  if stderr.strip():parts.append(stderr.strip()[-1200:])
+  raise RuntimeError('Falló la comprobación nativa: '+'; '.join(parts)+'. Revisa NATIVE_SELF_CHECK.json y NATIVE_SELF_CHECK_STDERR.log; no se activa.')
+ return report
+
 def build_command(source,destination,work):
  source=Path(source).resolve();destination=Path(destination).resolve();work=Path(work).resolve()
  command=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--onedir','--windowed','--name','AKIRA',
@@ -35,17 +51,13 @@ def main():
  check=diag/'NATIVE_SELF_CHECK.json'
  try:
   result=subprocess.run([str(exe),'--self-check',str(check),'--app-root',str(root)],
-                        cwd=root,timeout=90,capture_output=True,text=True,errors='replace')
+                        cwd=root,timeout=90,capture_output=True,encoding='utf-8',errors='replace')
   (diag/'NATIVE_SELF_CHECK_STDOUT.log').write_text(result.stdout,encoding='utf-8')
   (diag/'NATIVE_SELF_CHECK_STDERR.log').write_text(result.stderr,encoding='utf-8')
  except subprocess.TimeoutExpired as error:
   (diag/'NATIVE_SELF_CHECK_TIMEOUT.txt').write_text(str(error),encoding='utf-8')
   raise RuntimeError('AKIRA.exe tardó más de 90 segundos en iniciar su autocomprobación; se conserva la versión anterior.') from error
- if result.returncode or not check.is_file():
-  detail='Código de salida: '+str(result.returncode)
-  if result.stderr:detail+='; '+result.stderr.strip()[-1200:]
-  raise RuntimeError('Falló la comprobación nativa: '+detail+'. Revisa NATIVE_SELF_CHECK_STDERR.log; no se activa.')
- report=json.loads(check.read_text(encoding='utf-8'))
+ report=read_self_check_report(check,result.returncode,result.stderr)
  require_render_check(report)
  if report.get('status')!='PASSED' or report.get('build')!=BUILD_ID or report.get('frozen') is not True or report.get('window_icon') is not True or report.get('app_id')!='AKIRA.Desktop.16':raise RuntimeError('La identidad o las dependencias de la aplicación no coinciden con el paquete')
  # A working --self-check is insufficient: launch from a genuinely empty

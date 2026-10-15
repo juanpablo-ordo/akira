@@ -397,14 +397,18 @@ class Desktop(DesktopServices,StrategyDirectory):
     def _fit_header_actions(self,width):
         # Grid reserves every button's space; pack(side=right) silently clipped
         # the first controls when the available width got smaller.
-        columns=2 if width<790 else 4
+        for item in self._toolbar_buttons:
+            item.configure(padx=5,pady=5,font=(FONT,8,'bold'))
+        # The same point size occupies different pixels across Windows fonts
+        # and DPI settings. Reserve enough space for the widest button label.
+        required=4*(max(item.winfo_reqwidth() for item in self._toolbar_buttons)+6)
+        columns=2 if width<max(790,required) else 4
         if columns!=getattr(self,'_toolbar_columns',None):
             self._toolbar_columns=columns
             for i,item in enumerate(self._toolbar_buttons):
                 item.grid(row=i//columns,column=i%columns,sticky='ew',padx=3,pady=2)
-                item.configure(padx=5,pady=5,font=(FONT,8,'bold'))
             for i in range(4):self._toolbar.columnconfigure(i,weight=1 if i<columns else 0,uniform='actions' if i<columns else '')
-        if width<790:
+        if columns==2:
             self.account_label.grid(row=1,column=0,columnspan=3,sticky='w',pady=(3,0))
         else:self.account_label.grid(row=0,column=3,columnspan=1,sticky='e',padx=(10,0))
 

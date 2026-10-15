@@ -1,0 +1,47 @@
+{
+  "build": "AKIRA_16_3_3_R6_108_EXPRESIONES",
+  "previous_windows_run": {
+    "number": 9,
+    "url": "https://github.com/juanpablo-ordo/akira/actions/runs/38700179558",
+    "error": "RuntimeError: No se completó el dibujado de compact_controls"
+  },
+  "local_reproduction": {
+    "tk_scale": 1.0,
+    "old_compact_controls": false,
+    "privacy_button_width": 95,
+    "old_required_width": 101,
+    "control_was_within_window": true
+  },
+  "fixes": [
+    "Comprobación de texto con métricas reales de la fuente y límites de la ventana",
+    "Barra superior de dos columnas cuando las etiquetas no caben",
+    "Espera de los ajustes de tamaño antes de medir",
+    "Errores JSON visibles en Actions aunque el ejecutable no escriba stderr",
+    "Trazas completas en el diagnóstico y salida UTF-8"
+  ],
+  "selected_tests": {
+    "passed": 97,
+    "subtests_passed": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "default_text_encoding_simulated": "CP1252"
+  },
+  "local_ui_checks": {
+    "status": "PASSED",
+    "scales": [
+      1.0,
+      1.333,
+      2.0
+    ],
+    "checks_per_scale": 21,
+    "data": "SYNTHETIC",
+    "broker": "FakeMT5",
+    "network_used": false,
+    "live_account_used": false
+  },
+  "windows_rebuild_of_this_patch_verified": false,
+  "trading_engine_changed": false,
+  "real_trading_latency_measured": false,
+  "full_test_suite_claimed_passed": false
+}

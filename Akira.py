@@ -49,7 +49,9 @@ if __name__=='__main__':
             window=tk.Tk();window.withdraw()
             result['render_check']=run_ui_check(window)
             require_render_check(result)
-        except Exception as exc:result.update(status='FAILED',error=type(exc).__name__+': '+str(exc))
+        except Exception as exc:
+            import traceback
+            result.update(status='FAILED',error=type(exc).__name__+': '+str(exc),traceback=traceback.format_exc())
         Path(args.self_check).write_text(json.dumps(result,indent=2),encoding='utf-8');sys.exit(0 if result['status']=='PASSED' else 1)
     try:
         from desktop import main
