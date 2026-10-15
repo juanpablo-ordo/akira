@@ -65,6 +65,8 @@ class AkiraAssistant:
         self.startup=AssistantStartup(self.root,self.cfg,enabled=auto_prepare)
         self._managed_model=ManagedLlamaProcess(self.cfg.get("assistant") or {},hardware_profile())
         self._managed_model_boot_attempted=False
+        self._model_inference_verified=False
+        self._model_inference_error='La IA local todavía no ha respondido a una prueba.'
         self._cancel_event=threading.Event()
         self._research_cache={}
         self._source_cache={};self._source_cache_lock=threading.Lock()
@@ -909,7 +911,11 @@ class AkiraAssistant:
         if self._managed_model.enabled() and not _direct_local_engine(endpoint):
             raise ValueError('La IA gestionada requiere el endpoint local /v1/chat/completions, no Ollama')
         with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
-            return self._local_llm_reply_impl(message,snapshot)
+            response=self._local_llm_reply_impl(message,snapshot)
+            if str(response).strip():
+                self._model_inference_verified=True
+                self._model_inference_error=''
+            return response
 
     def _local_llm_reply_impl(self,message,snapshot):
         cfg=self.cfg.get('assistant') or {}
@@ -1101,6 +1107,25 @@ class AkiraAssistant:
         self._progress('LISTO',f'Respuesta sintetizada con {len(source_rows)} fuentes visibles' if source_rows else 'Respuesta sintetizada')
         self._remember_turn(message,text);return text
 
+    def _verify_local_generation(self,endpoint):
+        """Require a real visible text completion before telling the GUI it is ready.
+
+        Called in background workers only. /health and /v1/models by themselves are
+        insufficient evidence: this was the false-positive in the Windows recording.
+        """
+        cfg=self.cfg.get('assistant') or {}
+        from akira_local_ai import chat
+        model=str(cfg.get('local_model') or 'Qwen3-4B-Q4_K_M.gguf')
+        text=chat([{'role':'system','content':'/no_think\nResponde en español, sin razonamiento interno.'},
+                   {'role':'user','content':'Di hola en una frase breve.'}],
+                  model=model,endpoint=endpoint,timeout=90,think=False,
+                  options={'num_predict':192,'temperature':0})
+        if not isinstance(text,str) or not text.strip():
+            raise RuntimeError('La IA respondió sin texto visible.')
+        self._model_inference_verified=True
+        self._model_inference_error=''
+        return text.strip()
+
     def local_ai_status(self):
         # Esta función se usa desde Tk: devuelve cache, nunca hace I/O en la interfaz.
         with self._status_lock:
@@ -1117,40 +1142,57 @@ class AkiraAssistant:
     def _probe_local_status(self,generation=None):
         if generation is None:
             with self._status_lock:generation=self._status_generation
+        row={'ready':False,'phase':'CHECKING','models':[],
+             'detail':'Comprobando una respuesta real del asistente…'}
         try:
             cfg=self.cfg.get('assistant') or {}
             endpoint=str(cfg.get('local_endpoint') or 'http://127.0.0.1:18987/v1/chat/completions')
-            # A status poll runs in AkiraModelStatus, never in Tk or the MT5 actor.
-            # Warm the installed model only once; after idle unload, the next chat
-            # will start it on demand instead of repeatedly consuming VRAM.
             if self._managed_model.enabled():
                 if self._managed_model._paths() is None:
                     row={'ready':False,'mode':'IA LOCAL SIN INSTALAR','phase':'MISSING',
-                         'detail':'Faltan llama-server.exe o Qwen GGUF en la instalación. No se abrirá Ollama.',
+                         'detail':'Faltan llama-server.exe o Qwen GGUF. No se usará Ollama automáticamente.',
                          'models':[]}
-                    with self._status_lock:
-                        if generation==self._status_generation:
-                            self._status=row;self._status_due=time.monotonic()+15;self._status_loading=False
-                    return
-                if bool(cfg.get('local_runtime_start_on_launch',True)) and not self._managed_model_boot_attempted:
-                    self._managed_model_boot_attempted=True
-                    with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
-                        pass
-            row=ollama_status(endpoint,force=True)
-            if self._managed_model.enabled() and not row.get('ok'):
-                row={'ready':False,'mode':'IA LOCAL EN REPOSO','phase':'IDLE',
-                     'detail':'El modelo se descargó de memoria para ahorrar GPU; se iniciará al conversar.',
-                     'models':[]}
-            model=self.startup.conversation_model(row.get('models',[]))
-            row['ready']=bool(row.get('ok') and model in row.get('models',[]))
-            row['selected_model']=model
-            row['mode']='LOCAL_PRIMARY' if row['ready'] else 'MODELO NO DISPONIBLE'
-            row=self.startup.observe(row)
-        except Exception as exc:row={'ready':False,'mode':'MODELO NO DISPONIBLE','phase':'FAILED','error':str(exc),'detail':'No se pudo comprobar el asistente. Pulsa REPARAR ASISTENTE.','models':[]}
+                else:
+                    # The only boot probe is a full inference, not just /health.
+                    if bool(cfg.get('local_runtime_start_on_launch',True)) and not self._managed_model_boot_attempted:
+                        self._managed_model_boot_attempted=True
+                        try:
+                            with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
+                                self._verify_local_generation(endpoint)
+                        except Exception as exc:
+                            self._model_inference_verified=False
+                            self._model_inference_error=type(exc).__name__+': '+str(exc)[:250]
+                    remote=ollama_status(endpoint,force=True)
+                    if not remote.get('ok'):
+                        row={'ready':False,'mode':'IA LOCAL EN REPOSO','phase':'IDLE',
+                             'detail':'El modelo está en reposo. Pulsa REPARAR para probar una respuesta real.',
+                             'models':[]}
+                    else:
+                        ready=bool(self._model_inference_verified)
+                        row={'ready':ready,'mode':'LOCAL_PRIMARY' if ready else 'IA SIN VERIFICAR',
+                             'phase':'READY' if ready else 'FAILED',
+                             'detail':'Respuesta real de Qwen verificada; IA local disponible.' if ready else
+                                      'El motor se inició, pero NO generó una respuesta verificada: '+self._model_inference_error,
+                             'models':remote.get('models') or []}
+            else:
+                row=ollama_status(endpoint,force=True)
+                model=self.startup.conversation_model(row.get('models',[]))
+                row['ready']=bool(row.get('ok') and model in row.get('models',[]))
+                row['selected_model']=model
+                row['mode']='LOCAL_PRIMARY' if row['ready'] else 'MODELO NO DISPONIBLE'
+                row=self.startup.observe(row)
+        except Exception as exc:
+            row={'ready':False,'mode':'MODELO NO DISPONIBLE','phase':'FAILED',
+                 'error':type(exc).__name__+': '+str(exc)[:400],
+                 'detail':'No se pudo comprobar una respuesta real de la IA: '+str(exc)[:240],
+                 'models':[]}
         finally:
             with self._status_lock:
                 if generation==self._status_generation:
-                    self._status=row;self._status_due=time.monotonic()+5;self._status_loading=False
+                    self._status=row
+                    # Avoid hammering CPU/VRAM while another operation is working.
+                    self._status_due=time.monotonic()+(18 if self._managed_model.enabled() else 5)
+                    self._status_loading=False
 
     def retry_local_preparation(self):
         def work():
@@ -1162,8 +1204,9 @@ class AkiraAssistant:
                     else:
                         endpoint=str((self.cfg.get('assistant') or {}).get('local_endpoint'))
                         with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
+                            self._verify_local_generation(endpoint)
                             result={'accepted':True,'phase':'READY',
-                                    'detail':'IA local llama.cpp comprobada. Sin Ollama.'}
+                                    'detail':'Qwen generó texto real. IA local verificada sin Ollama.'}
                 else:
                     result=self.startup.retry() or {'accepted':False,'phase':'FAILED','detail':'La preparación no confirmó el inicio.'}
             except Exception as exc:

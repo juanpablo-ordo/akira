@@ -18,7 +18,7 @@ def fitted_geometry(width,height,screen_width,screen_height):
 
 class PanelLayout:
     def __init__(self,root,path):
-        self.root,self.path=root,Path(path);self.saved={};self.widgets={};self.pending=None;self.restore_jobs={}
+        self.root,self.path=root,Path(path);self.saved={};self.widgets={};self.pending=None;self.restore_jobs={};self.dragging=set()
         try:
             data=json.loads(self.path.read_text(encoding='utf-8'))
             if isinstance(data,dict) and data.get('schema')==1 and isinstance(data.get('panels'),dict):self.saved=data['panels']
@@ -30,15 +30,23 @@ class PanelLayout:
             sashcursor='sb_h_double_arrow' if orient==tk.HORIZONTAL else 'sb_v_double_arrow')
         self.widgets[key]=(p,orient,tuple(ratios));p._layout_key=key
         p.bind('<Map>',lambda event:self.queue_restore(key),add='+')
+        # Never restore a saved sash position while the user is dragging it.
+        # Reapplying on every Configure caused jitter and panes that fought the mouse.
         p.bind('<Configure>',lambda event:self.queue_restore(key),add='+')
-        p.bind('<ButtonRelease-1>',lambda event:self.changed(key),add='+')
+        p.bind('<ButtonPress-1>',lambda event:self.dragging.add(key),add='+')
+        p.bind('<ButtonRelease-1>',lambda event:(self.dragging.discard(key),self.changed(key)),add='+')
         return p
 
     def queue_restore(self,key):
-        if key in self.restore_jobs:return
+        if key in self.dragging:return
+        old=self.restore_jobs.pop(key,None)
+        if old is not None:
+            try:self.root.after_cancel(old)
+            except (tk.TclError,ValueError):pass
         def apply():
-            self.restore_jobs.pop(key,None);self.restore(key)
-        self.restore_jobs[key]=self.root.after_idle(apply)
+            self.restore_jobs.pop(key,None)
+            if key not in self.dragging:self.restore(key)
+        self.restore_jobs[key]=self.root.after(170,apply)
 
     def restore(self,key,defaults=False):
         p,orient,initial=self.widgets[key]

@@ -139,7 +139,10 @@ class AkiraLive2D(tk.Frame):
                 # expresión por separado haría saltar el personaje al cambiarla.
                 ratio = min((self.w * .92) / max(1, src.width), (self.h * .92) / max(1, src.height))
                 size = (max(1, int(src.width * ratio)), max(1, int(src.height * ratio)))
-                src = src.resize(size, Image.Resampling.NEAREST)
+                # The original sheet is 512px; small Tk panels should not alias every
+                # high-resolution outline into deformed blocky limbs.
+                method = Image.Resampling.LANCZOS if min(size)<src.width//2 else Image.Resampling.NEAREST
+                src = src.resize(size, method)
                 cache[path] = ImageTk.PhotoImage(src)
                 self.frames[state] = cache[path]
             except Exception:
@@ -154,7 +157,7 @@ class AkiraLive2D(tk.Frame):
         if abs(event.width-self.w)<12 and abs(event.height-self.h)<12:return
         self.w,self.h=event.width,event.height
         if self._resize_job is not None:self.after_cancel(self._resize_job)
-        self._resize_job=self.after(150,self._resize_frames)
+        self._resize_job=self.after(280,self._resize_frames)
 
     def _resize_frames(self):
         self._resize_job=None

@@ -42,9 +42,13 @@ class DesktopServices:
         try:
             from application_management import launch_uninstaller
             launch_uninstaller(self.folder)
-            self.show_message('Desinstalar AKIRA','Se abrió el desinstalador independiente. Revisa sus opciones; tus datos se conservarán.')
+            self.show_message('Desinstalar AKIRA','Se abrió el desinstalador de Windows. Puedes elegir conservar los datos de AKIRA.')
+            # Close AKIRA after launching its native independent uninstaller, so
+            # the application and managed llama-server do not lock installed DLLs.
+            try:self.root.after(450,self.close)
+            except (AttributeError,tk.TclError):pass
         except Exception as exc:
-            self.show_message('Desinstalador no abierto',str(exc)+' Puedes abrir DESINSTALAR_AKIRA.cmd desde el paquete.',True)
+            self.show_message('Desinstalador no abierto',str(exc),True)
 
     def persist_window_size(self):
         try:

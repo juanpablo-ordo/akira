@@ -1,0 +1,17 @@
+{
+  ".github/workflows/build-windows.yml": "0fac5a2b2c04a24e8e5775f6255922e7105d62bb531ed68d0f57d5da086ccc5e",
+  "README.md": "3133a7716af69ba5f7d351fe5020ad627c7a9dac1bfc153edc83a6995f61f531",
+  "application_management.py": "69745c4e801e819ab743aa05b4118395756ef6b498488cd01175bfc211eeb1da",
+  "desktop_services.py": "985f389ae36d30b14ab79a140f3baa7c522e1db50da680e5c8173b84dfeda9f8",
+  "akira_local_ai.py": "1329d371eaf4a78ea48172f92e286fdda6cc71228f497bb1c5d00772eacb401e",
+  "assistant_akira.py": "4fc8ece36be90c528c6ee32f782eb8ef6f6cbeac18de7c5a0b47f788d95ca9d2",
+  "desktop.py": "cd8e29263142db66c27987bf3dcb9eab5d584aaac9e89cacaa40c897e6ac3c56",
+  "akira_model_runtime.py": "fe9b4279e3c24a3e7cc0eefff35f7b5f8d8398ff2104c22346445a7bce32e0e9",
+  "akira_live2d.py": "09c8c8816b76e40050dce81f2558ebf74d45ceb5668c7011a2c67bb03e483cfa",
+  "desktop_layout.py": "8823caa6009fc3b307ee3ac0b269ec46fa989d82953b05078ec7678615048070",
+  "tests/test_r5_user_video_regressions.py": "5d7a638cfa9f8c2159fa5fb4c80a054a1ddd3c355c9ab41dd5831ea6c61e8777",
+  "tests/test_v16210_install_uninstall.py": "be41764c54f5261ad37c75d6f24d635e93399da9db1ab7c79a401b6b65bf060a",
+  "ARCHIVOS_SHA256_16_3_2.json": "0501a2a1ffb340e662a52770c89e96fdb5499baacb7e890cd0c4f54666c25435",
+  "PACKAGE_SHA256.json": "e487a8ebcfa49559e9eb9f45d50af1c991852d236cb0b95b4132aa07d15eb3f7",
+  "RESULTADO_R5_LEER_PRIMERO.md": "963eb5c455773cd4a59abbd543357888c1c8e0553283f4cb1539a4b0d7135d4e"
+}

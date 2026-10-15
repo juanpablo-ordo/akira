@@ -94,8 +94,12 @@ def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_
     payload={'model':model,'messages':mapped,'stream':False,
              'temperature':float(opts.get('temperature',.2)),
              'top_p':float(opts.get('top_p',.90)),
-             'max_tokens':int(opts.get('num_predict',3000))}
+             'max_tokens':int(opts.get('num_predict',3000)),
+             'chat_template_kwargs':{'enable_thinking':bool(think)}}
     if tools:payload['tools']=tools
+    if not think and mapped and not any('/no_think' in str(m.get('content','')) for m in mapped):
+        # Qwen3 can consume the whole token budget in hidden reasoning otherwise.
+        mapped.insert(0,{'role':'system','content':'/no_think\nDa una respuesta visible, concisa y útil.'})
     if response_format is not None:
         payload['response_format']={'type':'json_object'} if response_format=='json' else response_format
     try:

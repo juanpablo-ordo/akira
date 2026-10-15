@@ -162,3 +162,9 @@ class ManagedLlamaProcess:
         with self.lock:
             if self.active:raise RuntimeError('Modelo en uso; no se puede cerrar hasta terminar la respuesta')
             self._terminate_own()
+
+    def shutdown(self):
+        """Close only Akira's own inference subprocess during application exit."""
+        with self.lock:
+            self.active=0
+            self._terminate_own()

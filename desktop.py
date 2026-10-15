@@ -265,7 +265,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.paused=False;self.view={};self.chat_busy=False;self.display_due=0.0;self.panels={};self.charts={};self.avatars=[];self.chat_started=0.0;self.chat_stage='LISTO';self.chat_stage_detail='';self.chat_source_names=[];self._chat_anim_phase=0
         self._last_deep_stamp=0.0;self._last_pending_signature=None;self._toast_windows=[]
         self.map_request_busy=False
-        self._voice_download_job=None;self._voice_download_busy=False;self._voice_download_last={}
+        self._voice_download_job=None;self._voice_download_busy=False;self._voice_download_last={};self._voice_single_cancel=None
         self.voice_window=None;self.voice_call_active=False;self.voice_session=None;self.voice_awaiting=False;self._voice_catalog=[];self._voice_devices={'inputs':[],'outputs':[]}
         self.report_busy=False;self.report_window=None;self.report_model=None;self.report_generation=0
         self.bridge=CommandBridge(self.commands);self.bridge.starting=True;self.assistant=AkiraAssistant(self.cfg,self.folder,self.bridge.request,self.progress_event,auto_prepare=False)
@@ -976,7 +976,8 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.uninstall_button=button(c,'DESINSTALAR AKIRA',self.open_uninstaller,RED);self.uninstall_button.pack(fill='x',pady=6)
         label(c,'Retira el programa y conserva tus datos. También disponible desde el paquete aunque AKIRA no abra.',MUTED,9,anchor='w',justify='left',wraplength=650).pack(fill='x',pady=6)
         c=card(t,'OPTIMIZADOR DE RECURSOS',CYAN)
-        button(c,'ABRIR LIMITADOR DE RECURSOS  ◈',self.open_resource_panel,CYAN).pack(fill='x',pady=(0,8))
+        button(c,'MOSTRAR / OCULTAR LIMITADOR DE RECURSOS  ◈',self.open_resource_panel,CYAN).pack(fill='x',pady=(0,8))
+        self._resource_host=tk.Frame(c,bg=PANEL);self._resource_host.pack(fill='x',pady=(0,4))
         label(c,'Reduce redibujados, animaciones y actividad de interfaz, sin detener el motor MT5.',MUTED,9,
               anchor='w',justify='left',wraplength=620).pack(fill='x',pady=(2,10))
         profile=tk.StringVar(value=self.cfg['desktop'].get('performance_profile','Equilibrado'))
@@ -1277,10 +1278,13 @@ class Desktop(DesktopServices,StrategyDirectory):
         for title,var in [('Velocidad',self.voice_rate),('Volumen',self.voice_volume)]:
             label(row,title,MUTED,9).pack(side='left',padx=(0,6))
             tk.Entry(row,textvariable=var,bg=CARD,fg=TEXT,insertbackground=CYAN,width=7,relief='flat').pack(side='left',padx=(0,14),ipady=5)
+        button(body,'CONSULTAR CATÁLOGO DE VOCES',lambda:self.load_voice_inventory(True),MUTED).pack(fill='x',pady=(1,4))
         row=tk.Frame(body,bg=PANEL);row.pack(fill='x',pady=(2,5))
-        self.download_all_button=button(row,'DESCARGAR TODAS LAS VOCES',self.download_all_voices,BLUE);self.download_all_button.pack(side='left',fill='x',expand=True)
-        self.voice_download_cancel=button(row,'CANCELAR',self.cancel_voice_download,AMBER);self.voice_download_cancel.pack(side='left',padx=6)
-        button(row,'ESCUCHAR DEMO',self.preview_voice,GREEN).pack(side='left')
+        self.download_one_button=button(row,'DESCARGAR VOZ ELEGIDA',self.download_selected_voice,CYAN);self.download_one_button.pack(side='left',fill='x',expand=True,padx=(0,4))
+        self.download_all_button=button(row,'DESCARGAR TODAS',self.download_all_voices,BLUE);self.download_all_button.pack(side='left',fill='x',expand=True)
+        row=tk.Frame(body,bg=PANEL);row.pack(fill='x',pady=(0,5))
+        self.voice_download_cancel=button(row,'CANCELAR DESCARGA',self.cancel_voice_download,AMBER);self.voice_download_cancel.pack(side='left')
+        button(row,'ESCUCHAR DEMO',self.preview_voice,GREEN).pack(side='right')
         self.voice_download_status=label(body,'Un clic descarga e instala todo el catálogo. Las voces completas se conservan al reintentar.',MUTED,8,wraplength=650,anchor='w',justify='left');self.voice_download_status.pack(fill='x',pady=(3,4))
         self.voice_download_progress=ttk.Progressbar(body,mode='determinate',maximum=100,style='Cyber.Horizontal.TProgressbar');self.voice_download_progress.pack(fill='x',pady=(0,5))
         label(body,'Elige la voz y los dispositivos para la llamada. El chat escrito permanece silencioso.',MUTED,8,wraplength=650,justify='left',anchor='w').pack(fill='x',pady=3)
@@ -1326,7 +1330,7 @@ class Desktop(DesktopServices,StrategyDirectory):
             names=[v['name']+' ['+('disponible' if v['installed'] else 'descargar')+']' for v in self._voice_catalog]
             self.voice_boxes['voice'].configure(values=names)
             index=next((i for i,v in enumerate(self._voice_catalog) if v['id']==(prior_id or saved.get('voice_id'))),next((i for i,v in enumerate(self._voice_catalog) if v['installed']),0))
-            self.voice_vars['voice'].set(names[index] if names else 'Sin voces; pulsa DESCARGAR TODAS LAS VOCES')
+            self.voice_vars['voice'].set(names[index] if names else 'Sin voces; consulta catálogo para elegir una voz')
             for key,group in [('input','inputs'),('output','outputs')]:
                 values=['Predeterminado']+[str(d['id'])+' · '+d['name'] for d in self._voice_devices[group]]
                 self.voice_boxes[key].configure(values=values);device=saved.get(key+'_device',-1)
@@ -1350,15 +1354,35 @@ class Desktop(DesktopServices,StrategyDirectory):
         if getattr(self,'_voice_download_busy',False):return
         try:voice,options=self.voice_selection(False)
         except Exception as exc:self.voice_state.configure(text=str(exc),fg=AMBER);return
-        if voice['installed']:self.voice_state.configure(text='Esta voz ya está disponible.',fg=GREEN);return
+        if voice['installed']:
+            self.voice_state.configure(text='Esta voz ya está disponible.',fg=GREEN);return
+        cancel=threading.Event()
+        self._voice_single_cancel=cancel
+        self._voice_download_job=None
         self._voice_download_busy=True
-        self.voice_state.configure(text='Instalando voz seleccionada; puedes seguir usando AKIRA.',fg=AMBER)
+        self._voice_download_last={'state':'downloading_one','current':voice['name'],'file_bytes':0,'file_total':0}
+        self._render_voice_download()
         def work():
+            def notice(filename,done,total):
+                self.replies.put({'voice_single_progress':{'state':'downloading_one','current':voice['name']+' · '+filename,
+                    'file_bytes':done,'file_total':total}})
             try:
-                install_voice(self.folder,voice,lambda msg:self.replies.put({'voice_event':{'kind':'state','text':msg}}),self.stop)
-                self.replies.put({'voice_event':{'kind':'installed','text':'Voz instalada'}})
-            except Exception as exc:self.replies.put({'voice_event':{'kind':'download_error','text':str(exc)}})
-        threading.Thread(target=work,name='AkiraVoiceDownload',daemon=True).start()
+                install_voice(self.folder,voice,lambda msg:self.replies.put({'voice_event':{'kind':'state','text':msg}}),cancel,notice)
+                kind='cancelled' if cancel.is_set() else 'installed'
+                self.replies.put({'voice_single_done':{'kind':kind,'name':voice['name']}})
+            except Exception as exc:
+                kind='cancelled' if cancel.is_set() else 'error'
+                self.replies.put({'voice_single_done':{'kind':kind,'error':str(exc)[:200]}})
+        threading.Thread(target=work,name='AkiraVoiceDownloadSingle',daemon=True).start()
+
+    def handle_voice_single_done(self,event):
+        self._voice_single_cancel=None
+        self._voice_download_busy=False
+        kind=event.get('kind')
+        self._voice_download_last={'state':'complete_one' if kind=='installed' else kind,
+            'current':event.get('name') or '', 'error':event.get('error') or ''}
+        self._render_voice_download()
+        if kind=='installed':self.load_voice_inventory(False)
 
     def download_all_voices(self):
         if self._voice_download_busy:return
@@ -1370,8 +1394,13 @@ class Desktop(DesktopServices,StrategyDirectory):
 
     def cancel_voice_download(self):
         job=getattr(self,'_voice_download_job',None)
-        if job and self._voice_download_busy:
-            job.cancel();self._voice_download_last['state']='cancelling';self._render_voice_download()
+        single=getattr(self,'_voice_single_cancel',None)
+        if not self._voice_download_busy:return
+        if single is not None:single.set()
+        elif job is not None:job.cancel()
+        else:return
+        self._voice_download_last['state']='cancelling'
+        self._render_voice_download()
 
     def handle_voice_download(self,event):
         if not self._voice_download_job or event.get('job_id')!=self._voice_download_job.job_id:return
@@ -1385,24 +1414,27 @@ class Desktop(DesktopServices,StrategyDirectory):
         if self.voice_window is None:return
         state=self._voice_download_last;kind=state.get('state');total=state.get('models_total',0);done=state.get('models_done',0)
         try:
+            self.download_one_button.configure(state='disabled' if self._voice_download_busy else 'normal')
             self.download_all_button.configure(state='disabled' if self._voice_download_busy else 'normal',
                 text='DESCARGANDO VOCES…' if self._voice_download_busy else 'REINTENTAR / COMPLETAR VOCES' if kind in ('partial','error','cancelled','disk_full') else 'DESCARGAR TODAS LAS VOCES')
             self.voice_download_cancel.configure(state='normal' if self._voice_download_busy else 'disabled')
-            self.voice_download_progress.configure(value=done/total*100 if total else 0)
+            self.voice_download_progress.configure(value=(state.get('file_bytes',0)/max(1,state.get('file_total',0))*100
+                if kind=='downloading_one' and state.get('file_total') else done/total*100 if total else 0))
             if not state:return
-            caption={'catalog':'Preparando todo el catálogo…','downloading':f'Modelos {done}/{total} · {state.get("voices_total",0)} voces',
+            caption={'catalog':'Preparando todo el catálogo…','downloading_one':'Descargando solo la voz seleccionada…','complete_one':'La voz elegida está instalada.','downloading':f'Modelos {done}/{total} · {state.get("voices_total",0)} voces',
                 'complete':f'Catálogo instalado · {total} modelos · {state.get("voices_total",0)} voces',
                 'partial':f'Instalados {state.get("downloaded",0)} · ya disponibles {state.get("skipped",0)} · fallaron {state.get("failed",0)}. Pulsa reintentar.',
                 'cancelled':'Descarga detenida. Las voces completas siguen disponibles; puedes continuar.',
                 'cancelling':'Deteniendo la descarga; esperando a que termine la lectura actual…',
                 'disk_full':'Descarga detenida por falta de espacio. Libera espacio y pulsa reintentar.',
                 'error':state.get('error','No se pudo descargar. Reintenta.'),'empty':'El catálogo no contiene modelos descargables.'}.get(kind,'')
-            if kind=='downloading':
+            if kind in ('downloading','downloading_one'):
                 size=state.get('file_bytes',0)/1048576;limit=state.get('file_total',0)/1048576
                 estimate=state.get('bytes_total',0)/1073741824
                 if estimate:caption+=f' · catálogo {estimate:.1f} GB'
                 caption+='\n'+str(state.get('current',''))[:85]+(f' · {size:.1f} / {limit:.1f} MB' if limit else '')
             elif kind=='partial' and state.get('errors'):caption+='\n'+str(state['errors'][0]['error'])[:100]
+            elif kind=='error':caption+='\n'+str(state.get('error') or '')[:160]
             self.voice_download_status.configure(text=caption,fg=GREEN if kind=='complete' else AMBER if kind in ('partial','error','disk_full') else MUTED)
         except (AttributeError,tk.TclError):pass
 
@@ -1605,6 +1637,12 @@ class Desktop(DesktopServices,StrategyDirectory):
                 continue
             if 'voice_download' in reply:
                 self.handle_voice_download(reply['voice_download']);continue
+            if 'voice_single_progress' in reply:
+                if self._voice_download_busy and self._voice_single_cancel is not None:
+                    self._voice_download_last=reply['voice_single_progress'];self._render_voice_download()
+                continue
+            if 'voice_single_done' in reply:
+                self.handle_voice_single_done(reply['voice_single_done']);continue
             if 'voice_inventory' in reply:
                 self._handle_voice_inventory(reply);continue
             if 'voice_event' in reply:
@@ -1911,26 +1949,24 @@ class Desktop(DesktopServices,StrategyDirectory):
         from resource_optimizer import config_limits,process_usage,PROFILES,profile_budget
         if getattr(self,'_resource_window',None) is not None:
             try:
-                if self._resource_window.winfo_exists():self._resource_window.lift();return
+                if self._resource_window.winfo_exists():
+                    self._resource_window.destroy();self._resource_window=None;return
             except tk.TclError:pass
-        win=tk.Toplevel(self.root);self._resource_window=win
-        win.title('AKIRA · LIMITADOR');win.configure(bg=BG)
-        try:apply_window_icon(win,self.folder)
-        except Exception:pass
-        win.after(120,lambda:apply_dark_titlebar(win))
-        width=440;height=650
-        win.geometry(f'{width}x{height}+{max(0,self.root.winfo_rootx()+self.root.winfo_width()-width-20)}+{max(0,self.root.winfo_rooty()+30)}')
-        win.resizable(False,False)
+        # Embedded in AJUSTES: no second taskbar window, fixed size, or off-screen dialog.
+        win=tk.Frame(self._resource_host,bg=BG,highlightthickness=1,highlightbackground=LINE)
+        self._resource_window=win
+        win.pack(fill='x',expand=True,pady=(5,12))
         head=tk.Frame(win,bg=PANEL,padx=17,pady=12);head.pack(fill='x')
-        label(head,'◈  AKIRA · CONTROL DE RECURSOS',CYAN,15,True).pack(side='left')
-        button(head,'×',win.destroy,MUTED).pack(side='right')
+        label(head,'◈  CONTROL DE RECURSOS',CYAN,12,True).pack(side='left')
+        button(head,'×',lambda:(win.destroy(),setattr(self,'_resource_window',None)),MUTED).pack(side='right')
         values=config_limits(self.cfg)
-        shell=tk.Frame(win,bg=BG,padx=20,pady=9);shell.pack(fill='both',expand=True)
+        shell=tk.Frame(win,bg=BG,padx=14,pady=9);shell.pack(fill='both',expand=True)
         label(shell,'PERFIL DE RENDIMIENTO',MUTED,9,True,anchor='w').pack(fill='x',pady=(4,4))
         mode=tk.StringVar(value=values['performance_profile'])
         ttk.Combobox(shell,textvariable=mode,values=tuple(PROFILES),state='readonly',style='Akira.TCombobox').pack(fill='x',ipady=3,pady=(0,5))
         effective=label(shell,'',CYAN,9,anchor='w',wraplength=389,justify='left')
         effective.pack(fill='x',pady=(0,12))
+        effective.bind('<Configure>',lambda e:effective.configure(wraplength=max(220,e.width-10)))
         def preview_profile(*_):
             p=PROFILES.get(mode.get(),PROFILES['Equilibrado'])
             effective.configure(text=(f"Pantalla: {p['target_fps']} FPS objetivo · paneles cada {p['render_seconds']:.2f} s · "
@@ -1944,7 +1980,7 @@ class Desktop(DesktopServices,StrategyDirectory):
             label(row,textvariable=val,color=CYAN,size=10,bold=True).pack(side='right')
             slider=tk.Scale(shell,from_=low,to=high,resolution=step,orient='horizontal',variable=val,
                 bg=BG,fg=CYAN,troughcolor=CARD,activebackground=CYAN,highlightthickness=0,
-                showvalue=False,length=390,bd=0)
+                showvalue=False,bd=0)
             slider.pack(fill='x',pady=(0,9))
             return val
         memory=scale('PRESUPUESTO DE MEMORIA PARA IA (MB)','memory_budget_mb',512,16384,256,'MB')
@@ -1986,8 +2022,11 @@ class Desktop(DesktopServices,StrategyDirectory):
                 cfg=copy.deepcopy(self.cfg)
                 cfg['desktop'].update(performance_profile=mode.get(),memory_budget_mb=memory.get(),
                     model_context_tokens=context.get(),model_keep_alive_seconds=keep.get(),model_use_gpu=gpu.get())
+                # The visible idle slider must also control the managed llama.cpp process.
+                cfg['assistant']['local_runtime_idle_seconds']=keep.get()
                 from settings_effects import validate_form
                 saved=validate_form(cfg);save_config(saved,self.folder/'akira_config.json');self.cfg.update(saved)
+                self.assistant._managed_model.settings['local_runtime_idle_seconds']=keep.get()
                 self._apply_performance()
                 if 'desktop.performance_profile' in self.setting_vars:self.setting_vars['desktop.performance_profile'].set(mode.get())
                 self.desktop_toast('Optimizador','Límites aplicados al asistente y a la interfaz. Las operaciones MT5 mantienen sus controles.')
@@ -2154,6 +2193,10 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.persist_window_size()
         self.end_call();self.cancel_voice_download();self.knowledge_worker.close();self.layout.save();self.stop.set();self.bridge.connected=False;self.bridge.starting=False
         self.assistant.cancel_current_reply()
+        # Inno Setup cannot replace/remove bundled DLLs held by a running model.
+        # Never terminate external Ollama or user-owned llama-server processes.
+        try:self.assistant._managed_model.shutdown()
+        except (AttributeError,OSError,RuntimeError):pass
         try:
             # Cancel the Tcl timer; each child still owns its registered Python
             # callback and will delete it once during normal widget destruction.

@@ -11,7 +11,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
-      - name: Obtener codigo privado
+      - name: Obtener código de AKIRA
         uses: actions/checkout@v4
 
       - name: Preparar Python de 64 bits
@@ -30,7 +30,7 @@ jobs:
       - name: Pruebas de regresion principales
         shell: pwsh
         run: |
-          python -m pytest -q tests/test_v1632_first_run.py tests/test_v1632_llama_setup.py tests/test_v1632_llama_smoke_contract.py tests/test_v1632_integrated_research_voice.py tests/test_v1632_resource_and_wheel.py tests/test_v1632_storage_cleanup.py tests/test_v1631_capital_adaptive.py tests/test_install_checks.py
+          python -m pytest -q tests/test_r5_user_video_regressions.py tests/test_v1632_first_run.py tests/test_v1632_llama_setup.py tests/test_v1632_llama_smoke_contract.py tests/test_v1632_integrated_research_voice.py tests/test_v1632_resource_and_wheel.py tests/test_v1632_storage_cleanup.py tests/test_v1631_capital_adaptive.py tests/test_install_checks.py
 
       - name: Compilar y autocontrolar AKIRA.exe en Windows
         shell: pwsh

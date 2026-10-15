@@ -172,7 +172,7 @@ class UninstallButtonTests(unittest.TestCase):
         with patch('application_management.launch_uninstaller',side_effect=OSError('No disponible')),patch.object(self.app,'show_message') as message:
             self.app.open_uninstaller()
         self.assertEqual(message.call_args.args[2],True)
-        self.assertIn('DESINSTALAR_AKIRA.cmd',message.call_args.args[1]);self.assertTrue(self.root.is_dir());self.assertFalse(self.api.sent)
+        self.assertIn('No disponible',message.call_args.args[1]);self.assertTrue(self.root.is_dir());self.assertFalse(self.api.sent)
 
 
 if __name__=='__main__':unittest.main()
