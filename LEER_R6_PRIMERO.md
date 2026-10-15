@@ -26,10 +26,18 @@ Este ZIP es código fuente; no es un instalador EXE. La aplicación instalada no
 
 1. Copia el contenido descomprimido a la raíz de tu repositorio akira en GitHub Desktop, conservando las carpetas assets, tests, installer y .github. Haz Commit y Push.
 2. GitHub → Actions → AKIRA Windows - verificar y compilar → Run workflow.
-3. Cuando esa ejecución termine correctamente, descarga AKIRA-16.3.3-R6-108-expresiones-instalador-Windows. Contiene un único AKIRA_16_3_3_R6_108_EXPRESIONES.exe.
+3. Cuando esa ejecución termine correctamente, descarga AKIRA-16.3.3-R6-108-expresiones-instalador-Windows-IA-INCLUIDA. Contiene un único AKIRA_16_3_3_R6_108_EXPRESIONES_IA_INCLUIDA.exe.
 4. Cierra AKIRA, ejecuta ese instalador y comprueba la marca R6 en la ventana. Los datos de usuario se conservan al actualizar.
 
 La conexión del asistente a GitHub devolvió 403 Resource not accessible by integration al intentar crear la rama. Esta entrega no se publicó automáticamente.
+
+## IA incluida en el instalador
+
+El nuevo EXE incluye el motor CPU/Vulkan y el modelo GGUF completo. La instalación ya no descarga el modelo desde Hugging Face y conserva el archivo al terminar. El instalador será más pesado que el anterior: el modelo por sí solo ocupa unos 2,5 GB.
+
+El modelo se valida mediante SHA-256 al compilar y después de instalar. Antes de publicar, Actions ejecuta el instalador real en una carpeta nueva, comprueba que el modelo, los motores y el desinstalador sigan presentes y exige una respuesta visible de la IA instalada. La prueba no descarga un modelo de reemplazo ni conecta a MT5.
+
+La nueva compilación e instalación de este cambio todavía deben completarse en Actions. La compilación anterior, número 10, sí superó el autocontrol de interfaz y la conversación con el motor antes de empaquetar; eso no comprobaba la instalación final.
 
 ## Verificación
 

@@ -42,13 +42,16 @@ class LlamaSetupTests(unittest.TestCase):
             self.assertEqual(int(args[args.index('--n-gpu-layers')+1]),0)
             with self.assertRaises(ValueError):managed.command('http://remote.example/v1/chat/completions')
 
-    def test_installer_has_safe_cancel_and_verified_model(self):
+    def test_installer_embeds_and_keeps_the_verified_model(self):
         installer=(ROOT/'installer'/'akira.iss').read_text(encoding='utf8')
-        self.assertIn('NextButtonClick',installer)
-        self.assertIn('AIPage.AbortedByUser',installer)
-        self.assertIn('DeleteFile(',installer)
         self.assertIn('7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5',installer)
-        self.assertIn('Flags: external',installer)
+        files=installer.split('[Files]',1)[1].split('[Icons]',1)[0]
+        model=next(line for line in files.splitlines() if line.startswith('Source:') and '.gguf' in line)
+        self.assertNotIn('external',model)
+        self.assertNotIn('deleteafterinstall',model)
+        self.assertIn('Hash:',model)
+        self.assertNotIn('CreateDownloadPage',installer)
+        self.assertIn('GetSHA256OfFile',installer)
         self.assertIn('SetupIconFile=',installer)
         self.assertIn('UninstallDisplayIcon=',installer)
         self.assertNotIn('CloseApplicationsFilter=*.exe',installer)
@@ -56,7 +59,8 @@ class LlamaSetupTests(unittest.TestCase):
     def test_ci_generates_actual_installer_artifact(self):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
-        self.assertIn('AKIRA-16.3.3-R6-108-expresiones-instalador-Windows',workflow)
+        self.assertIn('AKIRA-16.3.3-R6-108-expresiones-instalador-Windows-IA-INCLUIDA',workflow)
+        self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
         self.assertIn('tests/test_v1632_llama_setup.py',workflow)
 

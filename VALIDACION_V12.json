@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_3_3_R6_108_EXPRESIONES",
-  "tests": 1061,
-  "status": "VALIDACION_LOCAL_R6_AUTOCONTROL_WINDOWS_PENDIENTE",
+  "tests": 1067,
+  "status": "R6_IA_INCLUIDA_INSTALACION_WINDOWS_PENDIENTE",
   "date": "2026-10-15",
   "skipped": 0,
   "scope": "Los resultados locales están en VERIFICACION_R6; este contador es el objetivo de descubrimiento completo, no una afirmación de que toda la batería haya pasado. Windows y MT5 real no verificados.",

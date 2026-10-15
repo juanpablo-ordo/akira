@@ -1,0 +1,39 @@
+{
+  "build": "AKIRA_16_3_3_R6_108_EXPRESIONES",
+  "installer_revision": "IA_INCLUIDA",
+  "previous_windows_build": {
+    "run": 10,
+    "url": "https://github.com/juanpablo-ordo/akira/actions/runs/38702402706",
+    "native_ui_passed": true,
+    "prepackaged_local_chat_passed": true,
+    "installed_ai_was_not_checked": true
+  },
+  "bugs_fixed": [
+    "El modelo estaba marcado deleteafterinstall y podía eliminarse al terminar la instalación",
+    "La instalación dependía de volver a descargar el modelo desde el PC del usuario",
+    "Actions comprobaba el motor antes de empaquetar, sin comprobar la IA después de instalar"
+  ],
+  "new_installer": {
+    "model_embedded": true,
+    "model_downloaded_during_installation": false,
+    "model_retained_after_installation": true,
+    "hash_verified_at_compile_and_after_install": true,
+    "model_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5"
+  },
+  "selected_local_tests": {
+    "passed": 111,
+    "subtests_passed": 14,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "default_text_encoding_simulated": "CP1252"
+  },
+  "new_windows_installer_built_or_installed_here": false,
+  "added_windows_gate": "Ejecutar el instalador final, comprobar GGUF y ambos motores y desinstalador, validar SHA-256 y exigir conversación visible con el servidor CPU instalado, sin descargar modelos de reemplazo.",
+  "source_only_patch": true,
+  "trading_engine_changed": false,
+  "references": [
+    "https://jrsoftware.org/ishelp/topic_filessection.htm",
+    "https://huggingface.co/Qwen/Qwen3-4B-GGUF/blob/main/Qwen3-4B-Q4_K_M.gguf"
+  ]
+}
