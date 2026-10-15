@@ -1,14 +1,11 @@
-AKIRA 16.3.2 — Corrección de primer arranque en Windows
+AKIRA 16.3.4 R7 — CÓDIGO COMPLETO
 
-PROBLEMA: Al abrir el AKIRA.exe portable, buscaba C:\Users\<usuario>\akira_config.json y fallaba con FileNotFoundError.
+1. Copia TODO el contenido de este ZIP en la raíz de tu repositorio akira, incluyendo .github, assets, installer, tests y third_party. Haz Commit y Push en GitHub Desktop.
+2. En GitHub → Actions → AKIRA Windows - verificar y compilar → Run workflow, crea una ejecución NUEVA sobre la rama actualizada. Debe mostrar AKIRA 16.3.4 R7 · IA incluida.
+3. Solo cuando termine correctamente, descarga el artefacto AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA. Instala AKIRA_16_3_4_R7_IA_INCLUIDA.exe.
 
-CAMBIOS:
-* Las compilaciones portables guardan sus datos en %LOCALAPPDATA%\AKIRA, sin usar el directorio principal del usuario.
-* Si no hay configuración, AKIRA crea una inicial en modo OBSERVE y sin cuenta autorizada.
-* Nunca reescribe una configuración que ya existe (aunque sea inválida).
-* El workflow de Windows prueba el arranque sin configuración y sin --app-root antes de publicar el ejecutable.
-* Los instaladores antiguos con --app-root siguen admitidos.
+Este ZIP contiene fuentes; no actualiza la aplicación instalada por sí solo. R7 todavía necesita la compilación y prueba de instalación completa en Windows. Los datos personales, chats y configuración no están en este ZIP.
 
-PARA SUBIR: Extrae el contenido de este ZIP dentro de tu carpeta GitHub Desktop "akira" y acepta reemplazar; no metas una carpeta extra dentro. GitHub Desktop -> Commit to main -> Push origin. En Actions lanza un Run workflow NUEVO sobre main. Descarga el nuevo build (no re-run del commit antiguo).
+En R7: Ajustes → IA / INTERNET → ACCESO A FUENTES permite guardar la clave opcional de CoinGlass e importar una sesión YouTube cuando el sitio la exija. Las hipótesis de estrategias y los filtros realmente aplicables se ven en Estrategias → VER APRENDIZAJE.
 
-NO modifica la estrategia ni elimina operaciones de MT5; no contiene instalador final ni modelo de IA.
+Lee README.md para los cambios, condiciones y resultados. Los informes comprobados están en VERIFICACION_R7. Los documentos R4/R5/R6 describen entregas anteriores.

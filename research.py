@@ -1,5 +1,6 @@
 """Fuentes independientes en segundo plano; el ciclo MT5 nunca espera a internet."""
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime,timezone
 from pathlib import Path
 import copy,hashlib,json,math,threading,time
@@ -15,6 +16,13 @@ from urllib.parse import urlencode
 from evolution import EvolutionWorker
 from global_sources import market_feed,news_feed,NEWS_FEEDS,REFERENCE_SOURCES,market_consensus,fred_macro
 from quality_study import QualityStudy
+
+def local_research_endpoint(cfg):
+    assistant=cfg.get('assistant') or {}
+    endpoint=(cfg.get('research') or {}).get('local_ai_endpoint')
+    if assistant.get('local_runtime_enabled') and endpoint in (None,'','http://127.0.0.1:11434/api/chat','http://localhost:11434/api/chat'):
+        return assistant.get('local_endpoint') or endpoint
+    return endpoint or assistant.get('local_endpoint')
 
 def _review_value(value, depth=0, string_limit=260):
     """Bound external context explicitly; never alter executable price precision."""
@@ -183,7 +191,23 @@ class ContextWorker:
                 self.pending_reviews.pop(next(iter(self.pending_reviews)))
         self.wake.set();return queued
 
+    @contextmanager
+    def _local_session(self,cloud=False):
+        from akira_model_runtime import shared_runtime
+        assistant=self.cfg.get('assistant') or {}
+        if cloud or assistant.get('enabled') is False or not assistant.get('local_runtime_enabled'):
+            yield;return
+        if assistant.get('local_endpoint')!=local_research_endpoint(self.cfg):
+            yield;return
+        runtime=shared_runtime(assistant,self.root)
+        if runtime._paths() is None:
+            yield;return
+        with runtime.session(assistant['local_endpoint'],self.cfg.get('desktop') or {}):yield
+
     def _pending_summary(self,batch,sources):
+        with self._local_session():return self._pending_summary_impl(batch,sources)
+
+    def _pending_summary_impl(self,batch,sources):
         """One bounded committee request, with a separate verdict for every order."""
         from pending_verification import identity
         latest=batch[-1]['snapshot'];payload,meta=review_input(latest,sources,self.clock(),self.cfg['research'].get('external_stale_seconds',600),max_chars=13500)
@@ -198,7 +222,7 @@ class ContextWorker:
             '{"verdict":"APPROVE|REVISE|ABSTAIN","strategy":"TREND_PULLBACK|BREAKOUT|REVERSAL|RANGE",'
             '"reason":"máximo 140 caracteres; razones concretas de esta pendiente","missing":["dato o confirmación que falta"]}. '
             'APPROVE expresa compatibilidad técnica con evidencia disponible, no perfección ni permiso de riesgo. Las pendientes evalúan escenarios futuros; distingue sus condiciones de activación de los datos ausentes.\n')
-        acfg=self.cfg.get('assistant') or {};endpoint=self.cfg['research']['local_ai_endpoint']
+        acfg=self.cfg.get('assistant') or {};endpoint=local_research_endpoint(self.cfg)
         if acfg.get('enabled') is False:raise RuntimeError('El asistente está desactivado en ajustes; no se solicita una revisión de IA.')
         st=ollama_status(endpoint);available=st.get('models') or [];created=self.clock();started=time.monotonic();verified=False;verifier_error=''
         allow_cloud=bool(acfg.get('cloud') and acfg.get('cloud_optional',True) and self.cfg['research'].get('cloud'))
@@ -288,7 +312,7 @@ class ContextWorker:
                     found=youtube_search(query,cache_seconds=self.cfg['research']['youtube_discovery_seconds'])
                     if isinstance(found,dict):found=found.get('videos',found.get('items',[]))
                     videos.extend(found or [])
-                except Exception as e:errors.append(symbol+': '+type(e).__name__)
+                except Exception as e:errors.append(symbol+': '+str(e))
             unique=[];seen=set()
             for item in videos:
                 url=str(item.get('url',item.get('link','')) or '')
@@ -303,7 +327,7 @@ class ContextWorker:
                     # Reuse complete captions; a new opinion is not invented on each poll.
                     row=saved if saved and saved.get('status')=='analyzed' else read_youtube(url)
                     row={**row,'topic':symbol}
-                    if row.get('status')=='analyzed':rows.append(row);continue
+                    if row.get('status')=='analyzed':self.strategy_lab.ingest_source(row);rows.append(row);continue
                     if row.get('status')!='transcript' or not row.get('complete'):
                         self.store.put(row);rows.append(row);continue
                     chunks=transcript_chunks(row.get('body',''))
@@ -316,16 +340,21 @@ class ContextWorker:
                               'bias':sum(b*n for b,_,n in values)/denom,
                               'confidence':min(.18,sum(c*n for _,c,n in values)/denom),
                               'chunks':len(chunks),'meaning':'Opinión lexical de subtítulos completos; no verificación del vídeo ni señal de beneficio'}
-                    row.update(status='analyzed',summary=json.dumps(analysis,ensure_ascii=False));self.store.put(row);rows.append(row)
-                except Exception as e:errors.append(symbol+': subtítulos '+type(e).__name__)
+                    row.update(status='analyzed',summary=json.dumps(analysis,ensure_ascii=False));self.store.put(row);self.strategy_lab.ingest_source(row);rows.append(row)
+                except Exception as e:errors.append(symbol+': subtítulos '+str(e))
         if not rows and errors:raise RuntimeError('; '.join(errors))
-        return {'rows':rows,'errors':errors}
+        complete=any(r.get('complete') for r in rows)
+        return {'rows':rows,'errors':errors,**({} if complete else {'state':'NO_CAPTIONS','detail':'No se obtuvieron subtítulos completos; no se afirma haber aprendido estos videos.'})}
 
     def _strategy_reference(self):
         from strategy_lab import REFERENCE_URL
         saved=self.store.get(REFERENCE_URL)
         row=saved if saved and saved.get('complete') and saved.get('body') else read_youtube(REFERENCE_URL)
+        if not row.get('complete') or len(str(row.get('body') or ''))<1000:
+            self.store.put(row)
+            return {'state':'NO_CAPTIONS','detail':'El video compartido no entregó subtítulos completos. Estrategia sin aprender.'}
         data=self.strategy_lab.set_reference(row)
+        self.strategy_lab.ingest_source(row)
         self.store.put({**row,'topic':'Video de estrategia compartido','kind':'youtube_reference'})
         return {**data,'reference_only':True,'detail':'Referencia educativa recuperada; no es una señal de precio actual ni una estrategia validada.'}
 
@@ -345,6 +374,9 @@ class ContextWorker:
         return reports
 
     def _summary(self,snapshot,sources,cloud=False):
+        with self._local_session(cloud):return self._summary_impl(snapshot,sources,cloud)
+
+    def _summary_impl(self,snapshot,sources,cloud=False):
         """Fast structured review outside the MT5 loop; completion needs all assets."""
         if cloud:
             if not (self.cfg.get('assistant',{}).get('cloud',False) and self.cfg.get('assistant',{}).get('cloud_optional',True)):
@@ -367,7 +399,7 @@ class ContextWorker:
             text='\n'.join(c['text'] for x in response.get('output',[]) for c in x.get('content',[]) if c.get('type')=='output_text')
         else:
             from assistant_startup import AssistantStartup
-            acfg=self.cfg.get('assistant') or {};endpoint=self.cfg['research']['local_ai_endpoint']
+            acfg=self.cfg.get('assistant') or {};endpoint=local_research_endpoint(self.cfg)
             st=ollama_status(endpoint);available=st.get('models') or []
             if not available:raise RuntimeError('AKIRA no tiene un asistente de texto disponible; pulsa REPARAR ASISTENTE')
             model_name=AssistantStartup(self.root,self.cfg).preferred_model(available,endpoint) or choose_text_model(available,
@@ -447,6 +479,9 @@ class ContextWorker:
                 self.jobs.pop(name);old=self.sources.get(name,{})
                 try:
                     data=future.result()
+                    if isinstance(data,dict) and data.get('state') in ('CONFIG_REQUIRED','UNSUPPORTED','NO_CAPTIONS'):
+                        self.sources[name]={'data':data,'updated':0,'last_attempt':now,'error':data['state']+': '+str(data.get('detail',''))}
+                        self.failures[name]=0;self.due[name]=now+21600;self._save();continue
                     if isinstance(data,dict) and data.get('error') and not data.get('items'):raise RuntimeError(str(data['error']))
                     if name=='news' and isinstance(data,dict) and not data.get('items') and data.get('errors'):
                         raise RuntimeError('RSS sin datos: '+str(data['errors']))
@@ -467,6 +502,9 @@ class ContextWorker:
                     count=self.failures.get(name,0)+1;self.failures[name]=count
                     self.sources[name]={**old,'last_attempt':now,'error':type(e).__name__+': '+str(e)[:350]}
                     self.due[name]=now+min(600,15*2**min(count,5))
+                    from youtube_support import classify_error
+                    if name in ('youtube','strategy_reference') and classify_error(e) in ('AUTH_REQUIRED','RATE_LIMITED','MISSING_RUNTIME'):
+                        self.due[name]=now+3600
                 self._save()
             snapshot=copy.deepcopy(self.snapshot);sources={name:copy.deepcopy(row) for name,row in self.sources.items() if self.source_enabled(name)}
             self._pending_tick(now,sources)

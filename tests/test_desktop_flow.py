@@ -2,7 +2,7 @@
 import json,queue
 import unittest
 from contextlib import ExitStack
-from unittest.mock import patch
+from unittest.mock import patch,Mock
 import desktop
 from engine import Engine
 from tests.fixtures import PendingCase
@@ -14,7 +14,7 @@ class Variable:
 
 class Widget:
     def __init__(self,parent=None,**kw):
-        self.parent=parent;self.options=kw;self.items={};self.text='';self.selected=();self.tags={};self.tabs=[];self.calls=[];self.expression='idle';self.children=[]
+        self.director=kw.get('director') or Mock();self.parent=parent;self.options=kw;self.items={};self.text='';self.selected=();self.tags={};self.tabs=[];self.calls=[];self.expression='idle';self.children=[]
     def cget(self,key):return self.options.get(key,'#020712')
     def configure(self,*args,**kw):self.options.update(kw)
     config=configure
@@ -55,7 +55,7 @@ class Widget:
         if page is not None:self.active=page
         return getattr(self,'active',None)
     def update_data(self,data):self.data=data
-    def set_expression(self,value):self.expression=value
+    def set_expression(self,value,context=''):self.expression=value
     def __getattr__(self,name):
         if name in ('theme_use','map','layout','pack','pack_propagate','place','place_forget','grid','columnconfigure','rowconfigure','heading','column','bind','see','after','after_idle','after_cancel','title','geometry','minsize','iconbitmap','protocol','destroy','itemconfigure','focus_set','set','option_add','tag_remove','selection_set','selection_clear'):
             return lambda *args,**kw:self.calls.append((name,args,kw))
@@ -123,7 +123,8 @@ class DesktopFlowTests(PendingCase,unittest.TestCase):
         self.assertTrue(all('Otra Akira' in panel.detail.options.get('text','') for panel in self.app.panels.values()))
 
     def test_visible_chat_shortcut_opens_tab_and_requests_entry_focus(self):
-        self.app.open_chat_button.options['command']()
+        self.assertFalse(hasattr(self.app,'open_chat_button'))
+        self.app.open_chat()
         self.assertIs(self.app.book.active,self.app.pages[desktop.TAB_NAMES[5]])
         callback=self.window.calls[-1][1][0];callback()
         self.assertEqual(self.app.chat_entry.calls[-1][0],'focus_set')

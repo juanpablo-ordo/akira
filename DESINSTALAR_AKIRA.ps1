@@ -1,4 +1,4 @@
-param([switch]$SelfTest,[switch]$Worker,[switch]$EraseAll,[string]$ResultPath)
+﻿param([switch]$SelfTest,[switch]$Worker,[switch]$EraseAll,[string]$ResultPath)
 $ErrorActionPreference='Stop'
 
 function Write-AkiraJson {

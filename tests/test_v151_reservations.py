@@ -175,7 +175,7 @@ class Reservation151Tests(PendingCase,unittest.TestCase):
 
 class StartupReservation151Tests(PendingCase,unittest.TestCase):
     def setUp(self):
-        super().setUp();self.cfg=load_config(DEFAULT);self.g.cfg=self.cfg
+        super().setUp();self.cfg=load_config(DEFAULT);self.cfg['mode']='trade';self.g.cfg=self.cfg
         self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close)
 
     def test_old_cancel_without_money_does_not_lock_gold_at_startup(self):

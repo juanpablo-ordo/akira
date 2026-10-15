@@ -7,10 +7,18 @@ from strategy import Plan
 from execution import Gateway,Journal,Reporter,Blocked,PENDING,REMOVE,MODIFY,SLTP,DEAL,OWN_PENDING
 from tests.fake_mt5 import Clock,FakeMT5
 
+def optional_ollama_fixture(cfg):
+    """Explicit legacy backend used ONLY by tests that mock the Ollama API."""
+    cfg['assistant'].update(local_runtime_enabled=False,local_endpoint='http://127.0.0.1:11434/api/chat',
+        local_model='qwen3:8b',local_model_lite='qwen3:4b',fast_chat_model='qwen3:8b')
+    cfg['research']['local_ai_endpoint']='http://127.0.0.1:11434/api/chat'
+    return cfg
+
 class PendingCase:
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name);self.clock=Clock();self.api=FakeMT5(self.clock);self.cfg=load_config(DEFAULT);self.cfg['mode']='trade'  # fixtures de ejecución usan opt-in explícito
+        optional_ollama_fixture(self.cfg)
         # La serie sintética base es deliberadamente simple y no contiene objetivos
         # swing H1/H4/D1 reales. Para pruebas de transporte/actor usamos un modo
         # permisivo SOLO dentro del fixture; las pruebas QUALITY-FIRST reactivan

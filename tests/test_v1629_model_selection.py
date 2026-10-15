@@ -1,3 +1,4 @@
+from tests.fixtures import optional_ollama_fixture
 """Conversation selection with real profile files and isolated installer state."""
 import contextlib,io,json,os,sys,tempfile,time,unittest
 from pathlib import Path
@@ -13,7 +14,7 @@ class ConversationProfileTests(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name);self.appdata=self.root/'Windows/LocalAppData'
         self.profile=self.appdata/'AKIRA/assistant_startup.json';self.profile.parent.mkdir(parents=True)
-        self.cfg=load_config(DEFAULT);self.cfg['assistant'].update(auto_research=False,auto_youtube_research=False,self_review=False)
+        self.cfg=optional_ollama_fixture(load_config(DEFAULT));self.cfg['assistant'].update(auto_research=False,auto_youtube_research=False,self_review=False)
         with patch.dict(os.environ,{'LOCALAPPDATA':str(self.appdata)}):
             self.bot=AkiraAssistant(self.cfg,self.root/'app')
             self.bot.startup=AssistantStartup(self.bot.root,self.cfg,platform='nt')

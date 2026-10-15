@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import subprocess
 import traceback
+import tempfile
 
 from installer.smoke_local_ai import SHA, sha256, smoke
 
@@ -39,6 +40,7 @@ def validate_installed_payload(root):
         'gpu_server': root / 'local_ai/bin/llama-server.exe',
         'cpu_server': root / 'local_ai/cpu/llama-server.exe',
         'uninstaller': root / 'unins000.exe',
+        'youtube_runtime': root / 'bin/deno.exe',
         'model': root / 'local_ai/models' / MODEL_NAME,
     }
     for name, path in files.items():
@@ -55,12 +57,21 @@ def validate_installed_payload(root):
 
 def check_installed_ai(root):
     files = validate_installed_payload(root)
+    with tempfile.TemporaryDirectory(prefix='akira-installed-components-') as temporary:
+        report=Path(temporary)/'components.json'
+        result=subprocess.run([str(files['application']),'--local-components-check',str(report),'--app-root',temporary],
+            timeout=45,capture_output=True,text=True,encoding='utf-8',errors='replace')
+        components=json.loads(report.read_text(encoding='utf-8')) if report.is_file() else {}
+        if result.returncode or components.get('status')!='PASSED':
+            raise RuntimeError('Componentes instalados sin verificar: '+str(components.get('error') or result.stderr[-500:]))
+        if Path(components.get('model','')).resolve()!=files['model'].resolve():
+            raise RuntimeError('La aplicación no encontró su propio modelo instalado.')
     # Call smoke directly: get_model would conceal a missing installed file by
     # downloading another copy. A health check alone cannot pass this test.
     smoke(files['cpu_server'], files['model'])
     return {'status': 'PASSED', 'model_sha256': SHA, 'model_present_after_setup': True,
             'visible_chat_verified': True, 'model_downloaded_by_check': False,
-            'live_account_used': False, 'root': str(Path(root).resolve())}
+            'installed_components_verified': True, 'live_account_used': False, 'root': str(Path(root).resolve())}
 
 
 def main():

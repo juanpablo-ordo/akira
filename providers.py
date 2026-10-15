@@ -143,9 +143,11 @@ def _youtube_ytdlp_search(query):
         def info(self,*args): pass
         def warning(self,*args): pass
         def error(self,*args): pass
-    with yt_dlp.YoutubeDL({"quiet":True,"logger":Quiet(),"extract_flat":True,"skip_download":True,
-                           "socket_timeout":6,"retries":0,"extractor_retries":0,"playlistend":4}) as ydl:
-        data=ydl.extract_info("ytsearch4:"+query,download=False)
+    from youtube_support import options, explained
+    try:
+        with yt_dlp.YoutubeDL(options(extract_flat=True,socket_timeout=6,retries=0,extractor_retries=0,playlistend=4)) as ydl:
+            data=ydl.extract_info("ytsearch4:"+query,download=False)
+    except Exception as error:raise explained(error) from error
     return [{"title":x.get("title",""),"author":x.get("channel") or x.get("uploader", ""),
              "date":x.get("upload_date") or "fecha no suministrada",
              "description":x.get("description") or x.get("fulltitle") or "",
@@ -268,6 +270,9 @@ def coinglass_bundle(asset="BTC"):
     métricas de mercado sin que la estrategia tenga que quedarse sin contexto.
     """
     asset=str(asset).upper()
+    if asset!='BTC':return {'asset':asset,'state':'UNSUPPORTED','detail':'CoinGlass no aporta derivados XAU confirmados. Se conserva el contexto MT5 y macro; no se sustituyen por BTC.'}
+    if not get_secret('COINGLASS_API_KEY'):
+        return {'asset':asset,'state':'CONFIG_REQUIRED','detail':'Clave CoinGlass opcional: Ajustes → IA / INTERNET → ACCESO A FUENTES. Los derivados públicos se consultan por separado.'}
     probe=coinglass_auth_probe()
     if probe.get("state")=="plan_limited":
         detail='CoinGlass reconoció la clave pero el plan no habilita endpoints. '

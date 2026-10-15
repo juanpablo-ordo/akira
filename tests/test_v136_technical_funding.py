@@ -22,7 +22,7 @@ class TechnicalFunding136Tests(PendingCase,unittest.TestCase):
     def setUp(self):
         super().setUp()
         # Estas regresiones del selector usan TODOS los defaults de producción.
-        self.cfg=load_config(DEFAULT);self.g.cfg=self.cfg
+        self.cfg=load_config(DEFAULT);self.cfg['mode']='trade';self.g.cfg=self.cfg
         # La vía MARKET sigue disponible por configuración explícita; 16.2 usa pendientes por defecto.
         self.cfg['execution']['pending_only']=False
         self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close)

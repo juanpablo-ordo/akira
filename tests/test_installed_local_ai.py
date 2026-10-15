@@ -1,5 +1,6 @@
 """Regression: a build-time AI response does not prove the installed AI exists."""
 import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -15,12 +16,17 @@ class InstalledAITests(unittest.TestCase):
         self.folder=Path(temporary.name)
         self.root=self.folder/'installed'
         self.model=self.root/'local_ai/models'/check.MODEL_NAME
-        for name in ('AKIRA.exe','local_ai/bin/llama-server.exe','local_ai/cpu/llama-server.exe','unins000.exe'):
+        for name in ('AKIRA.exe','local_ai/bin/llama-server.exe','local_ai/cpu/llama-server.exe','unins000.exe','bin/deno.exe'):
             path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'MZtest executable')
         self.model.parent.mkdir(parents=True,exist_ok=True)
         self.model.write_bytes(b'GGUFsmall synthetic fixture')
         digest=hashlib.sha256(self.model.read_bytes()).hexdigest()
         pinned=patch.object(check,'SHA',digest);pinned.start();self.addCleanup(pinned.stop)
+        def components(command,**kwargs):
+            Path(command[2]).write_text(json.dumps({'status':'PASSED','model':str(self.model.resolve())}),encoding='utf-8')
+            return Mock(returncode=0,stderr='')
+        self.components=patch.object(check.subprocess,'run',side_effect=components)
+        self.components.start();self.addCleanup(self.components.stop)
 
     def test_verifies_actual_installed_bytes_and_uses_installed_cpu_server(self):
         with patch.object(check,'smoke') as inference:
@@ -33,6 +39,14 @@ class InstalledAITests(unittest.TestCase):
         self.model.unlink()
         with patch.object(check,'smoke') as inference, self.assertRaises(FileNotFoundError):
             check.check_installed_ai(self.root)
+        inference.assert_not_called()
+
+    def test_failed_installed_component_check_stops_before_inference(self):
+        def failed(command,**kwargs):
+            Path(command[2]).write_text(json.dumps({'status':'FAILED','error':'Deno no ejecutable'}),encoding='utf-8')
+            return Mock(returncode=1,stderr='')
+        with patch.object(check.subprocess,'run',side_effect=failed),patch.object(check,'smoke') as inference:
+            with self.assertRaisesRegex(RuntimeError,'Deno no ejecutable'):check.check_installed_ai(self.root)
         inference.assert_not_called()
 
     def test_truncated_or_changed_model_is_rejected(self):

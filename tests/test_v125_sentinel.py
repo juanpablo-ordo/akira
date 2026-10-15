@@ -1,3 +1,4 @@
+from tests.fixtures import optional_ollama_fixture
 import copy
 import json
 import tempfile
@@ -16,7 +17,7 @@ from tests.fixtures import PendingCase
 class SentinelV125EngineTests(PendingCase, unittest.TestCase):
     def test_schema_build_and_safe_risk_override_defaults(self):
         self.assertEqual(self.cfg['schema_version'], 1600)
-        self.assertEqual(BUILD_ID, 'AKIRA_16_3_3_R6_108_EXPRESIONES')
+        self.assertEqual(BUILD_ID, 'AKIRA_16_3_4_R7')
         self.assertTrue(self.cfg['execution']['always_show_dual_scenarios'])
         self.assertFalse(self.cfg['risk']['min_lot_structural_override_enabled'])
         self.assertLessEqual(self.cfg['symbol_profiles']['BTCUSDm']['pending_hard_max_rr'], 4.4)
@@ -82,7 +83,7 @@ class SentinelV125AssistantTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self.cfg = load_config(DEFAULT)
+        self.cfg = optional_ollama_fixture(load_config(DEFAULT))
 
     def test_short_entity_followup_forces_research(self):
         self.assertTrue(AkiraAssistant._should_research_fact('hbo'))

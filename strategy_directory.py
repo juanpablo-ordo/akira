@@ -15,6 +15,7 @@ class StrategyDirectory:
   reference=label(win,'Video compartido: contenido pendiente de recuperar y comprobar.',MUTED,9,anchor='w',wraplength=1050);reference.pack(fill='x',padx=15)
   self.strategy_refresh_button=button(controls,'GENERAR Y EVALUAR AHORA',lambda:self.async_request({'action':'strategy_lab_refresh'},'Solicitada evaluación de estrategias en segundo plano'),CYAN);self.strategy_refresh_button.pack(side='left')
   self.strategy_export_button=button(controls,'DESCARGAR DIRECTORIO',self.download_strategy_directory,BLUE);self.strategy_export_button.pack(side='right')
+  button(controls,'VER APRENDIZAJE',self.show_strategy_adaptation,BLUE).pack(side='left',padx=6)
   panes=tk.PanedWindow(win,orient=tk.HORIZONTAL,bg=BG,sashwidth=9,sashrelief=tk.RAISED);panes.pack(fill='both',expand=True,padx=15,pady=8)
   left=tk.Frame(panes,bg=PANEL);right=tk.PanedWindow(panes,orient=tk.VERTICAL,bg=BG,sashwidth=9);panes.add(left,minsize=280);panes.add(right,minsize=380)
   viewport=tk.Frame(left,bg=PANEL);viewport.pack(fill='both',expand=True)
@@ -87,6 +88,13 @@ class StrategyDirectory:
    elif rows:tree.selection_set(next(iter(rows)))
    show();render_job[0]=win.after(2000,render)
   render()
+ def show_strategy_adaptation(self):
+  from strategy_adaptation import report_text
+  summary=((self.view.get('research') or {}).get('strategy_lab') or {}).get('adaptation') or {}
+  win=self.service_dialog('Aprendizaje de estrategias',850,640)
+  box=text_box(win,20);box.pack(fill='both',expand=True,padx=16,pady=12)
+  scroll=ttk.Scrollbar(win,command=box.yview);scroll.pack(side='right',fill='y');box.configure(yscrollcommand=scroll.set)
+  box.insert('end',report_text(summary));box.configure(state='disabled')
  def download_strategy_directory(self):
   summary=copy.deepcopy((self.view.get('research') or {}).get('strategy_lab') or {})
   destination=filedialog.askdirectory(parent=self.strategy_window,title='Guardar directorio de estrategias con sus imágenes')

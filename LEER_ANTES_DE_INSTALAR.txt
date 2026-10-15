@@ -1,26 +1,11 @@
-AKIRA 16.3.2 — CÓDIGO CANDIDATO / NO INSTALAR SOBRE UNA CUENTA REAL
+AKIRA 16.3.4 R7 — CÓDIGO COMPLETO
 
-ESTE ZIP CONTIENE CÓDIGO FUENTE. NO CONTIENE UN INSTALADOR .EXE NUEVO
-COMPILADO Y VALIDADO PARA WINDOWS. NO EJECUTAR INSTALADORES DE VERSIONES
-ANTERIORES CON ESTE CÓDIGO NI COPIAR ARCHIVOS SOBRE UNA INSTALACIÓN ACTIVA.
+1. Copia TODO el contenido de este ZIP en la raíz de tu repositorio akira, incluyendo .github, assets, installer, tests y third_party. Haz Commit y Push en GitHub Desktop.
+2. En GitHub → Actions → AKIRA Windows - verificar y compilar → Run workflow, crea una ejecución NUEVA sobre la rama actualizada. Debe mostrar AKIRA 16.3.4 R7 · IA incluida.
+3. Solo cuando termine correctamente, descarga el artefacto AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA. Instala AKIRA_16_3_4_R7_IA_INCLUIDA.exe.
 
-MEJORAS COMPROBADAS EN PRUEBAS SIN MT5 REAL:
-- Corrección anti-bucle: las órdenes aún válidas no se cancelan por
-  una diferencia de calificación heurística (desactivado por defecto).
-- La cancelación de zonas huérfanas requiere edad y evidencia nueva;
-  la invalidación clara por precio/estructura sigue habilitada.
-- Configuración del motor local llama.cpp, opcional, con supervisión
-  de procesos iniciados por Akira y descarga por inactividad.
-- Sugerencias para NVIDIA RTX 5060 Ti de 8GB y 32GB de RAM.
-- El motor financiero y su simulador mantienen BTCUSDm y XAUUSDm.
-- Actualización de los números de versión en la interfaz y metadatos.
+Este ZIP contiene fuentes; no actualiza la aplicación instalada por sí solo. R7 todavía necesita la compilación y prueba de instalación completa en Windows. Los datos personales, chats y configuración no están en este ZIP.
 
-FALTA ANTES DE USAR O DISTRIBUIR:
-- Modelo GGUF, ejecutable llama-server.exe y pruebas reales de memoria/GPU.
-- Instalador único recompilado y prueba completa de instalación/desinstalación Windows.
-- Forward-testing real en demo, historial fuera de muestra, costes y rentabilidad.
-- Verificación de datos externos y de fuentes del mercado; no probados ahora.
-- Rediseño final completo, IA de voz JARVIS y actualizaciones desde sitio web.
+En R7: Ajustes → IA / INTERNET → ACCESO A FUENTES permite guardar la clave opcional de CoinGlass e importar una sesión YouTube cuando el sitio la exija. Las hipótesis de estrategias y los filtros realmente aplicables se ven en Estrategias → VER APRENDIZAJE.
 
-El modelo no tiene conciencia. Ningún parámetro o puntuación garantiza ganancias.
-Lee CAMBIOS_16_3_2_Y_HARDWARE.md antes de utilizar el código.
+Lee README.md para los cambios, condiciones y resultados. Los informes comprobados están en VERIFICACION_R7. Los documentos R4/R5/R6 describen entregas anteriores.

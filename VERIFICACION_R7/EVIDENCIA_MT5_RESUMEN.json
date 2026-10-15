@@ -1,0 +1,66 @@
+{
+  "ticks": {
+    "XAUUSDm_202610122000_202610132057.csv": {
+      "sha256": "bec4fb26ec6d61c09679d187f4aba06bfde2f8b9db803311a944e8782d2fd6b9",
+      "ticks": 220875,
+      "first": "2026-10-12 20:00:00.197000",
+      "last": "2026-10-13 20:57:59.069000",
+      "maximum_gap_seconds": 3757.986,
+      "median_spread": 0.23999999999978172,
+      "maximum_spread": 0.48000000000047294,
+      "timezone": "No indicada en el export; no se infiere UTC."
+    },
+    "BTCUSDm_202610122000_202610132103.csv": {
+      "sha256": "f5c88b82fd83d54dcfaef81c3ab71fe5ae842622d01324aacb58e5e04c197c94",
+      "ticks": 137187,
+      "first": "2026-10-12 20:00:00.234000",
+      "last": "2026-10-13 21:03:59.828000",
+      "maximum_gap_seconds": 14.69,
+      "median_spread": 6.399999999994179,
+      "maximum_spread": 6.400000000008731,
+      "timezone": "No indicada en el export; no se infiere UTC."
+    }
+  },
+  "scope": "Datos originales conservados fuera del código. Resultados de continuidad no equivalen a rentabilidad.",
+  "recorded_incident": {
+    "window": "2026.10.13 11:29:00–11:31:56 (hora exportada; zona desconocida)",
+    "orders": 81,
+    "akira_comment_orders": 81,
+    "canceled": 81,
+    "identical_geometry_groups": [
+      {
+        "symbol": "BTCUSDm",
+        "type": "sell stop",
+        "entry": 82989.0,
+        "sl": 83173.37,
+        "tp": 82737.7,
+        "count": 30
+      },
+      {
+        "symbol": "BTCUSDm",
+        "type": "sell stop",
+        "entry": 83004.86,
+        "sl": 83171.32,
+        "tp": 82737.78,
+        "count": 25
+      },
+      {
+        "symbol": "BTCUSDm",
+        "type": "sell stop",
+        "entry": 82988.7,
+        "sl": 83173.37,
+        "tp": 82737.74,
+        "count": 25
+      },
+      {
+        "symbol": "BTCUSDm",
+        "type": "sell stop",
+        "entry": 83004.86,
+        "sl": 83171.32,
+        "tp": 82720.89,
+        "count": 1
+      }
+    ],
+    "attribution": "Comentario AKP/AKR; el historial no verifica por sí solo el magic del programa."
+  }
+}

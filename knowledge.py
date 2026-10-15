@@ -23,6 +23,7 @@ class KnowledgeStore:
             db.execute('PRAGMA journal_mode=WAL')
             db.execute('CREATE TABLE IF NOT EXISTS sources (url TEXT PRIMARY KEY,title TEXT,topic TEXT,kind TEXT,published TEXT,fetched REAL,digest TEXT,body TEXT,summary TEXT,status TEXT)')
             db.execute('CREATE TABLE IF NOT EXISTS conversation (id INTEGER PRIMARY KEY,at REAL,role TEXT,body TEXT)')
+            db.execute('CREATE TABLE IF NOT EXISTS source_metadata(url TEXT PRIMARY KEY,body TEXT)')
             self._fts=False
             try:
                 exists=db.execute("SELECT 1 FROM sqlite_master WHERE name='source_index'").fetchone()
@@ -48,15 +49,19 @@ class KnowledgeStore:
                 digest,body,str(row.get('summary',''))[:18000],str(row.get('status','read')))
         with self.db() as db:
             db.execute('INSERT OR REPLACE INTO sources VALUES (?,?,?,?,?,?,?,?,?,?)',values)
+            metadata={k:row[k] for k in ('author','complete','caption_type','language','evidence_origin') if k in row}
+            db.execute('INSERT OR REPLACE INTO source_metadata VALUES (?,?)',(str(row['url']),json.dumps(metadata,ensure_ascii=False)))
         return digest
 
     def get(self,url):
         with self.db() as db:
             row=db.execute('SELECT * FROM sources WHERE url=?',(url,)).fetchone()
+            metadata=db.execute('SELECT body FROM source_metadata WHERE url=?',(url,)).fetchone()
         if not row:return None
         result=dict(row)
         try:result['complete']=json.loads(result.get('summary') or '{}').get('source_complete',False) is True
         except (TypeError,ValueError):result['complete']=False
+        if metadata:result.update(json.loads(metadata[0]))
         return result
 
     def search(self,query,limit=6):
@@ -113,10 +118,14 @@ class PublicRedirect(HTTPRedirectHandler):
         return super().redirect_request(req,fp,code,msg,headers,newurl)
 
 
-def read_public(url,timeout=10,max_bytes=1500000):
+def read_public(url,timeout=10,max_bytes=1500000,headers=None,cookiejar=None):
     url=public_url(url)
-    req=Request(url,headers={'User-Agent':'AkiraResearch/2.0','Accept':'text/html,application/json,text/plain,text/vtt'})
-    with build_opener(PublicRedirect()).open(req,timeout=timeout) as res:
+    safe_headers={'User-Agent':'AkiraResearch/2.0','Accept':'text/html,application/json,text/plain,text/vtt'}
+    safe_headers.update({k:v for k,v in (headers or {}).items() if k.lower() in ('user-agent','accept-language','referer')})
+    req=Request(url,headers=safe_headers)
+    from urllib.request import HTTPCookieProcessor
+    handlers=[PublicRedirect()]+([HTTPCookieProcessor(cookiejar)] if cookiejar is not None else [])
+    with build_opener(*handlers).open(req,timeout=timeout) as res:
         kind=str(res.headers.get('Content-Type','')).lower()
         if kind and not any(t in kind for t in ('text/','json','xml')):
             raise ValueError('La fuente no ofrece texto público legible')
@@ -170,11 +179,15 @@ def read_youtube(url,extractor=None):
     parts=urlsplit(str(url)); host=(parts.hostname or '').lower()
     if host not in ('youtube.com','www.youtube.com','m.youtube.com','youtu.be'):
         raise ValueError('Usa una URL de vídeo de YouTube')
+    cookiejar=None;headers={}
     if extractor is None:
         import yt_dlp
-        options={'quiet':True,'no_warnings':True,'skip_download':True,'noplaylist':True,
-                 'socket_timeout':10,'retries':1,'extractor_retries':1}
-        with yt_dlp.YoutubeDL(options) as ydl:info=ydl.extract_info(url,download=False)
+        from youtube_support import options, explained
+        try:
+            with yt_dlp.YoutubeDL(options()) as ydl:
+                info=ydl.extract_info(url,download=False);cookiejar=ydl.cookiejar
+                headers=info.get('http_headers') or {}
+        except Exception as error:raise explained(error) from error
     else:info=extractor(url)
     tracks=info.get('subtitles') or {}; automatic=info.get('automatic_captions') or {}
     candidates=[]
@@ -189,7 +202,7 @@ def read_youtube(url,extractor=None):
     errors=[]
     for lang,name,track in candidates[:6]:
         try:
-            raw,_=read_public(track['url'])
+            raw,_=read_public(track['url'],headers=headers,cookiejar=cookiejar)
             body=parse_captions(raw,track['ext'])
             if len(body)<40:continue
             truncated=len(body)>160000

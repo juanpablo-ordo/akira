@@ -6,8 +6,11 @@ from windows_identity import set_identity,application_root
 
 if __name__=='__main__':
     set_identity()
-    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');parser.add_argument('--local-components-check');args=parser.parse_args()
     if args.app_root:os.environ['AKIRA_APP_ROOT']=str(Path(args.app_root).resolve())
+    if args.local_components_check:
+        from local_components import check_components
+        sys.exit(check_components(args.local_components_check,application_root()))
     if args.first_run_check:
         # Non-interactive installed-application smoke test, also used in CI.
         import json

@@ -1,6 +1,7 @@
 """Critical modules and executable render checks shared by builder and app."""
-UI_CHECK_VERSION=6
+UI_CHECK_VERSION=7
 UI_MODULES=('desktop','desktop_services','security_details','settings_effects',
+    'youtube_support','strategy_adaptation','local_components',
     'akira_expressions','akira_live2d','expression_gallery','desktop_layout','cyber_ui','chart_render','chart_indicators','analysis_details','operation_report',
     'risk_reservations','operation_verifier','pending_verification','selection_trials','paired_study','quality_study',
     'trade_quality_gate','strategy_lab','strategy_directory','application_management','position_events','native_ui_check','tests.fake_mt5')
@@ -8,7 +9,7 @@ UI_MODULES=('desktop','desktop_services','security_details','settings_effects',
 REQUIRED_RENDER_CHECKS=('orders','positions','charts','analysis','sources','context','privacy','visible_amounts',
     'closure_notifications','live_cycle','loop_alive','no_broker_requests','pending_verification',
     'verification_bar','verification_controls','strategy_directory','uninstall_control',
-    'expression_catalog','avatar_artwork','compact_controls','resizable_layout')
+    'expression_catalog','avatar_artwork','avatar_sync','source_access_controls','compact_controls','resizable_layout')
 
 def require_render_check(report):
     check=report.get('render_check') or {}

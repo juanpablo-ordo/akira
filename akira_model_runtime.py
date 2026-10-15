@@ -1,4 +1,4 @@
-"""Optional embedded llama.cpp PROCESS SUPERVISION (not a bundled model).
+"""Installed llama.cpp process supervision with bundled CPU/model recovery.
 
 Never terminates Ollama or arbitrary llama-server processes. This class only
 owns subprocesses launched by this specific AkiraAssistant instance. Localhost
@@ -7,9 +7,23 @@ only; zero network/model downloads; financial Engine never imports this module.
 from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
-import os, subprocess, sys, threading, time
+import os, subprocess, sys, threading, time, weakref
 from urllib.parse import urlsplit
 from urllib.request import urlopen
+
+_SHARED=weakref.WeakValueDictionary()
+_SHARED_LOCK=threading.Lock()
+
+
+def shared_runtime(settings,log_root,profile=None):
+    """Chat and research must never launch rival servers on the same port."""
+    key=(str(Path(log_root).resolve()),str((settings or {}).get('local_endpoint') or ''))
+    with _SHARED_LOCK:
+        runtime=_SHARED.get(key)
+        if runtime is None:
+            runtime=ManagedLlamaProcess(settings,profile=profile,log_root=log_root)
+            _SHARED[key]=runtime
+        return runtime
 
 
 def hardware_profile(ram_gb=32, gpu_vram_gb=8, cpu_cores=12):
@@ -30,7 +44,7 @@ def hardware_profile(ram_gb=32, gpu_vram_gb=8, cpu_cores=12):
 
 
 class ManagedLlamaProcess:
-    def __init__(self, settings, profile=None, clock=time.monotonic):
+    def __init__(self, settings, profile=None, clock=time.monotonic, log_root=None):
         self.settings=settings or {}
         self.profile=profile or hardware_profile()
         self.clock=clock
@@ -40,17 +54,24 @@ class ManagedLlamaProcess:
         self.last_use=clock()
         self._watcher=None
         self._force_cpu=False  # Automatic fallback if Vulkan cannot start on this PC.
+        self._closed=False
+        self.log_path=Path(log_root)/'logs'/'IA_LOCAL.log' if log_root is not None else None
+        self.path_resolution={}
 
     def _paths(self):
         exe_value=str(self.settings.get('local_runtime_exe') or '').strip()
         model_value=str(self.settings.get('local_runtime_model') or '').strip()
-        if not exe_value or not model_value:return None
         # Resolve against AKIRA.exe, never the user's current working directory.
         # The bundled files sit next to the application, outside PyInstaller's _internal.
         app_dir=Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent
-        exe=Path(exe_value);model=Path(model_value)
-        if not exe.is_absolute():exe=app_dir/exe
-        if not model.is_absolute():model=app_dir/model
+        def resolve(value, candidates):
+            configured=Path(os.path.expandvars(value)).expanduser() if value else None
+            if configured is not None and not configured.is_absolute():configured=app_dir/configured
+            if configured is not None and configured.is_file():return configured
+            return next((p for p in candidates if p.is_file()),configured or candidates[0])
+        exe=resolve(exe_value,[app_dir/'local_ai/bin/llama-server.exe',app_dir/'local_ai/cpu/llama-server.exe'])
+        model=resolve(model_value,[app_dir/'local_ai/models/Qwen3-4B-Q4_K_M.gguf'])
+        self.path_resolution={'executable':str(exe),'model':str(model),'app_dir':str(app_dir)}
         if not (exe.is_file() and model.is_file()):return None
         if exe.suffix.lower() not in ('.exe','') or model.suffix.lower()!='.gguf':return None
         return exe.resolve(),model.resolve()
@@ -84,6 +105,7 @@ class ManagedLlamaProcess:
         if not use_gpu:
             cpu=exe.parent.parent/'cpu'/'llama-server.exe'
             if cpu.is_file():exe=cpu
+        if exe.parent.name.lower()=='cpu':gpu=0
         return [str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
                 '--threads',str(profile['cpu_threads']),'--parallel','1']
@@ -101,17 +123,29 @@ class ManagedLlamaProcess:
 
     def start(self,endpoint,desktop=None):
         if not self.enabled():return False
+        if self._closed:raise RuntimeError('La aplicación cerró su motor de IA; no se vuelve a iniciar desde tareas pendientes.')
         command=self.command(endpoint,desktop)
         port=self._port(endpoint)
         with self.lock:
+            if self._closed:raise RuntimeError('La aplicación cerró su motor de IA.')
             if self.proc and self.proc.poll() is None:
                 self.last_use=self.clock();return True
             # No apropiarse de otro servidor/modelo, que puede ser ajeno a Akira.
             if self._health(port):
                 raise RuntimeError('El puerto de la IA está ocupado por un servidor externo. Akira no lo cerrará.')
             flags=getattr(subprocess,'CREATE_NO_WINDOW',0)
-            self.proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,creationflags=flags)
+            stream=None
+            try:
+                if self.log_path is not None:
+                    self.log_path.parent.mkdir(parents=True,exist_ok=True)
+                    if self.log_path.exists() and self.log_path.stat().st_size>4000000:
+                        self.log_path.replace(self.log_path.with_suffix('.previous.log'))
+                    stream=self.log_path.open('ab',buffering=0)
+                    stream.write(('\nINICIO IA '+time.strftime('%Y-%m-%d %H:%M:%S')+'\n').encode('utf-8'))
+                self.proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=stream or subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,creationflags=flags)
+            finally:
+                if stream is not None:stream.close()
             self.last_use=self.clock()
             if self._watcher is None or not self._watcher.is_alive():
                 self._watcher=threading.Thread(target=self._watch,name='AkiraLocalModelIdle',daemon=True)
@@ -166,5 +200,6 @@ class ManagedLlamaProcess:
     def shutdown(self):
         """Close only Akira's own inference subprocess during application exit."""
         with self.lock:
+            self._closed=True
             self.active=0
             self._terminate_own()

@@ -876,7 +876,19 @@ class PendingPlanner:
             if p.quality_score<min_quality or p.activation_score<min_activation:
                 reject(p,'final_context_quality',f'Confluencia final {p.quality_score:.1f}/{p.activation_score:.1f} inferior a {min_quality:.1f}/{min_activation:.1f}')
             else:valid.append(p)
-        fused=valid
+        from strategy_adaptation import candidate_decision,frame_features
+        if not hasattr(self,'pending_adaptation_baseline'):self.pending_adaptation_baseline={}
+        if not hasattr(self,'pending_adaptation_rejections'):self.pending_adaptation_rejections={}
+        self.pending_adaptation_baseline[symbol]=list(valid)
+        self.pending_adaptation_rejections[symbol]=[]
+        fused=[]
+        features=frame_features(self.caches[symbol].frames)
+        for plan in valid:
+            allowed,detail=candidate_decision(plan,features,self.research_context,self.g.clock())
+            if allowed:fused.append(replace(plan,reason=plan.reason+' · '+detail) if detail else plan)
+            else:
+                self.pending_adaptation_rejections[symbol].append(plan)
+                reject(plan,'learned_filter',detail)
         # V193: NO entregar un único candidato por cuadrante. Si el mejor técnico
         # falla por riesgo monetario, margen, stops/freeze o una regla puntual del
         # bróker, V171 no tenía segunda opción y el cuadrante quedaba vacío.

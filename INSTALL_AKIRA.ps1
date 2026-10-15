@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $env:PYTHONUTF8='1'
 $env:PYTHONIOENCODING='utf-8'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)

@@ -1,3 +1,4 @@
+from tests.fixtures import optional_ollama_fixture
 """Recovery, complete market context and truthful UI evidence; no live service."""
 import io,json,tempfile,threading,time,unittest
 from pathlib import Path
@@ -16,7 +17,7 @@ from cyber_ui import source_presentation,public_status
 class RecoveryTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
-        (self.root/'PREPARAR_OLLAMA.ps1').touch();self.cfg=load_config(DEFAULT)
+        (self.root/'PREPARAR_OLLAMA.ps1').touch();self.cfg=optional_ollama_fixture(load_config(DEFAULT))
         self.process=Mock(pid=123);self.process.poll.return_value=None
         self.new=Mock(pid=789);self.new.poll.return_value=None
         self.launch=Mock(return_value=self.new)

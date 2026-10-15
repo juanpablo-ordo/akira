@@ -340,7 +340,7 @@ class VoiceSession:
   self.interrupt_event.clear();self.speaking.set()
   def work():
    try:
-    self.event('state',text='AKIRA responde · puedes interrumpir')
+    self.event('state',text='Preparando voz')
     import numpy as np,sounddevice as sd
     with tempfile.TemporaryDirectory(prefix='akira_voice_') as tmp:
      folder=Path(tmp);path=folder/'answer.wav';request=folder/'request.json'
@@ -360,12 +360,16 @@ class VoiceSession:
       if width not in (2,4):raise RuntimeError('Formato de audio no compatible')
       dtype='int16' if width==2 else 'int32';device=None if device in (None,-1,'') else int(device)
       with sd.RawOutputStream(samplerate=rate,channels=channels,dtype=dtype,device=device) as output:
+       self.event('playback_start')
        while not (self.stop_event.is_set() or self.interrupt_event.is_set()):
         raw=wav.readframes(max(1,int(rate*.1)))
         if not raw:break
+        level=float(np.sqrt(np.mean((np.frombuffer(raw,dtype=dtype).astype('float64')/float(2**(width*8-1)))**2)))
+        self.event('playback_level',level=level)
         output.write(raw)
    except Exception as exc:self.event('error',text=str(exc)[:400])
    finally:
+    self.event('playback_end')
     self.process=None;self.speaking.clear();self.awaiting.clear();self._drain()
     if not self.stop_event.is_set():self.event('state',text=('Micrófono silenciado' if self.paused.is_set() else 'Reanudando escucha') if self.started else 'Demostración terminada · micrófono desactivado')
   self._threads=[t for t in self._threads if t.is_alive()]

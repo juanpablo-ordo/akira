@@ -19,7 +19,7 @@ def open_expression_gallery(app):
             pass
     from PIL import ImageTk
     catalog = get_catalog(_root())
-    win = app.service_dialog('Expresiones de Akira · R6', 900, 720)
+    win = app.service_dialog('Expresiones de Akira · R7', 900, 720)
     app._expression_gallery = win
     label(win, f'{len(catalog.entries)} caras dibujadas · elige una para verla en Akira', MUTED, 10,
           anchor='w', justify='left', wraplength=760).pack(fill='x', padx=18, pady=(0, 8))

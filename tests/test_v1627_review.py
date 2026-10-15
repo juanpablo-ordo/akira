@@ -133,7 +133,7 @@ class FeedsTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'BLS no disponible'):news_feed('BLS')
     def test_gold_plan_limit_cannot_claim_bitcoin_fallback_as_gold_evidence(self):
         with patch('providers.coinglass_auth_probe',return_value={'state':'plan_limited'}):row=coinglass_bundle('XAU')
-        self.assertEqual(row['state'],'PLAN_LIMITED');self.assertIn('No hay derivados XAU confirmados',row['detail'])
+        self.assertEqual(row['state'],'UNSUPPORTED');self.assertIn('no aporta derivados XAU confirmados',row['detail'])
 
 class NotificationsTests(unittest.TestCase):
     setUp=ui_fixture.StartupUITests.setUp

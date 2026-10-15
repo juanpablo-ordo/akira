@@ -158,6 +158,8 @@ class StrategyLab:
   self._summary={'state':'ESPERANDO DATOS','strategies':definitions(),'reference':{'url':REFERENCE_URL,'state':'CONTENIDO NO VERIFICADO'},'updated':0}
   self.reference=self._summary['reference']
   self.research_ledger=ResearchLedger(root)
+  from strategy_adaptation import StrategyAdaptation
+  self.adaptation=StrategyAdaptation(root,cfg,clock)
   with self.db() as db:
    db.execute('CREATE TABLE IF NOT EXISTS cases(id TEXT PRIMARY KEY,strategy_id TEXT,symbol TEXT,created REAL,body TEXT)')
    db.execute('CREATE INDEX IF NOT EXISTS cases_created ON cases(created)')
@@ -189,7 +191,13 @@ class StrategyLab:
  def read(self):
   with self.lock:result=copy.deepcopy(self._summary)
   result['research_ledger']=self.research_ledger.summary()
+  result['adaptation']=self.adaptation.read()
   return result
+ def ingest_source(self,row):
+  profiles=self.adaptation.ingest_source(row)
+  if row.get('complete'):
+   self.research_ledger.add(url=row['url'],kind='youtube_transcript',title=row.get('title',''),author=row.get('author',''),body=row.get('body',''),status=row.get('status','transcript'),source_time=row.get('published'))
+  return profiles
  def set_reference(self,row):
   from urllib.parse import urlsplit,parse_qs
   import re
@@ -207,6 +215,7 @@ class StrategyLab:
  def tick(self):
   with self.lock:snap=copy.deepcopy(self.snapshot)
   if not snap.get('symbols'):return
+  self.adaptation.observe(snap)
   now=self.clock();defs=definitions();cases={};examples={};generation=0
   cohort=hashlib.sha256(json.dumps({'account':snap.get('learning_account'),'build':snap.get('build'),
    'configuration':snap.get('selection_configuration'),'costs':{s:{k:r.get(k) for k in ('lot','round_turn_fee','source')} for s,r in (snap.get('paper_costs') or {}).items()}},sort_keys=True,default=str).encode()).hexdigest()[:20]
@@ -317,6 +326,8 @@ def strategy_text(row,symbol):
 def export_html(summary,destination):
  import html,shutil
  dest=Path(destination);dest.mkdir(parents=True,exist_ok=True);parts=[]
+ from strategy_adaptation import report_text
+ parts.append('<article><h2>Aprendizaje y filtros</h2><pre>'+html.escape(report_text(summary.get('adaptation') or {}))+'</pre></article>')
  for row in summary.get('strategies') or definitions():
   for symbol,metrics in (row.get('symbols') or {'BTCUSDm':{},'XAUUSDm':{}}).items():
    text=html.escape(strategy_text(row,symbol));image=metrics.get('image_path');tag=''

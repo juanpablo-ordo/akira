@@ -28,7 +28,7 @@ def build_command(source,destination,work):
  for filename in ('default_config.json','akira_config.json'):
   command+=['--add-data',str(source/filename)+os.pathsep+'.']
  command+=['--add-data',str(source/'assets')+os.pathsep+'assets']
- for package in ('MetaTrader5','ctranslate2','faster_whisper','sounddevice','pyttsx3','piper','reportlab','PIL','imageio_ffmpeg','yt_dlp','docx','tzdata','pypdf'):
+ for package in ('MetaTrader5','ctranslate2','faster_whisper','sounddevice','pyttsx3','piper','reportlab','PIL','imageio_ffmpeg','yt_dlp','yt_dlp_ejs','docx','tzdata','pypdf'):
   command+=['--collect-all',package]
  for package in ('pyttsx3.drivers.sapi5','tests.fake_mt5','numpy','onnxruntime','av','win32com.propsys.propsys','win32com.propsys.pscon','win32com.shell.shell','pythoncom','win32crypt'):
   command+=['--hidden-import',package]

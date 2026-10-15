@@ -1,0 +1,9 @@
+{
+  "yt_dlp": "2026.8.19",
+  "yt_dlp_ejs": "0.8.0",
+  "ejs_resources_verified": true,
+  "deno_windows": "2.9.7",
+  "deno_sha256": "a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238",
+  "windows_runtime_executed_locally": false,
+  "scope": "Paquetes y recursos EJS comprobados en Linux; Deno Windows y aplicaci\u00f3n instalada deben superar el control real de Actions."
+}

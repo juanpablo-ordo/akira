@@ -36,6 +36,17 @@ def source_presentation(name,row):
         'derivatives':'Derivados públicos','venue':'Exchange','global_news':'Noticias globales','macro':'Macroeconomía'}.get(prefix,prefix))
     if suffix:title+=' · '+suffix
     error=public_status(row.get('error') or '');detail=public_status(row.get('detail') or '')
+    code=str(row.get('state') or (row.get('data') or {}).get('state') or '').upper()
+    if not code:
+        code=next((s for s in ('AUTH_REQUIRED','CONFIG_REQUIRED','UNSUPPORTED','NO_CAPTIONS','RATE_LIMITED','MISSING_RUNTIME','UNAVAILABLE') if s in error.upper()),'')
+    messages={'AUTH_REQUIRED':('REQUIERE SESIÓN','Ajustes → IA / INTERNET → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.'),
+        'CONFIG_REQUIRED':('CLAVE OPCIONAL','Configura CoinGlass en Ajustes → IA / INTERNET → ACCESO A FUENTES.'),
+        'UNSUPPORTED':('NO APLICA','No hay derivados XAU confirmados de CoinGlass; no se sustituyen por BTC.'),
+        'NO_CAPTIONS':('SIN SUBTÍTULOS','No se obtuvo una transcripción completa. No se afirma haber aprendido el video.'),
+        'RATE_LIMITED':('ESPERANDO CUOTA','YouTube limita las peticiones. Se reintentará con espera.'),
+        'MISSING_RUNTIME':('FALTA COMPONENTE','Instala el paquete completo R7 que incluye el componente JavaScript.'),
+        'UNAVAILABLE':('NO DISPONIBLE','Video privado, retirado o no disponible para esta sesión.')}
+    if row.get('enabled') is not False and code in messages:return title,*messages[code]
     if row.get('enabled') is False:state='DESACTIVADA';detail=detail or 'Desactivada en ajustes; no aporta al análisis.'
     elif row.get('fresh') and row.get('usable',True) and not error:state='DISPONIBLE';detail=detail or 'Datos vigentes utilizados como contexto.'
     elif row.get('inflight'):state='BUSCANDO';detail=detail or 'Consulta en segundo plano; el mapa técnico sigue activo.'

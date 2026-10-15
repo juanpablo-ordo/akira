@@ -1,5 +1,5 @@
 #define AppName "AKIRA"
-#define AppVersion "16.3.3"
+#define AppVersion "16.3.4"
 #define LocalAIModelPath GetEnv("AKIRA_MODEL_PATH")
 #define LocalAIModelSHA256 "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5"
 #if LocalAIModelPath == ""
@@ -17,7 +17,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\dist_installer
-OutputBaseFilename=AKIRA_16_3_3_R6_108_EXPRESIONES_IA_INCLUIDA
+OutputBaseFilename=AKIRA_16_3_4_R7_IA_INCLUIDA
 UninstallDisplayIcon={app}\AKIRA.exe
 SetupIconFile=..\assets\akira.ico
 WizardImageFile=..\assets\installer_left.bmp
@@ -33,7 +33,7 @@ UsePreviousAppDir=no
 CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
-VersionInfoVersion=16.3.3.0
+VersionInfoVersion=16.3.4.0
 VersionInfoDescription=AKIRA - Instalador de Windows
 
 [Languages]
@@ -66,6 +66,8 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
+    if not FileExists(ExpandConstant('{app}\bin\deno.exe')) then
+      RaiseException('No se encontró el componente YouTube de AKIRA.');
     if not FileExists(ExpandConstant('{app}\AKIRA.exe')) then
       RaiseException('No se encontró AKIRA.exe después de instalar.');
     if not FileExists(ExpandConstant('{app}\local_ai\bin\llama-server.exe')) then

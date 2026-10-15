@@ -111,9 +111,13 @@ def run_ui_check(window):
             artwork=get_catalog(_root()).validate_artwork()
             checks['expression_catalog']=artwork['count']>=MIN_EXPRESSIONS
             checks['avatar_artwork']=all(avatar.expression_count>=MIN_EXPRESSIONS for avatar in app.avatars)
+            app.avatars[0].set_expression('listening','autocontrol')
+            checks['avatar_sync']=len({a.selected.id for a in app.avatars})==1 and len({id(a.director) for a in app.avatars})==1
+            app.settings_notebook.select(app.settings_sources_tab);window.update_idletasks()
+            checks['source_access_controls']=set(app.source_key_entries)=={'COINGLASS_API_KEY','YOUTUBE_API_KEY'} and all(e.cget('show') for e in app.source_key_entries.values()) and bool(app.source_save_button.cget('command'))
             window.geometry('1024x640+0+0');window.update_idletasks();app._apply_responsive_shell();window.update_idletasks()
             app.navigate(5);settle_layout(window)
-            controls=dict(zip(('reset','open_chat','report','pause'),app._toolbar_buttons))
+            controls=dict(zip(('reset','report','pause'),app._toolbar_buttons))
             controls.update(chat_entry=app.chat_entry,chat_send=app.chat_send_button,call=app.call_icon,
                 privacy=app.privacy_button,welcome_title=app.chat_welcome_title)
             compact_layout={name:control_geometry(window,widget,name not in ('chat_entry','call'))

@@ -47,7 +47,7 @@ class ResearchLedger:
         filtered=[s for s in symbols if s in ALLOWED_SYMBOLS]
         text=str(body or '')[:MAX_BODY]
         # A title or search snippet is not enough to infer a trading strategy.
-        complete=kind in ('youtube_transcript','youtube_vision','news_read') and len(text)>=600 and status not in ('discovered','search_excerpt')
+        complete=kind in ('youtube_transcript','youtube_vision','news_read') and len(text)>=600 and status not in ('discovered','search_excerpt','partial','transcript_partial','transcript_fallback','captions_unavailable','vision_sampled')
         claims=[str(c)[:280] for c in claims][:12] if complete else []
         record={'url':url,'kind':kind,'title':str(title)[:240],'author':str(author)[:120],
                 'observed_at':self.clock(),'source_time':source_time,'symbols':filtered,

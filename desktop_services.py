@@ -10,6 +10,70 @@ from notification_center import NotificationCenter,safe_text
 from knowledge_update import KnowledgeUpdater
 
 class DesktopServices:
+    def build_source_access(self,parent,card):
+        from akira_secrets import get_secret
+        panel=card(parent,'ACCESO A FUENTES',CYAN)
+        label(panel,'CoinGlass es opcional. YouTube puede solicitar una sesión aunque la búsqueda no requiera clave.',MUTED,9,anchor='w',justify='left',wraplength=620).pack(fill='x',pady=5)
+        self.source_key_entries={};self.source_key_labels={}
+        for key,title in (('COINGLASS_API_KEY','Clave CoinGlass'),('YOUTUBE_API_KEY','Clave YouTube Data API (opcional)')):
+            title_widget=label(panel,title+' · '+('guardada' if get_secret(key) else 'sin configurar'),TEXT,10,True,anchor='w')
+            title_widget.pack(fill='x',pady=(9,3));self.source_key_labels[key]=(title_widget,title)
+            entry=tk.Entry(panel,bg=CARD,fg=TEXT,insertbackground=CYAN,show='•',font=(FONT,11))
+            entry.pack(fill='x',ipady=5);self.source_key_entries[key]=entry
+        label(panel,'Deja un campo vacío para conservar la clave guardada. La sesión se importa desde un archivo cookies.txt en formato Netscape elegido por ti.',MUTED,9,anchor='w',justify='left',wraplength=620).pack(fill='x',pady=8)
+        self.source_save_button=button(panel,'GUARDAR CLAVES',self.save_source_access,GREEN);self.source_save_button.pack(fill='x',pady=3)
+        button(panel,'IMPORTAR SESIÓN YOUTUBE',self.import_youtube_session,CYAN).pack(fill='x',pady=3)
+        button(panel,'COMPROBAR FUENTES',self.check_source_access,BLUE).pack(fill='x',pady=3)
+        self.source_access_status=label(panel,'Las claves se protegen con tu usuario de Windows. No se leen perfiles de navegadores.',MUTED,9,anchor='w',justify='left',wraplength=620)
+        self.source_access_status.pack(fill='x',pady=6)
+        panel.bind('<Configure>',lambda e:self.source_access_status.configure(wraplength=max(180,e.width-20)),add='+')
+
+    def save_source_access(self):
+        from akira_secrets import save_secrets
+        values={k:entry.get().strip() for k,entry in self.source_key_entries.items() if entry.get().strip()}
+        try:
+            if values:save_secrets(values)
+            for entry in self.source_key_entries.values():entry.delete(0,'end')
+            from akira_secrets import get_secret
+            for key,(widget,title) in self.source_key_labels.items():widget.configure(text=title+' · '+('guardada' if get_secret(key) else 'sin configurar'))
+            self.source_access_status.configure(text='Claves guardadas. Los campos vacíos conservan las anteriores.',fg=GREEN)
+            self.refresh_configured_sources()
+        except Exception as error:self.source_access_status.configure(text='No se pudieron guardar: '+safe_text(error),fg=RED)
+
+    def refresh_configured_sources(self):
+        self.assistant._research_cache.clear()
+        with self.assistant._source_cache_lock:self.assistant._source_cache.clear()
+        from providers import _YT_CACHE,_YT_LOCK,_CG_AUTH_CACHE,_CG_AUTH_LOCK
+        with _YT_LOCK:_YT_CACHE.clear()
+        with _CG_AUTH_LOCK:_CG_AUTH_CACHE.update(key='',when=0,ok=None,error='')
+        if not self.preview:
+            threading.Thread(target=lambda:self.bridge.request({'action':'refresh_sources'}),daemon=True,name='AkiraRefreshSources').start()
+
+    def import_youtube_session(self):
+        from tkinter import filedialog
+        path=filedialog.askopenfilename(parent=self.root,title='Importar sesión de YouTube',filetypes=[('Cookies Netscape','*.txt'),('Todos','*.*')])
+        if not path:return
+        try:
+            from youtube_support import import_session
+            import_session(path);self.refresh_configured_sources()
+            self.source_access_status.configure(text='Sesión YouTube importada. Pulsa COMPROBAR FUENTES; la sesión puede caducar.',fg=GREEN)
+        except Exception as error:self.source_access_status.configure(text='Sesión no importada: '+safe_text(error),fg=RED)
+
+    def check_source_access(self):
+        self.source_access_status.configure(text='Comprobando en segundo plano…',fg=AMBER)
+        def work():
+            from providers import coinglass_auth_probe,youtube_search
+            from youtube_support import explained
+            lines=[]
+            try:
+                cg=coinglass_auth_probe(force=True)
+                lines.append('CoinGlass: '+('conexión confirmada' if cg.get('ok') else str(cg.get('error') or 'clave opcional sin configurar')))
+            except Exception as error:lines.append('CoinGlass: '+safe_text(error))
+            try:lines.append('YouTube: '+str(len(youtube_search('Bitcoin technical analysis',cache_seconds=0)))+' resultados de búsqueda; esto no verifica subtítulos.')
+            except Exception as error:lines.append(str(explained(error)))
+            self.replies.put({'source_access_result':'\n'.join(lines)})
+        threading.Thread(target=work,daemon=True,name='AkiraSourceCheck').start()
+
     def init_services(self):
         self.notice_center=NotificationCenter(self.folder);self.notice_window=None;self._settings_job=0;self._cloud_job=0;self._account_revealed=False
         self._closure_notifications_seen=self.notice_center.event_keys('CLOSE:')
@@ -292,7 +356,8 @@ class DesktopServices:
             from cyber_ui import public_status
             parts=['ESTADO DE AKIRA\n'+public_status(status.get('detail') or status.get('error') or 'Comprobación pendiente')]
             seen_content=set()
-            paths=[self.folder/'logs/ASISTENTE_INICIO.log',self.folder/'logs/ASISTENTE_PROCESO.log',self.assistant.startup.output_log]
+            parts.append('RUTAS DE IA\n'+json.dumps(self.assistant._managed_model.path_resolution,ensure_ascii=False,indent=2))
+            paths=[self.folder/'logs/IA_LOCAL.log',self.folder/'logs/ASISTENTE_INICIO.log',self.folder/'logs/ASISTENTE_PROCESO.log',self.assistant.startup.output_log]
             for path in dict.fromkeys(paths):
                 try:
                     with path.open('rb') as stream:
@@ -371,6 +436,9 @@ class DesktopServices:
         button(win,'RECUPERAR CHAT',restore,GREEN).pack(anchor='e',padx=18,pady=12)
 
     def handle_service_reply(self,reply):
+        if 'source_access_result' in reply:
+            self.source_access_status.configure(text=reply['source_access_result'],fg=TEXT)
+            return True
         if 'pending_verification_result' in reply:
             self._pending_verification_loading=False;r=reply['pending_verification_result']
             if r.get('job'):self._pending_verification_job=r['job']

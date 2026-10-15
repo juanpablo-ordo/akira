@@ -1,0 +1,28 @@
+{
+  "build": "AKIRA_16_3_4_R7",
+  "status": "LOCAL_PASSED_WINDOWS_PENDING",
+  "pytest": {
+    "passed": 1094,
+    "subtests_passed": 83,
+    "failures": 0,
+    "errors": 0
+  },
+  "offline": {
+    "passed": 1091,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "network": "blocked"
+  },
+  "native_ui": "PASSED",
+  "ui_version": 7,
+  "distinct_expressions": 108,
+  "screen_combinations": 24,
+  "recorded_tick_replay": "PASSED · conservación de un ticket; no prueba de rentabilidad",
+  "windows_r7_installer_verified": false,
+  "live_account_used": false,
+  "github_published": false,
+  "github_write_error": "403 Resource not accessible by integration",
+  "source_base": "728ad935b771807bff160fd22d05de3077167006",
+  "post_suite_check": "Preparación de voz y reanudación de escucha verificadas tras el ajuste textual del mapa de expresiones."
+}

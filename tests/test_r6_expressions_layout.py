@@ -101,7 +101,7 @@ class NativeBuildDiagnostics(unittest.TestCase):
         from build_windows import read_self_check_report
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'NATIVE_SELF_CHECK.json'
-            expected={'status':'PASSED','build':'AKIRA_16_3_3_R6_108_EXPRESIONES'}
+            expected={'status':'PASSED','build':'AKIRA_16_3_4_R7'}
             path.write_text(json.dumps(expected),encoding='utf-8')
             self.assertEqual(read_self_check_report(path,0),expected)
             with self.assertRaisesRegex(RuntimeError,'Código de salida: 1'):

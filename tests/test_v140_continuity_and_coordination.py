@@ -17,7 +17,7 @@ from execution import Blocked,PENDING
 from knowledge import KnowledgeStore
 from runtime import session_write_guard
 from settings import DEFAULT,load_config
-from tests.fixtures import PendingCase
+from tests.fixtures import PendingCase,optional_ollama_fixture
 
 
 class Conversation140Tests(PendingCase,unittest.TestCase):
@@ -165,7 +165,7 @@ class Conversation140Tests(PendingCase,unittest.TestCase):
 
 class Coordination140Tests(PendingCase,unittest.TestCase):
     def setUp(self):
-        super().setUp();self.cfg=load_config(DEFAULT);self.g.cfg=self.cfg
+        super().setUp();self.cfg=optional_ollama_fixture(load_config(DEFAULT));self.cfg['mode']='trade';self.g.cfg=self.cfg
         self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close)
 
     def bot(self):return AkiraAssistant(self.cfg,self.root,trade_callback=self.e.handle_command)

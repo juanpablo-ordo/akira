@@ -1,4 +1,5 @@
 name: AKIRA Windows - verificar y compilar
+run-name: AKIRA 16.3.4 R7 · IA incluida · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -34,7 +35,7 @@ jobs:
       - name: Pruebas de regresion principales
         shell: pwsh
         run: |
-          python -m pytest -q tests/test_r6_expressions_layout.py tests/test_r5_user_video_regressions.py tests/test_v1632_first_run.py tests/test_v1632_llama_setup.py tests/test_installed_local_ai.py tests/test_v1632_llama_smoke_contract.py tests/test_v1632_integrated_research_voice.py tests/test_v1632_resource_and_wheel.py tests/test_v1632_storage_cleanup.py tests/test_v1631_capital_adaptive.py tests/test_install_checks.py
+          python -m pytest -q tests
 
       - name: Compilar y autocontrolar AKIRA.exe en Windows
         shell: pwsh
@@ -67,6 +68,20 @@ jobs:
           }
           if (!(Test-Path 'native/AKIRA/local_ai/bin/llama-server.exe')) { throw 'Vulkan no empaquetado' }
           if (!(Test-Path 'native/AKIRA/local_ai/cpu/llama-server.exe')) { throw 'CPU no empaquetado' }
+
+      - name: Incorporar componente JavaScript de YouTube verificado
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $env:RUNNER_TEMP 'deno-windows.zip'
+          curl.exe -fL --retry 4 --retry-all-errors -o $archive 'https://github.com/denoland/deno/releases/download/v2.9.7/deno-x86_64-pc-windows-msvc.zip'
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo descargar Deno oficial' }
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238') { throw 'Deno: SHA-256 incorrecto' }
+          New-Item -ItemType Directory -Force -Path native/AKIRA/bin | Out-Null
+          Expand-Archive -LiteralPath $archive -DestinationPath native/AKIRA/bin -Force
+          New-Item -ItemType Directory -Force -Path native/AKIRA/licenses | Out-Null
+          Copy-Item third_party/DENO_LICENSE.txt native/AKIRA/licenses/DENO_LICENSE.txt
+          if (!(Test-Path 'native/AKIRA/bin/deno.exe')) { throw 'Falta Deno en el paquete' }
 
       - name: Comprobar IA real en Windows sin Ollama
         shell: pwsh
@@ -109,7 +124,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.3.3-R6-108-expresiones-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

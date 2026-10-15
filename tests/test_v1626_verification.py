@@ -63,7 +63,7 @@ class RecoveryTests(unittest.TestCase):
 class EvidenceTests(PendingCase,unittest.TestCase):
     def setUp(self):
         PendingCase.setUp(self);self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close);self.view=self.e.step()
-        self.cfg['mode']='observe';self.e.pending_check_queue=[];self.plans=targets(self.view);self.p=next(p for p in self.plans if p.get('confirmed') and p['symbol']=='BTCUSDm')
+        self.cfg['mode']='observe';self.view['selection_configuration']=self.e.verification_configuration();self.e.pending_check_queue=[];self.plans=targets(self.view);self.p=next(p for p in self.plans if p.get('confirmed') and p['symbol']=='BTCUSDm')
     def stage(self,r,name):return next(s for s in r['stages'] if name in s['name'])
     def test_each_owned_order_has_its_own_report_and_no_duplicates(self):
         rows=reports(self.view)

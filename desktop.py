@@ -272,7 +272,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self._ui_error_times={};self._assistant_display_due=0.0;self._performance=get_intervals(self.cfg)
         from collections import deque
         self._terminal_pending=deque(maxlen=500)
-        set_identity();root.title('AKIRA · 16.3.3 · R6');root.configure(bg=BG)
+        set_identity();root.title('AKIRA · 16.3.4 · R7');root.configure(bg=BG)
         width,height,min_width,min_height=fitted_geometry(self.cfg['desktop']['width'],self.cfg['desktop']['height'],root.winfo_screenwidth(),root.winfo_screenheight())
         root.geometry(f'{width}x{height}');root.minsize(min_width,min_height)
         self.layout=PanelLayout(root,self.folder/'state'/'desktop_layout.json')
@@ -328,7 +328,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.side_footer=tk.Frame(self.sidebar,bg='#061225');self.side_footer.pack(side='bottom',fill='x',pady=(8,0))
         tk.Frame(self.side_footer,bg=LINE,height=1).pack(fill='x',pady=(0,9))
         self.side_connection=label(self.side_footer,'MT5 · conectando',MUTED,8,anchor='w');self.side_connection.pack(fill='x')
-        label(self.side_footer,'R6 · 108 caras\n16.3.3',CYAN,8,anchor='w').pack(fill='x',pady=(4,0))
+        label(self.side_footer,'R7 · 108 caras\n16.3.4',CYAN,8,anchor='w').pack(fill='x',pady=(4,0))
         label(self.sidebar,'MÓDULOS',MUTED,8,anchor='w').pack(fill='x',padx=4,pady=(0,5))
         nav_shell,nav_content=scroll_frame(self.sidebar,'#061225');nav_shell.pack(fill='both',expand=True)
         self.nav_buttons=[]
@@ -401,14 +401,14 @@ class Desktop(DesktopServices,StrategyDirectory):
             item.configure(padx=5,pady=5,font=(FONT,8,'bold'))
         # The same point size occupies different pixels across Windows fonts
         # and DPI settings. Reserve enough space for the widest button label.
-        required=4*(max(item.winfo_reqwidth() for item in self._toolbar_buttons)+6)
-        columns=2 if width<max(790,required) else 4
+        unit=max(item.winfo_reqwidth() for item in self._toolbar_buttons)+6
+        columns=max(1,min(3,int(width//unit)))
         if columns!=getattr(self,'_toolbar_columns',None):
             self._toolbar_columns=columns
             for i,item in enumerate(self._toolbar_buttons):
                 item.grid(row=i//columns,column=i%columns,sticky='ew',padx=3,pady=2)
             for i in range(4):self._toolbar.columnconfigure(i,weight=1 if i<columns else 0,uniform='actions' if i<columns else '')
-        if columns==2:
+        if columns<3:
             self.account_label.grid(row=1,column=0,columnspan=3,sticky='w',pady=(3,0))
         else:self.account_label.grid(row=0,column=3,columnspan=1,sticky='e',padx=(10,0))
 
@@ -436,8 +436,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.reset_layout_button=button(toolbar,'RESTABLECER PANELES',self.layout.reset,MUTED)
         self.toggle=button(toolbar,'PAUSAR CONTROL',self.pause,AMBER)
         report=button(toolbar,'DESCARGAR INFORME',self.open_report_dialog,BLUE)
-        self.open_chat_button=button(toolbar,'ESCRIBIR A AKIRA',self.open_chat,CYAN)
-        self._toolbar_buttons=(self.reset_layout_button,self.open_chat_button,report,self.toggle)
+        self._toolbar_buttons=(self.reset_layout_button,report,self.toggle)
         self.connection=label(self.main,'AUTO-MAPA · preparando conexión y niveles de MT5',MUTED,8,anchor='w',justify='left');self.connection.pack(fill='x',padx=20,pady=(0,3))
         self.map_result_label=label(self.main,'Akira revisa pendientes y runners en segundo plano.',MUTED,8,anchor='w',justify='left')
         self.map_result_label.pack(side='bottom',fill='x',padx=20,pady=(0,4))
@@ -452,7 +451,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.page_title=label(heading,'PENDIENTES AUTOMÁTICAS',TEXT,21,True,anchor='w');self.page_title.pack(fill='x',pady=(2,0))
         self.page_detail=label(heading,PAGE_DETAILS[1],MUTED,9,anchor='w',justify='left');self.page_detail.pack(fill='x',pady=(2,0))
     def avatar(self,parent,width=270,height=250):
-        frame=AkiraLive2D(parent,width=width,height=height,bg=PANEL);self.avatars.append(frame);return frame
+        frame=AkiraLive2D(parent,width=width,height=height,bg=PANEL,director=getattr(self,'avatar_director',None));self.avatar_director=frame.director;self.avatars.append(frame);return frame
     def build_dashboard(self,page):
         split=self.layout.pane(page,'dashboard_vertical',tk.VERTICAL,(.76,));split.pack(fill='both',expand=True,pady=5)
         columns=self.layout.pane(split,'dashboard_columns',tk.HORIZONTAL,(.23,.55));split.add(columns,minsize=150,stretch='always')
@@ -921,6 +920,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         def tab(title):
             shell,frame=scroll_frame(book,BG);book.add(shell,text=title)
             if title=='INTERFAZ':self.settings_interface_tab=shell
+            if title=='IA / INTERNET':self.settings_sources_tab=shell
             self.settings_cards[frame]=[]
             def arrange(event,parent=frame,section=title):
                 density=max(1,float(self.root.tk.call('tk','scaling'))/1.333)
@@ -1002,6 +1002,8 @@ class Desktop(DesktopServices,StrategyDirectory):
               MUTED,9,anchor='w',justify='left',wraplength=650).pack(fill='x',pady=(4,8))
         # IA/Fuentes
         t=tab('IA / INTERNET')
+        self.settings_sources_body=t
+        self.build_source_access(t,card)
         c=card(t,'CONOCIMIENTO ACTUALIZADO',CYAN)
         check(c,'knowledge.enabled','Mantener fuentes de conocimiento actualizadas')
         mode_row=tk.Frame(c,bg=PANEL);mode_row.pack(fill='x',pady=8);label(mode_row,'Actualización del conocimiento',TEXT,10,True).pack(side='left');mode=tk.StringVar(value='Automática' if self.cfg['knowledge']['mode']=='automatic' else 'Bajo solicitud');self.setting_vars['knowledge.mode']=mode;self.setting_types['knowledge.mode']='str';ttk.Combobox(mode_row,textvariable=mode,values=('Automática','Bajo solicitud'),state='readonly',style='Akira.TCombobox',width=18).pack(side='right')
@@ -1013,11 +1015,11 @@ class Desktop(DesktopServices,StrategyDirectory):
         c=card(t,'INVESTIGACIÓN AUTOMÁTICA',BLUE)
         field(c,'assistant.local_endpoint','Motor local (URL de Ollama o llama.cpp)','str',
               'Ollama: http://127.0.0.1:11434/api/chat · llama.cpp: http://127.0.0.1:8080/v1/chat/completions. Solo localhost; llama.cpp necesita su binario y modelo GGUF.')
-        check(c,'assistant.local_runtime_enabled','Usar llama.cpp integrado bajo demanda (experimental)',
-              'Requiere seleccionar un llama-server.exe y un modelo GGUF descargados por el usuario. Akira cierra solo el proceso que inicia.')
+        check(c,'assistant.local_runtime_enabled','Usar la IA incluida bajo demanda',
+              'El instalador completo incluye motor y modelo. Las rutas vacías o antiguas se recuperan desde la instalación. Akira cierra solo su propio proceso.')
         field(c,'assistant.local_runtime_exe','Ruta de llama-server.exe (local)','str')
         field(c,'assistant.local_runtime_model','Ruta del modelo GGUF (local)','str')
-        field(c,'assistant.local_runtime_idle_seconds','Descargar IA inactiva después de (s)','int')
+        field(c,'assistant.local_runtime_idle_seconds','Liberar IA de memoria tras (s)','int')
         check(c,'assistant.auto_install_local_ai','Permitir instalar/reparar Ollama (opcional)',
               'Desactivado por defecto en nuevas instalaciones. No instala una IA integrada diferente.')
         check(c,'assistant.auto_research','Investigar la web automáticamente antes de responder hechos/análisis')
@@ -1062,7 +1064,7 @@ class Desktop(DesktopServices,StrategyDirectory):
               wraplength=600,justify='left').pack(fill='x',pady=6)
         c=card(t,'AKIRA · NUEVAS EXPRESIONES',CYAN)
         button(c,'VER LAS 108 EXPRESIONES',self.open_expression_gallery,CYAN).pack(fill='x',pady=5)
-        label(c,'R6 · ilustraciones nuevas basadas en tus referencias. La galería permite revisar y elegir cada cara.',MUTED,9,wraplength=620,justify='left',anchor='w').pack(fill='x',pady=6)
+        label(c,'R7 · ilustraciones nuevas basadas en tus referencias. La galería permite revisar y elegir cada cara.',MUTED,9,wraplength=620,justify='left',anchor='w').pack(fill='x',pady=6)
         c=card(t,'VENTANA',PINK)
         field(c,'desktop.width','Ancho','int');field(c,'desktop.height','Alto','int')
         button(c,'BORRAR CACHÉ',self.open_cache_cleaner,CYAN).pack(fill='x',pady=8)
@@ -1528,6 +1530,7 @@ class Desktop(DesktopServices,StrategyDirectory):
             if self.voice_session:self.voice_session.stop()
             self.voice_session=VoiceSession(self.folder,lambda e:self.replies.put({'voice_event':e}),options,voice)
             self.voice_call_active=True;self.voice_awaiting=False;self.voice_start_button.configure(state='disabled');self.voice_session.start()
+            if getattr(self,'avatar_director',None):self.avatar_director.playback(False)
             for avatar in getattr(self,'avatars',[]):avatar.set_expression('idle')
         except Exception as exc:self.voice_state.configure(text=str(exc),fg=RED)
 
@@ -1540,11 +1543,13 @@ class Desktop(DesktopServices,StrategyDirectory):
         if self.voice_session:self.voice_session.interrupt();self.voice_session.resume()
         self.voice_awaiting=False
         if self.chat_busy:self.stop_thinking()
+        if getattr(self,'avatar_director',None):self.avatar_director.playback(False)
         for avatar in getattr(self,'avatars',[]):avatar.set_expression('idle')
 
     def end_call(self):
         self.voice_call_active=False;self.voice_awaiting=False
         if self.voice_session:self.voice_session.stop()
+        if getattr(self,'avatar_director',None):self.avatar_director.playback(False)
         for avatar in getattr(self,'avatars',[]):avatar.set_expression('idle')
         try:
             if self.voice_window is not None:self.voice_start_button.configure(state='normal');self.voice_pause_button.configure(text='PAUSAR')
@@ -1566,6 +1571,10 @@ class Desktop(DesktopServices,StrategyDirectory):
         session_id=event.get('session_id')
         if session_id and (not self.voice_session or session_id!=self.voice_session.session_id):return
         kind=event.get('kind');text=str(event.get('text',''))
+        director=getattr(self,'avatar_director',None)
+        if director is not None and kind=='playback_start':director.playback(True);return
+        if director is not None and kind=='playback_end':director.playback(False);return
+        if director is not None and kind=='playback_level':director.level(event.get('level',0));return
         if getattr(self,'voice_call_active',False) or kind in ('error','download_error'):
             mood=expression_for_voice_event(kind,text)
             for avatar in getattr(self,'avatars',[]):avatar.set_expression(mood,context=str(event))

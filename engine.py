@@ -248,6 +248,11 @@ class Engine:
                 if self.confirm(key,q,invalid):return g.cancel(o,invalid)
                 continue
             matches=[p for p in plans if self.matching(old,p)]
+            filtered=getattr(self.planner,'pending_adaptation_rejections',{}).get(symbol,[])
+            if not matches and any(self.matching(old,p) for p in filtered):
+                self.confirmations.pop(key,None)
+                self.lifecycle[str(o.ticket)]={'state':'VALID','reason':'Zona vigente; el filtro aprendido solo decide nuevas entradas'}
+                continue
             if not matches:
                 horizon=max(old.horizon_atr,old.atr,1e-9)
                 ref=q.ask if old.side==1 else q.bid
@@ -802,6 +807,12 @@ class Engine:
             out[s]={'bid':q.bid if q else None,'ask':q.ask if q else None,'spread':q.spread if q else None,'quote_time':q.time if q else None,
                     'frames':frames,'broker_book':self.planner.broker_book.get(s,{}),'pending_book':book,'scenario_book':book,
                     'bars':{tf:[b.to_dict() for b in c.frames[tf].bars[-320 if tf in ('M5','M15') else 180:]] for tf in ('M5','M15','H1','H4','D1') if tf in c.frames}}
+            baseline=getattr(self.planner,'pending_adaptation_baseline',{}).get(s,[])
+            out[s]['adaptation_candidates']=[p.to_dict() for p in baseline]
+            if q:
+                from runner import baseline_runner_candidates
+                runner_candidates,_=baseline_runner_candidates(s,c.frames,q,self.cfg,{})
+                out[s]['adaptation_candidates'].extend(p.to_dict() for p,_ in runner_candidates)
             if q:
                 try:
                     lot=float(self.cfg['lot']);unit=abs(self.g.profit(s,1,lot,q.ask,q.ask+1))
@@ -831,6 +842,8 @@ class Engine:
         try:
             state=self.context.read()
             if not isinstance(state,dict):raise ValueError('Estado de contexto sin estructura válida')
+            from strategy_adaptation import execution_identity
+            state['execution_identity']=execution_identity(self.g.identity,BUILD_ID,self.verification_configuration())
             return state
         except Exception as exc:
             detail='Contexto auxiliar no disponible: '+type(exc).__name__+': '+str(exc)[:250]
@@ -971,6 +984,12 @@ class Engine:
         """Se ejecuta exclusivamente en el actor MT5; el chat envía mensajes."""
         action=cmd.get('action');g=self.g
         if action=='assistant_snapshot':return {'ok':True,'snapshot':self.view()}
+        if action=='refresh_sources':
+            if self.context:
+                with self.context.lock:
+                    self.context.due.clear();self.context.failures.clear()
+                self.context.wake.set()
+            return {'ok':True,'detail':'Nueva consulta solicitada en segundo plano.'}
         if action=='export_diagnostic':return {'ok':True,'snapshot':self.diagnostic_snapshot()}
         if action=='export_report_snapshot':return {'ok':True,'snapshot':self.report_snapshot()}
         if action=='strategy_lab_refresh':
@@ -1194,7 +1213,7 @@ class Engine:
         return view
 
     def verification_configuration(self):
-        return {**{k:copy.deepcopy(self.cfg[k]) for k in ('strategy','symbol_profiles','execution','pending','risk','sizing','management')},
+        return {**{k:copy.deepcopy(self.cfg[k]) for k in ('strategy','symbol_profiles','execution','pending','risk','sizing','management','runner','lot','mode')},
             'research':{k:v for k,v in self.cfg['research'].items() if isinstance(v,bool) or k in ('model','pending_score_weight','dom_score_weight','cloud_pick_bonus','pending_activation_weight')},
             'model_configuration':{k:self.cfg.get('assistant',{}).get(k) for k in ('cloud','local_primary','model','trading_model','local_model','local_model_lite','local_vision_model')},
             'evolution_model':self.cfg.get('evolution',{}).get('analysis_model')}

@@ -36,6 +36,7 @@ def _pid_alive(pid):
         finally:kernel.CloseHandle(handle)
     except (OSError,ValueError,TypeError,OverflowError):return False
 PHASE_LABELS = {
+    'IDLE':'en reposo · listo al conversar', 'READY':'activo',
     'CHECKING': 'comprobando asistente', 'INSTALLING': 'instalando asistente',
     'STARTING': 'iniciando asistente', 'DOWNLOADING': 'descargando asistente',
     'VERIFYING': 'verificando asistente', 'VISION': 'preparando visión',

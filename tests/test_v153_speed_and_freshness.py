@@ -150,7 +150,7 @@ class SpeedFreshnessTests(PendingCase,unittest.TestCase):
         self.assertEqual(bar.close,1.8);self.assertIsNot(data,bar.to_dict())
 
     def test_production_first_cycle_sends_qualified_sides_and_reduces_ipc(self):
-        self.cfg=load_config(DEFAULT);self.g.cfg=self.cfg;self.e.close()
+        self.cfg=load_config(DEFAULT);self.cfg['mode']='trade';self.g.cfg=self.cfg;self.e.close()
         self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close)
         from contextlib import ExitStack
         with ExitStack() as stack:

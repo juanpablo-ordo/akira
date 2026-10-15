@@ -173,16 +173,30 @@ def _m5_retest_plan(symbol, frames, quote, cfg, context=None):
     return None,'Esperando retest M5 cerrado y recuperado dentro de la tendencia M15/H1'
 
 
-def runner_plan(symbol,frames,quote,cfg,context=None):
+def baseline_runner_candidates(symbol,frames,quote,cfg,context=None):
+    rows=[]
     plan,detail=_m15_runner_plan(symbol,frames,quote,cfg,context)
     if plan is not None:
         age=quote.time-(plan.bar_time+900)
         if age< -2 or age>cfg['runner']['max_signal_age_seconds']:
             plan=None;detail='Señal M15 caducada o aún no cerrada'
-    if plan is not None or not cfg['runner']['enabled']:return plan,detail
-    if not cfg['runner'].get('allow_m5_retest',True):return None,detail
-    m5_plan,m5_detail=_m5_retest_plan(symbol,frames,quote,cfg,context)
-    return (m5_plan,m5_detail) if m5_plan is not None else (None,detail+' · '+m5_detail)
+    if plan is not None:rows.append((plan,detail))
+    if cfg['runner']['enabled'] and cfg['runner'].get('allow_m5_retest',True):
+        m5_plan,m5_detail=_m5_retest_plan(symbol,frames,quote,cfg,context)
+        if m5_plan is not None:rows.append((m5_plan,m5_detail))
+        else:detail+=' · '+m5_detail
+    return rows,detail
+
+
+def runner_plan(symbol,frames,quote,cfg,context=None):
+    from strategy_adaptation import candidate_decision,frame_features
+    from dataclasses import replace
+    candidates,detail=baseline_runner_candidates(symbol,frames,quote,cfg,context)
+    for plan,reason in candidates:
+        allowed,evidence=candidate_decision(plan,frame_features(frames),context or {},quote.time)
+        if allowed:return (replace(plan,reason=plan.reason+' · '+evidence) if evidence else plan),reason
+        detail=evidence
+    return None,detail
 
 
 def runner_exit(plan, frames, side, rr, cfg, *, entry_time=None, now=None):

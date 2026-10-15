@@ -1,4 +1,4 @@
-param([switch]$SelfTestProgress)
+﻿param([switch]$SelfTestProgress)
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = New-Object Text.UTF8Encoding($false)
 try { [Console]::OutputEncoding = $OutputEncoding } catch { }

@@ -90,9 +90,9 @@ def expression_for_voice_event(kind: str, text: str = '') -> str:
     if kind in ('error','download_error') or any(s in msg for s in ('error','audio saturado','desconectó')):return 'alert'
     if 'llamada finalizada' in msg or 'demostración terminada' in msg:return 'idle'
     if 'silenciado' in msg or kind=='paused':return 'sleeping'
-    if 'procesando' in msg or 'transcribiendo' in msg:return 'thinking'
+    if 'procesando' in msg or 'transcribiendo' in msg or 'preparando voz' in msg:return 'thinking'
     if 'responde' in msg or kind=='speaking':return 'talking'
-    if kind in ('partial','final') or 'escuchando' in msg or 'micrófono activo' in msg:return 'listening'
+    if kind in ('partial','final') or 'escuchando' in msg or 'reanudando escucha' in msg or 'micrófono activo' in msg:return 'listening'
     return 'idle'
 
 
@@ -106,106 +106,134 @@ def vtuber_available():
         return False
 
 
-class AkiraLive2D(tk.Frame):
-    """A real illustrated expression, never a face painted over another face."""
-    EXPRESSIONS = set(SPRITE_MAP) | {'listening', 'curious', 'caring', 'surprised', 'focused', 'celebrating'}
+class AvatarDirector:
+    """One expression and one clock for every view of the same character."""
+    def __init__(self,catalog,clock=time.monotonic):
+        self.catalog,self.clock=catalog,clock
+        self.listeners=weakref.WeakSet();self.sequence=0;self.expression='idle';self.context=''
+        self.selected=catalog.choose('idle');self.next_variation=clock()+18
+        self.playing=False;self.last_level=0
 
-    def __init__(self, parent, width=320, height=300, bg="#071522", **kw):
-        super().__init__(parent, width=width, height=height, bg=bg, **kw)
+    def subscribe(self,avatar):
+        self.listeners.add(avatar);avatar._receive(self.expression,self.selected,False)
+
+    def publish(self,name,context='',force=False):
+        name=str(name or 'idle');context=str(context or '')
+        if self.playing and not force:return
+        if name==self.expression and context==self.context:return
+        self.sequence+=1;self.expression=name;self.context=context
+        self.selected=self.catalog.choose(name,self.sequence,context)
+        self.next_variation=self.clock()+18
+        for avatar in list(self.listeners):avatar._receive(name,self.selected,True)
+
+    def refresh(self):
+        if not self.playing and self.expression in ('idle','waiting') and self.clock()>=self.next_variation:
+            self.publish(self.expression,str(self.sequence+1))
+
+    def playback(self,active):
+        self.playing=bool(active);self.last_level=0
+        self.publish('AKIRA_046' if active else 'listening',force=True)
+
+    def level(self,value):
+        if not self.playing or self.clock()-self.last_level<.16:return
+        self.last_level=self.clock()
+        self.publish('AKIRA_047' if float(value)>.035 else 'AKIRA_046',force=True)
+
+
+class AkiraLive2D(tk.Frame):
+    """Illustrated faces with short crossfades, sharing the desktop director."""
+    EXPRESSIONS=set(SPRITE_MAP)|{'listening','curious','caring','surprised','focused','celebrating'}
+
+    def __init__(self,parent,width=320,height=300,bg='#071522',director=None,**kw):
+        super().__init__(parent,width=width,height=height,bg=bg,**kw)
         from collections import OrderedDict
         from akira_expressions import get_catalog
-        self.bg = bg
-        self.w, self.h = int(width), int(height)
-        self.expression = 'idle'
-        self.catalog = get_catalog(_root())
-        self.expression_count = len(self.catalog.entries)
-        self._sequence = 0
-        self.selected = self.catalog.choose('idle')
-        self._photos = OrderedDict()
-        self._resize_job = self._tick_job = None
-        self._tick_interval_ms = 250
-        self._next_variation = time.monotonic() + 18
-        self._closed = False
-        self.canvas = tk.Canvas(self, width=width, height=height, bg=bg, highlightthickness=0, bd=0)
-        self.canvas.pack(fill='both', expand=True)
-        self.sprite = self.canvas.create_image(width / 2, height / 2, anchor='center')
-        self.canvas.bind('<Configure>', self._resize)
-        self.bind('<Destroy>', self._destroy, add='+')
-        self._draw()
-        self._tick_job = self.after(self._tick_interval_ms, self._tick)
+        self.catalog=get_catalog(_root());self.expression_count=len(self.catalog.entries)
+        root=self.winfo_toplevel()
+        if director is None:
+            director=getattr(root,'_akira_director',None)
+            if director is None:director=AvatarDirector(self.catalog);root._akira_director=director
+        self.director=director;self.bg=bg;self.w,self.h=int(width),int(height)
+        self.expression='idle';self.selected=self.catalog.choose('idle')
+        self._photos=OrderedDict();self._closed=False;self._tick_interval_ms=250
+        self._resize_job=self._tick_job=self._fade_job=None
+        self.canvas=tk.Canvas(self,width=width,height=height,bg=bg,highlightthickness=0,bd=0)
+        self.canvas.pack(fill='both',expand=True)
+        self.sprite=self.canvas.create_image(width/2,height/2,anchor='center')
+        self.canvas.bind('<Configure>',self._resize)
+        self.bind('<Map>',lambda e:self._draw(),add='+')
+        self.bind('<Destroy>',self._destroy,add='+')
+        director.subscribe(self)
+        self._tick_job=self.after(self._tick_interval_ms,self._tick)
+
+    def _image(self,entry):
+        key=(entry.id,self.w,self.h)
+        image=self._photos.pop(key,None)
+        if image is None:
+            source=self.catalog.image(entry,max(1,round(self.w*.94)),max(1,round(self.h*.94)))
+            image=Image.new('RGBA',(max(1,self.w),max(1,self.h)),(0,0,0,0))
+            image.paste(source,((self.w-source.width)//2,(self.h-source.height)//2))
+        self._photos[key]=image
+        while len(self._photos)>12:self._photos.popitem(last=False)
+        return image
+
+    def _paint(self,image):
+        if self._closed:return
+        self._photo_keep=ImageTk.PhotoImage(image,master=self.canvas)
+        self.canvas.itemconfigure(self.sprite,image=self._photo_keep)
+        self.canvas.coords(self.sprite,self.w/2,self.h/2)
 
     def _draw(self):
-        if self._closed:
-            return
-        key = (self.selected.id, self.w, self.h)
-        photo = self._photos.pop(key, None)
-        if photo is None:
-            image = self.catalog.image(self.selected, max(1, round(self.w * .94)), max(1, round(self.h * .94)))
-            photo = ImageTk.PhotoImage(image, master=self.canvas)
-        self._photos[key] = photo
-        while len(self._photos) > 12:
-            self._photos.popitem(last=False)
-        self._photo_keep = photo
-        self.canvas.itemconfigure(self.sprite, image=photo)
-        self.canvas.coords(self.sprite, self.w / 2, self.h / 2)
+        if not self._closed and self.winfo_ismapped():self._paint(self._image(self.selected))
 
-    def _resize(self, event):
-        if event.width < 20 or event.height < 20:
-            return
-        if (self.w, self.h) == (event.width, event.height):
-            return
-        self.w, self.h = event.width, event.height
-        self.canvas.coords(self.sprite, self.w / 2, self.h / 2)
-        if self._resize_job is not None:
-            self.after_cancel(self._resize_job)
-        self._resize_job = self.after(140, self._resize_frames)
+    def _receive(self,name,entry,animate):
+        previous=self.selected;self.expression=name;self.selected=entry
+        if self._fade_job is not None:
+            self.after_cancel(self._fade_job);self._fade_job=None
+        if self._closed or not self.winfo_ismapped():return
+        if not animate or previous.id==entry.id:self._draw();return
+        before,after=self._image(previous),self._image(entry);started=time.monotonic()
+        duration=.09 if self.director.playing else .16
+        def step():
+            self._fade_job=None
+            if self._closed or not self.winfo_ismapped():return
+            alpha=min(1,(time.monotonic()-started)/duration)
+            self._paint(Image.blend(before,after,alpha))
+            if alpha<1:self._fade_job=self.after(25,step)
+        step()
+
+    def _resize(self,event):
+        if event.width<20 or event.height<20 or (self.w,self.h)==(event.width,event.height):return
+        self.w,self.h=event.width,event.height
+        if self._resize_job is not None:self.after_cancel(self._resize_job)
+        if self._fade_job is not None:self.after_cancel(self._fade_job);self._fade_job=None
+        self._resize_job=self.after(100,self._resize_frames)
 
     def _resize_frames(self):
-        self._resize_job = None
-        if not self._closed:
-            self._photos.clear()
-            self._draw()
+        self._resize_job=None
+        if not self._closed:self._photos.clear();self._draw()
 
-    def set_expression(self, name, context=''):
-        name = str(name or 'idle')
-        if name not in self.EXPRESSIONS and name not in self.catalog.by_id:
-            name = 'idle'
-        if name == self.expression and not context:
-            return
-        self.expression = name
-        self._sequence += 1
-        self.selected = self.catalog.choose(name, self._sequence, context)
-        self._next_variation = time.monotonic() + 18
-        self._draw()
+    def set_expression(self,name,context=''):
+        if name not in self.EXPRESSIONS and name not in self.catalog.by_id:name='idle'
+        self.director.publish(name,context)
 
-    def set_refresh_interval(self, milliseconds):
-        self._tick_interval_ms = max(160, min(1000, int(milliseconds)))
+    def set_refresh_interval(self,milliseconds):
+        self._tick_interval_ms=max(160,min(1000,int(milliseconds)))
 
     def _tick(self):
-        self._tick_job = None
-        if self._closed:
-            return
+        self._tick_job=None
+        if self._closed:return
         try:
-            visible = self.winfo_ismapped()
-            if visible and time.monotonic() >= self._next_variation and self.expression in ('idle', 'waiting'):
-                self._sequence += 1
-                self.selected = self.catalog.choose(self.expression, self._sequence)
-                self._next_variation = time.monotonic() + 18
-                self._draw()
-            # No body shaking, artificial eyes, or mouth overlay. Hidden pages
-            # do not decode images or repaint, and states stay stable while resizing.
-            self._tick_job = self.after(self._tick_interval_ms if visible else 1500, self._tick)
-        except tk.TclError:
-            pass
+            visible=self.winfo_ismapped()
+            if visible:self.director.refresh()
+            self._tick_job=self.after(self._tick_interval_ms if visible else 1500,self._tick)
+        except tk.TclError:pass
 
-    def _destroy(self, event):
-        if event.widget is not self:
-            return
-        self._closed = True
-        for job in (self._tick_job, self._resize_job):
+    def _destroy(self,event):
+        if event.widget is not self:return
+        self._closed=True;self.director.listeners.discard(self)
+        for job in (self._tick_job,self._resize_job,self._fade_job):
             if job is not None:
-                try:
-                    self.after_cancel(job)
-                except tk.TclError:
-                    pass
+                try:self.after_cancel(job)
+                except tk.TclError:pass
         self._photos.clear()
