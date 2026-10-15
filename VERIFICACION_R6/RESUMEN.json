@@ -1,0 +1,73 @@
+{
+  "build": "AKIRA_16_3_3_R6_108_EXPRESIONES",
+  "artwork": {
+    "expressions": 108,
+    "original_atlases": 12,
+    "tool": "Imagegen integrado",
+    "references": "Fotos del perro y mascota original proporcionadas por el usuario"
+  },
+  "local_tests": {
+    "pytest_cases_passed": 152,
+    "subtests_passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "full_suite_claimed_passed": false
+  },
+  "native_gui": {
+    "version": 6,
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "broker": "FakeMT5",
+    "network_used": false,
+    "live_account_used": false,
+    "order_rows": 2,
+    "position_rows": 1,
+    "frame_rows": 14,
+    "expression_count": 108,
+    "distinct_expression_cells": 108,
+    "orders": true,
+    "positions": true,
+    "charts": true,
+    "analysis": true,
+    "sources": true,
+    "context": true,
+    "visible_amounts": true,
+    "verification_bar": true,
+    "pending_verification": true,
+    "verification_controls": true,
+    "strategy_directory": true,
+    "live_cycle": true,
+    "closure_notifications": true,
+    "uninstall_control": true,
+    "expression_catalog": true,
+    "avatar_artwork": true,
+    "compact_controls": true,
+    "resizable_layout": true,
+    "privacy": true,
+    "loop_alive": true,
+    "no_broker_requests": true
+  },
+  "screen_combinations": 24,
+  "tested_scales": [
+    1.333,
+    2.0
+  ],
+  "tested_sizes": [
+    [
+      1024,
+      640
+    ],
+    [
+      1334,
+      688
+    ],
+    [
+      1280,
+      688
+    ]
+  ],
+  "windows_installer_built": false,
+  "windows_installation_verified": false,
+  "github_publish": "403 Resource not accessible by integration",
+  "base_tree": "6a4998e82f680366129ca268ae20cd0b6e9c53d0"
+}

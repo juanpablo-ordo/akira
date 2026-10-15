@@ -77,7 +77,7 @@ class DesktopFlowTests(PendingCase,unittest.TestCase):
         with patch.object(self.api,'symbol_info_tick',side_effect=AssertionError('MT5 desde Tk')),patch('assistant_akira.ollama_status',side_effect=AssertionError('Red desde Tk')):
             self.app.render(view)
         self.assertEqual(tuple(self.app.book.tabs),desktop.TAB_TITLES)
-        self.assertEqual(len(self.app.avatars),2);self.assertEqual(len(self.app.orders.items),4)
+        self.assertEqual(len(self.app.avatars),3);self.assertEqual(len(self.app.orders.items),4)
         self.assertGreaterEqual(len(self.app.frames.items),14);self.assertIn('BTCUSDm',self.app.sources.text)
         self.assertTrue(any(row['values'][0].startswith('#') for panel in self.app.panels.values() for row in panel.tree.items.values()))
     def test_pending_command_remains_available_during_long_conversation(self):
