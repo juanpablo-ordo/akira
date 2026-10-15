@@ -80,29 +80,8 @@ class VerificationStages:
             self.pulse.configure(fg=CYAN if self.activity else BLUE)
 
 def label(parent,text='',color=TEXT,size=10,bold=False,**kw):
-    wrapped=bool(kw.get('wraplength'))
-    widget=tk.Label(parent,text=text,bg=parent.cget('bg'),fg=color,
+    return tk.Label(parent,text=text,bg=parent.cget('bg'),fg=color,
         font=(FONT,size,'bold' if bold else 'normal'),**kw)
-    if wrapped:responsive_wrap(widget)
-    return widget
-
-def responsive_wrap(widget,padding=4):
-    """Use the granted width, not an old 650px request inside a 200px pane."""
-    def fit(event):
-        if event.widget is not widget or event.width<30:return
-        # Only a layout-constrained label may follow its granted width. A
-        # centered label sized by its own text would otherwise shrink itself
-        # again on every Configure until only one letter remained visible.
-        try:
-            manager=widget.winfo_manager()
-            if manager=='pack' and widget.pack_info().get('fill') not in ('x','both'):return
-            if manager=='grid' and not all(c in widget.grid_info().get('sticky','') for c in 'ew'):return
-        except (AttributeError,tk.TclError):return
-        width=max(24,event.width-padding)
-        if abs(int(float(widget.cget('wraplength') or 0))-width)>3:
-            widget.configure(wraplength=width)
-    widget.bind('<Configure>',fit,add='+')
-    return widget
 
 def button(parent,text,command,color=CYAN,primary=False):
     primary=primary or color==GREEN or text in ('ENVIAR','ACTUALIZAR AHORA','GUARDAR AJUSTES','INICIAR')
@@ -122,7 +101,7 @@ def button(parent,text,command,color=CYAN,primary=False):
             elif text=='×':draw.line((5,5,17,17),fill=ink,width=2);draw.line((5,17,17,5),fill=ink,width=2)
             elif text=='⊘':draw.ellipse((3,3,19,19),outline=ink,width=2);draw.line((5,17,17,5),fill=ink,width=2)
             else:draw.polygon([(3,9),(7,9),(12,5),(12,17),(7,13),(3,13)],fill=ink);draw.arc((9,5,19,17),-65,65,fill=ink,width=2)
-            widget._akira_icon=ImageTk.PhotoImage(bitmap,master=widget);widget.configure(image=widget._akira_icon,compound='none',width=34,height=26)
+            widget._akira_icon=ImageTk.PhotoImage(bitmap,master=widget);widget.configure(image=widget._akira_icon,compound='none')
         except Exception:pass
     attach_tooltip(widget,help_for(text))
     widget.bind('<Enter>',lambda e:widget.configure(bg='#133f58'),add='+')
@@ -207,12 +186,12 @@ def neon_card(parent,title='',accent=CYAN,padx=16,pady=12):
     canvas.bind('<Configure>',paint)
     if title:
         head=tk.Frame(inner,bg=PANEL);head.pack(fill='x',pady=(0,10))
-        label(head,title,TEXT,10,True,anchor='w',justify='left',wraplength=400).pack(side='left',fill='x',expand=True)
+        label(head,title,TEXT,10,True,anchor='w').pack(side='left',fill='x',expand=True)
         tk.Frame(inner,bg=LINE,height=1).pack(fill='x',pady=(0,8))
     return outer,inner
 
 def text_box(parent,height=8):
-    return tk.Text(parent,height=height,width=1,bg=PANEL,fg=TEXT,insertbackground=CYAN,
+    return tk.Text(parent,height=height,bg=PANEL,fg=TEXT,insertbackground=CYAN,
         selectbackground='#123e58',selectforeground=TEXT,highlightthickness=0,bd=0,
         relief='flat',wrap='word',font=(FONT,10),padx=16,pady=12,spacing3=5)
 
@@ -254,12 +233,8 @@ def configure_style(root):
     # Keep the native Notebook API and keyboard navigation; sidebar owns its tabs.
     style.layout('Cyber.TNotebook.Tab',[])
     style.configure('Cyber.TNotebook',background=BG,borderwidth=0,bordercolor=BG,lightcolor=BG,darkcolor=BG)
-    try:
-        from tkinter import font as tkfont
-        row_height=max(34,tkfont.Font(root,family=FONT,size=9).metrics('linespace')+12)
-    except (AttributeError,tk.TclError):row_height=34
     style.configure('Treeview',background=PANEL,fieldbackground=PANEL,foreground=TEXT,
-        rowheight=row_height,font=(FONT,9),borderwidth=0,bordercolor=LINE,relief='flat')
+        rowheight=34,font=(FONT,9),borderwidth=0,bordercolor=LINE,relief='flat')
     style.configure('Treeview.Heading',background='#102f47',foreground=MUTED,
         font=(FONT,8,'bold'),padding=(6,9),borderwidth=0,relief='flat')
     style.layout('Treeview.Heading',[('Treeheading.cell',{'sticky':'nswe'}),

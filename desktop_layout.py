@@ -11,14 +11,14 @@ def valid_ratios(value,count):
 
 def fitted_geometry(width,height,screen_width,screen_height):
     """Keep the entire window on screen, including high-DPI laptop displays."""
-    usable_w=max(320,int(screen_width)-32);usable_h=max(260,int(screen_height)-80)
+    usable_w=max(600,int(screen_width)-32);usable_h=max(420,int(screen_height)-80)
     width=max(min(960,usable_w),min(int(width),usable_w))
     height=max(min(600,usable_h),min(int(height),usable_h))
     return width,height,min(900,usable_w),min(580,usable_h)
 
 class PanelLayout:
     def __init__(self,root,path):
-        self.root,self.path=root,Path(path);self.saved={};self.widgets={};self.pending=None;self.restore_jobs={};self.dragging=set();self._restoring=set();self._base_minimums={}
+        self.root,self.path=root,Path(path);self.saved={};self.widgets={};self.pending=None;self.restore_jobs={};self.dragging=set()
         try:
             data=json.loads(self.path.read_text(encoding='utf-8'))
             if isinstance(data,dict) and data.get('schema')==1 and isinstance(data.get('panels'),dict):self.saved=data['panels']
@@ -38,20 +38,18 @@ class PanelLayout:
         return p
 
     def queue_restore(self,key):
-        if self.dragging or key in self._restoring:return
+        if key in self.dragging:return
         old=self.restore_jobs.pop(key,None)
         if old is not None:
             try:self.root.after_cancel(old)
             except (tk.TclError,ValueError):pass
         def apply():
             self.restore_jobs.pop(key,None)
-            if not self.dragging:self.restore(key)
+            if key not in self.dragging:self.restore(key)
         self.restore_jobs[key]=self.root.after(170,apply)
 
     def restore(self,key,defaults=False):
-        if key in self._restoring or self.dragging:return
         p,orient,initial=self.widgets[key]
-        self._restoring.add(key)
         try:
             count=len(p.panes())
             values=valid_ratios(self.saved.get(key),count) if not defaults else None
@@ -61,29 +59,11 @@ class PanelLayout:
             values=values or tuple(i/count for i in range(1,count))
             extent=p.winfo_width() if orient==tk.HORIZONTAL else p.winfo_height()
             if not values or extent<50:return
-            # A layout saved on a large monitor must not hide a panel on a
-            # laptop. Keep a remembered natural minimum, scaling only when the
-            # actual viewport cannot contain their sum.
-            try:
-                panes=p.panes();minimums=[]
-                for pane in panes:
-                    identity=(key,str(pane))
-                    if identity not in self._base_minimums:
-                        self._base_minimums[identity]=max(32,int(p.panecget(pane,'minsize')))
-                    minimums.append(self._base_minimums[identity])
-                free=max(count,extent-14*(count-1)-4)
-                scale=min(1,free/max(1,sum(minimums)))
-                fitted=[max(1,int(v*scale)) for v in minimums]
-                for pane,minimum in zip(panes,fitted):p.paneconfigure(pane,minsize=minimum)
-                positions=constrained_sashes(extent,values,fitted)
-            except (AttributeError,TypeError,ValueError,tk.TclError):
-                positions=[round(extent*value) for value in values]
-            for i,position in enumerate(positions):
+            for i,value in enumerate(values):
                 x,y=p.sash_coord(i)
-                p.sash_place(i,position if orient==tk.HORIZONTAL else x,
-                             position if orient==tk.VERTICAL else y)
+                p.sash_place(i,round(extent*value) if orient==tk.HORIZONTAL else x,
+                             round(extent*value) if orient==tk.VERTICAL else y)
         except tk.TclError:pass
-        finally:self._restoring.discard(key)
 
     def changed(self,key):
         p,orient,_=self.widgets[key]
@@ -114,16 +94,6 @@ class PanelLayout:
         for key in self.widgets:self.restore(key,defaults=True)
         self.save()
 
-def constrained_sashes(extent,ratios,minimums,gap=14):
-    """Clamp old proportions so every pane stays reachable after resizing."""
-    count=len(minimums);positions=[]
-    for index,ratio in enumerate(ratios):
-        lower=sum(minimums[:index+1])+gap*index
-        upper=extent-sum(minimums[index+1:])-gap*(count-index-2)-gap
-        if positions:lower=max(lower,positions[-1]+minimums[index]+gap)
-        positions.append(max(lower,min(round(extent*ratio),max(lower,upper))))
-    return positions
-
 def scroll_frame(parent,bg):
     shell=tk.Frame(parent,bg=bg);shell.rowconfigure(0,weight=1);shell.columnconfigure(0,weight=1)
     canvas=tk.Canvas(shell,bg=bg,highlightthickness=0,width=210,height=120)
@@ -144,7 +114,6 @@ def scroll_frame(parent,bg):
             canvas.itemconfigure(window,width=width,height=0)
             canvas.configure(scrollregion=(0,0,width,needed))
             canvas.yview_moveto(min(first,max(0,1-height/needed)))
-            if getattr(canvas,'_wheel_job',None) is None:canvas._wheel_target=canvas.yview()[0]
         except tk.TclError:pass
     def schedule(event=None):
         if getattr(canvas,'_bounds_destroyed',False):return
@@ -196,10 +165,6 @@ def scroll_frame(parent,bg):
 def wheel_over_panel(event):
     """Find the nearest scrollable parent; never double-scroll a Text or Treeview."""
     widget=event.widget
-    try:
-        hovered=widget.winfo_containing(event.x_root,event.y_root)
-        if hovered is not None:widget=hovered
-    except (AttributeError,tk.TclError):pass
     try:
         if widget.winfo_class() in ('Text','Treeview','Listbox','TCombobox'):return
     except (AttributeError,tk.TclError):pass
@@ -262,36 +227,3 @@ def bind_direct_scroll_subtree(parent, canvas):
         except tk.TclError:
             return
     attach(parent)
-
-
-def add_table_scrollbars(root):
-    """Reserve a horizontal rail wherever a table can exceed its panel width."""
-    if not hasattr(root,'tk'):return
-    for tree in list(_descendants(root)):
-        if not isinstance(tree,ttk.Treeview) or tree.cget('xscrollcommand'):continue
-        parent=tree.master;manager=tree.winfo_manager()
-        if manager=='pack':
-            bar=ttk.Scrollbar(parent,orient='horizontal',command=tree.xview)
-            bar.pack(side='bottom',fill='x',before=tree)
-        elif manager=='grid':
-            geometry=tree.grid_info();row=int(geometry.get('row',0));column=int(geometry.get('column',0))
-            bar=ttk.Scrollbar(parent,orient='horizontal',command=tree.xview)
-            bar.grid(row=row+1,column=column,sticky='ew')
-        elif manager=='panedwindow' and isinstance(parent,tk.PanedWindow):
-            # Tk permits managing a child inside a descendant of its parent.
-            # Keep the Treeview object and selection bindings intact.
-            panes=[str(pane) for pane in parent.panes()];index=panes.index(str(tree))
-            options={key:parent.panecget(tree,key) for key in ('minsize','stretch')}
-            parent.forget(tree);wrapper=tk.Frame(parent,bg=parent.cget('bg'))
-            if index<len(parent.panes()):options['before']=parent.panes()[index]
-            parent.add(wrapper,**options)
-            bar=ttk.Scrollbar(wrapper,orient='horizontal',command=tree.xview)
-            bar.pack(side='bottom',fill='x');tree.pack(in_=wrapper,fill='both',expand=True)
-        else:continue
-        tree.configure(xscrollcommand=bar.set);tree._horizontal_scrollbar=bar
-
-
-def _descendants(root):
-    for child in root.winfo_children():
-        yield child
-        yield from _descendants(child)

@@ -17,7 +17,7 @@ from tests.fixtures import PendingCase
 class ReflexV124EngineTests(PendingCase, unittest.TestCase):
     def test_schema_build_and_reflex_defaults_are_active(self):
         self.assertEqual(self.cfg['schema_version'], 1600)
-        self.assertEqual(BUILD_ID, 'AKIRA_16_3_3_R6_108_EXPRESIONES')
+        self.assertEqual(BUILD_ID, 'AKIRA_16_3_2_ANTI_CHURN_CANDIDATA')
         self.assertTrue(self.cfg['strategy']['fast_future_map'])
         self.assertTrue(self.cfg['execution']['always_keep_pending_map'])
         self.assertGreaterEqual(self.cfg['poll_seconds'], .15)

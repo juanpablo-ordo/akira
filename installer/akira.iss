@@ -1,5 +1,5 @@
 #define AppName "AKIRA"
-#define AppVersion "16.3.3"
+#define AppVersion "16.3.2"
 
 [Setup]
 AppId={{82CE3E25-3E61-4978-9E4F-83524975B9AA}
@@ -12,7 +12,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\dist_installer
-OutputBaseFilename=AKIRA_16_3_3_R6_108_EXPRESIONES
+OutputBaseFilename=AKIRA_16_3_2_INSTALADOR_COMPLETO
 UninstallDisplayIcon={app}\AKIRA.exe
 SetupIconFile=..\assets\akira.ico
 WizardImageFile=..\assets\installer_left.bmp
@@ -27,7 +27,7 @@ UsePreviousAppDir=no
 CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
-VersionInfoVersion=16.3.3.0
+VersionInfoVersion=16.3.2.0
 VersionInfoDescription=AKIRA - Instalador de Windows
 
 [Languages]

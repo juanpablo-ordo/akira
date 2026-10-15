@@ -6,10 +6,10 @@ from akira_version import BUILD_ID
 
 def validate(root,config=None):
     root=Path(root);cfg=load_config(config or root/'akira_config.json')
-    if BUILD_ID!='AKIRA_16_3_3_R6_108_EXPRESIONES':raise ValueError('Build incorrecto')
+    if BUILD_ID!='AKIRA_16_3_2_ANTI_CHURN_CANDIDATA':raise ValueError('Build incorrecto')
     required=('Akira.py','engine.py','planner.py','execution.py','research.py','settings.py','default_config.json',
               'INSTALL_AKIRA.ps1','migrate_v11_settings.py','offline_test_runner.py','install_checks.py','requirements.txt',
-              'install_release.py','assistant_akira.py','assistant_startup.py','web_facts.py','video_vision.py','evolution.py','akira_expressions.py','expression_gallery.py','assets/expressions/catalog.json','akira_live2d.py','command_bridge.py','runner.py',
+              'install_release.py','assistant_akira.py','assistant_startup.py','web_facts.py','video_vision.py','evolution.py','akira_live2d.py','command_bridge.py','runner.py',
               'conversation_state.py','decision_status.py','decision_brain.py','risk_reservations.py','operation_report.py','trade_review.py','desktop_layout.py','selection_evidence.py','assets/report_template.xlsx',
               'chat_store.py','reference_library.py','global_sources.py','analysis_details.py','quality_study.py','paired_study.py','voice_session.py','windows_identity.py','build_windows.py','cyber_ui.py','windows_version.txt','assets/akira.ico','desktop_services.py','settings_effects.py','notification_center.py','knowledge_update.py','cache_maintenance.py','chart_indicators.py','chart_render.py','operation_verifier.py','selection_trials.py','security_details.py','frozen_ui_contract.py','native_ui_check.py','tests/fake_mt5.py','position_events.py','pending_verification.py','trade_quality_gate.py','strategy_lab.py','strategy_directory.py','application_management.py','DESINSTALAR_AKIRA.ps1','DESINSTALAR_AKIRA.cmd','GESTION_AKIRA.ps1','INSTALAR_AKIRA.cmd')
     for name in required:
@@ -18,10 +18,11 @@ def validate(root,config=None):
     for p in root.glob('*.py'):ast.parse(p.read_text(encoding='utf-8-sig'),filename=p.name)
     if any('scalp' in p.name.lower() for p in root.iterdir()):raise ValueError('Módulo de entradas eliminado aún presente')
     if any(x in json.dumps(cfg).lower() for x in ('scalp','ticket_control','impulse_runner')):raise ValueError('Configuración aún contiene entradas de la versión anterior')
-    from akira_expressions import ExpressionCatalog
-    ExpressionCatalog(root).validate_artwork()
+    from akira_live2d import SPRITE_MAP
+    for name in set(SPRITE_MAP.values()):
+        if not (root/'assets'/'vtuber'/name).is_file():raise ValueError('Falta una expresión de Akira: '+name)
     return cfg
 
 if __name__=='__main__':
     validate(Path(__file__).parent,sys.argv[1] if len(sys.argv)>1 else None)
-    print('AKIRA · 16.3.3 R6 validada · informes PDF/Excel · chats · llamada · pendientes y runners')
+    print('AKIRA · 16.3.2 validada · informes PDF/Excel · chats · llamada · pendientes y runners')

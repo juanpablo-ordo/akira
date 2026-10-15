@@ -48,7 +48,7 @@ class ResearchTests(unittest.TestCase):
 
 class VoiceReactionTests(unittest.TestCase):
  def test_voice_reactions(self):
-  self.assertEqual(expression_for_voice_event('state','Micrófono activo · Escuchando'),'listening')
+  self.assertEqual(expression_for_voice_event('state','Micrófono activo · Escuchando'),'idle')
   self.assertEqual(expression_for_voice_event('state','Procesando tu mensaje'),'thinking')
   self.assertEqual(expression_for_voice_event('state','AKIRA responde'),'talking')
   self.assertEqual(expression_for_voice_event('state','Micrófono silenciado'),'sleeping')

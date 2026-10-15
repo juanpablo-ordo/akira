@@ -123,7 +123,7 @@ class SymbolPanel(tk.Frame):
         super().__init__(parent,bg=PANEL,padx=14,pady=12,bd=0,highlightthickness=1,highlightbackground=LINE);self.symbol=symbol;self.app=app
         self.panel_shell,self.panel_content=scroll_frame(self,PANEL);self.panel_shell.pack(fill='both',expand=True)
         head=tk.Frame(self.panel_content,bg=PANEL);head.pack(fill='x');label(head,'ORO · '+symbol if symbol.startswith('XAU') else 'BITCOIN · '+symbol,TEXT,12,True).pack(side='left')
-        self.price=label(head,size=9,color=MUTED,anchor='e');self.price.pack(side='right');self.status=label(self.panel_content,'CARGANDO MT5...',AMBER,9,True,anchor='w');self.status.pack(fill='x',pady=4)
+        self.price=label(head,size=9,color=MUTED,anchor='e');self.price.pack(side='right');self.status=label(self.panel_content,'CARGANDO MT5…',AMBER,9,True,anchor='w');self.status.pack(fill='x',pady=4)
         self.detail=label(self.panel_content,color=MUTED,size=8,justify='left',anchor='w',height=3);self.detail.pack(fill='x')
         controls=tk.Frame(self.panel_content,bg=PANEL);controls.pack(fill='x',pady=6)
         self.auto_map=label(controls,'AUTO-MAPA ACTIVO',CYAN,8,True,anchor='w');self.auto_map.pack(side='left',fill='x',expand=True)
@@ -272,14 +272,14 @@ class Desktop(DesktopServices,StrategyDirectory):
         self._ui_error_times={};self._assistant_display_due=0.0;self._performance=get_intervals(self.cfg)
         from collections import deque
         self._terminal_pending=deque(maxlen=500)
-        set_identity();root.title('AKIRA · 16.3.3 · R6');root.configure(bg=BG)
+        set_identity();root.title('AKIRA · 16.3.2');root.configure(bg=BG)
         width,height,min_width,min_height=fitted_geometry(self.cfg['desktop']['width'],self.cfg['desktop']['height'],root.winfo_screenwidth(),root.winfo_screenheight())
         root.geometry(f'{width}x{height}');root.minsize(min_width,min_height)
         self.layout=PanelLayout(root,self.folder/'state'/'desktop_layout.json')
         apply_window_icon(root,self.folder)
         root.after(120,lambda:apply_dark_titlebar(root))
         self.configure_style();self.init_services();self.build_shell();self.build_header()
-        self.book=ttk.Notebook(self.main,style='Cyber.TNotebook');self.book.pack(fill='both',expand=True,padx=10,pady=(2,8))
+        self.book=ttk.Notebook(self.main,style='Cyber.TNotebook');self.book.pack(fill='both',expand=True,padx=18,pady=(2,8))
         self.pages={}
         for name,title in zip(TAB_NAMES,TAB_TITLES):
             frame=tk.Frame(self.book,bg=BG);self.book.add(frame,text=title);self.pages[name]=frame
@@ -287,9 +287,6 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.build_account(self.pages[TAB_NAMES[2]]);self.build_analysis(self.pages[TAB_NAMES[3]])
         self.build_sources(self.pages[TAB_NAMES[4]]);self.build_chat(self.pages[TAB_NAMES[5]])
         self.build_settings(self.pages[TAB_NAMES[6]]);self.build_terminal(self.pages[TAB_NAMES[7]])
-        from desktop_layout import add_table_scrollbars
-        add_table_scrollbars(self.root)
-        self.root.after_idle(self._apply_responsive_shell)
         for avatar in self.avatars:
             if hasattr(avatar,'set_refresh_interval'):avatar.set_refresh_interval(self._performance['avatar_ms'])
         self.book.bind('<<NotebookTabChanged>>',lambda e:self._sync_navigation())
@@ -318,8 +315,8 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.sidebar.pack(side='left',fill='y');self.sidebar.pack_propagate(False)
         tk.Frame(shell,bg=LINE,width=1).pack(side='left',fill='y')
         self.main=tk.Frame(shell,bg=BG);self.main.pack(side='left',fill='both',expand=True)
-        self.brand_title=label(self.sidebar,'AKIRA',CYAN,24,True,anchor='w');self.brand_title.pack(fill='x',padx=6)
-        label(self.sidebar,'ASISTENTE · MT5',MUTED,8,anchor='w',wraplength=135,justify='left').pack(fill='x',padx=7,pady=(0,10))
+        label(self.sidebar,'AKIRA',CYAN,28,True,anchor='w').pack(fill='x',padx=6)
+        label(self.sidebar,'INTELIGENCIA / MT5',MUTED,8,anchor='w').pack(fill='x',padx=7,pady=(0,10))
         tk.Frame(self.sidebar,bg=LINE,height=1).pack(fill='x',pady=(0,10))
         outer,inner=neon_card(self.sidebar,'',CYAN,padx=4,pady=4)
         self.sidebar_avatar=outer;outer.pack(fill='x',pady=(0,10))
@@ -328,12 +325,11 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.side_footer=tk.Frame(self.sidebar,bg='#061225');self.side_footer.pack(side='bottom',fill='x',pady=(8,0))
         tk.Frame(self.side_footer,bg=LINE,height=1).pack(fill='x',pady=(0,9))
         self.side_connection=label(self.side_footer,'MT5 · conectando',MUTED,8,anchor='w');self.side_connection.pack(fill='x')
-        label(self.side_footer,'R6 · 108 caras\n16.3.3',CYAN,8,anchor='w').pack(fill='x',pady=(4,0))
-        label(self.sidebar,'MÓDULOS',MUTED,8,anchor='w').pack(fill='x',padx=4,pady=(0,5))
-        nav_shell,nav_content=scroll_frame(self.sidebar,'#061225');nav_shell.pack(fill='both',expand=True)
+        label(self.side_footer,'AKIRA · 16.3.2',MUTED,8,anchor='w').pack(fill='x',pady=(4,0))
+        label(self.sidebar,'MÓDULOS DEL SISTEMA',MUTED,8,anchor='w').pack(fill='x',padx=4,pady=(0,5))
         self.nav_buttons=[]
         for i,(glyph,title) in enumerate(zip(('□','≡','▥','⌁','◎','◇','⚙','▤'),TAB_TITLES)):
-            nav=button(nav_content,'CHAT' if i==5 else title,lambda index=i:self.navigate(index),MUTED)
+            nav=button(self.sidebar,glyph+'   '+title,lambda index=i:self.navigate(index),MUTED)
             nav.configure(anchor='w',padx=14,pady=9);nav.pack(fill='x',pady=3);self.nav_buttons.append(nav)
         self.root.bind('<Configure>',self._responsive_shell,add='+')
 
@@ -356,57 +352,22 @@ class Desktop(DesktopServices,StrategyDirectory):
 
     def _responsive_shell(self,event):
         if event.widget is not self.root:return
-        if getattr(self,'_responsive_job',None) is not None:
-            self.root.after_cancel(self._responsive_job)
-        self._responsive_job=self.root.after(75,self._apply_responsive_shell)
-
-    def _apply_responsive_shell(self):
-        self._responsive_job=None
-        if not hasattr(self,'page_detail'):return
-        width,height=self.root.winfo_width(),self.root.winfo_height()
+        width,height=event.width,event.height
         compact=width<1250 or height<780
-        short=height<780
         if compact!=getattr(self,'_compact_shell',None):
-            self._compact_shell=compact;self.sidebar.configure(width=158 if compact else 208)
-            self.sidebar_avatar_image.configure(height=90 if compact else 150)
+            self._compact_shell=compact;self.sidebar.configure(width=172 if compact else 218)
+            self.sidebar_avatar_image.configure(height=82 if compact else 160)
             self.sidebar_avatar_image.pack_propagate(False)
-            for nav in self.nav_buttons:nav.configure(pady=5 if compact else 9,padx=8 if compact else 14,font=(FONT,8 if compact else 9,'bold'))
-            self.page_title.configure(font=(FONT,15 if compact else 21,'bold'))
-            from tkinter import font as tkfont
-            for size in range(24,11,-1):
-                if tkfont.Font(self.root,family=FONT,size=size,weight='bold').measure('AKIRA')<=((158 if compact else 208)-30):break
-            self.brand_title.configure(font=(FONT,size,'bold'))
-        # A second row of metrics used to take the space needed by the page.
-        # Keep six compact values on short laptop screens instead.
-        columns=6 if short or width>=1180 else 3
+            for nav in self.nav_buttons:nav.configure(pady=6 if compact else 12)
+        columns=3 if width<1180 else 6
         if columns!=getattr(self,'_metric_columns',None):
             self._metric_columns=columns
-            for i,card in enumerate(self.metric_cards):card.grid(row=i//columns,column=i%columns,sticky='nsew',padx=3,pady=2)
+            for i,card in enumerate(self.metric_cards):card.grid(row=i//columns,column=i%columns,sticky='nsew',padx=4,pady=3)
             for i in range(6):self.metric_strip.columnconfigure(i,weight=1 if i<columns else 0,uniform='metrics' if i<columns else '')
-        if short!=getattr(self,'_short_shell',None):
-            self._short_shell=short
-            for widget in (self.page_index,self.page_detail):
-                if short:widget.pack_forget()
-                else:widget.pack(fill='x',pady=(2,0))
-        available=max(250,width-(158 if compact else 208)-48)
+        available=max(300,width-(172 if compact else 218)-60)
         self.connection.configure(wraplength=available);self.map_result_label.configure(wraplength=available)
         self.page_detail.configure(wraplength=available)
-        self._fit_header_actions(available)
         self._fit_metrics()
-
-    def _fit_header_actions(self,width):
-        # Grid reserves every button's space; pack(side=right) silently clipped
-        # the first controls when the available width got smaller.
-        columns=2 if width<790 else 4
-        if columns!=getattr(self,'_toolbar_columns',None):
-            self._toolbar_columns=columns
-            for i,item in enumerate(self._toolbar_buttons):
-                item.grid(row=i//columns,column=i%columns,sticky='ew',padx=3,pady=2)
-                item.configure(padx=5,pady=5,font=(FONT,8,'bold'))
-            for i in range(4):self._toolbar.columnconfigure(i,weight=1 if i<columns else 0,uniform='actions' if i<columns else '')
-        if width<790:
-            self.account_label.grid(row=1,column=0,columnspan=3,sticky='w',pady=(3,0))
-        else:self.account_label.grid(row=0,column=3,columnspan=1,sticky='e',padx=(10,0))
 
     def _fit_metrics(self):
         try:
@@ -417,33 +378,30 @@ class Desktop(DesktopServices,StrategyDirectory):
                 for size in range(16,9,-1):
                     self._metric_font.configure(size=size)
                     if self._metric_font.measure(text)<=width:break
-                long=self._metric_font.measure(text)>width
-                metric.configure(font=(FONT,9 if long else size,'bold'),wraplength=width if long else 0,height=2 if long else 1)
+                metric.configure(font=(FONT,size,'bold'))
         except (AttributeError,tk.TclError):pass
 
     def build_header(self):
-        head=tk.Frame(self.main,bg=BG);head.pack(fill='x',padx=12,pady=(8,3));head.columnconfigure(0,weight=1)
-        self.page_crumb=label(head,'AKIRA / PENDIENTES',TEXT,10,True,anchor='w');self.page_crumb.grid(row=0,column=0,sticky='w')
-        self.account_label=label(head,'Conectando a MT5...',MUTED,9,anchor='w')
-        self.privacy_button=button(head,'OCULTAR IMPORTES',self.toggle_account_privacy,MUTED);self.privacy_button.configure(padx=5,pady=3,font=(FONT,8));self.privacy_button.grid(row=0,column=2,padx=4)
-        self.notice_button=button(head,'AVISOS 0',self.open_notifications,CYAN);self.notice_button.configure(padx=7,pady=3,font=(FONT,8));self.notice_button.grid(row=0,column=1,padx=4)
-        tk.Frame(self.main,bg=LINE,height=1).pack(fill='x',padx=12,pady=(0,3))
-        toolbar=tk.Frame(self.main,bg=BG);self._toolbar=toolbar;toolbar.pack(fill='x',padx=9,pady=(0,3))
-        self.reset_layout_button=button(toolbar,'RESTABLECER PANELES',self.layout.reset,MUTED)
-        self.toggle=button(toolbar,'PAUSAR CONTROL',self.pause,AMBER)
-        report=button(toolbar,'DESCARGAR INFORME',self.open_report_dialog,BLUE)
-        self.open_chat_button=button(toolbar,'ESCRIBIR A AKIRA',self.open_chat,CYAN)
-        self._toolbar_buttons=(self.reset_layout_button,self.open_chat_button,report,self.toggle)
+        head=tk.Frame(self.main,bg=BG);head.pack(fill='x',padx=20,pady=(12,6))
+        self.page_crumb=label(head,'AKIRA / PENDIENTES',TEXT,10,True,anchor='w');self.page_crumb.pack(side='left')
+        self.account_label=label(head,'Conectando a MT5…',MUTED,9,anchor='e');self.account_label.pack(side='right');self.privacy_button=button(head,'OCULTAR IMPORTES',self.toggle_account_privacy,MUTED);self.privacy_button.configure(padx=5,pady=2,font=(FONT,8));self.privacy_button.pack(side='right',padx=6)
+        self.notice_button=button(head,'AVISOS 0',self.open_notifications,CYAN);self.notice_button.configure(padx=8,pady=4);self.notice_button.pack(side='right',padx=6)
+        tk.Frame(self.main,bg=LINE,height=1).pack(fill='x',padx=20,pady=(0,5))
+        toolbar=tk.Frame(self.main,bg=BG);toolbar.pack(fill='x',padx=20,pady=(0,5))
+        self.reset_layout_button=button(toolbar,'RESTABLECER PANELES',self.layout.reset,MUTED);self.reset_layout_button.pack(side='left')
+        self.toggle=button(toolbar,'PAUSAR CONTROL',self.pause,AMBER);self.toggle.pack(side='right',padx=(6,0))
+        button(toolbar,'DESCARGAR INFORME',self.open_report_dialog,BLUE).pack(side='right',padx=6)
+        self.open_chat_button=button(toolbar,'ESCRIBIR A AKIRA',self.open_chat,CYAN);self.open_chat_button.pack(side='right')
         self.connection=label(self.main,'AUTO-MAPA · preparando conexión y niveles de MT5',MUTED,8,anchor='w',justify='left');self.connection.pack(fill='x',padx=20,pady=(0,3))
         self.map_result_label=label(self.main,'Akira revisa pendientes y runners en segundo plano.',MUTED,8,anchor='w',justify='left')
         self.map_result_label.pack(side='bottom',fill='x',padx=20,pady=(0,4))
         self.metrics={};self.metric_cards=[];self.metric_strip=tk.Frame(self.main,bg=BG);self.metric_strip.pack(fill='x',padx=15,pady=(0,4))
-        for i,(key,title,accent) in enumerate((('balance','BALANCE',TEXT),('equity','PATRIMONIO',CYAN),('floating','FLOTANTE',PINK),('daily','P/L DEL DÍA',RED),('risk','RIESGO',AMBER),('cycle','CICLO',BLUE))):
+        for i,(key,title,accent) in enumerate((('balance','BALANCE',TEXT),('equity','PATRIMONIO',CYAN),('floating','FLOTANTE',PINK),('daily','P/L DEL DÍA',RED),('risk','RIESGO RESERVADO',AMBER),('cycle','CICLO',BLUE))):
             self.metric_strip.columnconfigure(i,weight=1,uniform='metrics')
             outer,inner=neon_card(self.metric_strip,'',accent,padx=11,pady=6);outer.grid(row=0,column=i,sticky='nsew',padx=4,pady=3);self.metric_cards.append(outer)
             label(inner,title,MUTED,8,True,anchor='w').pack(fill='x',pady=(0,4))
             value=label(inner,'—',accent,16,True,anchor='w');value.pack(fill='x');self.metrics[key]=value
-        heading=tk.Frame(self.main,bg=BG);heading.pack(fill='x',padx=12,pady=(2,3))
+        heading=tk.Frame(self.main,bg=BG);heading.pack(fill='x',padx=20,pady=(4,7))
         self.page_index=label(heading,'AKIRA // COMMAND SYSTEM · 02',CYAN,8,True,anchor='w');self.page_index.pack(fill='x')
         self.page_title=label(heading,'PENDIENTES AUTOMÁTICAS',TEXT,21,True,anchor='w');self.page_title.pack(fill='x',pady=(2,0))
         self.page_detail=label(heading,PAGE_DETAILS[1],MUTED,9,anchor='w',justify='left');self.page_detail.pack(fill='x',pady=(2,0))
@@ -458,7 +416,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.source_status={}
         for key,title in (('mt5','MT5 / BROKER'),('local','AKIRA'),('web','WEB / NOTICIAS'),('youtube','YOUTUBE'),('coinglass','COINGLASS'),('investing','INVESTING')):
             row=tk.Frame(left,bg=CARD,padx=8,pady=5);row.pack(fill='x',pady=2)
-            label(row,title,MUTED,8,True,anchor='w').pack(side='left');val=label(row,'...',AMBER,8,True,anchor='e');val.pack(side='right');self.source_status[key]=val
+            label(row,title,MUTED,8,True,anchor='w').pack(side='left');val=label(row,'…',AMBER,8,True,anchor='e');val.pack(side='right');self.source_status[key]=val
         ctrl=tk.Frame(left,bg=CARD,padx=9,pady=9);ctrl.pack(fill='x',pady=(10,6))
         label(ctrl,'CONTROL AUTOMÁTICO',GREEN,9,True,anchor='w').pack(fill='x')
         label(ctrl,'✓ mantiene el mejor mapa pendiente\n✓ revisa validez continuamente\n✓ modifica si aparece una zona mejor\n✓ retira tesis caducadas/invalidadas',TEXT,9,justify='left',anchor='w').pack(fill='x',pady=5)
@@ -467,9 +425,8 @@ class Desktop(DesktopServices,StrategyDirectory):
         # CENTER · Akira core
         outer,center=neon_card(columns,'AKIRA',PINK);columns.add(outer,minsize=190,stretch='always')
         core=self.layout.pane(center,'dashboard_core',tk.VERTICAL,(.5,));core.pack(fill='both',expand=True)
-        self.dashboard_avatar=self.avatar(core,260,220);core.add(self.dashboard_avatar,minsize=80,stretch='always')
         brain=tk.Frame(core,bg=PANEL);core.add(brain,minsize=70,stretch='always');center=brain
-        self.brain_label=label(center,'AKIRA · Preparando respuesta...',AMBER,10,True,justify='left',wraplength=360,anchor='w');self.brain_label.pack(fill='x',pady=5)
+        self.brain_label=label(center,'AKIRA · Preparando respuesta…',AMBER,10,True,justify='left',wraplength=360,anchor='w');self.brain_label.pack(fill='x',pady=5)
         self.brain_status=text_box(center,12);self.brain_status.pack(fill='both',expand=True,pady=(4,0))
         # RIGHT · live charts
         outer,right=neon_card(columns,'MAPA BTC + ORO EN VIVO',CYAN);columns.add(outer,minsize=230,stretch='always')
@@ -500,7 +457,7 @@ class Desktop(DesktopServices,StrategyDirectory):
             panel=SymbolPanel(panes,self,symbol);panes.add(panel,minsize=280,stretch='always');self.panels[symbol]=panel
         outer,controls=neon_card(page,'RIESGO CONJUNTO RESERVADO',AMBER,padx=12,pady=6);outer.grid(row=1,column=0,sticky='ew')
         risk_header=tk.Frame(controls,bg=PANEL);risk_header.pack(fill='x',pady=(0,5))
-        self.pending_risk_help=label(risk_header,'Calculando presupuesto y reservas del libro MT5...',MUTED,8,wraplength=850,anchor='w',justify='left');self.pending_risk_help.pack(side='left',fill='x',expand=True)
+        self.pending_risk_help=label(risk_header,'Calculando presupuesto y reservas del libro MT5…',MUTED,8,wraplength=850,anchor='w',justify='left');self.pending_risk_help.pack(side='left',fill='x',expand=True)
         self.verify_all_pending_button=button(risk_header,'VERIFICAR PENDIENTES',self.open_verification,CYAN)
         self.verify_all_pending_button.configure(padx=8,pady=5);self.verify_all_pending_button.pack(side='right',padx=(8,0))
         actions=tk.Frame(controls,bg=PANEL);actions.pack(fill='x')
@@ -527,7 +484,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         outer,body=neon_card(side,'PRESUPUESTO Y LÍMITES',AMBER);side.add(outer,minsize=140,stretch='always')
         self.budget_value=label(body,'— USD',AMBER,22,True,anchor='w');self.budget_value.pack(fill='x',pady=(5,8))
         self.budget_bar=ttk.Progressbar(body,style='Cyber.Horizontal.TProgressbar');self.budget_bar.pack(fill='x',pady=(0,10))
-        self.portfolio_help=label(body,'Esperando reservas MT5...',MUTED,9,wraplength=330,justify='left',anchor='w');self.portfolio_help.pack(fill='both',expand=True)
+        self.portfolio_help=label(body,'Esperando reservas MT5…',MUTED,9,wraplength=330,justify='left',anchor='w');self.portfolio_help.pack(fill='both',expand=True)
         button(body,'CONFIGURAR RIESGO MÁXIMO',self.set_trade_risk_cap,AMBER).pack(fill='x',pady=(12,0))
         outer,body=neon_card(side,'SEGURIDAD DE OPERACIONES',GREEN);side.add(outer,minsize=110,stretch='always')
         shell,body=scroll_frame(body,PANEL);shell.pack(fill='both',expand=True)
@@ -732,7 +689,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         outer,akira=neon_card(rail,'AKIRA',PINK,padx=10,pady=8);outer.pack(fill='x')
         self.avatar(akira,190,100).pack(fill='x',pady=3)
         self.chat_model=label(akira,'AKIRA · preparando',AMBER,9,wraplength=260,justify='left',anchor='w');self.chat_model.pack(fill='x',pady=4)
-        self.assistant_detail=label(akira,'Comprobando el asistente...',MUTED,8,wraplength=260,justify='left',anchor='w');self.assistant_detail.pack(fill='x',pady=4)
+        self.assistant_detail=label(akira,'Comprobando el asistente…',MUTED,8,wraplength=260,justify='left',anchor='w');self.assistant_detail.pack(fill='x',pady=4)
         self.assistant_repair_button=button(akira,'REPARAR ASISTENTE',self.prepare_local,AMBER);self.assistant_repair_button.pack(fill='x',pady=(2,6))
         self.assistant_reason_button=button(akira,'VER MOTIVO Y REGISTRO',self.open_assistant_diagnostics,MUTED);self.assistant_reason_button.pack(fill='x',pady=(0,6))
         label(akira,'Memoria · web · visión · archivos',MUTED,8,anchor='w').pack(fill='x',pady=(0,6))
@@ -762,12 +719,11 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.chat.tag_configure('user',foreground='#9bf4ff',lmargin1=54,lmargin2=54,rmargin=22,spacing1=3,spacing3=5);self.chat.tag_configure('assistant',foreground=TEXT,lmargin1=14,lmargin2=14,rmargin=34,spacing1=3,spacing3=5);self.chat.tag_configure('system',foreground=AMBER);self.chat.tag_configure('chat_author',foreground=CYAN,font=(FONT,9,'bold'));self.chat.tag_configure('chat_user_author',foreground=GREEN,font=(FONT,9,'bold'))
         for turn in self.assistant.history:self.append_chat('TÚ' if turn['role']=='user' else 'AKIRA',turn.get('text',''))
         self.chat_welcome=tk.Frame(history,bg=PANEL,padx=12,pady=12)
-        self.chat_welcome_glyph=label(self.chat_welcome,'◇',CYAN,38);self.chat_welcome_glyph.pack(pady=(0,12))
-        self.chat_welcome_title=label(self.chat_welcome,'¿Qué necesitas?',TEXT,19,True,wraplength=320);self.chat_welcome_title.pack()
-        self.chat_welcome_help=label(self.chat_welcome,'Conversa, investiga o revisa tu mapa de órdenes.',MUTED,9,wraplength=300,justify='center');self.chat_welcome_help.pack(pady=10)
-        self.chat_welcome_action=button(self.chat_welcome,'REVISAR BTC Y ORO',lambda:self.chat_suggestion('Revisa el mapa de BTC y oro'),CYAN);self.chat_welcome_action.pack(pady=5)
-        if not self.assistant.history:self.chat_welcome.place(relx=.5,rely=.48,anchor='center',width=350)
-        history.bind('<Configure>',self._fit_chat_welcome,add='+')
+        label(self.chat_welcome,'◇',CYAN,38).pack(pady=(0,12))
+        label(self.chat_welcome,'¿Qué necesitas?',TEXT,19,True,wraplength=320).pack()
+        label(self.chat_welcome,'Conversa, investiga o revisa tu mapa de órdenes.',MUTED,9,wraplength=300,justify='center').pack(pady=10)
+        button(self.chat_welcome,'REVISAR BTC Y ORO',lambda:self.chat_suggestion('Revisa el mapa de BTC y oro'),CYAN).pack(pady=5)
+        if not self.assistant.history:self.chat_welcome.place(relx=.5,rely=.48,anchor='center')
         self.chat_composer=tk.Frame(pane,bg=PANEL,padx=8,pady=6);self.chat_composer.grid(row=3,column=0,sticky='ew')
         self.chat_composer.columnconfigure(0,weight=1)
         label(self.chat_composer,'ESCRIBE A AKIRA · Enter para enviar · Ctrl+L abre el chat',MUTED,9,anchor='w').grid(row=0,column=0,columnspan=2,sticky='w',pady=(0,4))
@@ -776,16 +732,6 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.call_icon=button(self.chat_composer,'☎',self.start_voice,CYAN);self.call_icon.configure(padx=10,pady=6);self.call_icon.grid(row=1,column=2,sticky='ns',padx=(6,0))
         self.chat_send_button=button(self.chat_composer,'ENVIAR',self.ask,CYAN);self.chat_send_button.grid(row=1,column=1,sticky='ns',padx=(8,0))
         pane.bind('<Configure>',lambda e:self.chat_status.configure(wraplength=max(150,e.width-220)))
-
-    def _fit_chat_welcome(self,event):
-        if self.chat_welcome.winfo_manager()!='place':return
-        width=max(180,min(400,event.width-24));self.chat_welcome.place_configure(width=width)
-        self.chat_welcome_title.configure(wraplength=max(140,width-28),font=(FONT,16 if event.height<260 else 19,'bold'))
-        self.chat_welcome_help.configure(wraplength=max(140,width-28))
-        if event.height<260:self.chat_welcome_glyph.pack_forget()
-        elif not self.chat_welcome_glyph.winfo_manager():self.chat_welcome_glyph.pack(before=self.chat_welcome_title,pady=(0,12))
-        if event.height<180:self.chat_welcome_help.pack_forget()
-        elif not self.chat_welcome_help.winfo_manager():self.chat_welcome_help.pack(before=self.chat_welcome_action,pady=10)
 
     def chat_suggestion(self,text):
         self.chat_input.set(text);self.chat_entry.focus_set()
@@ -796,8 +742,8 @@ class Desktop(DesktopServices,StrategyDirectory):
 
     def stop_thinking(self):
         if not self.chat_busy:return
-        self.assistant.cancel_current_reply();self.chat_stage='DETENIENDO';self.chat_stage_detail='Cerrando ahora la conexión con el modelo...'
-        self.chat_status.configure(text='Interrumpiendo respuesta...',fg=AMBER);self.stop_thinking_btn.configure(state='disabled')
+        self.assistant.cancel_current_reply();self.chat_stage='DETENIENDO';self.chat_stage_detail='Cerrando ahora la conexión con el modelo…'
+        self.chat_status.configure(text='Interrumpiendo respuesta…',fg=AMBER);self.stop_thinking_btn.configure(state='disabled')
 
     def _render_chat_progress(self):
         if not hasattr(self,'chat_status'):return
@@ -842,8 +788,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.chat.configure(state='normal');self.chat.delete('1.0','end');self.chat.configure(state='disabled')
         for row in self.assistant.history:self.append_chat('TÚ' if row['role']=='user' else 'AKIRA',row['text'])
         self.refresh_chat_list()
-        if not self.assistant.history:self.chat_welcome.place(relx=.5,rely=.48,anchor='center',width=350)
-        history.bind('<Configure>',self._fit_chat_welcome,add='+')
+        if not self.assistant.history:self.chat_welcome.place(relx=.5,rely=.48,anchor='center')
 
     def select_chat(self,event=None):
         selected=self.chat_list.curselection()
@@ -892,14 +837,14 @@ class Desktop(DesktopServices,StrategyDirectory):
             saved=save_config(cfg,self.folder/'akira_config.json');self.cfg.update(saved)
         except Exception as exc:
             self.use_cloud.set(not enabled);self.cloud_status.configure(text='No se guardó el cambio: '+str(exc),fg=RED);return
-        self.cloud_status.configure(text='Comprobando conexión...' if enabled else 'OpenAI desactivado. AKIRA continúa sin este servicio.',fg=AMBER if enabled else MUTED)
+        self.cloud_status.configure(text='Comprobando conexión…' if enabled else 'OpenAI desactivado. AKIRA continúa sin este servicio.',fg=AMBER if enabled else MUTED)
         if enabled:
             self.check_cloud()
 
     def check_cloud(self):
         if not self.use_cloud.get():return
         from cloud_status import verify_cloud
-        self.cloud_status.configure(text='Comprobando permiso y conexión de OpenAI...',fg=AMBER)
+        self.cloud_status.configure(text='Comprobando permiso y conexión de OpenAI…',fg=AMBER)
         def work():self.replies.put({'cloud_check':verify_cloud(),'cloud_enabled':True})
         threading.Thread(target=work,name='AkiraCloudCheck',daemon=True).start()
 
@@ -918,14 +863,11 @@ class Desktop(DesktopServices,StrategyDirectory):
             shell,frame=scroll_frame(book,BG);book.add(shell,text=title)
             if title=='INTERFAZ':self.settings_interface_tab=shell
             self.settings_cards[frame]=[]
-            def arrange(event,parent=frame,section=title):
-                density=max(1,float(self.root.tk.call('tk','scaling'))/1.333)
-                columns=2 if section!='INTERFAZ' and event.width>=1180*density else 1
-                if getattr(parent,'_settings_columns',None)==columns:return
-                parent._settings_columns=columns
-                parent.columnconfigure(0,weight=1);parent.columnconfigure(1,weight=1 if columns==2 else 0,minsize=0)
+            def arrange(event,parent=frame):
+                columns=1 if event.width<900 else 2
+                parent.columnconfigure(0,weight=1);parent.columnconfigure(1,weight=1 if columns==2 else 0)
                 for i,card in enumerate(self.settings_cards[parent]):card.grid(row=i//columns,column=i%columns,sticky='nsew',padx=6,pady=6)
-            shell._scroll_canvas.bind('<Configure>',arrange,add='+');return frame
+            frame.bind('<Configure>',arrange);return frame
         def card(parent,title,accent=CYAN):
             o,i=neon_card(parent,title,accent);idx=len(self.settings_cards[parent]);self.settings_cards[parent].append(o);parent.columnconfigure(0,weight=1);o.grid(row=idx,column=0,sticky='nsew',padx=6,pady=6);return i
         def field(parent,path,title,kind='float',hint=''):
@@ -1056,9 +998,6 @@ class Desktop(DesktopServices,StrategyDirectory):
         label(c,'GPU y consumo de energía también dependen del sistema gráfico, el modelo de IA y otros procesos. '
               'Este ajuste no promete limitar el consumo total de la GPU.',MUTED,8,anchor='w',
               wraplength=600,justify='left').pack(fill='x',pady=6)
-        c=card(t,'AKIRA · NUEVAS EXPRESIONES',CYAN)
-        button(c,'VER LAS 108 EXPRESIONES',self.open_expression_gallery,CYAN).pack(fill='x',pady=5)
-        label(c,'R6 · ilustraciones nuevas basadas en tus referencias. La galería permite revisar y elegir cada cara.',MUTED,9,wraplength=620,justify='left',anchor='w').pack(fill='x',pady=6)
         c=card(t,'VENTANA',PINK)
         field(c,'desktop.width','Ancho','int');field(c,'desktop.height','Alto','int')
         button(c,'BORRAR CACHÉ',self.open_cache_cleaner,CYAN).pack(fill='x',pady=8)
@@ -1224,7 +1163,7 @@ class Desktop(DesktopServices,StrategyDirectory):
     def refresh(self):
         self.commands.put({'action':'refresh'})
         if hasattr(self,'source_refresh_state'):
-            self.source_refresh_state.configure(text='ACTUALIZANDO...',fg=AMBER)
+            self.source_refresh_state.configure(text='ACTUALIZANDO…',fg=AMBER)
             self.root.after(3500,lambda:self.source_refresh_state.configure(text='ACTUALIZACIÓN SOLICITADA',fg=GREEN) if hasattr(self,'source_refresh_state') else None)
         self.desktop_toast('Akira actualiza fuentes','Solicité una nueva ronda de web, YouTube, CoinGlass y contexto macro. El mapa técnico sigue funcionando mientras tanto.')
     def async_request(self,cmd,message=None):
@@ -1241,12 +1180,12 @@ class Desktop(DesktopServices,StrategyDirectory):
     def request_map(self,symbol):
         if self.map_request_busy:return
         self.map_request_busy=True
-        self.map_result_label.configure(text='Analizando y comprobando pendientes '+symbol+' en MT5...',fg=AMBER)
+        self.map_result_label.configure(text='Analizando y comprobando pendientes '+symbol+' en MT5…',fg=AMBER)
         self.async_request({'action':'assistant_best_pending','symbol':symbol},None)
     def request_runners(self,symbol):
         if self.map_request_busy:return
         self.map_request_busy=True
-        self.map_result_label.configure(text='Comprobando runners confirmados '+symbol+' en MT5...',fg=AMBER)
+        self.map_result_label.configure(text='Comprobando runners confirmados '+symbol+' en MT5…',fg=AMBER)
         self.async_request({'action':'assistant_best_runner','symbol':symbol},None)
     def cancel_selected(self):
         selection=self.orders.selection()
@@ -1323,19 +1262,16 @@ class Desktop(DesktopServices,StrategyDirectory):
             except tk.TclError:pass
         win=tk.Toplevel(self.root);self.voice_window=win;win.title('AKIRA · Llamada');win.configure(bg=BG)
         apply_window_icon(win,self.folder)
-        w,h,mw,mh=fitted_geometry(760,800,win.winfo_screenwidth(),win.winfo_screenheight());win.geometry(f'{min(760,w)}x{h}');win.minsize(min(450,w),min(360,h))
+        h=min(760,win.winfo_screenheight()-75);win.geometry(f'720x{h}');win.minsize(620,min(610,h))
         label(win,'CONVERSAR CON AKIRA',TEXT,18,True).pack(pady=(12,4))
-        self.voice_state=label(win,'Detectando dispositivos y voces disponibles...',AMBER,9,wraplength=650);self.voice_state.pack(fill='x',padx=16,pady=4)
-        outer,container=neon_card(win,'VOZ Y DISPOSITIVOS',CYAN,padx=10,pady=6);outer.pack(fill='both',expand=True,padx=12,pady=(2,8))
-        voice_shell,body=scroll_frame(container,PANEL);voice_shell.pack(fill='both',expand=True)
-        self.voice_scroll_canvas=voice_shell._scroll_canvas
-        self.voice_avatar=self.avatar(body,200,140);self.voice_avatar.pack(fill='x',pady=(0,6))
+        self.voice_state=label(win,'Detectando dispositivos y voces disponibles…',AMBER,9,wraplength=650);self.voice_state.pack(fill='x',padx=16,pady=4)
+        outer,body=neon_card(win,'VOZ Y DISPOSITIVOS',CYAN,padx=12,pady=8);outer.pack(fill='both',expand=True,padx=14,pady=(2,8))
         options=self.cfg.get('voice') or {};self.voice_vars={};self.voice_boxes={}
         form=tk.Frame(body,bg=PANEL);form.pack(fill='x');form.columnconfigure(0,weight=1);form.columnconfigure(1,weight=1)
         for key,title,r,c,span in [('voice','Voz',0,0,2),('input','Micrófono',1,0,1),('output','Salida de audio',1,1,1)]:
             field=tk.Frame(form,bg=PANEL);field.grid(row=r,column=c,columnspan=span,sticky='ew',padx=(0,5),pady=4)
             label(field,title,MUTED,9,True,anchor='w').pack(fill='x',pady=(0,3))
-            var=tk.StringVar(value='Detectando...');self.voice_vars[key]=var
+            var=tk.StringVar(value='Detectando…');self.voice_vars[key]=var
             box=ttk.Combobox(field,textvariable=var,state='readonly',style='Akira.TCombobox');box.pack(fill='x');self.voice_boxes[key]=box
         self.voice_rate=tk.StringVar(value=str(options.get('rate',180)));self.voice_volume=tk.StringVar(value=str(options.get('volume',.8)))
         row=tk.Frame(body,bg=PANEL);row.pack(fill='x',pady=6)
@@ -1352,7 +1288,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.voice_download_status=label(body,'Un clic descarga e instala todo el catálogo. Las voces completas se conservan al reintentar.',MUTED,8,wraplength=650,anchor='w',justify='left');self.voice_download_status.pack(fill='x',pady=(3,4))
         self.voice_download_progress=ttk.Progressbar(body,mode='determinate',maximum=100,style='Cyber.Horizontal.TProgressbar');self.voice_download_progress.pack(fill='x',pady=(0,5))
         label(body,'Elige la voz y los dispositivos para la llamada. El chat escrito permanece silencioso.',MUTED,8,wraplength=650,justify='left',anchor='w').pack(fill='x',pady=3)
-        self.voice_transcript=text_box(body,3);self.voice_transcript.pack(fill='x',pady=6)
+        self.voice_transcript=text_box(body,3);self.voice_transcript.pack(fill='both',expand=True,pady=6)
         row=tk.Frame(body,bg=PANEL);row.pack(fill='x',pady=4)
         self.voice_start_button=button(row,'INICIAR',self.begin_call,GREEN);self.voice_start_button.pack(side='left')
         self.voice_pause_button=button(row,'PAUSAR',self.pause_call,AMBER);self.voice_pause_button.pack(side='left',padx=4)
@@ -1361,11 +1297,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         row=tk.Frame(body,bg=PANEL);row.pack(fill='x',pady=3)
         button(row,'CANCELAR MENSAJE',self.cancel_voice_message,MUTED).pack(side='left')
         button(row,'ENVIAR TRANSCRIPCIÓN',self.send_voice_transcript,CYAN).pack(side='right')
-        def close_voice():
-            self.end_call()
-            if self.voice_avatar in self.avatars:self.avatars.remove(self.voice_avatar)
-            win.destroy();self.voice_window=None
-        win.protocol('WM_DELETE_WINDOW',close_voice)
+        win.protocol('WM_DELETE_WINDOW',lambda:(self.end_call(),win.destroy(),setattr(self,'voice_window',None)))
         self._render_voice_download()
         self.load_voice_inventory(False)
 
@@ -1374,7 +1306,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         try:
             if not self.voice_window.winfo_exists():return
         except tk.TclError:return
-        self.voice_state.configure(text='Consultando catálogo...' if online else 'Detectando voces y dispositivos...',fg=AMBER)
+        self.voice_state.configure(text='Consultando catálogo…' if online else 'Detectando voces y dispositivos…',fg=AMBER)
         def work():
             errors=[]
             try:devices=audio_inventory()
@@ -1457,7 +1389,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self._voice_download_busy=True
         self._voice_download_job=VoiceDownloadBatch(self.folder,
             lambda event:self.replies.put({'voice_download':event}),self.stop)
-        self._voice_download_last={'job_id':self._voice_download_job.job_id,'state':'catalog','current':'Consultando catálogo e iniciando instalación automática...'}
+        self._voice_download_last={'job_id':self._voice_download_job.job_id,'state':'catalog','current':'Consultando catálogo e iniciando instalación automática…'}
         self._render_voice_download();self._voice_download_job.start()
 
     def cancel_voice_download(self):
@@ -1484,16 +1416,16 @@ class Desktop(DesktopServices,StrategyDirectory):
         try:
             self.download_one_button.configure(state='disabled' if self._voice_download_busy else 'normal')
             self.download_all_button.configure(state='disabled' if self._voice_download_busy else 'normal',
-                text='DESCARGANDO VOCES...' if self._voice_download_busy else 'REINTENTAR / COMPLETAR VOCES' if kind in ('partial','error','cancelled','disk_full') else 'DESCARGAR TODAS LAS VOCES')
+                text='DESCARGANDO VOCES…' if self._voice_download_busy else 'REINTENTAR / COMPLETAR VOCES' if kind in ('partial','error','cancelled','disk_full') else 'DESCARGAR TODAS LAS VOCES')
             self.voice_download_cancel.configure(state='normal' if self._voice_download_busy else 'disabled')
             self.voice_download_progress.configure(value=(state.get('file_bytes',0)/max(1,state.get('file_total',0))*100
                 if kind=='downloading_one' and state.get('file_total') else done/total*100 if total else 0))
             if not state:return
-            caption={'catalog':'Preparando todo el catálogo...','downloading_one':'Descargando solo la voz seleccionada...','complete_one':'La voz elegida está instalada.','downloading':f'Modelos {done}/{total} · {state.get("voices_total",0)} voces',
+            caption={'catalog':'Preparando todo el catálogo…','downloading_one':'Descargando solo la voz seleccionada…','complete_one':'La voz elegida está instalada.','downloading':f'Modelos {done}/{total} · {state.get("voices_total",0)} voces',
                 'complete':f'Catálogo instalado · {total} modelos · {state.get("voices_total",0)} voces',
                 'partial':f'Instalados {state.get("downloaded",0)} · ya disponibles {state.get("skipped",0)} · fallaron {state.get("failed",0)}. Pulsa reintentar.',
                 'cancelled':'Descarga detenida. Las voces completas siguen disponibles; puedes continuar.',
-                'cancelling':'Deteniendo la descarga; esperando a que termine la lectura actual...',
+                'cancelling':'Deteniendo la descarga; esperando a que termine la lectura actual…',
                 'disk_full':'Descarga detenida por falta de espacio. Libera espacio y pulsa reintentar.',
                 'error':state.get('error','No se pudo descargar. Reintenta.'),'empty':'El catálogo no contiene modelos descargables.'}.get(kind,'')
             if kind in ('downloading','downloading_one'):
@@ -1564,7 +1496,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         kind=event.get('kind');text=str(event.get('text',''))
         if getattr(self,'voice_call_active',False) or kind in ('error','download_error'):
             mood=expression_for_voice_event(kind,text)
-            for avatar in getattr(self,'avatars',[]):avatar.set_expression(mood,context=str(event))
+            for avatar in getattr(self,'avatars',[]):avatar.set_expression(mood)
         if kind=='installed':self._voice_download_busy=False;self.load_voice_inventory(False);return
         if kind=='download_error':self._voice_download_busy=False;kind='error'
         if kind=='final':
@@ -1614,7 +1546,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self._assistant_display_status=local
         color=GREEN if local.get('ready') else RED if local.get('phase') in ('FAILED','STALLED') else AMBER
         for widget in (self.sidebar_status,self.brain_label,self.chat_model):widget.configure(text=text,fg=color)
-        detail=public_status(local.get('detail') or 'Comprobando el asistente...')
+        detail=public_status(local.get('detail') or 'Comprobando el asistente…')
         self.assistant_detail.configure(text=detail,fg=color if not local.get('ready') else MUTED)
         short='ACTIVO' if local.get('ready') else text.partition(' · ')[2].upper()
         self.source_status['local'].configure(text=short,fg=color)
@@ -1759,8 +1691,8 @@ class Desktop(DesktopServices,StrategyDirectory):
                 pass  # El resultado ya quedó en continuidad fuera de Tk/modelo.
             elif reply.get('conversation'):
                 self.chat_busy=False;self.stop_thinking_btn.configure(state='disabled');self.chat_stage='LISTO';self.chat_stage_detail='';self._render_chat_progress()
-            for avatar in self.avatars:avatar.set_expression(expression_for_dialogue(getattr(self,'_last_user_question',''),reply.get('answer','')),context=str(reply.get('answer','')))
-            if not getattr(self,'voice_call_active',False):self.root.after(8000,self.reset_avatar)
+            for avatar in self.avatars:avatar.set_expression(expression_for_dialogue(getattr(self,'_last_user_question',''),reply.get('answer','')))
+            if not getattr(self,'voice_call_active',False):self.root.after(2500,self.reset_avatar)
     def remember_command(self,message,answer):
         with self.assistant.lock:self.assistant._remember_turn(message,answer)
     def reset_avatar(self):
@@ -1917,7 +1849,7 @@ class Desktop(DesktopServices,StrategyDirectory):
                 if key in self.friendly_source_cards:
                     dot,val=self.friendly_source_cards[key];dot.configure(fg=color);val.configure(text=state_text.title(),fg=color)
             if hasattr(self,'source_refresh_state') and any(isinstance(x,dict) and x.get('inflight') for x in sources.values()):
-                self.source_refresh_state.configure(text='BUSCANDO...',fg=AMBER)
+                self.source_refresh_state.configure(text='BUSCANDO…',fg=AMBER)
             elif hasattr(self,'source_refresh_state'):
                 available=sum(1 for x in sources.values() if isinstance(x,dict) and x.get('fresh') and x.get('usable',True) and x.get('enabled') is not False)
                 self.source_refresh_state.configure(text=f'{available} FUENTES VIGENTES' if available else 'SIN FUENTES VIGENTES',fg=GREEN if available else AMBER)
@@ -2013,13 +1945,8 @@ class Desktop(DesktopServices,StrategyDirectory):
             if hasattr(avatar,'set_refresh_interval'):avatar.set_refresh_interval(self._performance['avatar_ms'])
         self.display_due=0.0;self._assistant_display_due=0.0
 
-    def open_expression_gallery(self):
-        from expression_gallery import open_expression_gallery
-        return open_expression_gallery(self)
-
     def open_resource_panel(self):
         from resource_optimizer import config_limits,process_usage,PROFILES,profile_budget
-        self.navigate(6);self.settings_notebook.select(self.settings_interface_tab)
         if getattr(self,'_resource_window',None) is not None:
             try:
                 if self._resource_window.winfo_exists():
@@ -2030,7 +1957,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self._resource_window=win
         win.pack(fill='x',expand=True,pady=(5,12))
         head=tk.Frame(win,bg=PANEL,padx=17,pady=12);head.pack(fill='x')
-        label(head,'CONTROL DE RECURSOS',CYAN,12,True,anchor='w',justify='left',wraplength=480).pack(side='left',fill='x',expand=True)
+        label(head,'◈  CONTROL DE RECURSOS',CYAN,12,True).pack(side='left')
         button(head,'×',lambda:(win.destroy(),setattr(self,'_resource_window',None)),MUTED).pack(side='right')
         values=config_limits(self.cfg)
         shell=tk.Frame(win,bg=BG,padx=14,pady=9);shell.pack(fill='both',expand=True)
@@ -2048,7 +1975,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         mode.trace_add('write',preview_profile);preview_profile()
         def scale(title,key,low,high,step,unit):
             row=tk.Frame(shell,bg=BG);row.pack(fill='x',pady=(2,0))
-            label(row,title,TEXT,9,True,anchor='w',justify='left',wraplength=500).pack(side='left',fill='x',expand=True)
+            label(row,title,TEXT,10,True).pack(side='left')
             val=tk.IntVar(value=values[key])
             label(row,textvariable=val,color=CYAN,size=10,bold=True).pack(side='right')
             slider=tk.Scale(shell,from_=low,to=high,resolution=step,orient='horizontal',variable=val,
@@ -2075,7 +2002,7 @@ class Desktop(DesktopServices,StrategyDirectory):
             'La memoria indicada es un presupuesto de contexto, no un límite duro de RAM total. '
             'Desactivar GPU traslada inferencia al CPU y puede hacerla más lenta. '
             'Las órdenes y protecciones de MT5 no se ralentizan.',MUTED,9,wraplength=386,justify='left').pack(fill='x',pady=(8,9))
-        status=label(shell,'Midiendo uso...',CYAN,9,anchor='w',justify='left',wraplength=600);status.pack(fill='x',pady=4)
+        status=label(shell,'Midiendo uso…',CYAN,9,anchor='w');status.pack(fill='x',pady=4)
         def sample():
             try:
                 if not win.winfo_exists():return
@@ -2090,17 +2017,6 @@ class Desktop(DesktopServices,StrategyDirectory):
                 win.after(4000,sample)
             except tk.TclError:pass
         sample()
-        def reveal():
-            parent=self._resource_host
-            while parent is not None:
-                canvas=getattr(parent,'_scroll_canvas',None)
-                if canvas is not None:
-                    canvas._sync_content();self.root.update_idletasks()
-                    offset=self._resource_host.winfo_rooty()-canvas._content.winfo_rooty()
-                    height=max(1,canvas._content.winfo_reqheight())
-                    canvas.yview_moveto(max(0,offset/height));break
-                parent=getattr(parent,'master',None)
-        self.root.after_idle(reveal)
         def apply():
             try:
                 cfg=copy.deepcopy(self.cfg)
@@ -2169,7 +2085,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         label(controls,'Período:').pack(side='left');self.report_period=tk.StringVar(value='Últimas 24 horas')
         ttk.Combobox(controls,textvariable=self.report_period,values=('Últimas 24 horas','Últimos 7 días','Solo estado actual'),state='readonly',width=23,style='Akira.TCombobox').pack(side='left',padx=6)
         self.report_load_button=button(controls,'ACTUALIZAR INFORME',self.request_report,BLUE);self.report_load_button.pack(side='right')
-        self.report_status=label(win,'Preparando lectura del motor...',AMBER,10,anchor='w',wraplength=900);self.report_status.pack(fill='x',padx=18,pady=3)
+        self.report_status=label(win,'Preparando lectura del motor…',AMBER,10,anchor='w',wraplength=900);self.report_status.pack(fill='x',padx=18,pady=3)
         frame=tk.Frame(win,bg=CARD);frame.pack(fill='both',expand=True,padx=18,pady=8)
         self.report_preview=text_box(frame,20);self.report_preview.pack(side='left',fill='both',expand=True)
         scroll=ttk.Scrollbar(frame,orient='vertical',command=self.report_preview.yview);scroll.pack(side='right',fill='y');self.report_preview.configure(yscrollcommand=scroll.set)
@@ -2191,7 +2107,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         if self.report_busy:return
         self.report_busy=True;generation=self.report_generation
         self.report_load_button.configure(state='disabled')
-        self.report_status.configure(text='Leyendo el último ciclo y el historial disponible...',fg=AMBER)
+        self.report_status.configure(text='Leyendo el último ciclo y el historial disponible…',fg=AMBER)
         fallback=copy.deepcopy(self.view);hours=(getattr(self,'_report_download',None) or {}).get('hours',{'Últimas 24 horas':24,'Últimos 7 días':168,'Solo estado actual':0}[self.report_period.get()])
         def work():
             try:
@@ -2241,7 +2157,7 @@ class Desktop(DesktopServices,StrategyDirectory):
             self.request_report();return
         path=request['path'];format=request['format']
         self.report_busy=True;self.report_save_button.configure(state='disabled');self.report_load_button.configure(state='disabled')
-        self.report_status.configure(text='Descargando '+('PDF' if format=='pdf' else 'Excel')+'... El motor continúa operando.',fg=AMBER)
+        self.report_status.configure(text='Descargando '+('PDF' if format=='pdf' else 'Excel')+'… El motor continúa operando.',fg=AMBER)
         model=copy.deepcopy(self.report_model);generation=self.report_generation
         def work():
             try:self.replies.put({'report_saved':export_report(model,path,format,False),'report_generation':generation})
