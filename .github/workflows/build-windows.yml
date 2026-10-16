@@ -94,11 +94,27 @@ jobs:
           }
           Write-Host 'Fuente R8 Studio encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
-      - name: Pruebas de regresion principales
+      # El prechequeo anterior confirma que Tcl/Tk abre una ventana con este
+      # Python. Esta prueba usa su propio proceso Python porque otros tests
+      # pueden modificar el estado compartido de Tk dentro de pytest.
+      # NO es un skip: falla la compilación si el tema real no puede arrancar.
+      - name: Verificar arranque y temas de AKIRA con Tk en proceso limpio
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -m pytest -q tests -ra --junitxml=diagnostics/REGRESSION_TESTS.xml
+          python -m pytest -q tests/test_r12_theme_boot.py -ra --junitxml=diagnostics/THEME_BOOT_WINDOWS.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Los temas de AKIRA no funcionan con Tk en Windows' }
+
+      - name: Pruebas de regresion principales (temas ya verificados aparte)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
+          # Todas las demás pruebas permanecen obligatorias. El único módulo
+          # que se ejecuta por separado arriba es test_r12_theme_boot.py.
+          python -m pytest -q tests -ra --ignore=tests/test_r12_theme_boot.py --junitxml=diagnostics/REGRESSION_TESTS.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas de regresion' }
 
       - name: Compilar y autocontrolar AKIRA.exe en Windows
         shell: pwsh
