@@ -62,6 +62,13 @@ class LlamaSetupTests(unittest.TestCase):
         self.assertIn('AKIRA-16.3.5-R8-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA',workflow)
         self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
-        self.assertIn('python -m pytest -q tests -ra --junitxml=diagnostics/REGRESSION_TESTS.xml',workflow)
+        # CI executes every Tk module in its own Python process; requiring the
+        # former monolithic command incorrectly rejects the safer full suite.
+        self.assertIn('python ci_windows_tests.py',workflow)
+        runner=(ROOT/'ci_windows_tests.py').read_text(encoding='utf8')
+        self.assertIn('test_r12_theme_boot.py',runner)
+        self.assertIn('test_r8_ui_reactions.py',runner)
+        self.assertIn('tests',runner)
+        self.assertIn('REGRESSION_TESTS.xml',runner)
 
 if __name__=='__main__':unittest.main()
