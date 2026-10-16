@@ -72,9 +72,9 @@ function Stop-AkiraInstances {
     }
     Write-Host 'Instancia anterior de Akira cerrada. Continuando sin dejar dos bots activos.' -ForegroundColor Green
 }
-Stop-AkiraInstances -Reason 'actualizar a AKIRA 16.3.2'
+Stop-AkiraInstances -Reason 'actualizar a AKIRA 16.3.5'
 $installPhase='Preparar Python y dependencias'
-Write-Host 'AKIRA · 16.3.2'
+Write-Host 'AKIRA · 16.3.5'
 # El runtime vive fuera de %LOCALAPPDATA%\Akira. Python instalado desde Microsoft Store
 # puede virtualizar/redirigir esa carpeta hacia LocalCache\Local; si el venv vive allí,
 # PowerShell puede buscarlo en una ruta distinta a la que Python terminó usando.
@@ -258,7 +258,7 @@ try {
     $uninstallKey='HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AKIRA'
     New-Item -Path $uninstallKey -Force | Out-Null
     New-ItemProperty -Path $uninstallKey -Name DisplayName -Value 'AKIRA' -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $uninstallKey -Name DisplayVersion -Value '16.3.2' -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $uninstallKey -Name DisplayVersion -Value '16.3.5' -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $uninstallKey -Name Publisher -Value 'AKIRA' -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $uninstallKey -Name InstallLocation -Value $app -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $uninstallKey -Name DisplayIcon -Value $akiraExe -PropertyType String -Force | Out-Null
@@ -293,7 +293,7 @@ try {
     $maint=Invoke-AkiraRelease -Arguments @('cleanup-maintenance','--runtime-root',$runtimeRoot,'--diagnostic',$diagnostic)
     Write-Host ('Mantenimiento: '+@($maint.removed).Count+' diagnósticos antiguos retirados; '+@($maint.deferred).Count+' pendientes.')
 } catch { Write-Warning ('Limpieza de diagnósticos pospuesta, sin afectar la instalación activa: '+$_.Exception.Message) }
-Write-Host 'AKIRA 16.3.2 instalada y verificada. Ya puedes iniciarla desde su acceso directo.'
+Write-Host 'AKIRA 16.3.5 instalada y verificada. Ya puedes iniciarla desde su acceso directo.'
 if ($oldRoot) { Write-Host ('Instalación anterior: '+$oldRoot) }
 Write-Host ('Registro de instalación: '+$diagnostic)
 } catch {

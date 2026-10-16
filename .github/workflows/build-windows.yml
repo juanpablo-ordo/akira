@@ -1,8 +1,11 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.3.4 R7 · IA incluida · ${{ github.ref_name }}
+run-name: AKIRA 16.3.5 R8 · IA incluida · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - akira-r8-studio-rev4-20261016
 
 permissions:
   contents: read
@@ -14,7 +17,7 @@ env:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - name: Obtener código de AKIRA
         uses: actions/checkout@v4
@@ -32,10 +35,29 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pytest
 
+      - name: Verificar que se incorporo REV4 antes de construir el instalador
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $required = @('akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
+                        'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
+                        'installer/smoke_local_ai.py', 'installer/akira.iss')
+          foreach ($file in $required) {
+            if (!(Test-Path -LiteralPath $file)) {
+              throw "Código REV4 incompleto: falta $file. No publicar un instalador antiguo."
+            }
+          }
+          $build = python -c "from akira_version import BUILD_ID; print(BUILD_ID)"
+          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_3_5_R8') {
+            throw "Identidad de compilación inesperada: $build"
+          }
+          Write-Host 'Fuente R8 Studio encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
+
       - name: Pruebas de regresion principales
         shell: pwsh
         run: |
-          python -m pytest -q tests
+          New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
+          python -m pytest -q tests -ra --junitxml=diagnostics/REGRESSION_TESTS.xml
 
       - name: Compilar y autocontrolar AKIRA.exe en Windows
         shell: pwsh
@@ -86,7 +108,7 @@ jobs:
       - name: Comprobar IA real en Windows sin Ollama
         shell: pwsh
         run: |
-          python installer/smoke_local_ai.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf"
+          python installer/smoke_local_ai.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/LOCAL_AI_SCENARIOS.json
 
       - name: Empaquetar ejecutable con motor local (sin el modelo GGUF)
         shell: pwsh
@@ -124,7 +146,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.3.5-R8-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

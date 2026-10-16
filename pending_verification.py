@@ -127,11 +127,21 @@ def assess(snapshot,plan,checks=None,reviews=None,context=None):
     review=(reviews or {}).get(pid) or {};review_matches=review.get('fingerprint')==fp
     data=review.get('data') or {};verdict=data.get('verdict')
     current=review_matches and -5<=now-float(review.get('updated') or now)<=180
-    state='REVISADA' if current and review.get('state')=='COMPLETE' else 'EN CONSULTA' if review_matches and review.get('state') in ('QUEUED','RUNNING') else 'ERROR' if current and review.get('error') else 'DESACTUALIZADA' if review else 'PENDIENTE'
-    required=pid in (snapshot.get('required_pending_reviews') or [])
-    if required and state=='REVISADA' and (verdict!='APPROVE' or data.get('missing')):state='RECHAZADA IA'
     elapsed=max(0,now-float(review.get('started') or review.get('requested') or now))
-    queue_detail=f'Consulta en curso desde hace {elapsed:.0f} s; {review.get("queue_ahead",0)} revisión(es) delante. ' if state=='EN CONSULTA' else ''
+    running=review_matches and review.get('state') in ('QUEUED','RUNNING')
+    deadline=90 if review.get('state')=='QUEUED' else 65
+    ai_approved=(review.get('state')=='COMPLETE' and isinstance(data,dict)
+                 and verdict=='APPROVE' and isinstance(data.get('reason'),str)
+                 and bool(data['reason'].strip()) and isinstance(data.get('missing'),list)
+                 and not data['missing'])
+    state=('REVISADA' if current and ai_approved else
+           'RECHAZADA IA' if current and review.get('state')=='COMPLETE' else
+           'TIEMPO AGOTADO' if running and elapsed>deadline else
+           'EN CONSULTA' if running else
+           'ERROR' if review_matches and review.get('state')=='ERROR' else
+           'DESACTUALIZADA' if review else 'PENDIENTE')
+    required=pid in (snapshot.get('required_pending_reviews') or [])
+    queue_detail=(f'Consulta en curso desde hace {elapsed:.0f} s; {review.get("queue_ahead",0)} revisión(es) delante. ' if state=='EN CONSULTA' else 'La revisión agotó su plazo; vuelve a solicitarla si sigue siendo necesaria. ' if state=='TIEMPO AGOTADO' else '')
     add('IA: revisión de ESTA pendiente',state,('Exigida por el usuario para nuevos envíos y cambios. ' if required else '')+queue_detail+str(data.get('reason') or review.get('error') or 'La revisión de IA debe citar estos niveles y sus indicadores. Una opinión general sobre BTC u oro no cumple esta etapa.')+(' · Dictamen: '+str(verdict) if verdict else '')+(' · Faltantes: '+', '.join(data.get('missing') or []) if data.get('missing') else '')+(' · Evidencia recibida hasta '+str(review['evidence_at'])+' UTC; una recepción nueva no borra el dictamen, cuya vigencia máxima es 180 s.' if review.get('evidence_at') else ''),required)
     stats={}
     from selection_trials import cell
@@ -147,11 +157,20 @@ def assess(snapshot,plan,checks=None,reviews=None,context=None):
         'La evidencia de ejecución y calidad no prueba ganancias. Falta un estudio comparable de esta clase de pendiente; no se inventa una probabilidad individual.')
     add('Estado de la orden','CONFIRMADO MT5' if plan.get('confirmed') else 'PROPUESTA',('#'+str(plan.get('ticket'))+' visible en MT5.' if plan.get('confirmed') else 'Niveles propuestos, sin colocación confirmada.')+' Verificar no envía, edita ni elimina órdenes.')
     completed=sum(s['state'] in DONE for s in stages);critical=[s['name'] for s in stages if s['critical'] and s['state'] not in DONE]
-    status='REVISAR' if critical or quality<60 or warnings or (state=='REVISADA' and (verdict!='APPROVE' or data.get('missing'))) else 'IA PENDIENTE' if state!='REVISADA' else 'REVISIÓN COMPLETA · VER LÍMITES'
+    # Optional research cannot block a technically valid order. Required IA,
+    # broker checks and risk are separate; nothing here sends to MT5.
+    if critical or quality<60 or warnings or (required and state=='RECHAZADA IA'):
+        status='REVISAR'
+    elif required and state!='REVISADA':
+        status='REVISIÓN IA OBLIGATORIA · '+state
+    elif state!='REVISADA':
+        status='COMPROBACIONES ESENCIALES OK · IA OPCIONAL '+state
+    else:
+        status='REVISIÓN COMPLETA · VER LÍMITES'
     return {'id':pid,'fingerprint':fp,'symbol':symbol,'ticket':plan.get('ticket'),'key':plan.get('key'),'calibration':stats,
         'levels':levels(plan),'confirmed':bool(plan.get('confirmed')),'ai_required':required,'stages':stages,'completed':completed,'total':len(stages),
         'progress':round(100*completed/len(stages),1),'state':status,'missing':[s['name']+' · '+s['state'] for s in stages if s['state'] not in DONE],
-        'critical_missing':critical,'strategy':strategy,'as_of_utc':now,'ai':review if current else {},'scope':'Cobertura de comprobaciones de estos niveles; no porcentaje de ganancias ni garantía.'}
+        'critical_missing':critical,'ai_gate':'obligatoria' if required else 'opcional','strategy':strategy,'as_of_utc':now,'ai':review if current else {},'scope':'Cobertura de comprobaciones de estos niveles; no porcentaje de ganancias ni garantía.'}
 
 def reports(snapshot,checks=None):
     reviews=(snapshot.get('research') or {}).get('pending_reviews') or {}

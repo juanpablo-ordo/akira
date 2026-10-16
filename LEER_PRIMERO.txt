@@ -1,11 +1,15 @@
-AKIRA 16.3.4 R7 — CÓDIGO COMPLETO
+AKIRA 16.3.5 R8 — CÓDIGO COMPLETO
 
-1. Copia TODO el contenido de este ZIP en la raíz de tu repositorio akira, incluyendo .github, assets, installer, tests y third_party. Haz Commit y Push en GitHub Desktop.
-2. En GitHub → Actions → AKIRA Windows - verificar y compilar → Run workflow, crea una ejecución NUEVA sobre la rama actualizada. Debe mostrar AKIRA 16.3.4 R7 · IA incluida.
-3. Solo cuando termine correctamente, descarga el artefacto AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA. Instala AKIRA_16_3_4_R7_IA_INCLUIDA.exe.
+1. Copia TODO el contenido de este ZIP en la raíz de tu repositorio akira, junto a Akira.py. Incluye .github, assets, installer y tests. Reemplaza los archivos.
+2. En GitHub Desktop: Commit y Push.
+3. En GitHub: Actions → AKIRA Windows - verificar y compilar → Run workflow → main. El título de la ejecución nueva debe decir AKIRA 16.3.5 R8 · IA incluida.
+4. Al terminar todas las fases correctamente, descarga el artefacto AKIRA-16.3.5-R8-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA. Ejecuta AKIRA_16_3_5_R8_IA_INCLUIDA.exe.
+5. La ventana debe mostrar 16.3.5 · R8.
 
-Este ZIP contiene fuentes; no actualiza la aplicación instalada por sí solo. R7 todavía necesita la compilación y prueba de instalación completa en Windows. Los datos personales, chats y configuración no están en este ZIP.
+IMPORTANTE SOBRE LAS ÓRDENES
+En tus videos figura OBSERVE: ese modo analiza y no envía órdenes. R8 lo indica como SOLO ANÁLISIS · NO ENVÍA ÓRDENES. Para operar, pulsa ACTIVAR OPERATIVA y confirma la cuenta. Los límites de riesgo se conservan. En Ajustes → OPERACIÓN se eligen pendientes únicamente o también runners directos confirmados.
 
-En R7: Ajustes → IA / INTERNET → ACCESO A FUENTES permite guardar la clave opcional de CoinGlass e importar una sesión YouTube cuando el sitio la exija. Las hipótesis de estrategias y los filtros realmente aplicables se ven en Estrategias → VER APRENDIZAJE.
+CLAVES
+Ajustes → FUENTES. GUARDAR AJUSTES también guarda las claves. Se recuperan enmascaradas al volver a abrir Akira con el mismo usuario de Windows.
 
-Lee README.md para los cambios, condiciones y resultados. Los informes comprobados están en VERIFICACION_R7. Los documentos R4/R5/R6 describen entregas anteriores.
+La verificación Windows de esta revisión queda pendiente de Actions. El ZIP de código no instala por sí solo el programa.

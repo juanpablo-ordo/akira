@@ -1,28 +1,59 @@
-# AKIRA 16.3.4 R7
+# AKIRA 16.3.5 R8
 
-Corrección de las seis regresiones de la ejecución Windows 12: instrucciones en `LEEME_FIX_R7_WINDOWS.md`. La verificación de este parche está en `VERIFICACION_R7_WINDOWS_FIX`; la nueva ejecución Windows queda pendiente.
+Revisión de los tres videos del 15 de octubre de 2026: respuestas de la IA, retrasos de ventana, ajustes, claves y reacciones del personaje.
 
-Código completo de la corrección de IA local, fuentes y expresiones. El código ha superado la verificación local R7. Todavía no se ha compilado ni probado el instalador R7 en Windows.
+En los videos, el encabezado muestra `OBSERVE` y el análisis indica candidatas evaluadas sin envíos. Ese modo prepara escenarios y no coloca órdenes. R8 lo muestra como **SOLO ANÁLISIS · NO ENVÍA ÓRDENES**, con un botón **ACTIVAR OPERATIVA**. Al activarlo confirma la cuenta conectada, conserva los límites elegidos y guarda la selección.
 
-Para crear el instalador, copia **todo el contenido** de este ZIP en la raíz de tu repositorio `akira`, incluyendo `.github`, `assets`, `installer`, `tests` y `third_party`. Conserva los datos de usuario fuera del repositorio. En GitHub Desktop haz Commit y Push. Después abre Actions → AKIRA Windows - verificar y compilar → Run workflow.
+## Crear e instalar esta revisión
 
-Cuando termine correctamente, descarga el artefacto `AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`. Ejecuta `AKIRA_16_3_4_R7_IA_INCLUIDA.exe` y comprueba que la ventana muestra 16.3.4 R7. El ZIP de código no instala ni actualiza por sí solo la aplicación.
+1. Copia todo el contenido del ZIP en la raíz de tu repositorio `akira`, junto a `Akira.py`. Incluye `.github`, `assets`, `installer`, `tests` y `third_party`. Acepta combinar las carpetas y reemplazar los archivos.
+2. En GitHub Desktop, haz Commit y Push.
+3. En Actions → AKIRA Windows - verificar y compilar → Run workflow, inicia una ejecución nueva de `main`. El título debe indicar **AKIRA 16.3.5 R8 · IA incluida**. Una ejecución anterior conserva el código de su commit.
+4. Cuando todas las fases terminen correctamente, descarga el artefacto `AKIRA-16.3.5-R8-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA` y ejecuta `AKIRA_16_3_5_R8_IA_INCLUIDA.exe`.
+5. Comprueba que la ventana muestra **16.3.5 · R8**. Si quieres enviar órdenes, pulsa **ACTIVAR OPERATIVA**, revisa la cuenta y confirma. También puedes cambiar el modo en Ajustes → OPERACIÓN.
 
-La compilación anterior #11, de R6, verificó instalación y una respuesta visible de la IA en Windows. Eso corrige el modelo eliminado por el instalador anterior; no prueba los cambios R7. La compilación R7 debe pasar de nuevo la instalación completa y la respuesta de su propio modelo instalado antes de publicar el EXE.
+La configuración existente se conserva. El ZIP contiene código para compilar; por sí solo no actualiza la aplicación instalada. La compilación y el instalador R8 de Windows quedan pendientes de su propia ejecución de Actions.
 
-Cambios de esta entrega:
+## Operación y rapidez
 
-- IA incluida en el instalador con SHA-256 verificado. Chat e investigación comparten un único supervisor; las revisiones de pendientes despiertan el modelo cuando se libera de memoria y recuperan la ruta del motor incluido en lugar del antiguo puerto de Ollama. Se conserva el modelo instalado y el motor CPU de respaldo. Se recuperan rutas antiguas o vacías desde la ubicación real de AKIRA.exe. El registro `IA_LOCAL.log` conserva la salida del proceso. Reparar solo confirma disponibilidad después de una respuesta visible real.
-- Ajustes → IA / INTERNET → ACCESO A FUENTES contiene campos enmascarados para CoinGlass y YouTube Data API. Los campos vacíos conservan claves anteriores. Windows protege las claves con DPAPI. CoinGlass directo es opcional; para oro no se presentan derivados BTC como datos XAU.
-- YouTube incluye Deno oficial verificado y los componentes EJS compatibles con yt-dlp. Se puede importar una sesión mediante un archivo Netscape seleccionado por el usuario. Akira no lee perfiles de navegadores. YouTube puede exigir sesión, limitar consultas o no ofrecer subtítulos; esos estados no se cuentan como videos aprendidos. Una clave Data API permite búsquedas, pero no garantiza acceso a subtítulos.
-- La IA textual incluida puede analizar subtítulos completos sin descargar imágenes para un modelo visual que no está instalado. La interfaz distingue análisis textual, parcial y visual muestreado. No afirma haber visto cada fotograma.
-- Se conservan las 108 ilustraciones originales basadas en las referencias del usuario. Barra lateral, operaciones, chat y llamada comparten la misma cara. Hay transiciones breves; la variación durante el habla usa el nivel del audio reproducido. No es sincronización fonética. Se retira el botón superior duplicado de chat.
-- Las transcripciones completas alimentan hipótesis finitas y citadas: dirección H1, volumen M15 y extensión RSI. Cada filtro observa las mismas candidatas válidas que la estrategia base, con bid/ask, comisiones estimadas y rechazo de huecos de datos. Requiere 40 cierres de entrenamiento y al menos 100 posteriores en 20 días distintos, comparación conservadora por días, suficientes entradas aceptadas/rechazadas y resultado neto positivo. Sin evidencia suficiente se conserva la selección base. Solo se aplica un filtro por familia, símbolo y dirección. Los cambios de cuenta, configuración, versión o costes separan los estudios. Los filtros no cambian lotes, Entry, SL, TP ni gestión, y por sí solos no cancelan pendientes vigentes.
+El análisis técnico, riesgo, reconciliación y envío MT5 siguen funcionando fuera de la interfaz y sin esperar a una respuesta del chat o una descarga web. Una candidata válida puede enviarse en el primer ciclo operativo disponible. Una candidata bloqueada muestra su motivo concreto: modo de análisis, pausa, mercado, datos antiguos, estructura, lote mínimo, presupuesto, margen o confirmación pendiente.
 
-El Directorio de estrategias → VER APRENDIZAJE muestra fuentes, reglas, tamaños de muestra, comparación y filtros aplicables. Las variantes geométricas anteriores del laboratorio siguen siendo experimentos sin activación automática. Aprender una fuente no demuestra rentabilidad ni garantiza mejores operaciones.
+Con **Entradas únicamente mediante pendientes** activado, las posiciones que nacen de ellas se gestionan como runners. Para permitir también runners directos de continuación, el control se encuentra en Ajustes → OPERACIÓN. Esas entradas requieren su confirmación M15/M5 y H1, además de las comprobaciones de riesgo y bróker. La revisión conserva los umbrales técnicos y la gestión establecidos; no aumenta automáticamente el presupuesto para forzar una entrada.
 
-La comprobación local no equivale a probar el PC del usuario, ejecutar órdenes reales ni demostrar beneficios. Los informes R6 se conservan como antecedentes; los resultados de esta revisión se guardan en VERIFICACION_R7.
+Ninguna configuración garantiza cubrir todos los movimientos ni producir beneficios.
 
-El código base R7 está en el commit c67f322e9a540afd64dc9f377667d98d8e6a4bb3. Para aplicar este parche se necesita un nuevo Commit y Push, seguido de Run workflow. En Actions, una ejecución nueva de este código mostrará el nombre «AKIRA 16.3.4 R7 · IA incluida». Repetir una ejecución antigua usa el código de su commit antiguo.
+## IA y fuentes
 
-Verificación inicial R7: 1.094 pruebas pytest y 83 subpruebas; 1.091 pruebas unittest con la red bloqueada; autocontrol nativo v7; 108 celdas distintas; 24 combinaciones de pantalla. También se comprobó conservación de pendientes con una muestra de cotizaciones aportadas por el usuario. Verificación local del parche Windows: 1.096 pruebas pytest y 83 subpruebas, y 1.093 pruebas unittest sin red, sin fallos, errores ni omisiones. Las cifras no son métricas de acierto ni de rentabilidad.
+- El chat tiene prioridad sobre las revisiones auxiliares del modelo. Una revisión interrumpida se aplaza y mantiene su solicitud para continuar después.
+- Se corrige el formato que recibe llama.cpp para las revisiones con esquema JSON. El motor recibe el contenedor de formato y su esquema, y el resultado se valida antes de usarlo.
+- La cancelación puede cerrar la conexión mientras espera las cabeceras de la respuesta. También se puede detener la espera de arranque del motor.
+- Las preguntas normales usan un contexto y una salida acotados. La disponibilidad del motor y el resultado del último mensaje se muestran por separado.
+- Se corrigen errores frecuentes de escritura para interpretar la pregunta, conservando números, parámetros, identificadores, URLs y código. Las órdenes explícitas mantienen su ruta de autorización original.
+- La actualidad exige resultados pertinentes. Una coincidencia con el país no convierte un resultado de un banco o de Google Translate en una respuesta sobre su presidente. La consulta de la Presidencia de Guatemala dispone de lectura del dominio oficial estable; el nombre se obtiene del contenido recibido.
+- Las búsquedas tienen un presupuesto total y un grupo de trabajadores limitado. Si una consulta no se puede confirmar, se explica. Con una desconexión ya detectada, una pregunta que requiere actualidad no inicia una espera web inútil.
+
+## Ventana, ajustes y claves
+
+- Mover una ventana sin cambiar su tamaño evita repetir la distribución de paneles. Los paneles ocultos reducen su trabajo de dibujo.
+- Las tablas de fuentes, órdenes e indicadores actualizan sus filas existentes y conservan selección y desplazamiento.
+- Los ajustes se organizan en OPERACIÓN, RIESGO, ESTRATEGIAS, FUENTES, ASISTENTE, RENDIMIENTO, INTERFAZ y MANTENIMIENTO. El selector permite acceder a todas las secciones también con DPI alto. Los importes financieros dejan espacio al chat, ajustes, fuentes y terminal.
+- **GUARDAR AJUSTES** incluye las claves introducidas. Al volver a abrir Akira se recuperan en campos enmascarados y se indica que están guardadas. Windows las protege para el mismo usuario mediante DPAPI; se verifica la escritura antes de sustituir el archivo anterior.
+- El muestreo de recursos se realiza en segundo plano. La IA gestionada arranca con prioridad de CPU inferior a la normal en Windows para ceder capacidad a MT5 y a la ventana cuando hay carga. Los presupuestos de RAM/GPU siguen siendo orientativos.
+
+## Personaje y conexión
+
+Se conservan las ilustraciones internas y se incorporan ocho sprites de estado. Se retiran de la interfaz el contador de caras y el acceso a la galería. Akira reacciona al escribir, esperar, responder, escuchar y perder o recuperar la conexión. El parpadeo cambia los párpados; el reloj deja de elegir expresiones completas de forma periódica. La espera muestra un círculo con doce fases, dibujado sin generar una imagen nueva por cada fase.
+
+La conectividad se comprueba en segundo plano. Los datos recientes de MT5 o de una fuente remota también sirven como evidencia de conexión, evitando confundir un dominio de comprobación bloqueado con una caída general. Una desconexión confirmada muestra aviso y el sprite dormido, pausa nuevas entradas y reintenta automáticamente. La recuperación conserva la pausa manual y el modo de operación elegido. Las protecciones confirmadas en MT5 se conservan.
+
+## Verificación y alcance
+
+Los informes de esta revisión están en `VERIFICACION_R8`. Incluyen pruebas completas, ejecución con red bloqueada, autocontrol de la interfaz, pantallas y mediciones con datos sintéticos. La comparación de tiempos de interfaz corresponde a Linux, no mide tu PC Windows ni la latencia del bróker.
+
+Actions conserva las fases obligatorias de compilación, autocontrol nativo, IA real CPU e instalación completa. R8 añade comprobaciones del cliente real con pregunta escrita con faltas y una fuente de prueba, revisión JSON y cancelación antes de recibir cabeceras. Los resultados del modelo real se guardan en `diagnostics/LOCAL_AI_SCENARIOS.json`; las regresiones, en `diagnostics/REGRESSION_TESTS.xml`.
+
+Base de código: `109d8b2bbb18da02c86dcc69342ac1732c72caf5`, correspondiente a R7 con la corrección de regresiones Windows y su ejecución 13 aprobada. Los informes de revisiones anteriores son históricos.
+
+Verificación local final: **1,126 pruebas pytest y 87 subpruebas**, **1,123 pruebas unittest con red bloqueada**, sin fallos, errores ni omisiones; autocontrol nativo v8 y 24 combinaciones de pantalla. También se aprobaron 59 pruebas posteriores para los textos de versión y el protocolo. La verificación del modelo real y el instalador R8 de Windows sigue pendiente de Actions.
+
+Los nuevos sprites están en `assets/avatar_states/akira_r8_states.png`; su especificación de generación con ImageGen está en `VERIFICACION_R8/SPRITES_PROMPT.md`.

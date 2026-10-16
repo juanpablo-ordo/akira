@@ -76,6 +76,18 @@ def run_ui_check(window):
             window.geometry('1600x900-20000-20000');window.deiconify();window.update_idletasks();window.update()
             app.render(snapshot)
             window.update_idletasks()
+            # Native chart widgets repaint 175ms after the last resize; wait
+            # for real geometry before asserting the new split dashboard.
+            settle_layout(window)
+            # A split-pane resize may settle one or more animation frames later
+            # depending on OS DPI and widget scheduling. Wait up to 1.5 s for
+            # the actual canvas drawing, rather than falsely failing pre-paint.
+            chart_deadline=time.monotonic()+1.5
+            while time.monotonic()<chart_deadline:
+                window.update()
+                if all(c.data.get('bars') and len(c.find_all())>20 for c,_,_,_ in app.charts.values()):
+                    break
+                time.sleep(.03)
             if not app._render_health.get('complete'):raise RuntimeError('Paneles incompletos: '+', '.join(app._render_health.get('errors') or []))
             checks={
                 'orders':len(app.orders.get_children())==len(snapshot['orders'])>0,
@@ -103,7 +115,7 @@ def run_ui_check(window):
             notices=app.notice_center.list('operación cerrada')
             checks['closure_notifications']=len(notices)==1 and '-0.10 USD' in notices[0]['body'] and 'Stop Loss' in notices[0]['body']
             for index in range(8):app.navigate(index);window.update_idletasks()
-            app.navigate(6);app.settings_notebook.select(app.settings_interface_tab);window.update_idletasks();window.update()
+            app.navigate(6);app.settings_notebook.select(app.settings_maintenance_tab);window.update_idletasks();window.update()
             checks['uninstall_control']=bool(app.uninstall_button.winfo_ismapped() and
                 app.uninstall_button.winfo_width()>30 and app.uninstall_button.cget('command'))
             from akira_expressions import get_catalog,MIN_EXPRESSIONS
@@ -115,6 +127,15 @@ def run_ui_check(window):
             checks['avatar_sync']=len({a.selected.id for a in app.avatars})==1 and len({id(a.director) for a in app.avatars})==1
             app.settings_notebook.select(app.settings_sources_tab);window.update_idletasks()
             checks['source_access_controls']=set(app.source_key_entries)=={'COINGLASS_API_KEY','YOUTUBE_API_KEY'} and all(e.cget('show') for e in app.source_key_entries.values()) and bool(app.source_save_button.cget('command'))
+            from desktop_layout import _descendants
+            captions=[str(w.cget('text')).lower() for w in _descendants(window) if 'text' in w.keys()]
+            checks['private_avatar_controls']=not any('108 caras' in text or 'ver las 108' in text for text in captions)
+            checks['operation_mode_visible']=bool(app.mode_button.winfo_ismapped() and 'NO ENVÍA ÓRDENES' in app.connection.cget('text'))
+            checks['settings_navigation']=len(app.settings_notebook.tabs())>=11 and {'IDIOMA Y VOZ','PERSONALIZACIÓN','AVATAR STUDIO'}.issubset(set(app.settings_notebook.tab(i,'text') for i in app.settings_notebook.tabs())) and bool(app.settings_section.get())
+            avatar=app.avatars[0];app.chat_busy=True;app.chat_started=time.monotonic();avatar.director.busy(True);settle_layout(window)
+            start=avatar.canvas.itemcget(avatar._spinner,'start');settle_layout(window)
+            checks['state_animation']=bool(avatar.canvas.itemcget(avatar._spinner,'state')=='normal' and avatar.canvas.itemcget(avatar._spinner,'start')!=start)
+            app.chat_busy=False;avatar.director.busy(False)
             window.geometry('1024x640+0+0');window.update_idletasks();app._apply_responsive_shell();window.update_idletasks()
             app.navigate(5);settle_layout(window)
             controls=dict(zip(('reset','report','pause'),app._toolbar_buttons))

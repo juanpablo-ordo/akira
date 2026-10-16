@@ -133,7 +133,9 @@ class ManagedLlamaProcess:
             # No apropiarse de otro servidor/modelo, que puede ser ajeno a Akira.
             if self._health(port):
                 raise RuntimeError('El puerto de la IA está ocupado por un servidor externo. Akira no lo cerrará.')
-            flags=getattr(subprocess,'CREATE_NO_WINDOW',0)
+            # Keep the owned model below normal CPU priority so MT5 and Tk
+            # retain scheduling preference when the machine is under load.
+            flags=getattr(subprocess,'CREATE_NO_WINDOW',0)|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)
             stream=None
             try:
                 if self.log_path is not None:
@@ -164,7 +166,8 @@ class ManagedLlamaProcess:
                     return
 
     @contextmanager
-    def session(self,endpoint,desktop=None):
+    def session(self,endpoint,desktop=None,cancel_event=None):
+        if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         if not self.enabled():
             yield
             return
@@ -175,6 +178,7 @@ class ManagedLlamaProcess:
             port=self._port(endpoint)
             deadline=self.clock()+90
             while self.clock()<deadline and not self._health(port):
+                if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
                 with self.lock:
                     if self.proc is None or self.proc.poll() is not None:
                         if not self._force_cpu and bool((desktop or {}).get('model_use_gpu',True)):

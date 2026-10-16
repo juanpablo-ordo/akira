@@ -39,6 +39,11 @@ class PanelLayout:
 
     def queue_restore(self,key):
         if self.dragging or key in self._restoring:return
+        pane=self.widgets[key][0]
+        try:
+            size=(pane.winfo_width(),pane.winfo_height(),tuple(map(str,pane.panes())))
+        except tk.TclError:return
+        if getattr(pane,'_akira_restored_size',None)==size:return
         old=self.restore_jobs.pop(key,None)
         if old is not None:
             try:self.root.after_cancel(old)
@@ -83,7 +88,11 @@ class PanelLayout:
                 p.sash_place(i,position if orient==tk.HORIZONTAL else x,
                              position if orient==tk.VERTICAL else y)
         except tk.TclError:pass
-        finally:self._restoring.discard(key)
+        finally:
+            try:
+                p._akira_restored_size=(p.winfo_width(),p.winfo_height(),tuple(map(str,p.panes())))
+            except tk.TclError:pass
+            self._restoring.discard(key)
 
     def changed(self,key):
         p,orient,_=self.widgets[key]
@@ -137,17 +146,23 @@ def scroll_frame(parent,bg):
         try:
             width=max(1,canvas.winfo_width());height=max(1,canvas.winfo_height())
             needed=max(height,content.winfo_reqheight())
-            first=canvas.yview()[0]
+            top=max(0,canvas.canvasy(0))
+            signature=(width,height,needed)
+            if getattr(canvas,'_sync_signature',None)==signature:return
+            canvas._sync_signature=signature
             # Let Tk report the content's natural height. A fixed canvas-window
             # height suppresses Configure when children shrink and retains an
             # obsolete scroll region (the empty tail seen after reflow).
             canvas.itemconfigure(window,width=width,height=0)
             canvas.configure(scrollregion=(0,0,width,needed))
-            canvas.yview_moveto(min(first,max(0,1-height/needed)))
+            canvas.yview_moveto(min(top,max(0,needed-height))/needed)
             if getattr(canvas,'_wheel_job',None) is None:canvas._wheel_target=canvas.yview()[0]
         except tk.TclError:pass
     def schedule(event=None):
         if getattr(canvas,'_bounds_destroyed',False):return
+        try:
+            if not canvas.winfo_ismapped():return
+        except tk.TclError:return
         if canvas._sync_pending is None:canvas._sync_pending=canvas.after_idle(sync)
     def destroyed(event):
         if event.widget is not canvas:return

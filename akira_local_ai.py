@@ -8,15 +8,52 @@ import json, os, re, time, threading
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlsplit
+from http.client import HTTPConnection
+import io
 
 _STATUS={"when":0.0,"ok":None,"detail":"no comprobado"}
 _STATUS_LOCK=threading.Lock()
+
+
+def _post_direct_cancellable(url,payload,timeout,cancel_event):
+    """Own the socket before response headers, where model generation can wait."""
+    parts=urlsplit(url);connection=HTTPConnection(parts.hostname,parts.port or 80,timeout=timeout)
+    done=threading.Event();expired=threading.Event();deadline=time.monotonic()+float(timeout)
+    def interrupt():
+        while not done.wait(.05):
+            if time.monotonic()>=deadline or cancel_event.is_set():
+                if time.monotonic()>=deadline:expired.set()
+                try:
+                    import socket
+                    if connection.sock is not None:connection.sock.shutdown(socket.SHUT_RDWR)
+                except (OSError,AttributeError):pass
+                connection.close();return
+    threading.Thread(target=interrupt,name='AkiraCancelLocal',daemon=True).start()
+    try:
+        path=parts.path+('?' +parts.query if parts.query else '')
+        connection.request('POST',path,json.dumps(payload,ensure_ascii=False).encode('utf-8'),
+                           {'Content-Type':'application/json','User-Agent':'AKIRA local'})
+        response=connection.getresponse()
+        if response.status>=400:
+            raise HTTPError(url,response.status,response.reason,response.headers,io.BytesIO(response.read(2000)))
+        result=json.loads(response.read(8_000_000).decode('utf-8','replace'))
+        if expired.is_set():raise TimeoutError('AKIRA agotó el tiempo total de inferencia')
+        if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
+        return result
+    except Exception:
+        if expired.is_set():raise TimeoutError('AKIRA agotó el tiempo total de inferencia; la consulta fue detenida') from None
+        if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario') from None
+        raise
+    finally:done.set();connection.close()
 
 
 def _post(url,payload,timeout=90,cancel_event=None,stream_on_cancel=True):
     """Streaming cancellable; close the real socket when user presses DETENER."""
     if cancel_event is not None and cancel_event.is_set():
         raise RuntimeError('Análisis detenido por el usuario')
+    parts=urlsplit(str(url))
+    if cancel_event is not None and parts.scheme=='http' and parts.hostname in ('127.0.0.1','localhost','::1') and parts.path.rstrip('/').endswith('/v1/chat/completions'):
+        return _post_direct_cancellable(url,{**payload,'stream':False},timeout,cancel_event)
     streaming = cancel_event is not None and stream_on_cancel
     payload=dict(payload)
     if streaming:payload['stream']=True
@@ -101,7 +138,11 @@ def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_
         # Qwen3 can consume the whole token budget in hidden reasoning otherwise.
         mapped.insert(0,{'role':'system','content':'/no_think\nDa una respuesta visible, concisa y útil.'})
     if response_format is not None:
-        payload['response_format']={'type':'json_object'} if response_format=='json' else response_format
+        if response_format=='json':payload['response_format']={'type':'json_object'}
+        elif isinstance(response_format,dict) and response_format.get('type') not in ('json_object','json_schema'):
+            # llama.cpp expects a format envelope, not a bare JSON Schema.
+            payload['response_format']={'type':'json_object','schema':response_format}
+        else:payload['response_format']=response_format
     try:
         data=_post(endpoint,payload,timeout=timeout,cancel_event=cancel_event,stream_on_cancel=False)
     except HTTPError as exc:

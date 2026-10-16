@@ -493,5 +493,42 @@
   },
   "charts": {
     "indicator": "Medias y Bollinger"
+  },
+  "studio": {
+    "brand_name": "AKIRA",
+    "language_ui": "es",
+    "language_chat": "auto",
+    "language_voice_in": "auto",
+    "language_voice_out": "es",
+    "translate_input": false,
+    "translate_output": false,
+    "theme": "AKIRA Original",
+    "accent": "#23ddf4",
+    "secondary": "#ed58cc",
+    "font": "Bahnschrift",
+    "font_scale": 100,
+    "glow": 65,
+    "panel_texture": "Neon grid",
+    "wallpaper": {
+      "kind": "default",
+      "file": "",
+      "fit": "cover",
+      "rotation": 0,
+      "opacity": 30,
+      "fps": 12,
+      "quality": 70,
+      "max_memory_mb": 128,
+      "max_cpu_percent": 10,
+      "enabled": false,
+      "offset_x": 0,
+      "offset_y": 0
+    },
+    "avatar": {
+      "active": false,
+      "entries": [],
+      "sequences": {},
+      "profile": "default"
+    },
+    "language_pack": ""
   }
 }

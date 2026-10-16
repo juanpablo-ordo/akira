@@ -15,8 +15,11 @@ def session_write_guard(g,account,lock):
     try:
         if g.cfg['mode']=='trade' and lock is None:lock=AccountLock(account)
         retire(g)
+        g.execution_lease_active=lock is not None
         return lock,''
-    except Blocked as exc:return lock,str(exc)
+    except Blocked as exc:
+        g.execution_lease_active=False
+        return lock,str(exc)
 
 
 def run_session(cfg,root,log,stop,commands,publish,preview=False):
@@ -51,6 +54,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             identity=hashlib.sha256(f'{account.server}:{account.login}'.encode()).hexdigest()[:16]
             journal=Journal(root/'state'/('preview.json' if preview else 'cuenta_'+identity+'.json'),read_only=preview)
             g=Gateway(api,cfg,journal,log,clock)
+            g.requires_execution_lease=not preview;g.execution_lease_active=False
             for symbol,on in cfg['symbols'].items():
                 if on and not api.symbol_select(symbol,True):raise RuntimeError('MT5 no tiene el símbolo '+symbol+'; revisa el nombre/sufijo en configuración')
             context=None
@@ -79,6 +83,10 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                         cmd=commands.get_nowait()
                         dispatch(engine,cmd)
                 except queue.Empty:pass
+                # A mode change delivered by a command must acquire ownership
+                # before the first live cycle, even if this turn began in observe.
+                if not preview and cfg['mode']=='trade' and lock is None:
+                    lock,g.runtime_execution_block=session_write_guard(g,account,lock)
                 try:
                     stage='CICLO'
                     if preview:

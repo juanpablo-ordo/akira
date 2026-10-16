@@ -4,10 +4,11 @@ Una sola fuente de verdad evita que una key antigua de V181/V184 pise la nueva.
 Canónico: %LOCALAPPDATA%/Akira/AKIRA_SECRETS.json.
 """
 from __future__ import annotations
-import hashlib, json, os,base64
+import hashlib, json, os,base64,threading,uuid
 from pathlib import Path
 
 NAMES=("OPENAI_API_KEY","COINGLASS_API_KEY","YOUTUBE_API_KEY","YOUTUBE_COOKIES_FILE")
+_WRITE_LOCK=threading.RLock()
 
 def canonical_path():
     base=Path(os.getenv("LOCALAPPDATA", Path.home()/"AppData"/"Local"))
@@ -65,6 +66,10 @@ def load_secrets():
     return data
 
 def save_secrets(values, merge=True):
+    with _WRITE_LOCK:return _save_secrets(values,merge)
+
+
+def _save_secrets(values, merge=True):
     path=canonical_path(); path.parent.mkdir(parents=True,exist_ok=True)
     data=load_secrets() if merge else {}
     for k,v in (values or {}).items():
@@ -77,17 +82,21 @@ def save_secrets(values, merge=True):
         blob=win32crypt.CryptProtectData(json.dumps(data).encode('utf-8'),'AKIRA',None,None,None,1)
         output={'_format':'AKIRA_DPAPI_1','protected':base64.b64encode(blob).decode('ascii')}
     else:output=data
-    temp=path.with_suffix('.tmp')
-    with temp.open('w',encoding='utf-8') as stream:
-        os.chmod(temp,0o600);stream.write(json.dumps(output,ensure_ascii=False,indent=2));stream.flush();os.fsync(stream.fileno())
-    temp.replace(path)
+    temp=path.with_name('.'+path.name+'.'+uuid.uuid4().hex+'.tmp')
+    try:
+        with temp.open('x',encoding='utf-8') as stream:
+            os.chmod(temp,0o600);stream.write(json.dumps(output,ensure_ascii=False,indent=2));stream.flush();os.fsync(stream.fileno())
+        if _read(temp)!=data:raise RuntimeError('Windows no confirmó la lectura de las claves guardadas; revisa el perfil de usuario.')
+        temp.replace(path)
+    finally:temp.unlink(missing_ok=True)
     return path
 
 def protect_existing():
-    path=canonical_path()
-    if os.name=='nt' and path.is_file():
-        raw=json.loads(path.read_text(encoding='utf-8-sig'))
-        if raw.get('_format')!='AKIRA_DPAPI_1':save_secrets(load_secrets())
+    with _WRITE_LOCK:
+        path=canonical_path()
+        if os.name=='nt' and path.is_file():
+            raw=json.loads(path.read_text(encoding='utf-8-sig'))
+            if raw.get('_format')!='AKIRA_DPAPI_1':save_secrets(load_secrets())
 
 def get_secret(name,default=""):
     return str(load_secrets().get(name,default) or default).strip()

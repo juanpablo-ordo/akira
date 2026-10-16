@@ -3,6 +3,7 @@ yt-dlp[default]==2026.8.19
 tzdata>=2025.2
 Pillow
 imageio-ffmpeg
+imageio>=2.34,<3
 
 python-docx>=1.1,<2
 sounddevice>=0.5.0,<1

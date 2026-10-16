@@ -12,7 +12,7 @@ import uuid
 
 from akira_version import BUILD_ID
 
-MUTABLE_PREFIXES=('state/','logs/','exports/')
+MUTABLE_PREFIXES=('state/','logs/','exports/','studio/')
 # Evidence from earlier releases belongs in developer sources, not every installed
 # copy.  Never exclude actual runtime modules, state, logs or downloaded models.
 NON_RUNTIME_PREFIXES=('VALIDACIONES_ANTERIORES/', 'INTERFAZ/',
@@ -275,7 +275,7 @@ def cleanup_old_releases(runtime, backup_root):
             report['skipped'].append(str(old)+' (enlace detectado)');continue
         backup=backup_root/(datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8])/old.name
         try:
-            for name in ('akira_config.json','AKIRA_SECRETS.json','state','logs','exports'):
+            for name in ('akira_config.json','AKIRA_SECRETS.json','state','logs','exports','studio'):
                 source=old/name
                 if not source.exists():continue
                 dest=backup/name

@@ -1,0 +1,2351 @@
+{
+  "source": "AKIRA_Instrucciones_Maestras(3).docx",
+  "scope": "R001-R232 y E01-E16",
+  "release": "R8 Studio Rev4 · source only",
+  "rows": [
+    {
+      "id": "R001",
+      "requirement": "Prioriza, en este orden, la ejecución de pendientes y runners, la terminación de las validaciones, la calidad de las decisiones, la IA conversacional, la fluidez y el consumo, la reconexión y la presentación visual. Protege las posiciones existentes durante todos los cambios.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R002",
+      "requirement": "Mantén BTCUSDm y XAUUSDm como instrumentos iniciales de Exness. Obtén sus especificaciones reales desde el terminal conectado; evita asumir que todos los clientes tienen el mismo sufijo, contrato, lote mínimo, apalancamiento o tipo de cuenta.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R003",
+      "requirement": "La instrucción vigente exige pendientes y runners normales LONG y SHORT sin scalping. Las restricciones antiguas de solo pendientes deben revisarse cuando impidan los runners solicitados. Conserva la opción explícita de solo pendientes para quien la elija.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R004",
+      "requirement": "Conserva el diseño, la identidad de Akira, los chats, las preferencias, los informes, las voces y las funciones útiles existentes. Aplica los cambios sobre una base identificada y evita reemplazar el producto por una interfaz simplificada que pierda funciones.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R005",
+      "requirement": "Prepara una sola entrega de estabilización para probar con usuarios en los próximos días. Organiza correcciones internas sobre la misma base y entrega un instalador coherente con su código, sus recursos y sus pruebas. Comunica dependencias o fallos concretos que impidan esa entrega.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R006",
+      "requirement": "Android queda fuera de esta entrega. Separa desde ahora la lógica de negocio y los contratos de datos de la interfaz de Windows, sin iniciar todavía el desarrollo móvil ni asumir que el conector de escritorio funcionará directamente en Android.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R007",
+      "requirement": "Este documento autoriza preparar e implementar las correcciones solicitadas. La prueba de ejecución se realizará en demo o simulación; la activación de una cuenta real respetará la autorización y configuración de su titular.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R008",
+      "requirement": "Implementa pendientes BUY LIMIT, SELL LIMIT, BUY STOP y SELL STOP según la tesis y las capacidades del instrumento. Cada una tendrá entrada, SL, TP, volumen, estrategia, invalidación, vigencia y motivo verificables.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R009",
+      "requirement": "Un runner es una posición de continuación o desarrollo de una tesis estructural. Puede originarse en una pendiente activada o en una entrada directa permitida por el modo de pendientes y runners. Define sus reglas propias de entrada y gestión.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R010",
+      "requirement": "Distingue el tipo de entrada de la forma de gestionar la posición. Una pendiente activada puede gestionarse como runner. Una entrada directa requiere confirmación actual y no puede presentarse en la interfaz como una pendiente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R011",
+      "requirement": "Retira de la ruta activa las reglas heredadas de scalping que contradigan el alcance vigente, como cierres por una duración mínima arbitraria o toma de beneficio demasiado corta por diseño. Conserva los controles de riesgo, protección e invalidación que sí correspondan.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R012",
+      "requirement": "Permite escenarios alcistas y bajistas simultáneos cuando cada uno tenga sentido. La autorización para ejecutar ambos dependerá del riesgo conjunto, el tipo de cuenta y las reglas de coexistencia, cancelación o sustitución definidas para la estrategia.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R013",
+      "requirement": "Los runners deben tolerar retrocesos normales compatibles con su tesis. El SL, las salidas parciales, el trailing y la salida por invalidación deben responder a reglas comprobables y a los costes del instrumento.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R014",
+      "requirement": "Las operaciones por capas solo se permitirán si existe una política expresa de exposición total. Prohíbe que una sucesión de señales eluda el riesgo conjunto o convierta pérdidas en una ampliación automática sin límite.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R015",
+      "requirement": "Reproduce el estado OBSERVE visto en R6 y R7 y determina por qué quedó seleccionado en la instalación. Distingue elección del usuario, configuración predeterminada, migración, pausa y bloqueo operativo. Muestra la causa efectiva.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "operation_health.py",
+        "tests/test_r11_operation_health.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R016",
+      "requirement": "Comprueba por separado las propuestas bloqueadas por pausa y las descartadas por riesgo. El ejemplo grabado de riesgo 6.09 frente a un límite de 2.04 USD ilustra una restricción distinta de la latencia del análisis; vuelve a calcularla con los datos de la cuenta de prueba.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R017",
+      "requirement": "Reproduce la pregunta sobre el presidente actual de Guatemala y el fallo que devuelve Google Translate y bancos. Comprueba el recorrido real del mensaje, la consulta generada, las fuentes seleccionadas, la respuesta del modelo y el manejo del fallo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R018",
+      "requirement": "Corrige el adaptador de salida estructurada entre research.py y akira_local_ai.py. El esquema enviado directamente como type object debe transformarse al formato admitido por la versión de llama-server incluida y validarse con una llamada real a ese motor.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R019",
+      "requirement": "Reproduce el error de AKIRA revisión de indicadores y conserva el detalle de la excepción. No atribuyas automáticamente ese error al mismo problema que la revisión individual de pendientes; ambos recorridos deben comprobarse.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R020",
+      "requirement": "Reproduce las validaciones que permanecen en siete de doce o seis de doce. Examina dependencias, colas, cambios de niveles, huellas de contexto, fallos de JSON, caducidad, selección de fuentes y reintentos. Identifica la etapa exacta que impide terminar cada caso.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "operation_health.py",
+        "tests/test_r11_operation_health.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R021",
+      "requirement": "Corrige el guardado general de ajustes para incluir las claves pendientes de guardar. Revisa los controles de rendimiento duplicados, los perfiles de 12 y 7 FPS, el contador de expresiones y el cambio de ilustraciones por tiempo.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_theme.py",
+        "tests/test_r12_studio_theme.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R022",
+      "requirement": "Contrasta el código de referencia 109d8b2 con el ejecutable instalado antes de atribuir un fallo a una corrección ya compilada. Registra la correspondencia de forma interna y utiliza una etiqueta sencilla en la aplicación.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R023",
+      "requirement": "Mantén un único responsable de enviar, modificar, cancelar y reconciliar órdenes por cuenta. La interfaz, el chat y los investigadores presentarán solicitudes a ese responsable; sus accesos nunca competirán de forma desordenada con MT5.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R024",
+      "requirement": "Separa las tareas de interfaz, análisis técnico, protección de posiciones, ejecución, investigación externa, inferencia de IA, reconocimiento de voz y síntesis de voz. Usa procesos para trabajo intensivo cuando las mediciones lo justifiquen.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R025",
+      "requirement": "El motor rápido consumirá cotizaciones recientes, indicadores calculados y contexto ya preparado. Las consultas de noticias, YouTube y otras páginas se resolverán en segundo plano con límites de tiempo y frecuencia por proveedor.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R026",
+      "requirement": "Define colas acotadas, prioridades y cancelación. Atiende primero protección y reconciliación, después las decisiones ejecutables; preserva capacidad para el chat interactivo sin convertir una investigación extensa en una espera indefinida.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R027",
+      "requirement": "Evita acumular trabajos iguales. Fusiona actualizaciones reemplazables de interfaz y contexto, pero conserva todos los eventos financieros y las confirmaciones necesarias para reconstruir una operación.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R028",
+      "requirement": "Cada tarea llevará identificador, instrumento, cuenta cuando corresponda, versión de estrategia, contexto de entrada, fecha, vencimiento y resultado. Descarta resultados materialmente obsoletos sin reiniciar trabajos que siguen siendo válidos.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R029",
+      "requirement": "La IA propondrá explicaciones, evidencia y planes dentro de contratos definidos. El ejecutor comprobará la autorización y los requisitos operativos de cada orden; una frase generada o un resultado de una página no serán una orden de ejecución.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R030",
+      "requirement": "Actualiza el precio y la protección con la frecuencia adecuada al mercado. Calcula los indicadores incrementales cuando cambien sus datos y evita reconstruir todas las temporalidades o investigar la web en cada vuelta del ciclo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R031",
+      "requirement": "Mantén escenarios anticipados y niveles preparados para poder actuar cuando llegue la confirmación. Distingue preparar una pendiente para una condición futura de abrir una posición directa que exige confirmación presente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R032",
+      "requirement": "Reevalúa por eventos relevantes: nueva vela, cambio de estructura, aproximación a una zona, actualización de fuente, modificación de exposición o respuesta del bróker. Evita esperar al siguiente trabajo largo si ya existe una decisión ejecutable.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R033",
+      "requirement": "Comprueba al iniciar el terminal, las cotizaciones, los permisos y las posiciones existentes. Presenta el primer mapa técnicamente utilizable tan pronto como terminen esas comprobaciones, incorporando después el contexto externo disponible.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R034",
+      "requirement": "Si falta una fuente auxiliar, conserva el análisis de estrategias que puedan funcionar válidamente sin ella. Si una estrategia declara esa fuente obligatoria, ciérrala como no disponible y explica su situación; no la des por validada.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R035",
+      "requirement": "Registra oportunidades detectadas, decisiones, descartes y demora hasta la solicitud y respuesta de MT5. El contador del ciclo no sustituirá estas mediciones.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R036",
+      "requirement": "Añade un supervisor de inactividad. Si transcurre un periodo configurable sin decisiones nuevas, revisa bloqueos de modo, hilos, colas, datos y candidatos. A las cinco o seis horas debe existir una explicación recuperable de lo ocurrido durante toda la sesión.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "activity_watchdog.py",
+        "tests/test_r11_activity_watchdog.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R037",
+      "requirement": "Ese supervisor podrá reiniciar trabajadores recuperables y refrescar datos con límites. No abrirá operaciones por cumplir una cuota de actividad ni modificará el riesgo para provocar una entrada.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "activity_watchdog.py",
+        "tests/test_r11_activity_watchdog.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R038",
+      "requirement": "Sustituye la validación monolítica por comprobaciones con estados finales. Cada etapa debe terminar como aprobada, rechazada, no aplicable, vencida, no disponible o error; la espera solo podrá durar hasta un plazo definido.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "operation_health.py",
+        "tests/test_r11_operation_health.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R039",
+      "requirement": "Separa los requisitos esenciales de ejecución, las condiciones de la estrategia y los enriquecimientos opcionales. Calcula la cobertura sobre requisitos aplicables y muestra por separado la evidencia opcional disponible.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R040",
+      "requirement": "No muestres una revisión interminable de doce casillas cuando algunas no aplican al instrumento o a la estrategia. Mantén el detalle técnico accesible sin convertirlo en el contenido principal para el usuario.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R041",
+      "requirement": "Define un plazo para cada llamada y un límite total para la revisión. Cumplido el plazo, devuelve un resultado explícito y libera la cola. Una respuesta inválida no puede quedar representada como trabajo aún en curso.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "operation_health.py",
+        "tests/test_r11_operation_health.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R042",
+      "requirement": "Valida cada estrategia con las dependencias que declaró. Una noticia, derivado o video auxiliar ausente no debe bloquear universalmente todas las pendientes y runners.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R043",
+      "requirement": "Conserva las huellas que evitan aplicar un dictamen a niveles diferentes. Investiga si cambios irrelevantes de recepción, estado de fuentes ajenas o metadatos están invalidando revisiones correctas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R044",
+      "requirement": "Reutiliza evidencia vigente de niveles y contexto sin repetir todas las comprobaciones. Antes de enviar vuelve a verificar únicamente lo que puede haber cambiado, incluyendo cotización, exposición, margen, permisos y restricciones del bróker.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R045",
+      "requirement": "Una revisión obligatoria de IA debe tener reglas claras, plazo y consecuencia al fallar. Si el usuario la exige para una orden concreta, respeta esa exigencia y termina el caso con una explicación cuando no pueda completarse.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "operation_health.py",
+        "tests/test_r11_operation_health.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R046",
+      "requirement": "Revisa las exigencias de IA persistidas por orden y cuenta para que una preferencia antigua no bloquee indefinidamente escenarios nuevos. Expón el estado efectivo y conserva la intención vigente del usuario.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R047",
+      "requirement": "Normaliza las respuestas estructuradas, comprueba tipos, campos, símbolos y valores finitos y registra el error real. Limita el reintento de reparación de formato para evitar bucles de inferencia.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "operation_health.py",
+        "tests/test_r11_operation_health.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R048",
+      "requirement": "Una revisión completada con limitaciones indicará las limitaciones reales. No marques datos ausentes como analizados ni conviertas una revisión parcial en aprobación completa.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "pending_verification.py",
+        "tests/test_v1626_verification.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R049",
+      "requirement": "Prueba expresamente que una candidata termina su revisión, conserva el resultado mientras sigue siendo válido y alcanza el ejecutor cuando reúne todos los requisitos esenciales.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R050",
+      "requirement": "Combina estructura multitemporal, tendencia, rango, impulso, volatilidad, volumen, liquidez y costes sin contar indicadores correlacionados como confirmaciones independientes. Distingue volumen real y volumen de ticks; las inferencias sobre participantes grandes deben identificarse como inferencias. Cada estrategia definirá qué variables utiliza y para qué.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R051",
+      "requirement": "Evalúa contextos de tendencia, rango, transición y volatilidad elevada. Usa el régimen para seleccionar estrategias y ajustar su interpretación, conservando reglas reproducibles de entrada, salida e invalidación.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R052",
+      "requirement": "Conserva el horizonte estructural y evita exigir una misma alineación de M15, H1 y H4 a estrategias con reglas diferentes. Cada filtro deberá justificar su contribución mediante pruebas y diagnósticos de oportunidades descartadas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R053",
+      "requirement": "Usa los precios ejecutables del terminal para órdenes. Las cotizaciones de exchanges y referencias públicas aportarán contexto, teniendo en cuenta diferencias de instrumento, mercado y horario.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R054",
+      "requirement": "Al evaluar entrada, SL y TP, considera estructura, spread, costes, restricciones y objetivos alcanzables dentro del horizonte. Evita objetivos excesivamente lejanos elegidos solo para mejorar una relación numérica.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R055",
+      "requirement": "Clasifica candidatas por viabilidad, evidencia, proximidad de activación y calidad histórica comparable. Conserva las alternativas útiles cuando la primera quede invalidada.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R056",
+      "requirement": "Cuando una entrada no quepa en el riesgo con el volumen mínimo, busca otra geometría estructural válida y ejecutable. Si no existe, termina el caso como descartado y conserva el motivo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R057",
+      "requirement": "Evita colocar pendientes demasiado alejadas únicamente para mostrar actividad. Justifica la distancia y la vigencia según el movimiento esperado y las condiciones de activación de la estrategia.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R058",
+      "requirement": "Mantén un ciclo de vida explícito que distinga candidata, validada, solicitada, confirmada por MT5, modificada, activada, cancelada y vencida. Asocia cada confirmación al ticket correspondiente.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop.py",
+        "tests/test_r11_pending_ui.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R059",
+      "requirement": "Envía una candidata aprobada con rapidez y comprueba el resultado real. Un prechequeo satisfactorio no garantiza que el servidor acepte posteriormente la solicitud; gestiona ambas respuestas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R060",
+      "requirement": "Aplica identificadores de operación que impidan duplicados tras un timeout, un doble clic, un reintento o una reconexión. Antes de reenviar una solicitud de resultado incierto consulta el estado del terminal.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "execution.py",
+        "tests/test_v1626_verification.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R061",
+      "requirement": "Modifica una pendiente cuando cambie materialmente su tesis o exista una mejora definida. Evita reenvíos continuos de los mismos niveles y trata correctamente las respuestas de ausencia de cambios.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R062",
+      "requirement": "Retira órdenes por invalidación, vencimiento o reglas de coexistencia definidas. La falta temporal de datos no debe inventar una invalidación ni provocar cancelaciones repetidas sin evidencia.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R063",
+      "requirement": "Después de una activación, confirma la posición y transfiere su gestión al responsable del runner. Recalcula la exposición disponible para el resto de candidatas y órdenes.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R064",
+      "requirement": "Identifica las órdenes de Akira y respeta las operaciones manuales o de otras aplicaciones salvo autorización expresa de gestión. Mantén esa identificación después de actualizar o reiniciar.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R065",
+      "requirement": "Define para cada runner la tesis, el disparador, el horizonte de gestión y la invalidación. Comprueba que la entrada directa autorizada tenga confirmación actual y que una pendiente activada conserve la tesis que motivó su colocación.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R066",
+      "requirement": "Instala las protecciones admitidas por el servidor al ejecutar y comprueba su presencia. Si falta una protección requerida, trata el caso como una incidencia prioritaria con una acción de recuperación definida.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R067",
+      "requirement": "El trailing y el movimiento a equilibrio deben tener disparadores y distancias compatibles con estructura, volatilidad y costes. Evita acercar repetidamente el SL hasta expulsar al runner por ruido normal.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R068",
+      "requirement": "Define salidas parciales solo cuando el tamaño de posición y el paso de volumen del bróker las permitan. No simules cierres parciales imposibles con el lote mínimo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R069",
+      "requirement": "Registra el motivo de cada salida y distingue SL, TP, invalidación, trailing, cierre manual y emergencia. Evita órdenes de cierre contradictorias entre módulos.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R070",
+      "requirement": "Impide que una actualización del mapa de pendientes cierre automáticamente un runner válido por una regla heredada de scalping. Comprueba esa independencia en una reproducción de retrocesos normales.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R071",
+      "requirement": "Los controles de sesión, exposición o pérdidas autorizados seguirán vigentes. Documenta qué condiciones suspenden nuevas entradas y cuáles requieren actuar sobre posiciones existentes.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R072",
+      "requirement": "Conserva autorización, identificación de cuenta, mercado disponible, precio vigente, volumen válido, margen, riesgo conjunto y protecciones como requisitos esenciales de ejecución. Su presentación debe ser clara y su cálculo rápido.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R073",
+      "requirement": "Calcula el riesgo con las especificaciones reales del símbolo y la moneda de la cuenta. Conserva el lote 0.01 cuando sea la preferencia vigente del propietario y cumpla las restricciones; para otros usuarios utiliza su configuración autorizada. Respeta volumen mínimo, máximo y paso, distancias de stops, restricciones de modificación y tipos de orden disponibles.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R074",
+      "requirement": "Evita suponer que dos órdenes opuestas anulan su riesgo: pueden activarse sucesivamente. Reserva exposición para pendientes y posiciones bajo una política explícita y contempla activaciones simultáneas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R075",
+      "requirement": "No aumentes el riesgo, el lote o el número de capas como reacción automática a la inactividad o a pérdidas. Las preferencias se aplicarán con alcance y límites comprobados por cuenta.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R076",
+      "requirement": "Distingue incompatibilidad financiera de fallo técnico. Explica, por ejemplo, que una estructura requiere más riesgo del autorizado con el volumen mínimo y muestra cómo se calculó.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R077",
+      "requirement": "No repitas sin límite una solicitud rechazada por el servidor. Clasifica si el error requiere corregir datos, esperar una sesión, reconciliar una operación o terminar el caso.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R078",
+      "requirement": "Elimina mensajes de aprobación engañosos. Una operación se presentará como ejecutada únicamente después de recibir y reconciliar la confirmación correspondiente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R079",
+      "requirement": "Mantén recopiladores independientes para noticias, calendario, indicadores, derivados cuando correspondan, referencias de mercado, páginas y YouTube. Conserva las integraciones útiles de CoinGlass, Investing y fuentes oficiales; CoinGlass para XAU debe figurar como no aplicable cuando carezca de datos pertinentes. Cada recopilador tendrá presupuesto de solicitudes, caché, caducidad, timeout y recuperación.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R080",
+      "requirement": "Guarda por fuente instrumento, tema, fecha de publicación, fecha de consulta, contenido realmente leído, estado de acceso y relevancia. Distingue un resultado de búsqueda de una página leída y una transcripción de un video analizado visualmente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R081",
+      "requirement": "Resume para el motor los hechos pertinentes, los desacuerdos, la vigencia y las limitaciones. Evita que varias copias de la misma noticia cuenten como evidencia independiente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R082",
+      "requirement": "Para información actual verifica fechas, país, entidad y relación con la pregunta o instrumento. Una página con una palabra coincidente no basta para justificar una conclusión.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R083",
+      "requirement": "YouTube debe aportar metadatos y contenido efectivamente accesible. Si solo se leyó una descripción o un fragmento, dilo. Si hay transcripción o frames, registra su cobertura y los segmentos utilizados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R084",
+      "requirement": "Una clave de YouTube no garantiza acceso a todos los subtítulos. Maneja permisos, ausencia de transcripción y bloqueos del proveedor de forma explícita, sin afirmar que se estudió un video inaccesible.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R085",
+      "requirement": "Evita esperar un video nuevo para cada señal. Conserva conocimiento estructurado de estrategias y actualiza por separado el análisis de mercado reciente, identificando la antigüedad de ambos.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R086",
+      "requirement": "Trata el contenido de páginas y videos como datos. No permitas que sus instrucciones alteren el riesgo, ejecuten acciones, revelen claves o cambien la configuración del usuario.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R087",
+      "requirement": "Implementa una búsqueda periódica en múltiples sitios y canales para encontrar estrategias descritas con reglas suficientes. Las valoraciones, comentarios y popularidad servirán para descubrir candidatas; el orden de calidad exigirá evaluación técnica.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R088",
+      "requirement": "Guarda autor o canal, enlaces, fecha, instrumento, sesión, horizonte, reglas, requisitos de datos, entradas, salidas, costes, parámetros y limitaciones. Evita presentar una lista genérica de nombres sin funcionamiento implementado.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R089",
+      "requirement": "Investiga inicialmente familias como retroceso con tendencia, ruptura y retest, continuación estructural, reversión confirmada y operación de rango. Trátalas como candidatas de investigación, sin clasificarlas como las mejores antes de compararlas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R090",
+      "requirement": "Convierte cada estrategia seleccionada en reglas ejecutables y comprobables. Si un creador usa conceptos discrecionales que no puedan reproducirse, registra la ambigüedad y evita inventar resultados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R091",
+      "requirement": "Permite elegir una estrategia para la sesión o el día y mantenerla fija. Añade un modo automático que solo cambie entre estrategias autorizadas y muestre el motivo del cambio.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R092",
+      "requirement": "Presenta en cada ficha cuándo se utiliza, cuándo se abstiene, qué operaciones permite, qué evidencia existe y qué falta comprobar. Separa popularidad pública, resultados declarados por el autor y resultados medidos por Akira.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R093",
+      "requirement": "Conserva una versión de las reglas aplicada a cada operación. Cambiar de estrategia no debe modificar silenciosamente la gestión de posiciones abiertas; define y muestra su política de continuidad.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R094",
+      "requirement": "Evita incluir como opción operativa una estrategia que solo tiene una tarjeta visual. El estado debe distinguir investigación, implementación, prueba y disponibilidad para demo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R095",
+      "requirement": "Desarrolla una estrategia propia identificable, inicialmente denominada Akira Adaptativa. Colócala como primera opción del catálogo por ser la estrategia principal del producto; su posición no equivaldrá a una superioridad estadística demostrada.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R096",
+      "requirement": "Combina selección de régimen, tesis estructural, disparador, invalidación y selección de orden. Elige entre pendientes y runners según reglas definidas, autorización, exposición y evidencia disponible.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R097",
+      "requirement": "Permite que la estrategia principal seleccione entre métodos previamente implementados y evaluados, conservando el motivo y la versión de su decisión. Evita una mezcla opaca que cambie todas las reglas en cada inferencia.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R098",
+      "requirement": "Usa la IA para sintetizar contexto y contradicciones dentro de un contrato estructurado. Los niveles y los cálculos financieros deben poder reproducirse sin depender de una explicación inventada después del resultado.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R099",
+      "requirement": "Diseña el objetivo de evaluación para equilibrar resultado neto, drawdown, estabilidad, activación, duración, costes y frecuencia de oportunidades. Una mayor tasa de acierto o de activación por sí sola no demuestra una estrategia mejor.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R100",
+      "requirement": "Compara la estrategia propia con las alternativas bajo los mismos datos, costes, instrumentos, riesgo y periodos. Guarda los intentos de ajuste para poder reconocer selección retrospectiva y sobreajuste.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R101",
+      "requirement": "El objetivo de desarrollo es superar las alternativas en criterios definidos. Utiliza la etiqueta superior únicamente cuando exista evidencia comparable suficiente; informa empates, incertidumbre y condiciones donde otra estrategia funcione mejor.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R102",
+      "requirement": "Distingue probabilidad de activación de probabilidad de resultado favorable después de activarse. Define el horizonte y las condiciones de cada medida y evita mezclarlas en una sola cifra.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R103",
+      "requirement": "Mientras no exista una estimación calibrada, muestra puntuaciones técnicas identificadas como tales. El valor 96 de calidad o 99 de activación no puede comunicarse como porcentaje de ganancia.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "pending_verification.py",
+        "tests/test_v1626_verification.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R104",
+      "requirement": "Si se entrenan estimadores, utiliza datos anteriores a la decisión y evaluación posterior separada. Evita filtrar información futura mediante velas incompletas, indicadores recalculados o selección retrospectiva de noticias.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R105",
+      "requirement": "Acompaña las estimaciones con periodo, número de casos, instrumento, versión, costes y medida de incertidumbre. Si faltan datos comparables, indícalo en la ficha sin fabricar precisión.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R106",
+      "requirement": "Evalúa utilidad con esperanza neta, pérdidas, costes y estabilidad. Una estrategia con muchas operaciones pequeñas ganadoras puede deteriorarse por pérdidas mayores; el informe debe permitir comprobarlo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R107",
+      "requirement": "La comparación con parámetros que antes daba ChatGPT usará casos guardados con la misma hora y datos disponibles. Evita afirmar que Akira es mejor que ChatGPT basándose únicamente en velocidad o ejemplos elegidos.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R108",
+      "requirement": "Separa actualizar conocimiento, ajustar una estrategia y entrenar un modelo. Consultar internet no equivale a aprender permanentemente ni a demostrar que una modificación mejora la operativa.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R109",
+      "requirement": "Conserva un diario con contexto anterior a la entrada, plan, ejecución, gestión y resultado. Utilízalo para localizar errores y formular hipótesis comprobables.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R110",
+      "requirement": "Evalúa los ajustes con datos separados y pruebas de continuidad. Una propuesta de mejora debe conservar su configuración y una comparación con la base antes de convertirse en política activa.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R111",
+      "requirement": "Impide que una noticia, video o conversación reescriba automáticamente el código o eleve el riesgo de una cuenta. La evolución del producto tendrá revisiones, pruebas y una forma de restaurar la configuración anterior.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R112",
+      "requirement": "El aprendizaje debe respetar cuentas y privacidad. Los datos de un usuario no se utilizarán para otro ni para entrenamiento compartido sin una autorización definida.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R113",
+      "requirement": "Haz que el chat principal funcione con el motor local incluido, sin requerir créditos de OpenAI ni instalaciones manuales de Ollama para el uso normal. OpenAI seguirá siendo un complemento opcional elegido por el usuario.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R114",
+      "requirement": "Comprueba que modelo, ejecutable, plantilla de conversación, endpoint y contrato de herramientas correspondan a la misma instalación. Detecta respuestas vacías, truncadas, inválidas y errores de arranque antes de anunciar disponibilidad.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R115",
+      "requirement": "Separa salud del proceso, modelo cargado y éxito de la última respuesta. Una prueba correcta de arranque no certifica comprensión de cualquier pregunta posterior.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R116",
+      "requirement": "Elimina la salida de emergencia que presenta resultados irrelevantes como si fueran una respuesta resuelta. Ante una investigación fallida, explica la limitación y conserva el contexto para reintentar con una consulta pertinente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R117",
+      "requirement": "Usa búsqueda de hechos cambiantes cuando la pregunta lo requiera. Lee evidencia relevante, comprueba entidad y fecha y responde primero al dato solicitado con sus fuentes accesibles.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R118",
+      "requirement": "Conserva conversaciones y memoria útil con límites claros. Comprende referencias como esa pendiente, la anterior, hazlo más corto y por qué no lo hiciste, sin convertir reclamos o preguntas en órdenes de trading.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R119",
+      "requirement": "Corrige errores de escritura y entiende variantes coloquiales. Conserva literalmente precios, lotes, símbolos, identificadores y negaciones cuando su modificación pueda cambiar una acción.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R120",
+      "requirement": "Los mensajes normales, las consultas de estado y los comandos operativos tendrán recorridos definidos. Las órdenes del chat usarán el mismo ejecutor y las mismas reglas que la operación automática.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R121",
+      "requirement": "Implementa personalidad y orquestación propias de Akira. Antes de entrenar un modelo desde cero, mide las limitaciones del modelo existente y evalúa mejoras de contexto, herramientas y ajuste especializado; decide según recursos y resultados observados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R122",
+      "requirement": "Evita confundir identidad comercial con procedencia tecnológica. Presenta Akira como asistente del producto y conserva los detalles técnicos en diagnóstico, junto con las obligaciones de licencia que correspondan.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R123",
+      "requirement": "Akira debe hablar con naturalidad, cercanía y continuidad, como una amiga que escucha. Adapta la extensión y el tono a la conversación sin respuestas mecánicas ni introducciones repetidas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R124",
+      "requirement": "Reconoce frustración, dudas y correcciones de forma breve y útil. Recuerda preferencias pertinentes y evita repetir errores que el usuario acaba de señalar.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R125",
+      "requirement": "Cuando desconozca un dato, admítelo y usa las herramientas disponibles. Una expresión segura o una voz cálida no reemplazarán una respuesta sustentada.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R126",
+      "requirement": "Conserva una identidad coherente sin afirmar sentimientos humanos reales ni fomentar dependencia emocional. Acompaña al usuario y respeta su autonomía al tomar decisiones.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R127",
+      "requirement": "Separa la conversación afectuosa de la autorización financiera. Una petición ambigua, una broma o una frase mal transcrita no deben crear, cerrar o modificar operaciones.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R128",
+      "requirement": "Comprueba conversaciones completas con cambios de tema y preguntas de seguimiento. Las pruebas incluirán temas generales, consultas actuales, trading, errores de ortografía y recuperación después de respuestas fallidas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R129",
+      "requirement": "Implementa un recorrido comprobado de micrófono, reconocimiento de voz, comprensión, respuesta y síntesis. Muestra cuándo escucha, transcribe, piensa y habla, con controles claros de silencio, detener y finalizar.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R130",
+      "requirement": "La expresión de escuchar comenzará cuando el micrófono esté realmente activo. La expresión de pensamiento coincidirá con el procesamiento de la pregunta y la de habla con el audio reproducido.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R131",
+      "requirement": "Permite interrumpir una respuesta hablada y detener la generación correspondiente. Evita voces superpuestas o un audio antiguo que continúe después de cancelar la conversación.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R132",
+      "requirement": "Conserva el hilo entre voz y texto. El usuario podrá corregir una transcripción sin perder el tema y ver el mensaje que Akira interpretó.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R133",
+      "requirement": "Usa umbrales y comprobaciones para números y comandos operativos. Si la transcripción de un lote, precio, instrumento o acción es incierta, solicita la aclaración mínima antes de ejecutar esa acción.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R134",
+      "requirement": "Presenta voces instaladas, disponibles, activas y fallidas. Comprueba la selección después de reiniciar, el cambio de dispositivo y la ausencia de micrófono o altavoces.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R135",
+      "requirement": "Mantén descarga individual cancelable y, cuando esté disponible y tenga sentido, descarga de todas las voces solicitadas con tamaño y progreso visibles. No descargues paquetes innecesarios automáticamente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R136",
+      "requirement": "Retira de la interfaz pública el contador 108 caras, el botón de galería y las herramientas de selección manual de expresiones. La animación debe funcionar internamente según eventos reales.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "akira_live2d.py",
+        "tests/test_r8_ui_reactions.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R137",
+      "requirement": "Conserva la apariencia del personaje de referencia. Mantén tamaño, posición, proporciones y rasgos consistentes entre fotogramas y estados; evita cambios de personaje al pasar de una emoción a otra.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R138",
+      "requirement": "Crea secuencias para reposo, parpadeo, escucha, pensamiento, análisis, habla, espera, carga, alerta, desconexión y recuperación. Las expresiones reflejarán el estado del sistema o la conversación.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "akira_studio.py",
+        "tests/test_akira_studio.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R139",
+      "requirement": "Implementa parpadeo con apertura, cierre y reapertura coherentes y variaciones discretas de reposo. Evita sustituirlo por una cara de dormir elegida como si fuera un parpadeo completo.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "akira_studio.py",
+        "tests/test_akira_studio.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R140",
+      "requirement": "Añade reacciones ligeras al acercamiento y movimiento del puntero dentro de una zona definida. Incluye límites, retorno al reposo y una opción de reducir movimiento, sin perjudicar clics, lectura ni rendimiento.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R141",
+      "requirement": "El círculo de carga tendrá posiciones angulares consecutivas y un bucle visual continuo. Relaciona la animación con trabajo real y termina el estado cuando el trabajo finalice, falle o se cancele.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R142",
+      "requirement": "Prioriza alertas esenciales, escucha y habla sobre variaciones decorativas. Sincroniza todos los avatares visibles con un estado central para evitar expresiones contradictorias entre pestañas.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "akira_live2d.py",
+        "tests/test_r8_ui_reactions.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R143",
+      "requirement": "Precarga fotogramas y reutiliza imágenes escaladas. Reduce actividad visual cuando el panel esté oculto o la aplicación minimizada y evita decodificar o redimensionar atlas en cada tick.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R144",
+      "requirement": "Distingue pérdida general de internet, caída de MT5, ausencia de tick por sesión, proveedor externo caído, clave rechazada y modelo local no disponible. Una sola consulta fallida no demostrará pérdida global de internet.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R145",
+      "requirement": "Ante falta de conexión esencial, presenta una alerta breve y una animación de espera o Akira dormida. Suspende nuevos envíos que dependan de esa conexión y conserva el estado necesario para recuperarse.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R146",
+      "requirement": "Conserva la conversación local disponible cuando el modelo funcione sin internet y explica sus límites para datos actuales. La apariencia de desconexión no debe afirmar falsamente que toda la aplicación está apagada.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R147",
+      "requirement": "Reintenta con esperas progresivas y límites para evitar consumo continuo. Usa más de una señal de salud para distinguir problemas de red y de proveedor.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R148",
+      "requirement": "Al volver la conexión comprueba cuenta, sesión, cotización, órdenes, posiciones y protecciones. Detecta pendientes activadas o canceladas durante la interrupción antes de tomar decisiones nuevas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R149",
+      "requirement": "Recupera el modo de operación previamente autorizado si sus condiciones siguen vigentes. Descarta solicitudes vencidas, reconcilia resultados inciertos e impide duplicados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R150",
+      "requirement": "Explica qué protecciones permanecen en el servidor y qué gestiones locales estuvieron suspendidas. Comprueba su presencia real al recuperarse y registra la duración de la interrupción.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R151",
+      "requirement": "Conserva la estética futurista de Akira con jerarquía legible, tipografía clara y controles consistentes. La organización debe ayudar a operar y entender el estado sin exigir leer registros técnicos.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop.py",
+        "tests/test_r11_pending_ui.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R152",
+      "requirement": "Organiza la navegación principal en Inicio, Operaciones, Estrategias, Análisis y fuentes, Chat, Informes y Ajustes. Integra cuenta, avisos y diagnóstico donde resulte útil, conservando acceso a las funciones existentes.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R153",
+      "requirement": "En Inicio muestra modo efectivo, conexión, situación de BTC y oro, operaciones confirmadas y actividad reciente. Presenta mensajes breves que expliquen la espera y el próximo evento relevante.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop.py",
+        "tests/test_r11_pending_ui.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R154",
+      "requirement": "En Operaciones distingue propuestas, pendientes confirmadas y posiciones runner. Mantén niveles, tickets y acciones apropiadas a cada estado y evita títulos que sugieran que una propuesta ya está en MT5.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop.py",
+        "tests/test_r11_pending_ui.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R155",
+      "requirement": "Adapta paneles y columnas a pantallas pequeñas y grandes. Conserva redimensionado horizontal y vertical, desplazamiento accesible y botones visibles sin solapamientos ni franjas sobrantes.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R156",
+      "requirement": "Prueba 1366 por 768, 1920 por 1080, 2560 por 1440 y, cuando el equipo de prueba lo permita, 4K. Incluye escalas de Windows de 100, 125, 150 y 200 por ciento y desplazamiento entre monitores.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R157",
+      "requirement": "Al restaurar o maximizar, reorganiza el contenido sin reconstruirlo innecesariamente. Conserva proporciones de paneles y ajusta posiciones guardadas que ya no quepan en el monitor actual.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R158",
+      "requirement": "Evita mensajes modales repetidos, botones de reparación permanentes cuando todo funciona y nombres internos en las pantallas habituales. Los errores esenciales seguirán visibles y con acciones concretas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R159",
+      "requirement": "Agrupa ajustes en Operación, Riesgo, IA y voz, Fuentes y conexiones, Apariencia y rendimiento y Aplicación. Usa una sola definición efectiva para cada opción y elimina selectores duplicados.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_theme.py",
+        "tests/test_r12_studio_theme.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R160",
+      "requirement": "Explica qué cambia cada ajuste, cuándo se aplica y si requiere recargar un componente. Distingue activar análisis, autorizar operación automática y pausar la gestión.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R161",
+      "requirement": "Unifica Guardar ajustes para persistir todas las modificaciones pendientes, incluyendo las claves que el usuario haya introducido. Comunica éxito parcial o error por campo sin anunciar un guardado total inexistente.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "settings_effects.py",
+        "tests/test_akira_studio.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R162",
+      "requirement": "Valida antes de guardar y conserva una configuración coherente si falla la escritura o la aplicación en vivo. Los cambios de interfaz no pueden reiniciar posiciones ni borrar el diario.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R163",
+      "requirement": "Conserva estrategia elegida, modos, riesgo, voces, privacidad y distribución de paneles después de cerrar, reiniciar y actualizar. Aplica migraciones explícitas cuando cambie la estructura de configuración.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R164",
+      "requirement": "Una actualización no debe activar operación real ni volver silenciosamente a observación. Conserva la elección autorizada y muestra cualquier condición nueva que impida aplicarla.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R165",
+      "requirement": "Guarda las claves en una ubicación canónica estable, cifradas para el usuario de Windows. Conserva la implementación útil existente y comprueba su lectura desde accesos directos, distintos directorios de trabajo y versiones actualizadas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R166",
+      "requirement": "Un campo vacío conservará la clave guardada. Ofrece reemplazar y eliminar de forma explícita y muestra guardada o sin configurar sin revelar el secreto completo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R167",
+      "requirement": "Distingue guardado local de autenticación correcta. Comprueba cada proveedor y clasifica clave ausente, rechazada, sin permisos, cuota agotada, timeout y servicio no disponible.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R168",
+      "requirement": "Evita incluir claves, cookies o datos de autenticación en registros, capturas de diagnóstico, informes, instaladores o repositorio. El diagnóstico compartible debe ocultarlos automáticamente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R169",
+      "requirement": "Una fuente opcional sin clave se mostrará como no configurada, con su impacto concreto. No bloqueará estrategias que no la requieren ni aparecerá falsamente como activa.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R170",
+      "requirement": "Si falla el descifrado o la lectura, presenta una incidencia recuperable y conserva el archivo. Evita tratarlo como ausencia normal de clave y sobrescribir datos válidos silenciosamente.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R171",
+      "requirement": "Implementa un solo optimizador con perfiles comprensibles. Cada perfil aplicará los mismos valores desde Ajustes y desde cualquier acceso rápido, y mostrará qué parámetros están efectivamente activos.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R172",
+      "requirement": "Retira el límite visual de 7 o 12 FPS del funcionamiento normal cuando perjudique la interacción. Separa la frecuencia de datos de las animaciones y del dibujo, y actualiza únicamente lo que cambió.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "cyber_ui.py",
+        "tests/test_r12_studio_theme.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R173",
+      "requirement": "Mide por separado aplicación, modelo, voz y otros trabajadores propios. Identifica procesos para evitar atribuir a Akira el consumo agregado de servidores de IA de otras aplicaciones.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R174",
+      "requirement": "Distingue presupuesto orientativo y límite efectivo de RAM o GPU. Ajusta modelo, contexto, lotes de inferencia y concurrencia al hardware; no anuncies un límite que el sistema no está imponiendo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R175",
+      "requirement": "Evita recargar el modelo entre mensajes próximos si esa política aumenta demora y consumo. Coordina su tiempo de permanencia con la carga real de trabajo y la disponibilidad para conversar.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R176",
+      "requirement": "Reduce investigación y animaciones cuando no haya cambios relevantes, la aplicación esté minimizada o el mercado esté cerrado. Mantén el trabajo necesario para proteger posiciones existentes y detectar la reapertura.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R177",
+      "requirement": "Mide el rendimiento con chat, voz, análisis y movimiento de ventana simultáneos. Registra cola de interfaz, duración de tareas, memoria y periodos de saturación para localizar el origen del retraso.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R178",
+      "requirement": "Si no hay oportunidades, la aplicación debe esperar eficientemente y vigilar eventos. Mantener el equipo ocupado con consultas repetidas sin información nueva no cuenta como análisis útil.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "activity_watchdog.py",
+        "tests/test_r11_activity_watchdog.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R179",
+      "requirement": "Muestra por componente último intento, último éxito, antigüedad del contenido, estado actual y próximo reintento. Distingue antigüedad de publicación y de recepción.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R180",
+      "requirement": "Una tarea de IA fallida debe pasar a error recuperable o no disponible con motivo específico. Evita que conserve indefinidamente una marca de actividad o un resultado antiguo presentado como actual.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R181",
+      "requirement": "Diferencia el cálculo técnico de indicadores de su interpretación por IA. Puede existir cálculo correcto y revisión de IA fallida; la interfaz debe reflejar ambas situaciones.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R182",
+      "requirement": "Define vencimientos según el tipo de fuente. Un dato macroeconómico diario no debe juzgarse con la misma regla que una cotización del bróker o una noticia de último momento.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R183",
+      "requirement": "Presenta impacto sobre la decisión: requisito esencial ausente, estrategia no disponible o contexto auxiliar limitado. Mantén el detalle técnico en diagnóstico para quien quiera revisarlo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R184",
+      "requirement": "Conserva mensajes consistentes entre Inicio, Operaciones, Análisis, Fuentes y Chat. Todos deben derivarse del mismo estado efectivo y de las mismas confirmaciones.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R185",
+      "requirement": "Entrega un instalador nativo de Windows con identidad e icono de Akira, progreso comprensible, mensajes correctos y desinstalación disponible desde el sistema. Evita consolas persistentes como interfaz habitual del instalador.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R186",
+      "requirement": "Antes de reemplazar, comprueba requisitos y prepara la nueva aplicación. Actualiza binarios y recursos como una unidad coherente y verifica que el paquete coincide con los manifiestos generados después de la compilación.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R187",
+      "requirement": "La limpieza de versiones antiguas debe retirar binarios obsoletos identificados, conservando cuenta, ajustes, límites, claves, voces elegidas, chats y diario. Evita borrar carpetas por coincidencias amplias de nombre.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R188",
+      "requirement": "Si falla la actualización, conserva o restaura una instalación utilizable y describe cuál quedó activa. La aplicación que abra debe corresponder al estado informado por el instalador.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R189",
+      "requirement": "Los reintentos deben tener un resultado finito. Evita el ciclo de cerrar Akira, repetir instalación y volver a mostrar el mismo error sin una causa y una salida claras.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R190",
+      "requirement": "Comprueba instalación limpia, actualización, reinstalación, rutas con espacios o caracteres propios del idioma, archivos en uso, accesos directos y desinstalación con conservación de datos elegida.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R191",
+      "requirement": "Incluye modelo local, ejecutables y recursos de forma compatible con sus licencias y con el instalador. Comprueba que el chat arranque usando exactamente esos componentes en una máquina limpia.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R192",
+      "requirement": "Identifica la compilación de forma interna y en Acerca de. El usuario habitual no necesita ver nombres de pruebas, contadores de expresiones, rutas internas ni etiquetas de desarrollo dispersas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R193",
+      "requirement": "Conserva el botón Descargar informe con elección PDF o Excel. Incluye operaciones reales, propuestas descartadas, motivos, resultados, costes, tiempos y comparación entre BTC y oro.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R194",
+      "requirement": "Distingue datos de replay, simulación, demo y cuenta real en los informes. Conserva zona horaria, instrumento, cuenta identificada de forma adecuada y versión de estrategia.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R195",
+      "requirement": "Retira de la interfaz habitual el botón de prueba de calidad solicitado anteriormente. Mantén la evidencia necesaria en fichas e informes de forma comprensible y accesible.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R196",
+      "requirement": "Conserva historial de chats, memoria elegida, opciones de voces, llamadas, avisos y paneles ajustables. Verifica que actualizar una función no elimine otra que ya se utiliza.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R197",
+      "requirement": "Añade un diagnóstico descargable que reúna estado, errores recientes, tiempos y configuración sin secretos. Su generación debe funcionar aunque el motor de IA esté temporalmente caído.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R198",
+      "requirement": "Mantén un registro de oportunidades no ejecutadas con motivo anterior al resultado. Distingue ausencia de señal, restricciones válidas y oportunidad perdida por error o demora del sistema.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "activity_watchdog.py",
+        "tests/test_r11_activity_watchdog.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R199",
+      "requirement": "El primer uso debe comprobar componentes, conexión con el terminal, cuenta, instrumentos y modo de operación. Presenta una configuración coherente sin exigir al cliente editar archivos o adivinar rutas.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R200",
+      "requirement": "Separa los datos de cada usuario y cuenta. Los ejemplos de desarrollo no deben convertirse en límites, balances, claves o decisiones de otros clientes.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R201",
+      "requirement": "Define qué recursos necesita el producto y compruébalos en equipos de referencia. Si un componente no cabe en la máquina, ofrece una configuración compatible con funciones y límites explicados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R202",
+      "requirement": "No añadas una dependencia obligatoria de suscripción externa o API pagada para que funcione el chat básico si no forma parte del producto autorizado. Las fuentes opcionales y sus costes deben quedar claros.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R203",
+      "requirement": "Prepara contratos estables de estado, estrategia, órdenes, conversación y preferencias para la futura interfaz Android. Resuelve el alojamiento y la ejecución móvil en esa fase, después de estabilizar Windows.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R204",
+      "requirement": "Caso de ejecución normal. Con conexión, modo autorizado y una señal reproducible, la candidata termina sus comprobaciones esenciales, se solicita a MT5 y aparece con ticket confirmado. Repite con BUY y SELL y con los tipos de orden implementados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R205",
+      "requirement": "Caso de fuente opcional ausente. Desactiva una fuente auxiliar y comprueba que una estrategia independiente de ella siga terminando y operando válidamente, mientras la interfaz informa la limitación real.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R206",
+      "requirement": "Caso de requisito esencial ausente. Retira cotización vigente, autorización o margen suficiente y comprueba que el sistema termine el caso con causa concreta, sin enviar una orden inválida y sin permanecer en una validación infinita.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R207",
+      "requirement": "Caso de revisión IA. Solicita una revisión individual, comprueba que responde con el esquema correcto y termina. Cambia niveles materialmente y verifica invalidación; cambia un metadato irrelevante y verifica que no reinicie todo.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "operation_health.py",
+        "tests/test_r11_operation_health.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R208",
+      "requirement": "Caso de runner. Reproduce un impulso y un retroceso normal, comprueba protecciones y continuidad de la tesis y luego una invalidación real. Verifica entradas directas autorizadas y runners nacidos de pendientes.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R209",
+      "requirement": "Caso de desconexión. Interrumpe red y terminal por separado, permite una activación de pendiente en un escenario controlado y comprueba reconciliación al volver, reanudación correcta y ausencia de duplicados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R210",
+      "requirement": "Caso de conversación. Prueba la pregunta del presidente con fuentes actuales, variantes con faltas, seguimientos y cambios de tema. Comprueba respuestas pertinentes y honestas cuando una fuente o modelo falle.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R211",
+      "requirement": "Caso de voz y expresión. Habla, interrumpe, corrige un número, cambia de dispositivo y comprueba sincronización entre escucha, pensamiento, voz y avatar.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R212",
+      "requirement": "Caso de rendimiento. Ejecuta análisis, chat y voz mientras restauras y redimensionas ventanas y cambias de monitor. Mide latencias y consumo durante la prueba.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R213",
+      "requirement": "Caso de persistencia. Guarda claves, estrategia y preferencias; cierra, reinicia desde otro directorio y actualiza. Comprueba conservación y validez sin volver a introducir las claves.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R214",
+      "requirement": "Caso de sesión prolongada. Ejecuta una sesión de al menos seis horas en condiciones documentadas, incluyendo periodos con y sin oportunidades. No deben quedar tareas sin plazo, colas crecientes o candidatos ejecutables perdidos por fallos del sistema.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "activity_watchdog.py",
+        "tests/test_r11_activity_watchdog.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R215",
+      "requirement": "Caso de aplicación completa. Instala desde el archivo entregable en Windows limpio, abre el chat local, conecta demo, genera informes y desinstala según la opción elegida. Relaciona esta evidencia con la misma compilación entregada.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R216",
+      "requirement": "Publica los resultados medidos junto al equipo, modelo, contexto, carga y versión utilizados. Si un objetivo no se alcanza, identifica el cuello de botella y la corrección necesaria; evita sustituirlo por el tiempo de una vuelta vacía del ciclo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R217",
+      "requirement": "Mide RAM, CPU y GPU con el mismo escenario antes y después de optimizar. Conserva capacidad de respuesta y protección de operaciones durante la reducción de consumo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R218",
+      "requirement": "Dimensiona los plazos según tipo de tarea y hardware después de medir. Los trabajos que requieren investigación extensa tendrán una respuesta de progreso y un resultado finito, sin ocupar la capacidad del ejecutor.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R219",
+      "requirement": "Usa reproducción determinista e históricos adecuados para comparar versiones. Incluye costes, spread, deslizamiento y demora de ejecución, y conserva las limitaciones de los datos usados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R220",
+      "requirement": "Separa periodos de ajuste y evaluación y utiliza pruebas hacia adelante cuando corresponda. Para código Python utiliza un replay o harness compatible; el Strategy Tester nativo exige una implementación compatible con sus mecanismos de prueba.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R221",
+      "requirement": "Compara alternativas bajo un presupuesto de riesgo común y registra resultados por instrumento, régimen y periodo. Incluye frecuencia de señales, activación, resultado neto, drawdown, duración y estabilidad.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R222",
+      "requirement": "Investiga las horas sin operaciones mediante candidatos y motivos registrados antes del desenlace. Mide qué descartes eran correctos y cuáles fueron errores de implementación o filtros inadecuados.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R223",
+      "requirement": "Una prueba demo funcional permite comprobar uso y ejecución, pero no demuestra rentabilidad futura ni superioridad universal. Mantén explícita esa diferencia en la decisión de ampliar el piloto.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R224",
+      "requirement": "Primer bloque de trabajo. Cierra OBSERVE y persistencia de modo, validaciones atascadas, contrato JSON, confirmación de órdenes y gestión de runners. Completa reproducciones controladas antes de ampliar el catálogo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R225",
+      "requirement": "Segundo bloque de trabajo. Repara chat, contexto, búsqueda, colas de IA, voz, rendimiento y claves. Comprueba que todos funcionen juntos con el ejecutor activo en demo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R226",
+      "requirement": "Tercer bloque de trabajo. Implementa la primera estrategia propia y las alternativas investigadas que puedan probarse con reglas completas. Presenta el catálogo con estados y evidencia reales.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R227",
+      "requirement": "Cuarto bloque de trabajo. Cierra reconexión, avatar, reorganización de pestañas, instalador, informes y pruebas de sesión prolongada. La animación puede prepararse antes, pero no sustituirá la aceptación operativa.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R228",
+      "requirement": "Mantén una lista única que relacione cada requisito de este documento con su implementación, prueba y estado. Informa como pendiente cualquier requisito que todavía no cumpla el resultado esperado.",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "tools/generate_requirement_matrix.py",
+        "REQUISITOS_232_ESTADO.json"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R229",
+      "requirement": "Ejecuta pruebas relevantes durante el desarrollo y el conjunto de aceptación sobre la entrega consolidada. Evita convertir al usuario en responsable de instalar una cadena de paquetes para descubrir si la corrección básica funciona.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R230",
+      "requirement": "Entrega un instalador principal, identificación de su código, instrucciones breves de primer uso, lista honesta de funciones disponibles y evidencia de pruebas. Conserva el código completo y los recursos necesarios para reproducirlo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R231",
+      "requirement": "La decisión de abrir el piloto exigirá cerrar los fallos críticos de ejecución, datos, persistencia, duplicación y estabilidad. Comunica cualquier limitación restante con su efecto concreto y un criterio de cierre.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "R232",
+      "requirement": "Prioriza que un usuario pueda comprender y probar el producto en los próximos días. Define las fechas después de comprobar bloqueos y capacidad de prueba; evita comprometer una versión definitiva por calendario sin haber verificado el instalador y el recorrido completo.",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    }
+  ],
+  "extra_requests": [
+    {
+      "id": "E01",
+      "requirement": "Recrear con fidelidad las ocho pantallas y todos los modales de las capturas",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E02",
+      "requirement": "Personalizar nombres visibles y, de ser apropiado, marca de ejecutable/instalador",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E03",
+      "requirement": "Cambiar colores principales y fondos visuales",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_theme.py",
+        "tests/test_r12_studio_theme.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E04",
+      "requirement": "Cambiar familia y escala tipográfica",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_theme.py",
+        "tests/test_r12_studio_theme.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E05",
+      "requirement": "Cambiar idioma de todas las pantallas, alertas y textos dinámicos",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E06",
+      "requirement": "Elegir idiomas de entrada y salida de voz, con STT/TTS funcionales",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E07",
+      "requirement": "Importar sprites propios y ordenar casillas libremente",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "akira_studio.py",
+        "tests/test_akira_studio.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E08",
+      "requirement": "Reconocer automáticamente cualquier expresión de un sprite por visión",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E09",
+      "requirement": "Crear y editar secuencias animadas de fotogramas",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "akira_studio.py",
+        "tests/test_akira_studio.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E10",
+      "requirement": "Importar wallpapers en video o imagen; movimiento global tras los paneles",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E11",
+      "requirement": "Recortar, rotar, desplazar y adaptar wallpapers a la ventana",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "akira_studio.py",
+        "tests/test_akira_studio.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E12",
+      "requirement": "Elegir frecuencia, calidad y límites efectivos de CPU/RAM/GPU del fondo",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E13",
+      "requirement": "Conservar el diseño original como predeterminado",
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_theme.py",
+        "tests/test_r12_studio_theme.py"
+      ],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E14",
+      "requirement": "Resolver velocidad/precisión y rentabilidad neta de pendientes y runners",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E15",
+      "requirement": "IA conversacional capaz de entender coloquialismos, faltas y temas actuales",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    },
+    {
+      "id": "E16",
+      "requirement": "Un único instalador nativo comprobado en Windows y MT5 demo",
+      "status": "NO_VERIFICADO_INTEGRALMENTE",
+      "evidence": [],
+      "windows_verified": false,
+      "mt5_demo_verified": false,
+      "complete": false
+    }
+  ],
+  "rule": "Evidence from Linux mocks/tests is partial; no item marked fully complete until user-acceptance on delivered Windows installer.",
+  "counts": {
+    "master": 232,
+    "extras": 16,
+    "partial_local": 34,
+    "fully_validated": 0,
+    "need_windows_acceptance": 248
+  }
+}

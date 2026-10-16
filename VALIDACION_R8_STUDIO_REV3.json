@@ -1,0 +1,36 @@
+{
+  "release": "AKIRA_16_3_5_R8_STUDIO_REV3",
+  "based_on": "AKIRA_16_3_5_R8_STUDIO_REV2",
+  "tests": {
+    "pytest": {
+      "passed": 1161,
+      "subtests_passed": 87,
+      "failures": 0,
+      "log": "akira_r11_final.log",
+      "platform": "Linux/Python/Xvfb/FakeMT5"
+    },
+    "native_ui": {
+      "controls_passed": 27,
+      "platform": "Linux/Xvfb/FakeMT5"
+    }
+  },
+  "implemented": [
+    "read-only current operation-mode reason and next step",
+    "bounded individual review states with broker and AI checks verified separately",
+    "native pending candidates cockpit with independently confirmed MT5 ticket state",
+    "inactivity diagnostic supervisor without forced orders or risk relaxation"
+  ],
+  "not_verified": [
+    "Windows executable and installer",
+    "real Exness/MetaTrader 5 order acceptance and risk on actual broker",
+    "profitability or optimized strategies after costs",
+    "1:1 graphic design across every screen",
+    "universal visual understanding of custom sprite expressions",
+    "wallpaper/video composition behind every UI widget",
+    "complete localization and TTS/STT in every language",
+    "all 232 requirements and long-term Windows stress validation"
+  ],
+  "trading_real_mode_automatically_enabled": false,
+  "verified_artifact_type": "source code ZIP, not an executable",
+  "integrity": "verified by independent extraction and SHA-256 manifest"
+}

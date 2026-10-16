@@ -1,11 +1,12 @@
 {
-  "build": "AKIRA_16_3_4_R7",
-  "tests": 1093,
-  "status": "VALIDACION_LOCAL_R7_WINDOWS_FIX_COMPLETA_WINDOWS_PENDIENTE",
-  "date": "2026-10-15",
+  "build": "AKIRA_16_3_5_R8",
+  "tests": 1137,
+  "status": "STUDIO_REV2_LINUX_APROBADO_WINDOWS_PENDIENTE",
+  "date": "2026-10-16",
   "skipped": 0,
-  "scope": "Linux: pytest completo, unittest con red bloqueada, autocontrol nativo v7 y reproducción de los cinco fallos mediante alias de carpeta aprobados. Nueva compilación e instalador Windows pendientes.",
-  "test_report": "VERIFICACION_R7_WINDOWS_FIX/PRUEBAS_COMPLETAS.xml",
-  "pytest_tests": 1096,
-  "pytest_subtests": 83
+  "scope": "Linux: 1140 pytest + 87 subpruebas aprobadas; unittest: 1137 pruebas aprobadas. Pantalla nativa FakeMT5: 27 comprobaciones. Windows, Exness y rentabilidad no probados.",
+  "pytest_tests": 1140,
+  "pytest_subtests": 87,
+  "post_suite_check": "Windows aún debe ejecutar su suite desde el ZIP publicado y comprobar el ejecutable empaquetado. No se autoriza operar cuentas reales por estos tests.",
+  "notes_file": "LEER_AKIRA_R8_STUDIO_REV2_PRIMERO.md"
 }

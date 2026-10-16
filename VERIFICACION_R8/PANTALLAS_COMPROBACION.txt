@@ -1,0 +1,25 @@
+Checked 1024 1.333 page 0
+Checked 1024 1.333 page 1
+Checked 1024 1.333 page 2
+Checked 1024 1.333 page 3
+Checked 1024 1.333 page 4
+Checked 1024 1.333 page 5
+Checked 1024 1.333 page 6
+Checked 1024 1.333 page 7
+Checked 1334 1.333 page 0
+Checked 1334 1.333 page 1
+Checked 1334 1.333 page 2
+Checked 1334 1.333 page 3
+Checked 1334 1.333 page 4
+Checked 1334 1.333 page 5
+Checked 1334 1.333 page 6
+Checked 1334 1.333 page 7
+Checked 1280 2.0 page 0
+Checked 1280 2.0 page 1
+Checked 1280 2.0 page 2
+Checked 1280 2.0 page 3
+Checked 1280 2.0 page 4
+Checked 1280 2.0 page 5
+Checked 1280 2.0 page 6
+Checked 1280 2.0 page 7
+Screen matrix PASSED: 24 page/size/scaling combinations; resource panel, voice controls and all gallery pages.

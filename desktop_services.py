@@ -19,6 +19,8 @@ class DesktopServices:
             title_widget=label(panel,title+' · '+('guardada' if get_secret(key) else 'sin configurar'),TEXT,10,True,anchor='w')
             title_widget.pack(fill='x',pady=(9,3));self.source_key_labels[key]=(title_widget,title)
             entry=tk.Entry(panel,bg=CARD,fg=TEXT,insertbackground=CYAN,show='•',font=(FONT,11))
+            stored=get_secret(key)
+            if stored:entry.insert(0,stored)
             entry.pack(fill='x',ipady=5);self.source_key_entries[key]=entry
         label(panel,'Deja un campo vacío para conservar la clave guardada. La sesión se importa desde un archivo cookies.txt en formato Netscape elegido por ti.',MUTED,9,anchor='w',justify='left',wraplength=620).pack(fill='x',pady=8)
         self.source_save_button=button(panel,'GUARDAR CLAVES',self.save_source_access,GREEN);self.source_save_button.pack(fill='x',pady=3)
@@ -29,16 +31,27 @@ class DesktopServices:
         panel.bind('<Configure>',lambda e:self.source_access_status.configure(wraplength=max(180,e.width-20)),add='+')
 
     def save_source_access(self):
-        from akira_secrets import save_secrets
-        values={k:entry.get().strip() for k,entry in self.source_key_entries.items() if entry.get().strip()}
         try:
-            if values:save_secrets(values)
-            for entry in self.source_key_entries.values():entry.delete(0,'end')
-            from akira_secrets import get_secret
-            for key,(widget,title) in self.source_key_labels.items():widget.configure(text=title+' · '+('guardada' if get_secret(key) else 'sin configurar'))
-            self.source_access_status.configure(text='Claves guardadas. Los campos vacíos conservan las anteriores.',fg=GREEN)
-            self.refresh_configured_sources()
-        except Exception as error:self.source_access_status.configure(text='No se pudieron guardar: '+safe_text(error),fg=RED)
+            changed=self.persist_source_access()
+            self.source_access_status.configure(text='Claves guardadas en Windows. Se conservan al cerrar y abrir Akira.',fg=GREEN)
+            if changed:self.refresh_configured_sources()
+            return True
+        except Exception as error:
+            self.source_access_status.configure(text='No se pudieron guardar: '+safe_text(error),fg=RED)
+            return False
+
+    def persist_source_access(self):
+        from akira_secrets import save_secrets
+        from akira_secrets import get_secret
+        values={k:entry.get().strip() for k,entry in getattr(self,'source_key_entries',{}).items() if entry.get().strip() and entry.get().strip()!=get_secret(k)}
+        if values:save_secrets(values)
+        for key,(widget,title) in getattr(self,'source_key_labels',{}).items():widget.configure(text=title+' · '+('guardada en Windows' if get_secret(key) else 'sin configurar'))
+        return bool(values)
+
+    def toggle_execution_mode(self):
+        target='Solo análisis' if self.cfg['mode']=='trade' else 'Operativa automática'
+        self.setting_vars['mode'].set(target)
+        self.apply_settings_form()
 
     def refresh_configured_sources(self):
         self.assistant._research_cache.clear()
@@ -79,6 +92,10 @@ class DesktopServices:
         self._closure_notifications_seen=self.notice_center.event_keys('CLOSE:')
         self.knowledge_worker=KnowledgeUpdater(self.cfg,self.folder,lambda row:self.replies.put({'knowledge_event':row}))
         if not self.preview:
+            from connectivity import ConnectivityMonitor,internet_available
+            check=lambda:time.monotonic()-getattr(self,'_network_evidence_at',-100)<5 or internet_available()
+            self.network_monitor=ConnectivityMonitor(lambda row:self.replies.put({'connectivity_event':row}),check=check)
+            self.network_monitor.start()
             # Noncritical remote reading should not compete with MT5 and Tk
             # during the initial desktop launch. Manual refresh remains instant.
             self.knowledge_worker.start(initial_delay_seconds=45)
@@ -189,16 +206,35 @@ class DesktopServices:
                 kind=self.setting_types.get(path,'str');raw=var.get()
                 value=bool(raw) if kind=='bool' else int(str(raw)) if kind=='int' else float(str(raw).replace(',','.')) if kind=='float' else str(raw).strip()
                 if path=='knowledge.mode':value={'Automática':'automatic','Bajo solicitud':'request'}.get(value,value)
+                if path=='mode':value={'Solo análisis':'observe','Operativa automática':'trade'}.get(value,value)
                 cursor=candidate;parts=path.split('.')
                 for key in parts[:-1]:cursor=cursor[key]
                 cursor[parts[-1]]=value
+            if hasattr(self,'_studio_avatar'):
+                candidate['studio']['avatar']=copy.deepcopy(self._studio_avatar)
             # The profile selector in Ajustes is a real preset, not a cosmetic
             # label: it applies the same soft model budgets as the GX-like panel.
             if candidate['desktop'].get('performance_profile') != self.cfg['desktop'].get('performance_profile'):
                 from resource_optimizer import profile_budget
                 candidate['desktop'].update(profile_budget(candidate['desktop']['performance_profile']))
             saved=validate_form(candidate);rows=changes(self.cfg,saved)
-            if not rows:self.show_message('Ajustes','No había cambios pendientes.');return
+            if self.cfg['mode']!='trade' and saved['mode']=='trade':
+                if self.preview or not self.view.get('connected'):raise ValueError('Conecta la cuenta MT5 antes de activar la operativa.')
+                from cyber_ui import confirm_dialog
+                account=self.view.get('account') or {}
+                if saved.get('expected_login') and int(account.get('login') or 0)!=int(saved['expected_login']):raise ValueError('La cuenta conectada no coincide con la cuenta configurada.')
+                if not confirm_dialog(self.root,'Activar operativa automática',
+                    'Cuenta MT5 '+str(account.get('login'))+'. Akira podrá enviar órdenes reales con los límites de riesgo y lote configurados. '+
+                    ('Las entradas serán pendientes y las posiciones activadas se gestionarán como runners.' if saved['execution'].get('pending_only') else 'Se permiten pendientes y runners directos con confirmación estructural.')+' ¿Activar?'):
+                    self.setting_vars['mode'].set('Solo análisis');return False
+                if not saved.get('expected_login'):
+                    saved['expected_login']=int(account.get('login') or 0)
+                    if not saved['expected_login']:raise ValueError('MT5 no confirmó el número de cuenta.')
+                    rows=changes(self.cfg,saved)
+            secrets_changed=self.persist_source_access()
+            if secrets_changed:self.refresh_configured_sources()
+            if not rows:
+                self.show_message('Ajustes','Claves guardadas en Windows.' if secrets_changed else 'Los ajustes y claves ya estaban guardados.');return True
             save_config(saved,self.folder/'akira_config.json');self.cfg.update(saved)
             paths=[r['path'] for r in rows];self._settings_job+=1;job=self._settings_job
             revision=max(time.time_ns(),getattr(self,'_settings_revision',0)+1);self._settings_revision=revision
@@ -216,7 +252,8 @@ class DesktopServices:
                 reply=self.bridge.request({'action':'apply_settings','config':saved,'changed_paths':paths,'settings_revision':revision})
                 self.replies.put({'settings_result':reply,'settings_rows':rows,'settings_job':job})
             threading.Thread(target=work,name='AkiraApplySettings',daemon=True).start()
-        except Exception as exc:self.show_message('Ajustes no guardados',safe_text(exc),True)
+            return True
+        except Exception as exc:self.show_message('Ajustes no guardados',safe_text(exc),True);return False
 
     def open_knowledge(self):
         win=self.service_dialog('Conocimiento actualizado',820,630)
@@ -436,6 +473,32 @@ class DesktopServices:
         button(win,'RECUPERAR CHAT',restore,GREEN).pack(anchor='e',padx=18,pady=12)
 
     def handle_service_reply(self,reply):
+        if 'resource_sample' in reply:
+            row=reply['resource_sample'];win=row['window']
+            try:
+                if getattr(self,'_resource_window',None) is win and win.winfo_exists():
+                    win._usage_inflight=False;data=row['data']
+                    def view(key,suffix):
+                        value=data.get(key);return 'No disponible' if value is None else str(value)+suffix
+                    row['label'].configure(text=('AKIRA RAM: '+view('akira_mb',' MB')+
+                        ' · Motor local: '+view('llama_server_mb',' MB')+'\nCPU de AKIRA: '+view('akira_cpu_pct','%')+
+                        ' · RAM del sistema: '+view('system_ram_pct','%')+'\nGPU: consulta el Administrador de tareas.'))
+            except tk.TclError:pass
+            return True
+        if 'connectivity_event' in reply:
+            row=reply['connectivity_event'];previous=getattr(self,'_network_status',{}).get('online')
+            self._network_status=row
+            if type(row.get('online')) is bool:
+                self.commands.put({'action':'network_state','online':row['online']})
+                if self.avatars:self.avatars[0].director.network(row['online'])
+                if row['online'] is False:
+                    self.desktop_toast('Sin Internet','Nuevas entradas en pausa. Akira intenta reconectar automáticamente; las protecciones confirmadas permanecen en MT5.',severity='warning',event_key='NETWORK_OFFLINE_'+str(int(time.time()//30)))
+                elif previous is False:
+                    self.desktop_toast('Conexión recuperada','Se reanudan las fuentes y la operativa que estuviera activa. La pausa manual se conserva.')
+                    self.knowledge_worker.next_due=0;self.knowledge_worker.wake.set()
+                    self.assistant._research_cache.clear();self._assistant_display_due=0
+                self.refresh_assistant_status()
+            return True
         if 'source_access_result' in reply:
             self.source_access_status.configure(text=reply['source_access_result'],fg=TEXT)
             return True

@@ -38,7 +38,7 @@ def classify_error(error):
 def explained(error):
     state = classify_error(error)
     messages = {
-        'AUTH_REQUIRED': 'YouTube exige una sesión para esta consulta. Ajustes → IA / INTERNET → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.',
+        'AUTH_REQUIRED': 'YouTube exige una sesión para esta consulta. Ajustes → FUENTES → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.',
         'RATE_LIMITED': 'YouTube limita las peticiones. Se pausarán los reintentos.',
         'MISSING_RUNTIME': 'Falta el componente JavaScript de YouTube. Instala el paquete completo R7.',
         'UNAVAILABLE': 'El video es privado, fue retirado o no está disponible para esta sesión.',

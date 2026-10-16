@@ -1,0 +1,42 @@
+{
+  "build": "AKIRA_16_3_5_R8_STUDIO_REV2",
+  "base": "AKIRA_16_3_5_R8_STUDIO",
+  "verified_environment": "Linux / Xvfb / FakeMT5",
+  "pytest": {
+    "status": "PASSED",
+    "tests": 1140,
+    "subtests": 87,
+    "failed": 0
+  },
+  "native_ui": {
+    "status": "PASSED",
+    "checks": 27,
+    "data": "SYNTHETIC",
+    "real_broker": false
+  },
+  "changes": [
+    "review timeout and attempt identity",
+    "verification IA optional/required",
+    "native trading dashboard",
+    "animated sprite sheets and hints",
+    "JSON locale packs and persistent migration"
+  ],
+  "windows_exe_compiled": false,
+  "windows_installer_tested": false,
+  "exness_connected": false,
+  "real_trading_and_profitability_verified": false,
+  "requirements_232_completed": false,
+  "limitations": [
+    "wallpaper previews not global composition",
+    "visual sprite hints not universal AI semantics",
+    "localization incomplete",
+    "strategy edge not measured",
+    "native Windows tests pending"
+  ],
+  "notes_file": "LEER_AKIRA_R8_STUDIO_REV2_PRIMERO.md",
+  "unittest": {
+    "status": "PASSED",
+    "tests": 1137,
+    "failed": 0
+  }
+}

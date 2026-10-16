@@ -10,6 +10,9 @@ CYAN='#23ddf4';BLUE='#1079c5';PINK='#ed58cc';AMBER='#ffc45a'
 GREEN='#44e5b5';RED='#ff6d89';MUTED='#88a9bf';TEXT='#e3effa'
 FONT='Bahnschrift' if os.name=='nt' else 'DejaVu Sans'
 MONO='Consolas' if os.name=='nt' else 'DejaVu Sans Mono'
+STUDIO_GLOW=65
+STUDIO_TEXTURE='Neon grid'
+STUDIO_FONT_SCALE=100
 
 def brand_status(status):
     if status.get('ready'):return 'AKIRA ACTIVO'
@@ -39,12 +42,12 @@ def source_presentation(name,row):
     code=str(row.get('state') or (row.get('data') or {}).get('state') or '').upper()
     if not code:
         code=next((s for s in ('AUTH_REQUIRED','CONFIG_REQUIRED','UNSUPPORTED','NO_CAPTIONS','RATE_LIMITED','MISSING_RUNTIME','UNAVAILABLE') if s in error.upper()),'')
-    messages={'AUTH_REQUIRED':('REQUIERE SESIÓN','Ajustes → IA / INTERNET → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.'),
-        'CONFIG_REQUIRED':('CLAVE OPCIONAL','Configura CoinGlass en Ajustes → IA / INTERNET → ACCESO A FUENTES.'),
+    messages={'AUTH_REQUIRED':('REQUIERE SESIÓN','Ajustes → FUENTES → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.'),
+        'CONFIG_REQUIRED':('CLAVE OPCIONAL','Configura CoinGlass en Ajustes → FUENTES → ACCESO A FUENTES.'),
         'UNSUPPORTED':('NO APLICA','No hay derivados XAU confirmados de CoinGlass; no se sustituyen por BTC.'),
         'NO_CAPTIONS':('SIN SUBTÍTULOS','No se obtuvo una transcripción completa. No se afirma haber aprendido el video.'),
         'RATE_LIMITED':('ESPERANDO CUOTA','YouTube limita las peticiones. Se reintentará con espera.'),
-        'MISSING_RUNTIME':('FALTA COMPONENTE','Instala el paquete completo R7 que incluye el componente JavaScript.'),
+        'MISSING_RUNTIME':('FALTA COMPONENTE','Instala el paquete completo R8 que incluye el componente JavaScript.'),
         'UNAVAILABLE':('NO DISPONIBLE','Video privado, retirado o no disponible para esta sesión.')}
     if row.get('enabled') is not False and code in messages:return title,*messages[code]
     if row.get('enabled') is False:state='DESACTIVADA';detail=detail or 'Desactivada en ajustes; no aporta al análisis.'
@@ -61,7 +64,9 @@ def source_presentation(name,row):
         elif any(x in low for x in ('timeouterror','timed out','timeout','tiempo de espera')):
             state='TIEMPO AGOTADO';detail='Esta consulta tardó demasiado. Akira mantiene el análisis técnico y reintentará con espera controlada.'
         else:
-            state='ERROR';detail='La fuente no respondió correctamente; revisa el registro de mantenimiento.'
+            from notification_center import safe_text
+            state='ERROR DE REVISIÓN' if name in ('pending_ai','local_ai') else 'ERROR'
+            detail=('No terminó esta revisión de IA: ' if name in ('pending_ai','local_ai') else 'No terminó la consulta: ')+safe_text(error)[:220]
     elif row.get('usable') is False:state='SIN RESULTADOS';detail=detail or 'La consulta no devolvió datos utilizables.'
     elif row.get('age_seconds') is not None:state='DESACTUALIZADA';detail=detail or 'La información anterior ya no se usa como confirmación.'
     else:state='ESPERANDO';detail=detail or 'Todavía no terminó una consulta de esta fuente.'
@@ -93,7 +98,7 @@ class VerificationStages:
 def label(parent,text='',color=TEXT,size=10,bold=False,**kw):
     wrapped=bool(kw.get('wraplength'))
     widget=tk.Label(parent,text=text,bg=parent.cget('bg'),fg=color,
-        font=(FONT,size,'bold' if bold else 'normal'),**kw)
+        font=(FONT,max(7,round(size*STUDIO_FONT_SCALE/100)),'bold' if bold else 'normal'),**kw)
     if wrapped:responsive_wrap(widget)
     return widget
 
@@ -119,7 +124,7 @@ def button(parent,text,command,color=CYAN,primary=False):
     primary=primary or color==GREEN or text in ('ENVIAR','ACTUALIZAR AHORA','GUARDAR AJUSTES','INICIAR')
     widget=tk.Button(parent,text=text,command=command,bg=BLUE if primary else CARD,
         fg=TEXT if primary else color,activebackground='#13536e',activeforeground=TEXT,
-        disabledforeground=MUTED,font=(FONT,9,'bold'),relief='flat',bd=0,
+        disabledforeground=MUTED,font=(FONT,max(8,round(9*STUDIO_FONT_SCALE/100)),'bold'),relief='flat',bd=0,
         highlightthickness=1,highlightbackground=CYAN if primary else LINE,
         highlightcolor=CYAN,padx=13,pady=9,cursor='hand2')
     if text in ('☎','◉','×','⊘','♪') and hasattr(widget,'tk'):
@@ -204,7 +209,8 @@ def rounded_rect(canvas,x1,y1,x2,y2,r=12,**kw):
         x1+r,y2,x1,y2,x1,y2-r,x1,y1+r,x1,y1)
     return canvas.create_polygon(points,smooth=True,splinesteps=12,**kw)
 
-def neon_card(parent,title='',accent=CYAN,padx=16,pady=12):
+def neon_card(parent,title='',accent=None,padx=16,pady=12):
+    accent=accent or CYAN
     outer=tk.Frame(parent,bg=parent.cget('bg'),bd=0)
     canvas=tk.Canvas(outer,bg=parent.cget('bg'),bd=0,highlightthickness=0)
     canvas.place(x=0,y=0,relwidth=1,relheight=1)
@@ -212,9 +218,26 @@ def neon_card(parent,title='',accent=CYAN,padx=16,pady=12):
     inner.pack(fill='both',expand=True,padx=3,pady=3)
     def paint(event):
         if event.width<8 or event.height<8:return
+        size=(event.width,event.height)
+        if getattr(canvas,'_painted_size',None)==size:return
+        canvas._painted_size=size
         canvas.delete('all')
         rounded_rect(canvas,1,1,event.width-1,event.height-1,12,fill=PANEL,outline=LINE,width=1)
         canvas.create_line(16,2,70,2,fill=accent,width=2)
+        # Lightweight futuristic geometry: only rebuilt on actual resize.
+        # No video/render timer or GPU shader on the trading hot path.
+        if STUDIO_GLOW>=20:
+            segment=min(96,max(25,event.width//5))
+            canvas.create_line(event.width-segment-17,2,event.width-18,2,fill=accent,width=1)
+            canvas.create_line(4,event.height-23,4,event.height-12,fill=accent,width=2)
+        if STUDIO_TEXTURE=='Circuit':
+            canvas.create_line(event.width-70,4,event.width-58,11,event.width-20,11,fill=LINE,width=1)
+            canvas.create_oval(event.width-24,9,event.width-20,13,fill=accent,outline='')
+        elif STUDIO_TEXTURE=='Nebula':
+            canvas.create_arc(event.width-82,5,event.width+8,90,start=42,extent=110,outline=LINE,style='arc')
+        elif STUDIO_TEXTURE=='Neon grid':
+            canvas.create_line(12,event.height-4,45,event.height-4,fill=LINE,width=1)
+            canvas.create_line(event.width-42,event.height-4,event.width-16,event.height-4,fill=LINE,width=1)
     canvas.bind('<Configure>',paint)
     if title:
         head=tk.Frame(inner,bg=PANEL);head.pack(fill='x',pady=(0,10))
@@ -225,7 +248,7 @@ def neon_card(parent,title='',accent=CYAN,padx=16,pady=12):
 def text_box(parent,height=8):
     return tk.Text(parent,height=height,width=1,bg=PANEL,fg=TEXT,insertbackground=CYAN,
         selectbackground='#123e58',selectforeground=TEXT,highlightthickness=0,bd=0,
-        relief='flat',wrap='word',font=(FONT,10),padx=16,pady=12,spacing3=5)
+        relief='flat',wrap='word',font=(FONT,max(8,round(10*STUDIO_FONT_SCALE/100))),padx=16,pady=12,spacing3=5)
 
 def configure_style(root):
     global FONT,MONO
