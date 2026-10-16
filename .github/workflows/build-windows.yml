@@ -29,6 +29,47 @@ jobs:
           architecture: x64
           cache: pip
 
+      - name: Verificar Tcl/Tk de Windows antes de pruebas y PyInstaller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # A Python toolcache without tk8.6/tk.tcl can pass thousands of
+          # non-GUI tests yet fail the desktop and produce a broken installer.
+          $probe = 'import tkinter as tk; r=tk.Tk(); r.withdraw(); r.update_idletasks(); r.destroy()'
+          $result = & python -c $probe 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Tkinter incompleto en setup-python, reparando recursos Tcl/Tk oficiales: $result"
+            $version = (& python -c 'import sys; print("{}.{}.{}".format(*sys.version_info[:3]))').Trim()
+            if ($LASTEXITCODE -ne 0) { throw 'No se detectó la versión de Python' }
+            $installer = Join-Path $env:RUNNER_TEMP ('python-' + $version + '-amd64.exe')
+            curl.exe -fL --retry 3 --retry-all-errors -o $installer ('https://www.python.org/ftp/python/' + $version + '/python-' + $version + '-amd64.exe')
+            if ($LASTEXITCODE -ne 0) { throw 'No se pudo obtener el instalador oficial con Tcl/Tk' }
+            $target = Join-Path $env:RUNNER_TEMP 'akira-python-tcltk'
+            $args = @('/quiet', ('TargetDir=' + $target), 'InstallAllUsers=0',
+                      'Include_tcltk=1', 'Include_pip=0', 'Include_test=0',
+                      'Include_launcher=0', 'PrependPath=0', 'Shortcuts=0')
+            $proc = Start-Process -FilePath $installer -ArgumentList $args -Wait -PassThru
+            if ($proc.ExitCode -ne 0) { throw "Python oficial no instaló Tcl/Tk: $($proc.ExitCode)" }
+            $source = Join-Path $target 'tcl'
+            if (!(Test-Path (Join-Path $source 'tk8.6/tk.tcl')) -or
+                !(Test-Path (Join-Path $source 'tcl8.6/init.tcl'))) {
+              throw 'El instalador oficial no incluyó los recursos Tcl/Tk esperados'
+            }
+            $pythonRoot = (& python -c 'import sys; print(sys.prefix)').Trim()
+            $destination = Join-Path $pythonRoot 'tcl'
+            New-Item -ItemType Directory -Force -Path $destination | Out-Null
+            Copy-Item -LiteralPath (Join-Path $source 'tk8.6') -Destination $destination -Recurse -Force
+            Copy-Item -LiteralPath (Join-Path $source 'tcl8.6') -Destination $destination -Recurse -Force
+            "TK_LIBRARY=$($destination)\tk8.6" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            "TCL_LIBRARY=$($destination)\tcl8.6" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            $env:TK_LIBRARY = Join-Path $destination 'tk8.6'
+            $env:TCL_LIBRARY = Join-Path $destination 'tcl8.6'
+          }
+          # Always fail the build if the actual graphical Tk window cannot start.
+          & python -c $probe
+          if ($LASTEXITCODE -ne 0) { throw 'La interfaz Tk no inicia; compilación bloqueada' }
+          Write-Host 'Tcl/Tk verificado; las pruebas gráficas pueden ejecutarse.'
+
       - name: Instalar dependencias
         shell: pwsh
         run: |

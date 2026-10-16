@@ -34,8 +34,20 @@ def control_geometry(window,widget,check_text=False):
         usable=width-2*(border+pixels('padx'))
         parts=text.split() if pixels('wraplength')>0 else text.splitlines()
         needed=max((face.measure(part) for part in parts),default=0)
-        readable=usable+2>=needed and height+2>=face.metrics('linespace')+2*(border+pixels('pady'))
-        result.update(text_width=needed,available_text_width=usable,readable=bool(readable))
+        # The Tk Windows theme sometimes reports one to several pixels less
+        # usable height than face.metrics() + paddings, while the control is
+        # actually allocated its full requested height by Tk. Do not count
+        # this rounding as clipped text, but still reject an explicit height
+        # smaller than the widget's natural size or any horizontal truncation.
+        vertical_fit = (height + 2 >= face.metrics('linespace') +
+                        2 * (border + pixels('pady')))
+        if not vertical_fit and height >= widget.winfo_reqheight() - 1:
+            vertical_fit = height >= face.metrics('linespace')
+        readable = usable + 2 >= needed and vertical_fit
+        result.update(text_width=needed,available_text_width=usable,
+                      requested_width=widget.winfo_reqwidth(),
+                      requested_height=widget.winfo_reqheight(),
+                      vertical_fit=bool(vertical_fit),readable=bool(readable))
     result['passed']=bool(inside and result.get('readable',True))
     return result
 

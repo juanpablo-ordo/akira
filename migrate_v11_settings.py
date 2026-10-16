@@ -129,7 +129,12 @@ def restore_user_data(current,restored,destination):
                             target=destination/'studio'/path.relative_to((previous/'studio').resolve())
                             if target.is_file():
                                 changed=True
-                                return str(target.resolve())
+                                # Preserve the destination spelling supplied by the updater.
+                                # Windows may resolve 8.3 aliases (RUNNER~1) to a different
+                                # long path (runneradmin). Both refer to the same file, but
+                                # the saved setting should follow the new installation root
+                                # rather than embed a different OS-specific spelling.
+                                return str(target)
                 except (ValueError,TypeError,OSError):pass
                 return location
             studio['language_pack']=rebase(studio.get('language_pack',''))

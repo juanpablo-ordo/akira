@@ -161,8 +161,10 @@ class TkRegressions(unittest.TestCase):
         self.root.update()
         self.assertLess(control.winfo_width(),100)
         self.assertLess(title.winfo_reqwidth(),150)
-        self.assertTrue(control_geometry(self.root,control,True)['passed'])
-        self.assertTrue(control_geometry(self.root,title,True)['passed'])
+        self.assertTrue(control_geometry(self.root,control,True)['passed'],
+                        control_geometry(self.root,control,True))
+        self.assertTrue(control_geometry(self.root,title,True)['passed'],
+                        control_geometry(self.root,title,True))
         control.configure(width=1)
         self.root.update_idletasks()
         self.assertFalse(control_geometry(self.root,control,True)['readable'])
