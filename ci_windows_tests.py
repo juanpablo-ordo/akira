@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -71,6 +72,20 @@ def commands(root: Path = ROOT) -> list[tuple[str, list[str]]]:
     return plan
 
 
+def _verify_tk_resources(require_window: bool = False) -> None:
+    """Each GUI process must use an intact snapshot; never skip broken Tk."""
+    stage = os.environ.get("AKIRA_CI_TCLTK_ROOT", "")
+    if not stage:
+        if sys.platform == "win32" and os.environ.get("GITHUB_ACTIONS") == "true":
+            raise RuntimeError("CI Windows sin AKIRA_CI_TCLTK_ROOT; recursos Tk no preparados")
+        return
+    from ci_tcltk import verify_snapshot, verify_window
+    root = Path(stage)
+    verify_snapshot(root)
+    if require_window:
+        verify_window(root)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if args not in ([], ["--dry-run"]):
@@ -90,7 +105,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"AKIRA CI > {name}: {sys.executable} {' '.join(cmd)}", flush=True)
         if args == ["--dry-run"]:
             continue
+        try:
+            _verify_tk_resources(require_window=name != "REGRESSION_TESTS")
+        except Exception as exc:
+            print(f"FALLO DE ENTORNO Tk antes de {name}: {exc}", file=sys.stderr, flush=True)
+            return 1
         result = subprocess.run([sys.executable, *cmd], cwd=ROOT, check=False)
+        try:
+            _verify_tk_resources()
+        except Exception as exc:
+            print(f"FALLO DE INTEGRIDAD Tk tras {name}: {exc}", file=sys.stderr, flush=True)
+            return 1
         if result.returncode != 0:
             print(f"FALLO: {name} (salida {result.returncode}); el instalador NO se publica.",
                   file=sys.stderr, flush=True)

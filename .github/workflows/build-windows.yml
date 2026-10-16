@@ -70,6 +70,25 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'La interfaz Tk no inicia; compilación bloqueada' }
           Write-Host 'Tcl/Tk verificado; las pruebas gráficas pueden ejecutarse.'
 
+      # Snapshot the COMPLETE verified Tcl/Tk libraries outside Python's
+      # shared toolcache. The hosted toolcache can change during long tests;
+      # tk.tcl alone is insufficient (button.tcl, init.tcl, etc. are required).
+      - name: Aislar y verificar bibliotecas completas Tcl/Tk
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $safe = Join-Path $env:RUNNER_TEMP 'AKIRA_CI_TCLTK_INTACT'
+          python ci_tcltk.py stage --root $safe
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo aislar la biblioteca completa Tcl/Tk' }
+          "AKIRA_CI_TCLTK_ROOT=$safe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "TCL_LIBRARY=$safe\tcl8.6" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "TK_LIBRARY=$safe\tk8.6" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          $env:AKIRA_CI_TCLTK_ROOT = $safe
+          $env:TCL_LIBRARY = Join-Path $safe 'tcl8.6'
+          $env:TK_LIBRARY = Join-Path $safe 'tk8.6'
+          python ci_tcltk.py verify --root $safe --window
+          if ($LASTEXITCODE -ne 0) { throw 'Tk falla aun con recursos aislados: no compilar' }
+
       - name: Instalar dependencias
         shell: pwsh
         run: |
@@ -108,6 +127,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
+          python ci_tcltk.py verify --root $env:AKIRA_CI_TCLTK_ROOT --window
+          if ($LASTEXITCODE -ne 0) { throw 'Recursos Tcl/Tk dañados antes de compilar' }
           python build_windows.py --source . --diagnostic diagnostics
 
       - name: Incorporar llama.cpp oficial para Windows (CPU y Vulkan)
