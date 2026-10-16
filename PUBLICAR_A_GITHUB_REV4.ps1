@@ -6,6 +6,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoUrl = 'https://github.com/juanpablo-ordo/akira.git'
+# Branch lease prevents this whole source package from overwriting someone else's changes.
+$ExpectedHead = '42c6ffb9a33a5a31c06ef0a2b9d3d95330845d8c'
 
 function RunGit {
   param([string[]]$CmdArgs)
@@ -27,7 +29,7 @@ else {
 }
 
 $required = @('Akira.py', 'studio_theme.py','akira_studio.py', 'operation_health.py', 'activity_watchdog.py',
-              'REQUISITOS_232_ESTADO.csv', '.github\workflows\build-windows.yml')
+              'REQUISITOS_232_ESTADO.csv', '.github\workflows\build-windows.yml', 'akira_secrets.py')
 foreach ($name in $required) {
   if (!(Test-Path -LiteralPath (Join-Path $Root $name))) { throw "Paquete incompleto: falta $name" }
 }
@@ -37,8 +39,11 @@ $RepoDir = Join-Path $TempRoot 'akira'
 New-Item -ItemType Directory -Path $TempRoot -Force | Out-Null
 Write-Host 'Se usará una carpeta temporal para no alterar tus archivos locales:' $TempRoot
 Write-Host 'Clonando GitHub con el inicio de sesión de Git que tengas configurado...'
-RunGit -CmdArgs @('clone','--depth','1',$RepoUrl,$RepoDir)
-RunGit -CmdArgs @('-C',$RepoDir,'switch','-c',$Branch)
+RunGit -CmdArgs @('clone','--depth','1','--single-branch','--branch',$Branch,$RepoUrl,$RepoDir)
+$remoteHead = (& $script:GitExe -C $RepoDir rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $remoteHead -ne $ExpectedHead) {
+  throw "La rama cambió desde que se preparó el paquete. Esperado: $ExpectedHead; remoto: $remoteHead. Se detuvo para no sobrescribir otros cambios."
+}
 # Borrar SOLO el árbol de trabajo del CLON TEMPORAL para importar el código completo.
 # Nunca ejecuta git rm en tu carpeta original ni en main remoto.
 RunGit -CmdArgs @('-C',$RepoDir,'rm','-r','-q','--ignore-unmatch','.')
@@ -49,7 +54,7 @@ $blockedFiles = @('*.sqlite','*.sqlite3','*.db','*.key','*.pem','*.gguf','*.safe
 if ($LASTEXITCODE -gt 7) { throw "Error copiando código. Revisa $RoboLog" }
 RunGit -CmdArgs @('-C',$RepoDir,'add','-A')
 $staged = @(& $script:GitExe -C $RepoDir diff --cached --name-only)
-if ($LASTEXITCODE -ne 0 -or $staged.Count -lt 50) { throw 'Cambios insuficientes: no se publicará un paquete incompleto.' }
+if ($LASTEXITCODE -ne 0 -or $staged.Count -lt 1) { throw 'La rama ya coincide con este paquete o no hay cambios. No se necesita otra publicación.' }
 # No confundir el módulo público akira_secrets.py (código para cifrar y leer claves)
 # con AKIRA_SECRETS.json (archivo PRIVADO con valores de las claves).
 # Powershell -match es insensible a mayúsculas: AKIRA_SECRETS sin extensión
@@ -59,8 +64,16 @@ $secretPaths = @($staged | Where-Object {
   ($stagedPath -match '(^|/)(state|logs|exports)/') -or
   ($stagedPath -match '(^|/)(AKIRA_SECRETS\.json|\.env(\.[^/]*)?|[^/]*credentials[^/]*|[^/]*\.sqlite3?|[^/]*\.db|[^/]*\.key|[^/]*\.pem|[^/]*\.gguf)$')
 })
-if ('akira_secrets.py' -notin $staged) {
-  throw 'Paquete incompleto: falta akira_secrets.py, módulo requerido para gestión segura de claves.'
+# Comprueba el modulo dentro del clon DESPUES de copiar y hacer git add.
+# No uses $staged: Git omite archivos rastreados que no cambiaron,
+# aunque esten presentes tanto en el ZIP como en el repositorio.
+$modulePath = Join-Path $RepoDir 'akira_secrets.py'
+if (!(Test-Path -LiteralPath $modulePath -PathType Leaf)) {
+  throw 'Paquete incompleto: falta akira_secrets.py en el clon preparado. No se publico nada.'
+}
+& $script:GitExe -C $RepoDir ls-files --error-unmatch -- akira_secrets.py | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  throw 'akira_secrets.py existe, pero Git no lo rastrea en el paquete. No se publico nada.'
 }
 if ($secretPaths.Count -gt 0) { throw "Se encontraron rutas privadas: $($secretPaths -join ', '). Detenido sin publicar." }
 RunGit -CmdArgs @('-C',$RepoDir,'diff','--cached','--check')
@@ -69,11 +82,11 @@ $author = (& $script:GitExe -C $RepoDir config user.name)
 if (!$author) { throw 'Git no tiene configurado user.name; configúralo en GitHub Desktop/Git antes de publicar.' }
 $email = (& $script:GitExe -C $RepoDir config user.email)
 if (!$email) { throw 'Git no tiene configurado user.email; configúralo antes de publicar.' }
-RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA 16.3.5 R8 Studio Rev4: código fuente y CI Windows (sin datos de cuentas)')
-Write-Host 'Subiendo rama a GitHub. Puede solicitar inicio de sesión.'
-RunGit -CmdArgs @('-C',$RepoDir,'push','--set-upstream','origin',$Branch)
+RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA R8 Studio Rev4: suite GUI por caso y Tcl/Tk aislado (Windows CI)')
+Write-Host 'Actualizando SOLO la rama Rev4 en GitHub, sin forzar cambios.'
+RunGit -CmdArgs @('-C',$RepoDir,'push','origin',('HEAD:refs/heads/' + $Branch))
 Write-Host ''
-Write-Host 'Rama publicada. CI Windows se inicia con el push; resultados en:'
+Write-Host 'Rama actualizada. CI Windows se inicia con el push; resultados en:'
 Write-Host 'https://github.com/juanpablo-ordo/akira/actions'
 Write-Host 'Crear/revisar pull request (NO fusionar hasta pasar las pruebas):'
 Write-Host ('https://github.com/juanpablo-ordo/akira/compare/main...' + $Branch + '?expand=1')

@@ -113,9 +113,9 @@ jobs:
           }
           Write-Host 'Fuente R8 Studio encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
-      # Mantener todas las pruebas obligatorias. Cada test GUI usa un proceso
-      # de Python independiente para que el estado global Tcl/Tk no se herede
-      # de otras pruebas. Verifica tambien que no se omitan nuevos tests Tk.
+      # Mantener todas las pruebas obligatorias. Cada CASO GUI usa un proceso
+      # Python y una copia COMPLETA Y PRIVADA de Tcl/Tk. La suite regular
+      # sigue siendo obligatoria y no se omite ninguna comprobación.
       - name: Pruebas completas con Tk aislado y evidencia JUnit
         shell: pwsh
         run: |

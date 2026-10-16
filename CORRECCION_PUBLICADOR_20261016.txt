@@ -1,0 +1,12 @@
+Corrección del publicador GitHub de AKIRA R8 Studio Rev4.
+
+Error anterior: «Se encontraron rutas privadas: akira_secrets.py».
+Motivo: el filtro trataba el nombre del módulo fuente como un archivo de credenciales.
+La corrección permite el módulo akira_secrets.py, NECESARIO para el programa,
+pero continúa bloqueando AKIRA_SECRETS.json y otros ficheros confidenciales.
+
+PASOS: 1) Extraer CORRECCION_PUBLICADOR_REV4.zip sobre la carpeta de Akira;
+2) aceptar reemplazar PUBLICAR_A_GITHUB_REV4.ps1;
+3) volver a ejecutar PUBLICAR_A_GITHUB_REV4.cmd.
+No borrar akira_secrets.py, no desinstalar Akira.
+Si aparece otro error, compartir solo el texto del error (sin claves).

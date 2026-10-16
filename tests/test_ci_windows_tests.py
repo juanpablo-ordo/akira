@@ -2,7 +2,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from ci_windows_tests import GUI_MODULES, test_plan as build_test_plan, commands
+from ci_windows_tests import GUI_MODULES, test_plan as build_test_plan, commands, parse_collected_nodes, _verify_junit
 
 
 class WindowsCiContract(unittest.TestCase):
@@ -33,3 +33,22 @@ class WindowsCiContract(unittest.TestCase):
             (tests / 'test_another_gui.py').write_text('import tkinter as tk\nr=tk.Tk()', encoding='utf-8')
             with self.assertRaisesRegex(RuntimeError, 'sin proceso aislado'):
                 build_test_plan(Path(tmp))
+
+
+class IndividualGuiCaseContract(unittest.TestCase):
+    def test_collection_requires_all_cases(self):
+        output = ("tests/test_r11_pending_ui.py::Case::test_a\n"
+                  "tests/test_r11_pending_ui.py::Case::test_b\n\n"
+                  "2 tests collected in 0.01s")
+        self.assertEqual(len(parse_collected_nodes(output, "test_r11_pending_ui.py")), 2)
+        with self.assertRaisesRegex(RuntimeError, "incompleta"):
+            parse_collected_nodes(output.replace("2 tests collected", "3 tests collected"), "test_r11_pending_ui.py")
+
+    def test_junit_skip_is_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            file = Path(directory) / "gui.xml"
+            file.write_text('<testsuites><testsuite tests="1" skipped="1" errors="0" failures="0"/></testsuites>',encoding='utf8')
+            with self.assertRaisesRegex(RuntimeError, "omitido"):
+                _verify_junit(file)
+            file.write_text('<testsuites><testsuite tests="1" skipped="0" errors="0" failures="0"/></testsuites>',encoding='utf8')
+            self.assertEqual(_verify_junit(file),1)
