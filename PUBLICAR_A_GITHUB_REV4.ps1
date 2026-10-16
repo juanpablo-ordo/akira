@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoUrl = 'https://github.com/juanpablo-ordo/akira.git'
 # Branch lease prevents this whole source package from overwriting someone else's changes.
-$ExpectedHead = '622c8ffe0932034db6cd8b3aa06325426e679159'
+$ExpectedHead = 'b040778873006bd6b50da61968eec015cb39fe85'
 
 function RunGit {
   param([string[]]$CmdArgs)
@@ -49,7 +49,7 @@ if ($LASTEXITCODE -ne 0 -or $remoteHead -ne $ExpectedHead) {
 RunGit -CmdArgs @('-C',$RepoDir,'rm','-r','-q','--ignore-unmatch','.')
 $RoboLog = Join-Path $TempRoot 'robocopy.log'
 $blockedDirs = @('.git', '__pycache__', '.pytest_cache', 'state','logs','exports','native','dist','build', '.venv', 'venv')
-$blockedFiles = @('*.sqlite','*.sqlite3','*.db','*.key','*.pem','*.gguf','*.safetensors','*.env','*.env.*','AKIRA_SECRETS.json','*credentials*','*.log','*.exe','*.pyc','*.pyo')
+$blockedFiles = @('*.sqlite','*.sqlite3','*.db','*.key','*.pem','*.gguf','*.safetensors','*.env','*.env.*','AKIRA_SECRETS.json','*credentials*','*.log','*.exe','*.pyc','*.pyo','*.patch')
 & robocopy.exe $Root $RepoDir /E /NFL /NDL /NJH /NJS /NP /XD $blockedDirs /XF $blockedFiles | Out-File -Encoding utf8 $RoboLog
 if ($LASTEXITCODE -gt 7) { throw "Error copiando código. Revisa $RoboLog" }
 RunGit -CmdArgs @('-C',$RepoDir,'add','-A')
@@ -76,13 +76,23 @@ if ($LASTEXITCODE -ne 0) {
   throw 'akira_secrets.py existe, pero Git no lo rastrea en el paquete. No se publico nada.'
 }
 if ($secretPaths.Count -gt 0) { throw "Se encontraron rutas privadas: $($secretPaths -join ', '). Detenido sin publicar." }
-RunGit -CmdArgs @('-C',$RepoDir,'diff','--cached','--check')
+# Core.whitespace=cr-at-eol accepts Windows CRLF as a line ending, but still
+# REJECTS real trailing whitespace, new empty lines at EOF, and conflict markers.
+# Do not confuse CRLF with a security or code-quality violation.
+$checkArgs = @('-c','core.whitespace=cr-at-eol','-C',$RepoDir,'diff','--cached','--check')
+$checkLines = @(& $script:GitExe @checkArgs 2>&1)
+$checkExitCode = $LASTEXITCODE
+if ($checkExitCode -ne 0) {
+  $checkDetail = ($checkLines | Out-String).Trim()
+  if (!$checkDetail) { $checkDetail = 'Git no devolvio detalles.' }
+  throw "Los archivos preparados tienen problemas de formato (git diff --check, salida $checkExitCode):`n$checkDetail`nNo se publico nada."
+}
 Write-Host "Archivos modificados ($($staged.Count)). Rama: $Branch"
 $author = (& $script:GitExe -C $RepoDir config user.name)
 if (!$author) { throw 'Git no tiene configurado user.name; configúralo en GitHub Desktop/Git antes de publicar.' }
 $email = (& $script:GitExe -C $RepoDir config user.email)
 if (!$email) { throw 'Git no tiene configurado user.email; configúralo antes de publicar.' }
-RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA R8 Studio Rev4: corregir altura de charts y diagnostico de escalado Windows')
+RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA R8 Studio Rev4: layout adaptable y charts visibles en Windows CI')
 Write-Host 'Actualizando SOLO la rama Rev4 en GitHub, sin forzar cambios.'
 RunGit -CmdArgs @('-C',$RepoDir,'push','origin',('HEAD:refs/heads/' + $Branch))
 Write-Host ''

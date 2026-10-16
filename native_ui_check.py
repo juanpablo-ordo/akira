@@ -107,7 +107,10 @@ def run_ui_check(window):
                 for name in ('news','fed','youtube','coinglass:BTC','venue:binance','macro:FRED')}
             app.view=snapshot;app.bridge.connected=True
             app.navigate(0)
-            window.geometry('1600x900-20000-20000');window.deiconify();window.update_idletasks();window.update()
+            # Off-screen positioning on Windows hosted runners prevents child canvases
+            # from mapping even when they contain bars. Use a visible origin,
+            # then validate actual canvas geometry before changing tabs.
+            window.geometry('1600x900+0+0');window.deiconify();window.update_idletasks();window.update()
             app.render(snapshot)
             window.update_idletasks()
             # Native chart widgets repaint 175ms after the last resize; wait
@@ -129,6 +132,15 @@ def run_ui_check(window):
                         attempted_sizes[symbol]=size
                 time.sleep(.03)
             if not app._render_health.get('complete'):raise RuntimeError('Paneles incompletos: '+', '.join(app._render_health.get('errors') or []))
+            # Capture chart geometry WHILE the dashboard is actually selected.
+            # Collecting it after navigating to Settings reports mapped=false
+            # even for a healthy chart and concealed the real window size.
+            chart_dashboard_geometry=chart_geometry(app.charts)
+            if not charts_drawn(app.charts):
+                raise RuntimeError('No se dibujaron los gráficos visibles del tablero; '+
+                    'ventana='+str(window.winfo_geometry())+
+                    '; pantalla='+str((window.winfo_screenwidth(),window.winfo_screenheight()))+
+                    '; chart_geometry='+json.dumps(chart_dashboard_geometry,ensure_ascii=False,sort_keys=True))
             checks={
                 'orders':len(app.orders.get_children())==len(snapshot['orders'])>0,
                 'positions':len(app.positions.get_children())==len(snapshot['positions'])>0,
@@ -200,7 +212,7 @@ def run_ui_check(window):
             if not all(checks.values()):
                 detail='No se completó el dibujado de '+', '.join(k for k,v in checks.items() if not v)
                 if not checks['charts']:
-                    detail+='; chart_geometry='+json.dumps(chart_geometry(app.charts),ensure_ascii=False,sort_keys=True)
+                    detail+='; chart_geometry_en_tablero='+json.dumps(chart_dashboard_geometry,ensure_ascii=False,sort_keys=True)
                 failed={name:row for name,row in compact_layout.items() if not row['passed']}
                 if failed:detail+='; controles: '+json.dumps(failed,ensure_ascii=False)
                 raise RuntimeError(detail)
@@ -209,7 +221,7 @@ def run_ui_check(window):
                 'network_used':False,'live_account_used':False,'order_rows':len(snapshot['orders']),
                 'position_rows':len(snapshot['positions']),'frame_rows':len(app.frames.get_children()),
                 'expression_count':artwork['count'],'distinct_expression_cells':artwork['distinct_cells'],
-                'compact_layout':compact_layout,**checks}
+                'compact_layout':compact_layout,'chart_geometry_at_dashboard':chart_dashboard_geometry,**checks}
             # Exercise the exact installer gate here as well, before reporting success.
             require_render_check({'render_check':report})
             return report

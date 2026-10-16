@@ -19,6 +19,50 @@ class ChartDpiTests(unittest.TestCase):
             except tk.TclError:
                 pass
 
+    def test_compact_windows_home_shows_actual_btc_and_gold_candles(self):
+        # The hosted Windows runner often has a ~1024x768 desktop, even
+        # when the self-check requests a 1600x900 window. A responsive home
+        # must display real charts, not only load price data into canvases.
+        import json
+        import tempfile
+        import time
+        from pathlib import Path
+        from desktop import Desktop
+        from settings import DEFAULT, load_config
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            cfg = load_config(DEFAULT)
+            cfg['assistant']['auto_install_local_ai'] = False
+            cfg['desktop'].update(notifications=False, notification_popup=False)
+            (folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+            root = tk.Tk()
+            root.tk.call('tk','scaling',1.5)
+            app = None
+            try:
+                app = Desktop(root,folder,preview=True,start_actor=False)
+                root.geometry('1024x768+0+0')
+                app.navigate(0)
+                root.update()
+                now=int(time.time())
+                for symbol,(chart,_,_,_) in app.charts.items():
+                    base=60000.0 if symbol.startswith('BTC') else 4000.0
+                    bars=[{'time':now-(80-i)*300,'open':base+i,
+                           'close':base+i+.4,'low':base+i-1,'high':base+i+1.8,
+                           'volume':10} for i in range(80)]
+                    chart.update_data({'bars':bars,'timeframe':'M5',
+                                       'indicator':'Precio','bid':bars[-1]['close']})
+                deadline=time.monotonic()+2.0
+                while time.monotonic()<deadline and not charts_drawn(app.charts):
+                    root.update()
+                self.assertTrue(charts_drawn(app.charts),chart_geometry(app.charts))
+                self.assertTrue(all(row['height']>=70 and row['mapped']
+                                    for row in chart_geometry(app.charts).values()))
+            finally:
+                if app:
+                    app.close()
+                else:
+                    root.destroy()
+
     def test_dashboard_charts_render_at_200_percent(self):
         # 200% chart-only check: the full native check additionally shrinks
         # the unrelated chat page to 1024x640, smaller than a 200% UI needs.

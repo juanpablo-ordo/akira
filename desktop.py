@@ -497,10 +497,13 @@ class Desktop(DesktopServices,StrategyDirectory):
         A native Tk layout, not a fake screenshot or duplicate trade executor.
         All actions route through the existing application methods and broker.
         """
-        split=self.layout.pane(page,'dashboard_vertical',tk.VERTICAL,(.58,))
+        split=self.layout.pane(page,'dashboard_vertical',tk.VERTICAL,(.40,))
         split.pack(fill='both',expand=True,pady=4)
         top=self.layout.pane(split,'dashboard_columns',tk.HORIZONTAL,(.69,))
-        split.add(top,minsize=235,stretch='always')
+        # High-DPI Windows spends much of a 768 px display on headers. Reserve
+        # room for visible, genuinely painted BTC/XAU candles before activity.
+        # The upper pane remains draggable; the other pages retain full logs.
+        split.add(top,minsize=150,stretch='always')
         outer,activity=neon_card(top,'ACTIVIDAD EN TIEMPO REAL',CYAN,padx=10,pady=7)
         top.add(outer,minsize=360,stretch='always')
         tools=tk.Frame(activity,bg=PANEL);tools.pack(fill='x',pady=(0,6))
@@ -552,11 +555,11 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.dashboard_alerts.pack(fill='x',pady=(6,0))
 
         lower=self.layout.pane(split,'dashboard_neon_lower',tk.VERTICAL,(.87,))
-        split.add(lower,minsize=170,stretch='always')
+        split.add(lower,minsize=245,stretch='always')
         outer,market=neon_card(lower,'COBERTURA DE MERCADO · BTC + ORO',CYAN,padx=7,pady=5)
-        # The former 115 px minimum clipped charts at 150-200% Tk/Windows DPI.
-        # At 1600x900 a candle canvas must retain >=70 px after card headings.
-        lower.add(outer,minsize=220,stretch='always')
+        # Allocate room for candles *and* Tk's DPI-scaled card headings.
+        # Below 70 px the real chart renderer correctly refuses to draw.
+        lower.add(outer,minsize=210,stretch='always')
         charts=tk.Frame(market,bg=PANEL);charts.pack(fill='both',expand=True)
         self.charts={}
         enabled=[symbol for symbol,on in self.cfg['symbols'].items() if on]
@@ -576,7 +579,7 @@ class Desktop(DesktopServices,StrategyDirectory):
             card.bind('<Configure>',lambda event,w=info:w.configure(wraplength=max(100,event.width-22)))
 
         outer,bottom=neon_card(lower,'PENDIENTES CONFIRMADAS Y CANDIDATAS · CONSULTA',GREEN,padx=6,pady=3)
-        lower.add(outer,minsize=55,stretch='always')
+        lower.add(outer,minsize=45,stretch='always')
         columns=('symbol','side','kind','entry','sl','tp','quality','activation','state')
         self.dashboard_pending=ttk.Treeview(bottom,columns=columns,show='headings',height=2)
         for key,cap,w in zip(columns,('SÍMBOLO','LADO','TIPO','ENTRADA','SL','TP','CALIDAD','ACTIVACIÓN','ESTADO'),
@@ -958,7 +961,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         button(akira,'CONFIGURAR OPENAI',self.configure_cloud,MUTED).pack(fill='x',pady=5)
         self.speak_answers=tk.BooleanVar(value=False)
         self.voice_button=button(akira,'INICIAR LLAMADA',self.start_voice,CYAN);
-        
+
 
         pane=tk.Frame(split,bg=BG);split.add(pane,minsize=340,stretch='always')
         pane.columnconfigure(0,weight=1);pane.rowconfigure(2,weight=1)

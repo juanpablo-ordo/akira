@@ -245,5 +245,3 @@ class RunnerV134Tests(PendingCase, unittest.TestCase):
         self.api.set_quote(p.symbol,p.entry+80,fill=False)
         self.e.positions.step(self.g.snapshot())
         self.assertFalse(self.api.positions);self.assertEqual(self.api.sent[-1]['action'],DEAL)
-
-
