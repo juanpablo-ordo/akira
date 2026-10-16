@@ -22,7 +22,7 @@ TEST_DIR = ROOT / "tests"
 DIAGNOSTICS = ROOT / "diagnostics"
 
 GUI_MODULES = (
-    "test_r11_pending_ui.py", "test_r12_theme_boot.py",
+    "test_r11_pending_ui.py", "test_r12_theme_boot.py", "test_r13_chart_dpi.py",
     "test_r6_expressions_layout.py", "test_r7_avatar_sync.py",
     "test_r8_ui_reactions.py", "test_v1632_resource_and_wheel.py",
     "test_v1633_startup_notice_regressions.py",

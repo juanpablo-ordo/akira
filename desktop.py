@@ -554,7 +554,9 @@ class Desktop(DesktopServices,StrategyDirectory):
         lower=self.layout.pane(split,'dashboard_neon_lower',tk.VERTICAL,(.87,))
         split.add(lower,minsize=170,stretch='always')
         outer,market=neon_card(lower,'COBERTURA DE MERCADO · BTC + ORO',CYAN,padx=7,pady=5)
-        lower.add(outer,minsize=115,stretch='always')
+        # The former 115 px minimum clipped charts at 150-200% Tk/Windows DPI.
+        # At 1600x900 a candle canvas must retain >=70 px after card headings.
+        lower.add(outer,minsize=220,stretch='always')
         charts=tk.Frame(market,bg=PANEL);charts.pack(fill='both',expand=True)
         self.charts={}
         enabled=[symbol for symbol,on in self.cfg['symbols'].items() if on]

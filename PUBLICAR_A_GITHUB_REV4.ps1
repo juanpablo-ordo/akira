@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoUrl = 'https://github.com/juanpablo-ordo/akira.git'
 # Branch lease prevents this whole source package from overwriting someone else's changes.
-$ExpectedHead = '42c6ffb9a33a5a31c06ef0a2b9d3d95330845d8c'
+$ExpectedHead = '622c8ffe0932034db6cd8b3aa06325426e679159'
 
 function RunGit {
   param([string[]]$CmdArgs)
@@ -82,7 +82,7 @@ $author = (& $script:GitExe -C $RepoDir config user.name)
 if (!$author) { throw 'Git no tiene configurado user.name; configúralo en GitHub Desktop/Git antes de publicar.' }
 $email = (& $script:GitExe -C $RepoDir config user.email)
 if (!$email) { throw 'Git no tiene configurado user.email; configúralo antes de publicar.' }
-RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA R8 Studio Rev4: suite GUI por caso y Tcl/Tk aislado (Windows CI)')
+RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA R8 Studio Rev4: corregir altura de charts y diagnostico de escalado Windows')
 Write-Host 'Actualizando SOLO la rama Rev4 en GitHub, sin forzar cambios.'
 RunGit -CmdArgs @('-C',$RepoDir,'push','origin',('HEAD:refs/heads/' + $Branch))
 Write-Host ''

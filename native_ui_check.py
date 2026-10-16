@@ -56,6 +56,28 @@ def strategy_directory_rendered(app):
     return bool(len(app.strategy_tree.get_children())>=18 and
         app.strategy_refresh_button.winfo_ismapped() and app.strategy_export_button.winfo_ismapped())
 
+def chart_geometry(charts):
+    """Capture enough evidence to distinguish missing market data from DPI clipping."""
+    return {
+        symbol: {
+            'width': chart.winfo_width(),
+            'height': chart.winfo_height(),
+            'parent_height': chart.master.winfo_height(),
+            'mapped': bool(chart.winfo_ismapped()),
+            'bars': len(chart.data.get('bars') or ()),
+            'drawn_items': len(chart.find_all()),
+        }
+        for symbol, (chart, _, _, _) in charts.items()
+    }
+
+def charts_drawn(charts):
+    info = chart_geometry(charts)
+    return bool(info) and all(
+        row['mapped'] and row['width'] >= 100 and row['height'] >= 70
+        and row['bars'] > 0 and row['drawn_items'] > 20
+        for row in info.values()
+    )
+
 def run_ui_check(window):
     from desktop import Desktop
     from settings import DEFAULT,load_config
@@ -91,20 +113,26 @@ def run_ui_check(window):
             # Native chart widgets repaint 175ms after the last resize; wait
             # for real geometry before asserting the new split dashboard.
             settle_layout(window)
-            # A split-pane resize may settle one or more animation frames later
-            # depending on OS DPI and widget scheduling. Wait up to 1.5 s for
-            # the actual canvas drawing, rather than falsely failing pre-paint.
-            chart_deadline=time.monotonic()+1.5
+            # Windows DPI makes every label taller. Do not accept a chart
+            # painted at zero height or hide a genuinely clipped dashboard.
+            # Wait for the final sash placement, then re-paint with actual size.
+            chart_deadline=time.monotonic()+3.0
+            attempted_sizes={}
             while time.monotonic()<chart_deadline:
                 window.update()
-                if all(c.data.get('bars') and len(c.find_all())>20 for c,_,_,_ in app.charts.values()):
+                if charts_drawn(app.charts):
                     break
+                for symbol,(chart,_,_,_) in app.charts.items():
+                    size=(chart.winfo_width(),chart.winfo_height())
+                    if chart.winfo_ismapped() and size[0]>=100 and size[1]>=70 and size!=attempted_sizes.get(symbol):
+                        chart.redraw()
+                        attempted_sizes[symbol]=size
                 time.sleep(.03)
             if not app._render_health.get('complete'):raise RuntimeError('Paneles incompletos: '+', '.join(app._render_health.get('errors') or []))
             checks={
                 'orders':len(app.orders.get_children())==len(snapshot['orders'])>0,
                 'positions':len(app.positions.get_children())==len(snapshot['positions'])>0,
-                'charts':all(chart.data.get('bars') and len(chart.find_all())>20 for chart,title,state,tf in app.charts.values()),
+                'charts':charts_drawn(app.charts),
                 'analysis':bool(app.frames.get_children()) and 'BITCOIN' in app.analysis_summary.get('1.0','end'),
                 'sources':app.source_status['mt5'].cget('text')=='ACTIVO' and bool(app.analysis_sources.get_children()),
                 'context':'BITCOIN' in app.sources_summary.get('1.0','end') and 'BTCUSDm' in app.brain_status.get('1.0','end')}
@@ -171,6 +199,8 @@ def run_ui_check(window):
             checks['no_broker_requests']=not api.sent
             if not all(checks.values()):
                 detail='No se completó el dibujado de '+', '.join(k for k,v in checks.items() if not v)
+                if not checks['charts']:
+                    detail+='; chart_geometry='+json.dumps(chart_geometry(app.charts),ensure_ascii=False,sort_keys=True)
                 failed={name:row for name,row in compact_layout.items() if not row['passed']}
                 if failed:detail+='; controles: '+json.dumps(failed,ensure_ascii=False)
                 raise RuntimeError(detail)
