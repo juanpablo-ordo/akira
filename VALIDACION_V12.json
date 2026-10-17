@@ -1,12 +1,12 @@
 {
   "build": "AKIRA_16_4_0_STUDIO_REV5",
-  "tests": 1214,
-  "status": "FIX5_CODIGO_E_IA_LINUX_VERIFICADOS_WINDOWS_PENDIENTE",
+  "tests": 1223,
+  "status": "FIX6_CIERRE_DE_VIDEO_VERIFICADO_WINDOWS_PENDIENTE",
   "date": "2026-10-17",
   "skipped": 0,
-  "scope": "Entradas de comprobadores e importaciones previas. Suites Linux y modelo Qwen3 real CPU aprobados; instalación Windows pendiente.",
-  "pytest_tests": 1217,
+  "scope": "Cierre y propiedad del decodificador, espera nativa y borrado real del video. Suites Linux aprobadas; CI e instalación Windows pendientes.",
+  "pytest_tests": 1226,
   "pytest_subtests": 118,
-  "post_suite_check": "Publicar FIX5 como commit nuevo y exigir el workflow Windows completo, incluida la IA del programa instalado.",
-  "notes_file": "CORRECCION_WINDOWS_5.md"
+  "post_suite_check": "Publicar FIX6 como commit nuevo y exigir el workflow Windows completo y la IA instalada.",
+  "notes_file": "CORRECCION_WINDOWS_6.md"
 }

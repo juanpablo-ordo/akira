@@ -1,0 +1,90 @@
+================================== FAILURES ===================================
+2026-10-17T05:55:47.2082012Z _ MediaIsolationTests.test_video_frames_advance_pause_and_stop_only_the_owned_decoder _
+2026-10-17T05:55:47.2082351Z 
+2026-10-17T05:55:47.2082510Z path = 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmp4r1hj45c'
+2026-10-17T05:55:47.2082959Z onerror = <function TemporaryDirectory._rmtree.<locals>.onerror at 0x000001FDC304A3E0>
+2026-10-17T05:55:47.2083277Z 
+2026-10-17T05:55:47.2083378Z     def _rmtree_unsafe(path, onerror):
+2026-10-17T05:55:47.2083608Z         try:
+2026-10-17T05:55:47.2083804Z             with os.scandir(path) as scandir_it:
+2026-10-17T05:55:47.2084065Z                 entries = list(scandir_it)
+2026-10-17T05:55:47.2084305Z         except OSError:
+2026-10-17T05:55:47.2084528Z             onerror(os.scandir, path, sys.exc_info())
+2026-10-17T05:55:47.2084787Z             entries = []
+2026-10-17T05:55:47.2084997Z         for entry in entries:
+2026-10-17T05:55:47.2085213Z             fullname = entry.path
+2026-10-17T05:55:47.2085432Z             if _rmtree_isdir(entry):
+2026-10-17T05:55:47.2085650Z                 try:
+2026-10-17T05:55:47.2085845Z                     if entry.is_symlink():
+2026-10-17T05:55:47.2086171Z                         # This can only happen if someone replaces
+2026-10-17T05:55:47.2086492Z                         # a directory with a symlink after the call to
+2026-10-17T05:55:47.2086810Z                         # os.scandir or entry.is_dir above.
+2026-10-17T05:55:47.2087126Z                         raise OSError("Cannot call rmtree on a symbolic link")
+2026-10-17T05:55:47.2087390Z                 except OSError:
+2026-10-17T05:55:47.2087625Z                     onerror(os.path.islink, fullname, sys.exc_info())
+2026-10-17T05:55:47.2087883Z                     continue
+2026-10-17T05:55:47.2088075Z                 _rmtree_unsafe(fullname, onerror)
+2026-10-17T05:55:47.2088289Z             else:
+2026-10-17T05:55:47.2088433Z                 try:
+2026-10-17T05:55:47.2088599Z >                   os.unlink(fullname)
+2026-10-17T05:55:47.2089186Z E                   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmp4r1hj45c\\fixture.mp4'
+2026-10-17T05:55:47.2089693Z 
+2026-10-17T05:55:47.2089872Z C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\shutil.py:632: PermissionError
+2026-10-17T05:55:47.2090340Z 
+2026-10-17T05:55:47.2090480Z During handling of the above exception, another exception occurred:
+2026-10-17T05:55:47.2090697Z 
+2026-10-17T05:55:47.2091009Z self = <tests.test_studio_rev5.MediaIsolationTests testMethod=test_video_frames_advance_pause_and_stop_only_the_owned_decoder>
+2026-10-17T05:55:47.2091382Z 
+2026-10-17T05:55:47.2091543Z     def test_video_frames_advance_pause_and_stop_only_the_owned_decoder(self):
+2026-10-17T05:55:47.2091872Z         from studio_background import WallpaperWorker
+2026-10-17T05:55:47.2092258Z         import imageio_ffmpeg
+2026-10-17T05:55:47.2092469Z >       with tempfile.TemporaryDirectory() as tmp:
+2026-10-17T05:55:47.2092643Z 
+2026-10-17T05:55:47.2092715Z tests\test_studio_rev5.py:64: 
+2026-10-17T05:55:47.2092941Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+2026-10-17T05:55:47.2093289Z C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\tempfile.py:943: in __exit__
+2026-10-17T05:55:47.2093585Z     self.cleanup()
+2026-10-17T05:55:47.2093828Z C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\tempfile.py:947: in cleanup
+2026-10-17T05:55:47.2094193Z     self._rmtree(self.name, ignore_errors=self._ignore_cleanup_errors)
+2026-10-17T05:55:47.2094558Z C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\tempfile.py:929: in _rmtree
+2026-10-17T05:55:47.2094862Z     _shutil.rmtree(name, onerror=onerror)
+2026-10-17T05:55:47.2095150Z C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\shutil.py:787: in rmtree
+2026-10-17T05:55:47.2095448Z     return _rmtree_unsafe(path, onerror)
+2026-10-17T05:55:47.2095657Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-17T05:55:47.2096145Z C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\shutil.py:634: in _rmtree_unsafe
+2026-10-17T05:55:47.2096475Z     onerror(os.unlink, fullname, sys.exc_info())
+2026-10-17T05:55:47.2096731Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+2026-10-17T05:55:47.2096912Z 
+2026-10-17T05:55:47.2096993Z func = <built-in function unlink>
+2026-10-17T05:55:47.2097263Z path = 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmp4r1hj45c\\fixture.mp4'
+2026-10-17T05:55:47.2097902Z exc_info = (<class 'PermissionError'>, PermissionError(13, 'The process cannot access the file because it is being used by another process'), <traceback object at 0x000001FDC2ED7400>)
+2026-10-17T05:55:47.2098404Z 
+2026-10-17T05:55:47.2098486Z     def onerror(func, path, exc_info):
+2026-10-17T05:55:47.2098712Z         if issubclass(exc_info[0], PermissionError):
+2026-10-17T05:55:47.2098953Z             if repeated and path == name:
+2026-10-17T05:55:47.2099163Z                 if ignore_errors:
+2026-10-17T05:55:47.2099348Z                     return
+2026-10-17T05:55:47.2099517Z                 raise
+2026-10-17T05:55:47.2099671Z     
+2026-10-17T05:55:47.2099803Z             try:
+2026-10-17T05:55:47.2099974Z                 if path != name:
+2026-10-17T05:55:47.2100192Z                     _resetperms(_os.path.dirname(path))
+2026-10-17T05:55:47.2100435Z                 _resetperms(path)
+2026-10-17T05:55:47.2100619Z     
+2026-10-17T05:55:47.2100774Z                 try:
+2026-10-17T05:55:47.2100942Z >                   _os.unlink(path)
+2026-10-17T05:55:47.2101533Z E                   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmp4r1hj45c\\fixture.mp4'
+2026-10-17T05:55:47.2102085Z 
+2026-10-17T05:55:47.2102278Z C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\tempfile.py:893: PermissionError
+2026-10-17T05:55:47.2102737Z ---- generated xml file: D:\a\akira\akira\diagnostics\REGRESSION_TESTS.xml ----
+2026-10-17T05:55:47.2103119Z =========================== short test summary info ===========================
+2026-10-17T05:55:47.2103504Z SKIPPED [1] tests\test_r6_expressions_layout.py:141: A graphical Tk display is required
+2026-10-17T05:55:47.2104702Z FAILED tests/test_studio_rev5.py::MediaIsolationTests::test_video_frames_advance_pause_and_stop_only_the_owned_decoder - PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmp4r1hj45c\\fixture.mp4'
+2026-10-17T05:55:47.2106582Z = 1 failed, 1215 passed, 1 skipped, 118 subtests passed in 210.11s (0:03:30) ==
+2026-10-17T05:55:47.6736276Z [31;1mException: [0mD:\a\_temp\6ef1ca0b-5d03-42a3-820a-2602a2472a18.ps1:4[0m
+2026-10-17T05:55:47.6737685Z [31;1m[0m[36;1mLine |[0m
+2026-10-17T05:55:47.6738540Z [31;1m[0m[36;1m[36;1m   4 | [0m … DE -ne 0) { [36;1mthrow 'Fallaron las regresiones. Revisa el nombre de la p[0m …[0m
+2026-10-17T05:55:47.6738979Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-10-17T05:55:47.6739481Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mFallaron las regresiones. Revisa el nombre de la prueba y CHART_VIEWPORT en diagnósticos.[0m
+2026-10-17T05:55:47.6913453Z ##[error]Process completed with exit code 1.
+2026-10-17T05:55:47.7060246Z

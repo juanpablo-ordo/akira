@@ -1,6 +1,6 @@
 """Application-wide wallpaper. One owned decoder, one pending frame, no broker IO."""
 from __future__ import annotations
-import math,os,subprocess,threading,time,tempfile
+import math,os,subprocess,sys,threading,time,tempfile
 from collections import deque
 from pathlib import Path
 from PySide6.QtCore import Qt,QRectF,QPointF,QTimer,QSize
@@ -43,6 +43,42 @@ class DecoderLimits:
             self.kernel.CloseHandle(self.handle);self.handle=None
 
 
+def wait_decoder_exit(process,timeout):
+    """Wait for the native exit even if Popen cached an exit code during stop.
+
+    TerminateProcess is asynchronous. Only the owned process handle is waited
+    on; no process-name lookup, taskkill or access to another application's IO.
+    """
+    if sys.platform=='win32':
+        import ctypes as c
+        from ctypes import wintypes as w
+        kernel=c.WinDLL('kernel32',use_last_error=True)
+        kernel.WaitForSingleObject.argtypes=[w.HANDLE,w.DWORD]
+        kernel.WaitForSingleObject.restype=w.DWORD
+        result=kernel.WaitForSingleObject(int(process._handle),max(0,int(timeout*1000)))
+        if result==0x102:raise subprocess.TimeoutExpired(process.args,timeout)
+        if result!=0:raise OSError(c.get_last_error(),'WaitForSingleObject for wallpaper decoder')
+    return process.wait(timeout=timeout)
+
+
+def release_decoder(process,timeout=3):
+    """Reap our child and close its pipe/Windows handle before releasing media."""
+    # The reader owns this call and has left its read loop. Release the pipe
+    # first so a paused FFmpeg cannot remain blocked writing buffered frames.
+    if process.stdout:process.stdout.close()
+    if process.poll() is None:
+        try:process.terminate()
+        except ProcessLookupError:pass
+    try:
+        wait_decoder_exit(process,timeout)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        wait_decoder_exit(process,timeout)
+    # Keep the native handle valid until the real exit has been confirmed.
+    handle=getattr(process,'_handle',None)
+    if handle is not None:handle.Close()
+
+
 def frame_geometry(size,config):
     quality=max(.2,min(1,int(config.get('quality',70))/100))
     width=max(160,int(size[0]*quality));height=max(90,int(size[1]*quality))
@@ -81,6 +117,7 @@ class WallpaperWorker:
     def __init__(self,config,size):
         self.config=dict(config);self.size=frame_geometry(size,config)
         self.frames=deque(maxlen=1);self.stop_event=threading.Event();self.visible=threading.Event();self.visible.set()
+        self.finished=threading.Event();self.shutdown_error=None
         self.process=None;self.lock=threading.Lock();self.status={'state':'STARTING','frames_buffered':0,'gpu_decode':False}
         self.thread=threading.Thread(target=self.run,name='AkiraWallpaper',daemon=True)
     def start(self):self.thread.start()
@@ -90,15 +127,22 @@ class WallpaperWorker:
         if process and process.poll() is None:
             try:process.terminate()
             except OSError:pass
+    def close(self,timeout=7):
+        """Final shutdown barrier; stop() alone stays nonblocking for resizing."""
+        self.stop()
+        if self.thread.ident is not None:self.thread.join(timeout)
+        if self.thread.is_alive():raise TimeoutError('El decodificador del fondo no terminó de cerrar.')
+        if self.shutdown_error:raise RuntimeError('No se pudo liberar el fondo: '+self.shutdown_error)
     def run(self):
-        limits=None;process=None
+        limits=None;process=None;errors=None
         try:
             import imageio_ffmpeg
             width,height=self.size;fps=max(1,min(144,int(self.config.get('fps',24))))
             flags=getattr(subprocess,'CREATE_NO_WINDOW',0)|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)
             command=[imageio_ffmpeg.get_ffmpeg_exe(),'-nostdin','-v','error','-threads','1','-stream_loop','-1','-i',str(self.config['file']),'-an','-sn','-vf',video_filter(self.size,self.config),'-threads','1','-f','rawvideo','-pix_fmt','rgb24','pipe:1']
-            with tempfile.TemporaryFile() as errors:
-                process=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=errors,creationflags=flags)
+            errors=tempfile.TemporaryFile()
+            if not self.stop_event.is_set():
+                process=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=errors,creationflags=flags,close_fds=True)
                 with self.lock:self.process=process
                 limits=DecoderLimits(process,self.config.get('max_cpu_percent',10),self.config.get('max_memory_mb',128))
                 self.status.update(pid=process.pid,**limits.status,frame_size=list(self.size),frame_bytes=width*height*3)
@@ -138,12 +182,17 @@ class WallpaperWorker:
         except Exception as error:
             if not self.stop_event.is_set():self.status.update(state='ERROR',error=str(error)[:500])
         finally:
-            if process and process.poll() is None:
-                process.terminate()
-                try:process.wait(3)
-                except subprocess.TimeoutExpired:process.kill();process.wait(3)
-            if process and process.stdout:process.stdout.close()
-            if limits:limits.close()
+            try:
+                if process:release_decoder(process)
+            except Exception as error:
+                self.shutdown_error=type(error).__name__+': '+str(error)
+                self.status.update(state='ERROR',error=self.shutdown_error)
+            finally:
+                if limits:limits.close()
+                if errors:errors.close()
+                self.frames.clear()
+                if self.stop_event.is_set() and self.shutdown_error is None:self.status['state']='STOPPED'
+                self.finished.set()
 
 
 class BackgroundSurface(QWidget):
@@ -160,7 +209,15 @@ class BackgroundSurface(QWidget):
         if changed:self.restart()
         else:self.update()
     def restart(self):
-        if self.worker:self.worker.stop();self.worker=None
+        if self.worker:
+            self.worker.stop()
+            # Retain ownership until the old reader and its native child have
+            # finished; rapid resizes must not start overlapping decoders.
+            if self.worker.thread.is_alive():self._resize.start(16);return
+            if self.worker.shutdown_error:
+                self.media_status=dict(self.worker.status);self._tick.stop();return
+            self.worker=None
+        self._resize.stop()
         self._generation+=1;generation=self._generation;self._ready_image=None
         self.frame=QImage();self.image=QImage();self._tick.stop();self.media_status={}
         if self.config.get('enabled') and self.config.get('kind')=='video' and Path(self.config.get('file','')).is_file():
@@ -186,8 +243,10 @@ class BackgroundSurface(QWidget):
         if self.worker.status.get('state')=='ERROR':self.frame=QImage();self._tick.stop();self.update();return
         if self.isVisible() and not self.window().isMinimized():
             self.worker.visible.set()
-            if self.worker.frames:
-                data,width,height=self.worker.frames.pop();self.frame=QImage(data,width,height,width*3,QImage.Format.Format_RGB888).copy();self.update()
+            try:pending=self.worker.frames.pop()
+            except IndexError:pending=None
+            if pending:
+                data,width,height=pending;self.frame=QImage(data,width,height,width*3,QImage.Format.Format_RGB888).copy();self.update()
         else:self.worker.visible.clear()
     def resizeEvent(self,event):
         self._cache_size=None
@@ -236,4 +295,4 @@ class BackgroundSurface(QWidget):
             p.restore()
     def stop(self):
         self._generation+=1;self._tick.stop();self._resize.stop()
-        if self.worker:self.worker.stop();self.worker=None
+        if self.worker:self.worker.close();self.worker=None

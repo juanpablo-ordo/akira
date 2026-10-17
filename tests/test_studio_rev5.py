@@ -72,8 +72,12 @@ class MediaIsolationTests(unittest.TestCase):
                 worker.visible.clear();time.sleep(.2);stamp=worker.status['last_frame'];time.sleep(.3);self.assertEqual(stamp,worker.status['last_frame'])
                 worker.visible.set();self.assertTrue(wait_for(lambda:worker.status['last_frame']>stamp))
                 proc=worker.process
-            finally:worker.stop();worker.thread.join(5)
+            finally:worker.close()
             self.assertFalse(worker.thread.is_alive());self.assertIsNotNone(proc.poll())
+            self.assertTrue(worker.finished.is_set());self.assertTrue(proc.stdout.closed)
+            from tests.media_fixture import remove_closed_media
+            remove_closed_media(path)
+            self.assertFalse(path.exists())
     def test_transform_crop_rotation_and_buffers_respect_resource_selection(self):
         from studio_background import frame_geometry,video_filter
         cfg={'quality':100,'max_memory_mb':32,'rotation':90,'crop_left':10,'fit':'cover','offset_x':100,'fps':144}

@@ -1,0 +1,110 @@
+{
+  "run": "https://github.com/juanpablo-ordo/akira/actions/runs/39007735029",
+  "commit": "4d3511e66474e677a5a929a8c39971ec52947781",
+  "revision": "Windows 5",
+  "conclusion": "failure",
+  "regressions": {
+    "passed": 1215,
+    "subtests_passed": 118,
+    "failed": 1,
+    "skipped": 1,
+    "seconds": 210.11
+  },
+  "failed_test": "tests/test_studio_rev5.py::MediaIsolationTests::test_video_frames_advance_pause_and_stop_only_the_owned_decoder",
+  "error": "PermissionError [WinError 32] on deleting fixture.mp4",
+  "prebuild_imports_passed": true,
+  "tk_runtime_passed": true,
+  "installer_compiled": false,
+  "installed_ai_verified": false,
+  "scope": "Historical FIX5 Windows evidence; exact process retaining the file is not identified by the trace.",
+  "steps": [
+    {
+      "name": "Set up job",
+      "conclusion": "success"
+    },
+    {
+      "name": "Obtener código de AKIRA",
+      "conclusion": "success"
+    },
+    {
+      "name": "Preparar Python de 64 bits",
+      "conclusion": "success"
+    },
+    {
+      "name": "Instalar dependencias",
+      "conclusion": "success"
+    },
+    {
+      "name": "Comprobar importaciones del cliente y del instalador antes de compilar",
+      "conclusion": "success"
+    },
+    {
+      "name": "Comprobar y aislar Tcl-Tk de Python antes de las regresiones",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verificar que se incorporo REV5 antes de construir el instalador",
+      "conclusion": "success"
+    },
+    {
+      "name": "Pruebas de regresion principales",
+      "conclusion": "failure"
+    },
+    {
+      "name": "Incorporar reconocimiento visual local de sprites",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Compilar y autocontrolar AKIRA.exe Studio en Windows",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Incorporar llama.cpp oficial para Windows (CPU y Vulkan)",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Incorporar componente JavaScript de YouTube verificado",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Comprobar IA real en Windows sin Ollama",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Empaquetar ejecutable con motor local (sin el modelo GGUF)",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Compilar instalador Windows con logo, Instalar y Cancelar",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Probar instalador completo y respuesta de la IA instalada",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Publicar instalador de AKIRA con IA incluida y verificada",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Descargar binario construido",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Descargar diagnosticos incluso si falla",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Preparar Python de 64 bits",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Post Obtener código de AKIRA",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "conclusion": "success"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "status": "PASSED",
+  "platform": "Linux x86_64",
+  "real_decoder_cycles": 12,
+  "file_deletion_verified": true,
+  "unrelated_process_survived": true,
+  "stop_during_launch_verified": true,
+  "no_overlapping_decoders_verified": true,
+  "native_windows_wait_test": "Simulated handle; cached Popen exit cannot bypass native wait",
+  "persistent_windows_lock_test": "Simulated sharing violations still fail after the bounded deadline",
+  "windows_real_execution_verified": false,
+  "tests": [
+    {
+      "test": "tests.test_studio_rev5.MediaIsolationTests::test_transform_crop_rotation_and_buffers_respect_resource_selection",
+      "seconds": 0.001,
+      "passed": true
+    },
+    {
+      "test": "tests.test_studio_rev5.MediaIsolationTests::test_video_frames_advance_pause_and_stop_only_the_owned_decoder",
+      "seconds": 0.619,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.DecoderShutdownTests::test_an_unconfirmed_exit_still_fails_and_keeps_the_native_handle_valid",
+      "seconds": 0.001,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.DecoderShutdownTests::test_native_exit_wait_does_not_trust_a_cached_popen_exit_code",
+      "seconds": 0.002,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.DecoderShutdownTests::test_repeated_play_pause_close_releases_media_and_preserves_an_unrelated_process",
+      "seconds": 0.244,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.DecoderShutdownTests::test_stop_during_launch_still_reaps_the_child_and_releases_its_file",
+      "seconds": 0.018,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.DecoderShutdownTests::test_timeout_kills_and_reaps_only_the_owned_decoder_before_closing_handles",
+      "seconds": 0.001,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.SurfaceOwnershipTests::test_resize_waits_for_the_old_decoder_and_final_close_joins_its_reader",
+      "seconds": 0.001,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.FixtureReleaseTests::test_other_permission_errors_are_not_retried",
+      "seconds": 0.0,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.FixtureReleaseTests::test_permanent_windows_sharing_violation_is_not_hidden",
+      "seconds": 0.031,
+      "passed": true
+    },
+    {
+      "test": "tests.test_wallpaper_lifecycle.FixtureReleaseTests::test_transient_windows_sharing_is_observed_until_the_actual_delete_succeeds",
+      "seconds": 0.026,
+      "passed": true
+    }
+  ]
+}

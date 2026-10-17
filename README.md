@@ -1,4 +1,4 @@
-# AKIRA 16.4.0 Studio Rev5 · corrección Windows 5
+# AKIRA 16.4.0 Studio Rev5 · corrección Windows 6
 
 Revisión vigente del bloqueo en pruebas de gráficos: consulta `CORRECCION_WINDOWS_4.md`.
 
@@ -18,17 +18,17 @@ Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 
 
 ## Verificación terminada
 
-**1.217 pruebas pytest y 118 subpruebas aprobadas, cero fallos y cero omisiones.** También pasó el smoke completo con inferencia CPU real: llama.cpp b10355 y Qwen3-4B-Q4_K_M con su SHA-256 oficial. Se comprobaron pregunta con faltas usando contexto grabado, revisión JSON, cancelación y respuesta posterior. Esta inferencia se ejecutó en Linux; no certifica Windows ni una búsqueda de actualidad. Además, 1.214 pruebas unittest con la red bloqueada pasaron sin fallos ni omisiones. Los autocontroles nativos anteriores completaron 12 comprobaciones Qt y 27 Tk con FakeMT5.
+**1.226 pruebas pytest y 118 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.223 pruebas unittest con la red bloqueada** pasaron sin fallos ni omisiones. Las pruebas del fondo verifican doce ciclos reales de reproducción/cierre/borrado y conservan otro proceso intacto. Se comprueba el cierre nativo Win32 con un handle simulado; estos resultados locales no certifican Windows. La inferencia CPU real de FIX5 con llama.cpp b10355/Qwen3 queda conservada como evidencia anterior; sus scripts y el cliente de IA no cambian en FIX6.
 
-Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX5`. La evidencia original de Rev5 y las correcciones anteriores se conservan en sus propias carpetas. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
+Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX6`. La evidencia original de Rev5 y las correcciones anteriores se conservan en sus propias carpetas. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
 
 ## Compilación pendiente
 
-FIX4 está publicado: la ejecución 26 aprobó 1.210 pruebas, 102 subpruebas y el EXE en Windows, con una omisión por falta de pantalla Tk. El comprobador del modelo falló después de la primera respuesta por `ModuleNotFoundError`. Este paquete incorpora la **corrección Windows 5**: entradas de scripts y módulos resueltas, precomprobación de importaciones y registros persistentes del servidor. El acceso conectado volvió a devolver **HTTP 403: Resource not accessible by integration** al escribir. Esta corrección requiere publicarse con Git desde tu computadora y aún no tiene un instalador Windows validado.
+FIX5 está publicado: la ejecución 27 aprobó la comprobación de importaciones, pero falló al borrar `fixture.mp4` con WinError 32. Terminó con 1.215 pruebas aprobadas, una fallida y una omitida por falta de pantalla Tk. La **corrección Windows 6** confirma el cierre del proceso, libera sus handles y evita decodificadores solapados al cambiar el fondo o el tamaño. La prueba exige que el video se borre realmente. Consulta `CORRECCION_WINDOWS_6.md`. La conexión de GitHub se reparó autorizando el conector en la cuenta propietaria `juanpablo-ordo`. Se verificó la escritura y esta corrección se publica en la rama `akira-studio-rev5-20261016`. El instalador Windows sigue pendiente de la nueva ejecución completa.
 
 Para publicar desde un Windows con Git autenticado: extraer todo el ZIP y ejecutar `PUBLICAR_A_GITHUB_REV5.cmd`. El script usa una copia temporal, crea o actualiza la rama `akira-studio-rev5-20261016` e inicia el workflow con el código nuevo. No sustituye `main`. Los resultados aparecen en https://github.com/juanpablo-ordo/akira/actions.
 
-La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 5**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
+La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 6**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
 
 El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP de código no incluye pesos GGUF/CLIP ni equivale al instalador final. `INSTALAR_AKIRA.cmd` es el instalador heredado desde fuentes; su comprobación Windows tampoco se ha ejecutado en esta revisión.
 

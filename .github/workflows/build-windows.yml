@@ -1,5 +1,5 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 5 · ${{ github.ref_name }}
+run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 6 · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -75,7 +75,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
           python -u -m pytest -vv tests -ra -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
-          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa el nombre de la prueba y CHART_VIEWPORT en diagnósticos.' }
+          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa la prueba indicada y REGRESSION_TESTS.xml en los diagnósticos.' }
 
       - name: Incorporar reconocimiento visual local de sprites
         shell: pwsh
