@@ -62,6 +62,11 @@ class LlamaSetupTests(unittest.TestCase):
         self.assertIn('AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA',workflow)
         self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
-        self.assertIn('python -m pytest -q tests -ra --junitxml=diagnostics/REGRESSION_TESTS.xml',workflow)
+        import shlex
+        command=next(line.strip() for line in workflow.splitlines() if '-m pytest ' in line)
+        args=shlex.split(command)
+        self.assertEqual(args[args.index('-m')+1],'pytest')
+        self.assertIn('tests',args)
+        self.assertIn('--junitxml=diagnostics/REGRESSION_TESTS.xml',args)
 
 if __name__=='__main__':unittest.main()

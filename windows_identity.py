@@ -33,7 +33,10 @@ def apply_dark_titlebar(window):
  try:
   import ctypes
   from ctypes import wintypes
-  window.update_idletasks()
+  # This runs from a Tk timer, during native resize/reflow. Draining idle
+  # handlers here re-enters geometry processing; it can prevent the outer
+  # event pump and its deadline from returning on Win32. winfo_id() already
+  # realizes the native window; title-bar styling needs no nested event loop.
   user32=ctypes.windll.user32
   user32.GetParent.argtypes=[wintypes.HWND];user32.GetParent.restype=wintypes.HWND
   hwnd=user32.GetParent(window.winfo_id()) or window.winfo_id()

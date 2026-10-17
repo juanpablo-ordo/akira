@@ -58,6 +58,23 @@ class TkRuntimeCopyTests(unittest.TestCase):
 
 
 class NativeGeometryTests(unittest.TestCase):
+    def test_windows_titlebar_timer_never_reenters_geometry_processing(self):
+        import ctypes
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        import windows_identity
+        window=Mock()
+        window.winfo_id.return_value=123
+        window.update_idletasks.side_effect=AssertionError('Nested Tk geometry loop')
+        parent=Mock(return_value=456);dwm=Mock(return_value=0)
+        libraries=SimpleNamespace(user32=SimpleNamespace(GetParent=parent),
+            dwmapi=SimpleNamespace(DwmSetWindowAttribute=dwm))
+        with patch.object(windows_identity,'os',SimpleNamespace(name='nt')),patch.object(ctypes,'windll',libraries,create=True):
+            self.assertTrue(windows_identity.apply_dark_titlebar(window))
+        window.update_idletasks.assert_not_called()
+        self.assertEqual(dwm.call_count,3)
+        self.assertEqual(dwm.call_args_list[0].args[0],456)
+
     def test_native_measurement_accepts_small_buttons_and_rejects_both_axes_of_clipping(self):
         import tkinter as tk
         from native_ui_check import control_geometry

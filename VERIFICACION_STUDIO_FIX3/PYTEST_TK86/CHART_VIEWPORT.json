@@ -1,0 +1,105 @@
+{
+  "status": "PASSED",
+  "phase": "complete",
+  "platform": "linux",
+  "network": "blocked",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "snapshots": [
+    {
+      "requested_window": [
+        1366,
+        768
+      ],
+      "actual_window": [
+        1366,
+        768
+      ],
+      "charts": {
+        "BTCUSDm": {
+          "width": 557,
+          "height": 107,
+          "requested_height": 107,
+          "mapped": true,
+          "bars": 80,
+          "items": 179,
+          "market_closed": false,
+          "timeframe": "M5"
+        },
+        "XAUUSDm": {
+          "width": 556,
+          "height": 107,
+          "requested_height": 107,
+          "mapped": true,
+          "bars": 80,
+          "items": 179,
+          "market_closed": false,
+          "timeframe": "M5"
+        }
+      }
+    },
+    {
+      "requested_window": [
+        1024,
+        640
+      ],
+      "actual_window": [
+        1024,
+        640
+      ],
+      "charts": {
+        "BTCUSDm": {
+          "width": 386,
+          "height": 107,
+          "requested_height": 107,
+          "mapped": true,
+          "bars": 80,
+          "items": 179,
+          "market_closed": false,
+          "timeframe": "M5"
+        },
+        "XAUUSDm": {
+          "width": 385,
+          "height": 107,
+          "requested_height": 107,
+          "mapped": true,
+          "bars": 80,
+          "items": 179,
+          "market_closed": false,
+          "timeframe": "M5"
+        }
+      }
+    }
+  ],
+  "tcl": "8.6.14",
+  "tk": "8.6.14",
+  "window": {
+    "width": 1024,
+    "height": 640,
+    "screen_width": 1920,
+    "screen_height": 1200,
+    "tk_scaling": 1.99803343166175
+  },
+  "charts": {
+    "BTCUSDm": {
+      "width": 386,
+      "height": 107,
+      "requested_height": 107,
+      "mapped": true,
+      "bars": 80,
+      "items": 179,
+      "market_closed": false,
+      "timeframe": "M5"
+    },
+    "XAUUSDm": {
+      "width": 385,
+      "height": 107,
+      "requested_height": 107,
+      "mapped": true,
+      "bars": 80,
+      "items": 179,
+      "market_closed": false,
+      "timeframe": "M5"
+    }
+  },
+  "caption_configures": 10
+}

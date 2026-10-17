@@ -1,3 +1,3 @@
-# Studio Rev5 · corrección Windows 2
+# Studio Rev5 · corrección Windows 3
 
-FIX1 ya pasó sus regresiones en Windows. Su ejecutable falló en el dibujo de gráficos. FIX2 está implementado y probado localmente; necesita publicarse y superar el nuevo autocontrol Windows. Consulta `CORRECCION_WINDOWS_2.md`, `README.md` y `VERIFICACION_STUDIO_FIX2`. El acceso de escritura conectado sigue rechazado con HTTP 403.
+FIX2 está publicado pero su ejecución 24 se bloqueó durante la prueba nueva de gráficos de alto DPI, antes de crear el ejecutable. FIX3 aísla y limita esa prueba, conserva diagnósticos y retira una llamada que vuelve a procesar eventos en la decoración de Windows. La causa interna Win32 y la compilación deben confirmarse allí. Consulta `CORRECCION_WINDOWS_3.md`, `README.md` y `VERIFICACION_STUDIO_FIX3`. Publicar con `PUBLICAR_A_GITHUB_REV5.cmd`; no reejecutar el código antiguo.

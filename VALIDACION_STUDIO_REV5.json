@@ -1,20 +1,21 @@
 {
   "build": "AKIRA_16_4_0_STUDIO_REV5",
-  "date": "2026-10-16",
+  "date": "2026-10-17",
   "status": "SOURCE_VERIFIED_WINDOWS_PENDING",
   "pytest": {
-    "passed": 1204,
+    "passed": 1207,
     "subtests_passed": 102,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
-    "seconds": 75.27,
-    "report": "VERIFICACION_STUDIO_FIX2/REGRESIONES_FINALES.xml"
+    "seconds": 78.74,
+    "report": "VERIFICACION_STUDIO_FIX3/REGRESIONES_FINALES.xml",
+    "platform": "Linux Tcl/Tk 8.6.14"
   },
   "offline_unittest": {
     "build": "AKIRA_16_4_0_STUDIO_REV5",
-    "collected": 1201,
-    "tests_run": 1201,
+    "collected": 1204,
+    "tests_run": 1204,
     "successful": true,
     "failures": 0,
     "errors": 0,
@@ -24,38 +25,42 @@
     "failed_tests": [],
     "failure_details": [],
     "skipped_tests": [],
-    "seconds": 71.484,
+    "seconds": 69.327,
     "network": "blocked"
   },
   "native_studio": {
     "passed": true,
     "gates": 12,
-    "report": "VERIFICACION_STUDIO_FIX2/NATIVE_STUDIO.json",
+    "report": "VERIFICACION_STUDIO_FIX3/NATIVE_STUDIO.json",
     "data": "FakeMT5"
   },
   "native_legacy": {
     "passed": true,
     "gates": 27,
-    "report": "VERIFICACION_STUDIO_FIX2/NATIVE_LEGACY.json",
-    "large_text_report": "VERIFICACION_STUDIO_FIX2/NATIVE_LEGACY_LARGE_TEXT.json"
+    "report": "VERIFICACION_STUDIO_FIX3/NATIVE_LEGACY_TK86.json"
   },
   "default_entrypoint": "VERIFICACION_STUDIO_REV5/ARRANQUE_PREDETERMINADO.json",
   "performance_scope": "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json: solo 12,34 s en Linux, chat simulado; no prueba Windows, modelo, voz física ni rentabilidad.",
   "github": {
     "repository": "juanpablo-ordo/akira",
     "base_published": true,
-    "base_commit": "b5e8cf5550bb5cd3d361701b8a29eba525e48e0a",
-    "base_failed_run": "https://github.com/juanpablo-ordo/akira/actions/runs/38989618802",
-    "base_windows_tests_passed": 1202,
-    "base_windows_subtests_passed": 102,
+    "base_commit": "6e6556422940343017746801a1181460a90a2c20",
+    "base_windows_tests_passed": 91,
+    "base_windows_subtests_passed": null,
     "base_windows_tk_runtime_passed": true,
-    "base_windows_sprite_source_fixture_passed": true,
-    "base_exe_created": true,
+    "base_windows_sprite_source_fixture_passed": false,
+    "base_exe_created": false,
     "base_exe_self_check_passed": false,
     "correction_published": false,
     "correction_new_ci_run": false,
     "error": "HTTP 403: Resource not accessible by integration",
-    "branch_prepared": "akira-studio-rev5-20261016"
+    "branch_prepared": "akira-studio-rev5-20261016",
+    "base_windows_suite_completed": false,
+    "historic_fix1_windows_tests_passed": 1202,
+    "historic_fix1_windows_subtests_passed": 102,
+    "base_run_scope": "91 pruebas terminadas; siguiente prueba de alto DPI bloqueada, suite sin completar. Primer intento cancelado; segundo activo al observarlo.",
+    "base_run_status_observed": "in_progress",
+    "base_run": "https://github.com/juanpablo-ordo/akira/actions/runs/38996354887"
   },
   "windows_exe_built": false,
   "windows_install_verified": false,
@@ -90,22 +95,26 @@
     "pending_only": false
   },
   "existing_explicit_pending_only_preserved": true,
-  "revision": "WINDOWS_REGRESSION_FIX_2",
-  "updated_utc": "2026-10-17T02:22:38.878851+00:00",
+  "revision": "WINDOWS_REGRESSION_FIX_3",
+  "updated_utc": "2026-10-17T04:47:49.306945+00:00",
   "tk_runtime_check": {
-    "report": "VERIFICACION_STUDIO_FIX2/TK_RUNTIME_LOCAL.json",
-    "scope": "Local Linux Tcl/Tk 9.0. El aislamiento de Tcl/Tk 8.6 y la geometría Win32 requieren CI Windows."
+    "scope": "Prueba de gráficos y autocontrol real en Linux Tcl/Tk 8.6.14; suite sin red en Tcl/Tk 9.0.4. Win32 8.6.12 no comprobado en esta revisión.",
+    "chart_probe_report": "VERIFICACION_STUDIO_FIX3/PYTEST_TK86/CHART_VIEWPORT.json",
+    "legacy_report": "VERIFICACION_STUDIO_FIX3/NATIVE_LEGACY_TK86.json"
   },
   "windows_regression_fix": {
-    "revision": 2,
-    "error": "No se completó el dibujado de charts",
-    "reproduced": true,
-    "large_text_before_canvas_height": 21,
-    "after_canvas_height": 107,
-    "bars_per_symbol": 80,
+    "revision": 3,
+    "blocked_test": "ChartViewportTests.test_high_dpi_short_dashboard_keeps_both_real_charts_drawn_and_scrollable",
+    "windows_internal_cause_confirmed": false,
+    "probe_process_deadline_seconds": 45,
+    "ci_regression_deadline_minutes": 15,
+    "source_self_check_deadline_seconds": 90,
+    "nested_titlebar_event_flush_removed": true,
+    "no_skipped_or_weakened_checks": true,
+    "actual_window_size_asserted": true,
     "financial_engine_changed": false,
     "all_source_tests_passed": true,
-    "windows_fix2_verified": false
+    "windows_fix3_verified": false
   },
   "visual_semantic_inference_scope": "Previous Windows source run: one bundled sleeping-sprite fixture, CPUExecutionProvider, ambiguity requires review. Not a frozen-executable check.",
   "universal_sprite_recognition_verified": false,

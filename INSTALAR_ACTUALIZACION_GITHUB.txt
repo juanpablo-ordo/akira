@@ -1,15 +1,22 @@
-AKIRA 16.4.0 Studio Rev5 - corrección Windows 2
+AKIRA 16.4.0 Studio Rev5 - corrección Windows 3
 
-1. Extrae este ZIP actualizado en una carpeta nueva.
-2. Ejecuta PUBLICAR_A_GITHUB_REV5.cmd.
-3. En https://github.com/juanpablo-ordo/akira/actions busca una ejecución
-   nueva cuyo título incluya corrección Windows 2.
+La ejecución 24 se bloqueó en la nueva prueba de gráficos de alto DPI.
+No es una descarga de la IA ni se generó un instalador en esos intentos.
+
+1. Cancela la ejecución 24 si sigue activa.
+2. Extrae este ZIP actualizado en una carpeta nueva.
+3. Ejecuta PUBLICAR_A_GITHUB_REV5.cmd.
+4. En https://github.com/juanpablo-ordo/akira/actions busca una ejecución
+   nueva cuyo título incluya corrección Windows 3.
 
 Actualiza la misma rama akira-studio-rev5-20261016.
-Reejecutar la ejecución 23 no incorpora esta corrección.
+Reejecutar la ejecución 24 conserva el código que se bloqueó.
 
-FIX1 ya pasó 1.202 pruebas y 102 subpruebas en Windows.
-FIX2 corrige el espacio de gráficos y los ajustes de texto que competían.
-Pruebas locales actuales: 1.204 pytest + 102 subpruebas y 1.201 sin red.
-El EXE de FIX2 debe superar el nuevo autocontrol antes de generar el instalador.
-Consulta CORRECCION_WINDOWS_2.md y VERIFICACION_STUDIO_FIX2.
+La prueba gráfica tiene ahora un límite externo de 45 segundos, conserva
+estado y trazas y falla si se agota. No se omite ni se acepta como aprobada.
+El paso completo tiene un límite de 15 minutos y muestra cada nombre de prueba.
+Se retiró el procesamiento anidado de eventos en la decoración Windows.
+El bloqueo concreto requiere confirmación en Windows; no se declara resuelto.
+
+Consulta CORRECCION_WINDOWS_3.md y VERIFICACION_STUDIO_FIX3.
+Este ZIP es código completo; el instalador EXE debe generarse y validarse en CI.

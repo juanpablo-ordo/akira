@@ -1,5 +1,5 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 2 · ${{ github.ref_name }}
+run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 3 · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -60,10 +60,14 @@ jobs:
           Write-Host 'Fuente Studio Rev5 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
       - name: Pruebas de regresion principales
+        timeout-minutes: 15
         shell: pwsh
+        env:
+          AKIRA_TEST_DIAGNOSTICS: diagnostics
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -m pytest -q tests -ra --junitxml=diagnostics/REGRESSION_TESTS.xml
+          python -u -m pytest -vv tests -ra -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa el nombre de la prueba y CHART_VIEWPORT en diagnósticos.' }
 
       - name: Incorporar reconocimiento visual local de sprites
         shell: pwsh
@@ -78,7 +82,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python Akira.py --self-check diagnostics/SOURCE_SELF_CHECK.json --app-root .
+          python -u -c "import subprocess,sys; sys.exit(subprocess.run([sys.executable,'-u','Akira.py','--self-check','diagnostics/SOURCE_SELF_CHECK.json','--app-root','.'],timeout=90).returncode)"
           if ($LASTEXITCODE -ne 0) { throw 'El autocontrol gráfico de origen falló. Revisa SOURCE_SELF_CHECK.json antes de compilar.' }
           python build_windows.py --source . --diagnostic diagnostics
           if ($LASTEXITCODE -ne 0) { throw 'No pasó el ejecutable nuevo; no publicar' }

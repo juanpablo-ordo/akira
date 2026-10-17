@@ -1,0 +1,59 @@
+{
+  "revision": 3,
+  "base_library_version": 2,
+  "base_sha256": "f6374e68e5625518cf2e9689ac8a8ff0aa6eb08583142509628af6189a6eeedc",
+  "pytest": {
+    "passed": 1207,
+    "subtests_passed": 102,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 78.74,
+    "report": "VERIFICACION_STUDIO_FIX3/REGRESIONES_FINALES.xml",
+    "platform": "Linux Tcl/Tk 8.6.14"
+  },
+  "offline_unittest": {
+    "build": "AKIRA_16_4_0_STUDIO_REV5",
+    "collected": 1204,
+    "tests_run": 1204,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failed_tests": [],
+    "failure_details": [],
+    "skipped_tests": [],
+    "seconds": 69.327,
+    "network": "blocked"
+  },
+  "native_legacy_gates": 27,
+  "native_studio_gates": 12,
+  "chart_probe_seconds_limit": 45,
+  "native_chart_actual_sizes_verified": [
+    [
+      1366,
+      768
+    ],
+    [
+      1024,
+      640
+    ]
+  ],
+  "unchanged_files": [
+    "engine.py",
+    "planner.py",
+    "execution.py",
+    "runner.py",
+    "settings.py",
+    "default_config.json",
+    "akira_config.json",
+    "chart_render.py",
+    "frozen_ui_contract.py"
+  ],
+  "windows_internal_block_cause_confirmed": false,
+  "windows_fix3_verified": false,
+  "installer_created": false,
+  "code_only": true
+}
