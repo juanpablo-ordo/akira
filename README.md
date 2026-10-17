@@ -1,4 +1,4 @@
-# AKIRA 16.4.0 Studio Rev5 · corrección Windows 4
+# AKIRA 16.4.0 Studio Rev5 · corrección Windows 5
 
 Revisión vigente del bloqueo en pruebas de gráficos: consulta `CORRECCION_WINDOWS_4.md`.
 
@@ -18,17 +18,17 @@ Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 
 
 ## Verificación terminada
 
-**1.211 pruebas pytest y 102 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.208 pruebas unittest con la red bloqueada**, sin fallos ni omisiones. Los autocontroles nativos completaron 12 comprobaciones Qt y 27 Tk. Se comprobó el arranque predeterminado mediante `Akira.py` con FakeMT5, sin operar una cuenta real.
+**1.217 pruebas pytest y 118 subpruebas aprobadas, cero fallos y cero omisiones.** También pasó el smoke completo con inferencia CPU real: llama.cpp b10355 y Qwen3-4B-Q4_K_M con su SHA-256 oficial. Se comprobaron pregunta con faltas usando contexto grabado, revisión JSON, cancelación y respuesta posterior. Esta inferencia se ejecutó en Linux; no certifica Windows ni una búsqueda de actualidad. Además, 1.214 pruebas unittest con la red bloqueada pasaron sin fallos ni omisiones. Los autocontroles nativos anteriores completaron 12 comprobaciones Qt y 27 Tk con FakeMT5.
 
-Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX4`. La evidencia original de Rev5 está en `VERIFICACION_STUDIO_REV5`. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
+Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX5`. La evidencia original de Rev5 y las correcciones anteriores se conservan en sus propias carpetas. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
 
 ## Compilación pendiente
 
-FIX3 está publicado, pero la ejecución 25 terminó con dos fallos: bloqueo del dibujo de alto DPI y falta de tcl_findLibrary al iniciar Tk. Este paquete incorpora la **corrección Windows 4**: ajuste único de etiquetas, reflujo agrupado, prueba adaptada al monitor e inicio explícito del cargador Tcl. La revisión todavía necesita verificarse en Windows. El acceso conectado sigue devolviendo **HTTP 403: Resource not accessible by integration** al escribir, por lo que esta corrección requiere publicarse con Git desde tu computadora y aún no tiene un instalador validado.
+FIX4 está publicado: la ejecución 26 aprobó 1.210 pruebas, 102 subpruebas y el EXE en Windows, con una omisión por falta de pantalla Tk. El comprobador del modelo falló después de la primera respuesta por `ModuleNotFoundError`. Este paquete incorpora la **corrección Windows 5**: entradas de scripts y módulos resueltas, precomprobación de importaciones y registros persistentes del servidor. El acceso conectado volvió a devolver **HTTP 403: Resource not accessible by integration** al escribir. Esta corrección requiere publicarse con Git desde tu computadora y aún no tiene un instalador Windows validado.
 
 Para publicar desde un Windows con Git autenticado: extraer todo el ZIP y ejecutar `PUBLICAR_A_GITHUB_REV5.cmd`. El script usa una copia temporal, crea o actualiza la rama `akira-studio-rev5-20261016` e inicia el workflow con el código nuevo. No sustituye `main`. Los resultados aparecen en https://github.com/juanpablo-ordo/akira/actions.
 
-La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 4**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
+La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 5**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
 
 El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP de código no incluye pesos GGUF/CLIP ni equivale al instalador final. `INSTALAR_AKIRA.cmd` es el instalador heredado desde fuentes; su comprobación Windows tampoco se ha ejecutado en esta revisión.
 
@@ -36,7 +36,7 @@ El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP 
 
 La lista de los **232 requisitos y 16 solicitudes adicionales** está en `REQUISITOS_232_ESTADO.json` y `.csv`, con evidencia local y aceptación pendiente. No se declara cumplimiento integral de los 248 puntos.
 
-Falta compilar e instalar en Windows, verificar el modelo local y el clasificador visual dentro del ejecutable, audio físico, DPI y varios monitores, límites efectivos de recursos y una sesión MT5 demo de seis horas. Algunas razones dinámicas continúan en español y los idiomas de voz dependen de los modelos disponibles. El reconocimiento de sprites ofrece sugerencias editables y no garantiza identificar cualquier dibujo. La ejecución Windows anterior sí aprobó la inferencia CPU de origen con un sprite dormido; su margen resultó ambiguo y requiere revisión.
+Falta completar el workflow Windows de esta corrección y la instalación real con su IA, audio físico, DPI y varios monitores, límites efectivos de recursos y una sesión MT5 demo de seis horas. Algunas razones dinámicas continúan en español y los idiomas de voz dependen de los modelos disponibles. El reconocimiento de sprites ofrece sugerencias editables y no garantiza identificar cualquier dibujo. FIX4 aprobó la inferencia visual de origen y del ejecutable con el sprite de prueba; el margen ambiguo requiere revisión.
 
 Los límites duros CPU/RAM del fondo se aplican al decodificador propio en Windows y requieren esa validación; no existe un límite duro de GPU ni de toda la aplicación. La estrategia Adaptive es una selección inicial sobre reglas existentes: no demuestra superioridad ni convierte automáticamente todos los videos en estrategias rentables. La rapidez de envío y la rentabilidad con datos reales siguen pendientes de medir.
 

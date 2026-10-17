@@ -1,0 +1,21 @@
+{
+  "status": "PASSED",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "architecture": "x86_64",
+  "llama_release": "b10355",
+  "llama_commit": "dd1ea5243",
+  "runtime_archive_sha256": "e180cabf4cd5d685fc5756315f99d6e254c0d54604814647f46bfebb242b66cb",
+  "runtime_executable_sha256": "0d0feb9f25893fbdcf73af766942c2ac4738f063b1f98f0a1afb624aac800ceb",
+  "model": "Qwen3-4B-Q4_K_M.gguf",
+  "model_bytes": 2497280256,
+  "model_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+  "execution": "CPU, 3 threads, context 2048, parallel 1, no Ollama",
+  "entrypoint": "python -I /absolute/path/installer/smoke_local_ai.py from /tmp without PYTHONPATH",
+  "real_inference": true,
+  "model_or_client_mocked": false,
+  "scenarios_report": "LOCAL_AI_REAL_LINUX.json",
+  "server_log_archive": "LOCAL_AI_REAL_LINUX_LLAMA.txt",
+  "fact_scope": "Question corrected by the production normalizer; answer grounded in recorded synthetic context, not a live fact lookup.",
+  "windows_certified": false,
+  "live_account_used": false
+}

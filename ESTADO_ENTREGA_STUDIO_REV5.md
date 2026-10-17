@@ -1,3 +1,3 @@
-# Studio Rev5 · corrección Windows 4
+# Studio Rev5 · corrección Windows 5
 
-FIX3 terminó en Windows con dos fallos: bloqueo en el primer dibujo de alto DPI y fallo de tcl_findLibrary al crear Tk. FIX4 modifica el reflujo de etiquetas y paneles, ajusta la prueba al monitor disponible e inicializa explícitamente el cargador Tcl antes de Tk. Las verificaciones actuales están en `VERIFICACION_STUDIO_FIX4`. La revisión necesita un commit nuevo, regresiones Windows, EXE e instalación aprobados. Consulta `CORRECCION_WINDOWS_4.md`.
+FIX4 aprobó las regresiones y el EXE en Windows. Su comprobador de IA falló después del saludo real por importar un módulo de AKIRA desde una ruta incorrecta. FIX5 corrige las entradas de ambos comprobadores, comprueba las importaciones antes de compilar y conserva registros de fallo. Las 1.217 pruebas y 118 subpruebas locales pasaron. También pasó el recorrido completo con el modelo Qwen3 real en Linux. Los informes están en `VERIFICACION_STUDIO_FIX5`; consulta `CORRECCION_WINDOWS_5.md`. Se necesita publicar un commit nuevo y superar la instalación Windows antes de declarar el instalador validado.

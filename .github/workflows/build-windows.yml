@@ -1,5 +1,5 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 4 · ${{ github.ref_name }}
+run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 5 · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -34,6 +34,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pytest
+
+      - name: Comprobar importaciones del cliente y del instalador antes de compilar
+        shell: pwsh
+        run: |
+          python -m installer.smoke_local_ai --check-imports
+          if ($LASTEXITCODE -ne 0) { throw 'El comprobador no puede importar el cliente de IA de AKIRA.' }
+          python -m installer.check_installed_ai --check-imports
+          if ($LASTEXITCODE -ne 0) { throw 'El comprobador de instalación no puede importar sus validadores.' }
 
       - name: Comprobar y aislar Tcl-Tk de Python antes de las regresiones
         shell: pwsh
@@ -72,11 +80,12 @@ jobs:
       - name: Incorporar reconocimiento visual local de sprites
         shell: pwsh
         run: |
-          python installer/prepare_sprite_ai.py --dest assets/sprite_vision
+          python -m installer.prepare_sprite_ai --dest assets/sprite_vision
           if ($LASTEXITCODE -ne 0) { throw 'No se descargó el componente visual íntegro; no publicar un instalador incompleto' }
           python -c "import json; from sprite_recognition import check_visual_component; from pathlib import Path; Path('diagnostics/SPRITE_AI_SOURCE.json').write_text(json.dumps(check_visual_component(), indent=2), encoding='utf-8')"
           if ($LASTEXITCODE -ne 0) { throw 'La inferencia visual local de origen no pasó' }
-          python installer/prepare_licenses.py --dest third_party/packages
+          python -m installer.prepare_licenses --dest third_party/packages
+          if ($LASTEXITCODE -ne 0) { throw 'No se prepararon las licencias de los componentes.' }
 
       - name: Compilar y autocontrolar AKIRA.exe Studio en Windows
         shell: pwsh
@@ -133,7 +142,8 @@ jobs:
       - name: Comprobar IA real en Windows sin Ollama
         shell: pwsh
         run: |
-          python installer/smoke_local_ai.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/LOCAL_AI_SCENARIOS.json
+          python -m installer.smoke_local_ai --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/LOCAL_AI_SCENARIOS.json
+          if ($LASTEXITCODE -ne 0) { throw 'La IA real no pasó los escenarios. Revisa LOCAL_AI_SCENARIOS.json y LOCAL_AI_SCENARIOS.llama.log.' }
 
       - name: Empaquetar ejecutable con motor local (sin el modelo GGUF)
         shell: pwsh

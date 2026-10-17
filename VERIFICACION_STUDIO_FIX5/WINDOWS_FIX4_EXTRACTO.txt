@@ -1,0 +1,5 @@
+2026-10-17T05:33:07.3029253Z SKIPPED [1] tests\test_r6_expressions_layout.py:141: A graphical Tk display is required
+2026-10-17T05:33:07.3032679Z ====== 1210 passed, 1 skipped, 102 subtests passed in 269.04s (0:04:29) =======
+2026-10-17T05:36:43.3919971Z AKIRA llama.cpp/Qwen3 visible chat OK; characters: 5
+2026-10-17T05:36:43.3921787Z   File "D:\a\akira\akira\installer\smoke_local_ai.py", line 181, in smoke
+2026-10-17T05:36:43.3922559Z ModuleNotFoundError: No module named 'akira_local_ai'

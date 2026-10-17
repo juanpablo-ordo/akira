@@ -1,12 +1,12 @@
 {
   "build": "AKIRA_16_4_0_STUDIO_REV5",
-  "tests": 1208,
-  "status": "FIX4_CODIGO_VERIFICADO_WINDOWS_PENDIENTE",
+  "tests": 1214,
+  "status": "FIX5_CODIGO_E_IA_LINUX_VERIFICADOS_WINDOWS_PENDIENTE",
   "date": "2026-10-17",
   "skipped": 0,
-  "scope": "Corrección de reflujo y cargador Tcl. Suites Linux con monitores pequeño/grande; revisión Windows, EXE e instalación pendientes.",
-  "pytest_tests": 1211,
-  "pytest_subtests": 102,
-  "post_suite_check": "Publicar FIX4 como commit nuevo; exigir regresiones, ejecutable, IA instalada y aceptación MT5 demo.",
-  "notes_file": "CORRECCION_WINDOWS_4.md"
+  "scope": "Entradas de comprobadores e importaciones previas. Suites Linux y modelo Qwen3 real CPU aprobados; instalación Windows pendiente.",
+  "pytest_tests": 1217,
+  "pytest_subtests": 118,
+  "post_suite_check": "Publicar FIX5 como commit nuevo y exigir el workflow Windows completo, incluida la IA del programa instalado.",
+  "notes_file": "CORRECCION_WINDOWS_5.md"
 }

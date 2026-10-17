@@ -1,0 +1,16 @@
+{
+  "baseline": "FIX4",
+  "identical_to_baseline": true,
+  "sha256": {
+    "engine.py": "1fad5ec48c8fbedbbed6a4e0d86fff6edf625e977bb01ccbdfd963fbf52dc280",
+    "planner.py": "55ede7389ed0ee8785b3470f15691f2457da9e9957984377cfc8e91c5b3fae95",
+    "execution.py": "892f7bdcdd49b92ad6f514647e13f268280ac1bb7701aa4d1b1b08e01e02552e",
+    "runner.py": "da132b65167d599f2e7d6b71f3d75338d4aaf8fa13f9df4413577131d50a7749",
+    "settings.py": "7dae4b26f28f873593f4a77552109b4201a3d6dfaec6ec4391b13a469a14597f",
+    "default_config.json": "28804a32204d5535cf160d02a56f73f38265a507a9da44412465792c4b242b57",
+    "akira_config.json": "f1ba8a2f0ce6bb2d55a5268355bd0f85ee2fa7bdcb306daebd4e3946319e1125",
+    "chart_render.py": "9f3ca796d0629f4f1410af2ae2b3b712faa76150b8d9ecfe290325ac94559eb1",
+    "akira_local_ai.py": "4974bea3d142aeae0cc783aac59b7f1fff33187e1eb484a4c747b3f9c1d03478",
+    "akira_model_runtime.py": "c770e4a3a3697d021c07cae319d0416496e67d8b4fa08e3b0e4d46d0c52e3580"
+  }
+}

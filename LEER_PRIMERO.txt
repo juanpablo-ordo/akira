@@ -1,14 +1,17 @@
-AKIRA 16.4.0 Studio Rev5 - corrección Windows 4
+AKIRA 16.4.0 Studio Rev5 - corrección Windows 5
 
-El registro de FIX3 confirmó 2 fallos y 1.205 pruebas aprobadas en Windows.
-Esta corrección modifica el dibujo y el arranque de Tcl/Tk; conserva los
-controles de gráficos, de instalación y de riesgo.
+FIX4 aprobó regresiones y EXE en Windows; el comprobador de IA falló
+al importar akira_local_ai después del saludo real. Esta revisión
+corrige las entradas, comprueba las importaciones antes de compilar
+y guarda JSON y registros del servidor cuando una prueba falla.
 
 1. Extrae el ZIP completo en una carpeta nueva de Windows.
 2. Ejecuta PUBLICAR_A_GITHUB_REV5.cmd.
 3. En https://github.com/juanpablo-ordo/akira/actions busca una ejecución
-   nueva cuyo título incluya corrección Windows 4.
+   nueva cuyo título incluya corrección Windows 5.
 
 Usa la misma rama akira-studio-rev5-20261016 y un commit nuevo.
-La revisión aún debe superar Windows antes de disponer de instalador validado.
-Consulta CORRECCION_WINDOWS_4.md y VERIFICACION_STUDIO_FIX4.
+Reejecutar el intento anterior conserva el código que falló.
+Pasaron 1.217 pruebas y 118 subpruebas locales, y el recorrido completo
+con Qwen3 real en Linux. La instalación Windows sigue pendiente.
+Consulta CORRECCION_WINDOWS_5.md y VERIFICACION_STUDIO_FIX5.

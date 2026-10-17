@@ -1,0 +1,25 @@
+{
+  "revision": "WINDOWS_5",
+  "full_pytest": {
+    "passed": 1217,
+    "subtests_passed": 118,
+    "failed": 0,
+    "skipped": 0
+  },
+  "offline_unittest": {
+    "passed": 1214,
+    "failed": 0,
+    "skipped": 0
+  },
+  "post_metadata_checks": {
+    "passed": 70,
+    "subtests_passed": 18
+  },
+  "real_cpu_model_scenarios_passed": true,
+  "source_manifest_verified_files": 320,
+  "source_install_validation": "PASSED",
+  "financial_engine_and_client_unchanged": true,
+  "github_write_error": "HTTP 403 Resource not accessible by integration",
+  "new_windows_workflow_required": true,
+  "windows_install_verified": false
+}

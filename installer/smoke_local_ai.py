@@ -9,16 +9,25 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import subprocess
 import time
 import sys
 import threading
+import tempfile
+import traceback
 import unicodedata
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+# Direct script execution puts installer/, not the project, on sys.path.
+# Resolve our own source before importing clients or starting/downloading AI.
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from akira_local_ai import chat, owned_context
+from language_normalization import understood
 
 URL = 'https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf'
 SHA = '7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5'
@@ -40,7 +49,7 @@ def get_model(path):
     partial = path.with_suffix('.partial')
     partial.unlink(missing_ok=True)
     try:
-        req = Request(URL, headers={'User-Agent': 'AKIRA-CI/16.3.5'})
+        req = Request(URL, headers={'User-Agent': 'AKIRA-CI/16.4.0'})
         with urlopen(req, timeout=90) as response, partial.open('wb') as stream:
             for chunk in iter(lambda: response.read(2 * 1024 * 1024), b''):
                 stream.write(chunk)
@@ -98,9 +107,6 @@ def validate_completion(response):
 
 def verify_chat_scenarios(endpoint):
     """Exercise the production client against the real bundled server."""
-    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-    from akira_local_ai import chat
-    from language_normalization import understood
     original='quien es el acutal presdiente de guatemla'
     question=understood(original)
     answer=chat([{'role':'system','content':'/no_think\nResponde en español en una frase y utiliza solo la fuente de prueba.'},
@@ -140,14 +146,17 @@ def verify_chat_scenarios(endpoint):
             'live_account_used':False,'fact_scope':'Recorded synthetic test context, not live web verification'}
 
 
-def smoke(exe, model):
-    exe = Path(exe)
-    model = Path(model)
+def smoke(exe, model, *, log_path=None):
+    exe = Path(exe).resolve()
+    model = Path(model).resolve()
     if not (exe.is_file() and model.is_file()):
         raise FileNotFoundError('Missing CPU llama-server.exe or Qwen3 GGUF')
     cmd = [str(exe), '--model', str(model), '--host', '127.0.0.1', '--port', '18988',
            '--ctx-size', '2048', '--n-gpu-layers', '0', '--threads', '3', '--parallel', '1', '--jinja']
-    with open(os.devnull, 'wb') as sink:
+    if log_path is not None:
+        log_path = Path(log_path)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+    with (log_path.open('wb') if log_path is not None else tempfile.TemporaryFile()) as sink:
         proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=sink, stderr=subprocess.STDOUT)
         try:
             deadline = time.monotonic() + 170
@@ -178,7 +187,6 @@ def smoke(exe, model):
 
             visible = validate_completion(result)
             print('AKIRA llama.cpp/Qwen3 visible chat OK; characters:', len(visible))
-            from akira_local_ai import owned_context
             with owned_context(2048):scenarios=verify_chat_scenarios('http://127.0.0.1:18988/v1/chat/completions')
             print('AKIRA typo, structured review and cancellation scenarios PASSED')
             return {'status':'PASSED','visible_characters':len(visible),**scenarios}
@@ -192,17 +200,36 @@ def smoke(exe, model):
                     proc.wait(timeout=5)
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exe', type=Path, required=True)
-    parser.add_argument('--model', type=Path, required=True)
+    parser.add_argument('--exe', type=Path)
+    parser.add_argument('--model', type=Path)
     parser.add_argument('--report',type=Path)
-    args = parser.parse_args()
-    report=smoke(args.exe, get_model(args.model))
+    parser.add_argument('--check-imports', action='store_true', help='Validate production clients without network or inference')
+    args = parser.parse_args(argv)
+    if not args.check_imports and (args.exe is None or args.model is None):
+        parser.error('--exe and --model are required unless --check-imports is used')
+    log_path = args.report.with_suffix('.llama.log') if args.report and not args.check_imports else None
+    try:
+        if args.check_imports:
+            report = {'status':'PASSED', 'production_client':chat.__module__,
+                      'context_manager':owned_context.__module__, 'normalizer':understood.__module__,
+                      'inference_run':False}
+        else:
+            if not args.exe.is_file():
+                raise FileNotFoundError('Missing CPU llama-server.exe: '+str(args.exe))
+            report = smoke(args.exe, get_model(args.model), log_path=log_path)
+    except Exception as error:
+        report = {'status':'FAILED', 'error':type(error).__name__+': '+str(error),
+                  'traceback':traceback.format_exc()}
+    if log_path:
+        report['server_log'] = str(log_path.resolve())
     if args.report:
         args.report.parent.mkdir(parents=True,exist_ok=True)
         args.report.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+    print(json.dumps(report,ensure_ascii=False))
+    return 0 if report['status']=='PASSED' else 1
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

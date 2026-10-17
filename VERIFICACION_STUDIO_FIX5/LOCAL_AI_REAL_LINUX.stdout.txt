@@ -1,0 +1,3 @@
+AKIRA llama.cpp/Qwen3 visible chat OK; characters: 5
+AKIRA typo, structured review and cancellation scenarios PASSED
+{"status": "PASSED", "visible_characters": 5, "typo_question": true, "fixture_based_answer": "Bernardo Arévalo es el actual presidente de Guatemala.", "structured_review": true, "cancel_before_headers": true, "cancel_seconds": 0.001, "reply_after_cancel": true, "live_account_used": false, "fact_scope": "Recorded synthetic test context, not live web verification", "server_log": "/workspace/scratch/76f348340c16/status_fix5_source/AKIRA_Studio_16.4.0_Rev5/VERIFICACION_STUDIO_FIX5/LOCAL_AI_REAL_LINUX.llama.log"}
