@@ -95,7 +95,9 @@ class LanguagePackTests(unittest.TestCase):
             restore_user_data(before,None,after)
             loaded=load_config(after/'akira_config.json')
             self.assertTrue(Path(loaded['studio']['language_pack']).is_file())
-            self.assertTrue(str(loaded['studio']['language_pack']).startswith(str(after)))
+            destination=after/'studio'/'languages'/Path(pack).name
+            self.assertTrue(Path(loaded['studio']['language_pack']).resolve().is_relative_to(after.resolve()))
+            self.assertTrue(Path(loaded['studio']['language_pack']).samefile(destination))
 
 class ReviewAttemptIdentityTests(unittest.TestCase):
     def test_late_success_from_expired_attempt_cannot_confirm_new_attempt(self):

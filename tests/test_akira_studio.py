@@ -57,8 +57,12 @@ class StudioTests(unittest.TestCase):
             restore_user_data(before,None,after)
             self.assertEqual((after/'studio'/'avatars'/'talking.png').read_bytes(),src.read_bytes())
             restored=load_config(after/'akira_config.json')
-            self.assertEqual(restored['studio']['avatar']['entries'][0]['path'],str(after/'studio'/'avatars'/'talking.png'))
-            self.assertEqual(restored['studio']['wallpaper']['file'],str(after/'studio'/'avatars'/'talking.png'))
+            target=after/'studio'/'avatars'/'talking.png'
+            # Windows TEMP may use RUNNER~1 while resolve() returns runneradmin.
+            # Verify the migrated file identity and destination, not its spelling.
+            for location in (restored['studio']['avatar']['entries'][0]['path'],restored['studio']['wallpaper']['file']):
+                self.assertTrue(Path(location).samefile(target))
+                self.assertTrue(Path(location).resolve().is_relative_to(after.resolve()))
 
     def test_wallpaper_resize_and_persistence(self):
         with tempfile.TemporaryDirectory() as temp:

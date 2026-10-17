@@ -39,8 +39,14 @@ $RepoDir = Join-Path $TempRoot 'akira'
 New-Item -ItemType Directory -Path $TempRoot -Force | Out-Null
 Write-Host 'Se usará una carpeta temporal para no alterar tus archivos locales:' $TempRoot
 Write-Host 'Clonando GitHub con el inicio de sesión de Git que tengas configurado...'
-RunGit -CmdArgs @('clone','--depth','1',$RepoUrl,$RepoDir)
-RunGit -CmdArgs @('-C',$RepoDir,'switch','-c',$Branch)
+$remoteBranch = @(& $script:GitExe ls-remote --heads $RepoUrl ('refs/heads/' + $Branch))
+if ($LASTEXITCODE -ne 0) { throw 'No se pudo comprobar la rama remota. No se publicó nada.' }
+if ($remoteBranch.Count -gt 0) {
+  RunGit -CmdArgs @('clone','--depth','1','--branch',$Branch,$RepoUrl,$RepoDir)
+} else {
+  RunGit -CmdArgs @('clone','--depth','1',$RepoUrl,$RepoDir)
+  RunGit -CmdArgs @('-C',$RepoDir,'switch','-c',$Branch)
+}
 # Borrar SOLO el árbol de trabajo del CLON TEMPORAL para importar el código completo.
 # Nunca ejecuta git rm en tu carpeta original ni en main remoto.
 RunGit -CmdArgs @('-C',$RepoDir,'rm','-r','-q','--ignore-unmatch','.')
@@ -51,7 +57,14 @@ $blockedFiles = @('*.sqlite','*.sqlite3','*.db','*.key','*.pem','*.gguf','*.safe
 if ($LASTEXITCODE -gt 7) { throw "Error copiando código. Revisa $RoboLog" }
 RunGit -CmdArgs @('-C',$RepoDir,'add','-A')
 $staged = @(& $script:GitExe -C $RepoDir diff --cached --name-only)
-if ($LASTEXITCODE -ne 0 -or $staged.Count -lt 50) { throw 'Cambios insuficientes: no se publicará un paquete incompleto.' }
+if ($LASTEXITCODE -ne 0) { throw 'No se pudo leer la lista de cambios.' }
+$tracked = @(& $script:GitExe -C $RepoDir ls-files)
+if ($LASTEXITCODE -ne 0 -or $tracked.Count -lt 50) { throw 'Árbol incompleto: no se publicará.' }
+if ($staged.Count -eq 0) {
+  Write-Host 'Este código ya está publicado en la rama indicada. No se creó otro commit.'
+  Write-Host 'https://github.com/juanpablo-ordo/akira/actions'
+  exit 0
+}
 $secretPaths = @($staged | Where-Object { $_ -match '(^state/|^logs/|^exports/|^studio/|\.env$|\.sqlite3?$|\.db$|(^|/)AKIRA_SECRETS\.json$|\.key$|\.pem$|\.gguf$)' })
 if ($secretPaths.Count -gt 0) { throw "Se encontraron rutas privadas: $($secretPaths -join ', '). Detenido sin publicar." }
 # Los avisos de espacios heredados no impiden compilar ni cambian el contenido.
@@ -66,7 +79,7 @@ $author = (& $script:GitExe -C $RepoDir config user.name)
 if (!$author) { throw 'Git no tiene configurado user.name; configúralo en GitHub Desktop/Git antes de publicar.' }
 $email = (& $script:GitExe -C $RepoDir config user.email)
 if (!$email) { throw 'Git no tiene configurado user.email; configúralo antes de publicar.' }
-RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA Studio 16.4.0 Rev5: interfaz nativa, persistencia y CI Windows')
+RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA Studio 16.4.0 Rev5: corregir regresiones Windows 1')
 Write-Host 'Subiendo rama a GitHub. Puede solicitar inicio de sesión.'
 RunGit -CmdArgs @('-C',$RepoDir,'push','--set-upstream','origin',$Branch)
 Write-Host ''

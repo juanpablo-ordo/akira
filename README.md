@@ -1,4 +1,6 @@
-# AKIRA 16.4.0 Studio Rev5
+# AKIRA 16.4.0 Studio Rev5 · corrección Windows 1
+
+Corrección vigente de las cuatro regresiones Windows: consulta `CORRECCION_WINDOWS_1.md`.
 
 Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 y el documento maestro recibidos. La aplicación abre por defecto la nueva interfaz nativa Qt. Este ZIP contiene el programa fuente, sus recursos y la preparación del instalador; el EXE nuevo aún está pendiente de compilar.
 
@@ -16,17 +18,17 @@ Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 
 
 ## Verificación terminada
 
-**1.197 pruebas pytest y 102 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.194 pruebas unittest con la red bloqueada**, sin fallos ni omisiones. Los autocontroles nativos completaron 12 comprobaciones Qt y 27 Tk. Se comprobó el arranque predeterminado mediante `Akira.py` con FakeMT5, sin operar una cuenta real.
+**1.202 pruebas pytest y 102 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.199 pruebas unittest con la red bloqueada**, sin fallos ni omisiones. Los autocontroles nativos completaron 12 comprobaciones Qt y 27 Tk. Se comprobó el arranque predeterminado mediante `Akira.py` con FakeMT5, sin operar una cuenta real.
 
-Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_REV5`. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
+Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX1`. La evidencia original de Rev5 está en `VERIFICACION_STUDIO_REV5`. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
 
 ## Compilación pendiente
 
-El acceso conectado a `juanpablo-ordo/akira` devuelve **HTTP 403: Resource not accessible by integration** al escribir. Ningún cambio de esta revisión se ha publicado y ninguna ejecución nueva de Actions ha producido su instalador.
+La Rev5 original ya está publicada en la rama `akira-studio-rev5-20261016`; su ejecución 22 falló en cuatro regresiones. Este paquete incorpora la **corrección Windows 1**. El acceso conectado sigue devolviendo **HTTP 403: Resource not accessible by integration** al escribir, por lo que esta corrección requiere publicarse con Git desde tu computadora y aún no tiene un instalador nuevo.
 
-Para publicar desde un Windows con Git autenticado: extraer todo el ZIP y ejecutar `PUBLICAR_A_GITHUB_REV5.cmd`. El script usa una copia temporal, publica la rama `akira-studio-rev5-20261016` e inicia el workflow. No sustituye `main`. Los resultados aparecen en https://github.com/juanpablo-ordo/akira/actions.
+Para publicar desde un Windows con Git autenticado: extraer todo el ZIP y ejecutar `PUBLICAR_A_GITHUB_REV5.cmd`. El script usa una copia temporal, crea o actualiza la rama `akira-studio-rev5-20261016` e inicia el workflow con el código nuevo. No sustituye `main`. Los resultados aparecen en https://github.com/juanpablo-ordo/akira/actions.
 
-La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
+La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 1**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
 
 El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP de código no incluye pesos GGUF/CLIP ni equivale al instalador final. `INSTALAR_AKIRA.cmd` es el instalador heredado desde fuentes; su comprobación Windows tampoco se ha ejecutado en esta revisión.
 

@@ -3,18 +3,18 @@
   "date": "2026-10-16",
   "status": "SOURCE_VERIFIED_WINDOWS_PENDING",
   "pytest": {
-    "passed": 1197,
+    "passed": 1202,
     "subtests_passed": 102,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
-    "seconds": 51.4,
-    "report": "VERIFICACION_STUDIO_REV5/REGRESIONES_FINALES.xml"
+    "seconds": 65.85,
+    "report": "VERIFICACION_STUDIO_FIX1/REGRESIONES_FINALES.xml"
   },
   "offline_unittest": {
     "build": "AKIRA_16_4_0_STUDIO_REV5",
-    "collected": 1194,
-    "tests_run": 1194,
+    "collected": 1199,
+    "tests_run": 1199,
     "successful": true,
     "failures": 0,
     "errors": 0,
@@ -24,28 +24,31 @@
     "failed_tests": [],
     "failure_details": [],
     "skipped_tests": [],
-    "seconds": 45.084,
+    "seconds": 57.607,
     "network": "blocked"
   },
   "native_studio": {
     "passed": true,
     "gates": 12,
-    "report": "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json",
+    "report": "VERIFICACION_STUDIO_FIX1/NATIVE_STUDIO.json",
     "data": "FakeMT5"
   },
   "native_legacy": {
     "passed": true,
     "gates": 27,
-    "report": "VERIFICACION_STUDIO_REV5/NATIVE_LEGACY.json"
+    "report": "VERIFICACION_STUDIO_FIX1/NATIVE_LEGACY.json"
   },
   "default_entrypoint": "VERIFICACION_STUDIO_REV5/ARRANQUE_PREDETERMINADO.json",
   "performance_scope": "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json: solo 12,34 s en Linux, chat simulado; no prueba Windows, modelo, voz física ni rentabilidad.",
   "github": {
     "repository": "juanpablo-ordo/akira",
-    "published": false,
+    "base_published": true,
+    "base_commit": "7097b5bdf57b1b63e39a0d08ba6f25c206e4e6c6",
+    "base_failed_run": "https://github.com/juanpablo-ordo/akira/actions/runs/38986471480",
+    "correction_published": false,
+    "correction_new_ci_run": false,
     "error": "HTTP 403: Resource not accessible by integration",
-    "branch_prepared": "akira-studio-rev5-20261016",
-    "new_ci_run": false
+    "branch_prepared": "akira-studio-rev5-20261016"
   },
   "windows_exe_built": false,
   "windows_install_verified": false,
@@ -79,5 +82,20 @@
     "bound_account": 0,
     "pending_only": false
   },
-  "existing_explicit_pending_only_preserved": true
+  "existing_explicit_pending_only_preserved": true,
+  "revision": "WINDOWS_REGRESSION_FIX_1",
+  "updated_utc": "2026-10-17T00:54:13.223727+00:00",
+  "tk_runtime_check": {
+    "report": "VERIFICACION_STUDIO_FIX1/TK_RUNTIME_LOCAL.json",
+    "scope": "Local Linux Tcl/Tk 9.0. El aislamiento de Tcl/Tk 8.6 y la geometría Win32 requieren CI Windows."
+  },
+  "windows_regression_fix": {
+    "reported_failures": 4,
+    "path_comparisons": 2,
+    "native_geometry": 1,
+    "tk_initialization": 1,
+    "tests_disabled": 0,
+    "financial_engine_changed": false,
+    "publisher_updates_existing_branch": true
+  }
 }

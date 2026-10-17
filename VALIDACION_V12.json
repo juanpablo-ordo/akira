@@ -1,12 +1,12 @@
 {
   "build": "AKIRA_16_4_0_STUDIO_REV5",
-  "tests": 1194,
-  "status": "CODIGO_VERIFICADO_WINDOWS_PENDIENTE",
+  "tests": 1199,
+  "status": "FIX1_CODIGO_VERIFICADO_WINDOWS_PENDIENTE",
   "date": "2026-10-16",
   "skipped": 0,
-  "scope": "Suite Linux completa, sin red y autocontroles Tk y Qt aprobados. No constituye aceptación del ejecutable Windows.",
-  "pytest_tests": 1197,
+  "scope": "Corrección de regresiones Rev5: suite completa y sin red en Linux, autocontroles nativos Qt/Tk. Pendiente confirmar CI Windows de esta corrección.",
+  "pytest_tests": 1202,
   "pytest_subtests": 102,
   "post_suite_check": "Compilar esta revisión en Windows, verificar IA real y componentes visuales, instalar el mismo EXE y comprobar MT5 demo. GitHub bloquea la publicación con HTTP 403.",
-  "notes_file": "README.md"
+  "notes_file": "CORRECCION_WINDOWS_1.md"
 }

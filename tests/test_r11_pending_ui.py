@@ -7,7 +7,8 @@ from settings import load_config,DEFAULT
 class CandidateCockpit(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-        self.root=tk.Tk();self.addCleanup(self.root.destroy)
+        self.app=None
+        self.root=tk.Tk();self.addCleanup(self.close_ui)
         folder=Path(self.temp.name);cfg=load_config(DEFAULT)
         cfg['assistant']['auto_install_local_ai']=False
         cfg['desktop'].update(notifications=False,notification_sound=False,notification_popup=False)
@@ -15,6 +16,12 @@ class CandidateCockpit(unittest.TestCase):
         self.app=Desktop(self.root,folder,preview=True,start_actor=False)
         self.app.navigate(1)
         self.root.update_idletasks()
+
+    def close_ui(self):
+        # Desktop owns timers, workers and images as well as the Tk window.
+        # Destroying only Tk leaves the next interpreter with live callbacks.
+        if self.app is not None:self.app.close()
+        else:self.root.destroy()
 
     def payload(self,confirmed=False):
         idea={'symbol':'BTCUSDm','key':'SYNTHETIC-ONE','side':1,'kind':'LIMIT',

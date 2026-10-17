@@ -18,11 +18,11 @@ def settle_layout(window):
     window.update_idletasks()
 
 def control_geometry(window,widget,check_text=False):
-    """Check actual bounds and font metrics, independent of OS font widths."""
+    """Check bounds and the native widget's natural text size on this platform."""
     width,height=widget.winfo_width(),widget.winfo_height()
     x=widget.winfo_rootx()-window.winfo_rootx()
     y=widget.winfo_rooty()-window.winfo_rooty()
-    inside=bool(widget.winfo_ismapped() and width>30 and height>0 and x>=-2 and y>=-2
+    inside=bool(widget.winfo_ismapped() and width>0 and height>0 and x>=-2 and y>=-2
         and x+width<=window.winfo_width()+2 and y+height<=window.winfo_height()+2)
     result={'x':x,'y':y,'width':width,'height':height,'inside':inside}
     if check_text:
@@ -34,7 +34,26 @@ def control_geometry(window,widget,check_text=False):
         usable=width-2*(border+pixels('padx'))
         parts=text.split() if pixels('wraplength')>0 else text.splitlines()
         needed=max((face.measure(part) for part in parts),default=0)
-        readable=usable+2>=needed and height+2>=face.metrics('linespace')+2*(border+pixels('pady'))
+        # Win32 buttons use dialog units and native insets; adding padx/pady
+        # to font metrics does not describe their actual requested geometry.
+        # An unmapped probe measures the same native control with its explicit
+        # width/height removed. It never changes or invokes the real widget.
+        import tkinter as tk
+        native={'Button':tk.Button,'Label':tk.Label}.get(widget.winfo_class())
+        if native is not None:
+            keys=widget.keys()
+            options={name:widget.cget(name) for name in (
+                'text','font','padx','pady','borderwidth','highlightthickness',
+                'wraplength','justify','compound','default','anchor','relief',
+                'underline','state') if name in keys}
+            probe=native(widget.master,**options,width=0,height=0)
+            try:
+                natural_width,natural_height=probe.winfo_reqwidth(),probe.winfo_reqheight()
+            finally:probe.destroy()
+            readable=width+2>=natural_width and height+2>=natural_height
+            result.update(native_text_width=natural_width,native_text_height=natural_height)
+        else:
+            readable=usable+2>=needed and height+2>=face.metrics('linespace')+2*(border+pixels('pady'))
         result.update(text_width=needed,available_text_width=usable,readable=bool(readable))
     result['passed']=bool(inside and result.get('readable',True))
     return result

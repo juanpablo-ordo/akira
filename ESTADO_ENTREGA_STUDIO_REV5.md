@@ -1,5 +1,5 @@
-# Estado de entrega Studio Rev5
+# Estado de entrega Studio Rev5 · corrección Windows 1
 
-Código y pruebas locales terminados. Publicación y EXE Windows pendientes por GitHub HTTP 403.
+La Rev5 original está en GitHub y falló cuatro regresiones. La corrección está implementada y probada localmente; debe publicarse en la misma rama con el publicador actualizado para ejecutar CI Windows.
 
-La descripción vigente es [README.md](README.md), la evidencia es `VALIDACION_STUDIO_REV5.json` y la aceptación por requisito está en `REQUISITOS_232_ESTADO.json`. Los informes de versiones anteriores son históricos.
+Consulta `CORRECCION_WINDOWS_1.md`, `README.md` y `VERIFICACION_STUDIO_FIX1`. El acceso de escritura conectado sigue bloqueado por HTTP 403. EXE e instalación Windows pendientes.

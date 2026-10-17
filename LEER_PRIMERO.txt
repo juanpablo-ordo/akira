@@ -1,14 +1,13 @@
-AKIRA 16.4.0 Studio Rev5 - código verificado
+AKIRA 16.4.0 Studio Rev5 - corrección Windows 1
 
-Consulta README.md para los cambios y VALIDACION_STUDIO_REV5.json para las pruebas.
+1. Extrae este ZIP actualizado en una carpeta nueva.
+2. Ejecuta PUBLICAR_A_GITHUB_REV5.cmd.
+3. Abre https://github.com/juanpablo-ordo/akira/actions y busca la ejecución
+   AKIRA 16.4.0 Studio Rev5 - corrección Windows 1.
 
-1.197 pruebas pytest + 102 subpruebas y 1.194 unittest sin red aprobadas.
-Este paquete contiene código y recursos. El EXE Windows sigue pendiente.
-GitHub conectado rechazó la publicación con HTTP 403.
+El publicador actualiza tu rama existente akira-studio-rev5-20261016.
+Reejecutar el workflow anterior no incorpora estos cambios.
 
-Para publicar desde Git autenticado en Windows: extrae todo y abre
-PUBLICAR_A_GITHUB_REV5.cmd. Trabaja en una rama aislada y ejecuta CI.
-No descargues un artefacto anterior como si fuera esta revisión.
-
-Los documentos con R6/R7/R8/Rev2/Rev3/Rev4 son históricos.
-La aceptación completa está registrada como pendiente en la matriz de requisitos.
+Pruebas locales: 1.202 pytest + 102 subpruebas y 1.199 unittest sin red.
+El EXE y su instalación Windows aún requieren completar la nueva ejecución.
+Detalles: CORRECCION_WINDOWS_1.md, README.md y VERIFICACION_STUDIO_FIX1.
