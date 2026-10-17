@@ -1,0 +1,215 @@
+"""Native, high-DPI Studio components. Painting never enters the broker actor."""
+from __future__ import annotations
+import math,time
+from collections import OrderedDict
+from pathlib import Path
+from PySide6.QtCore import Qt,QRectF,QPointF,QTimer,QSize,QVariantAnimation
+from PySide6.QtGui import QColor,QPainter,QPen,QLinearGradient,QPainterPath,QPixmap,QImage,QFont,QIcon
+from PySide6.QtWidgets import QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QSizePolicy,QCheckBox
+
+INK={'bg':'#020c18','panel':'#041426','line':'#164762','cyan':'#00ddff','pink':'#ff2585','green':'#00e8b5','amber':'#ffc548','text':'#e8f3ff','muted':'#80acc9'}
+
+def icon(name,color='#00ddff',size=22):
+    pix=QPixmap(size*2,size*2);pix.fill(Qt.GlobalColor.transparent)
+    p=QPainter(pix);p.setRenderHint(QPainter.RenderHint.Antialiasing);p.scale(size/24*2,size/24*2)
+    p.setPen(QPen(QColor(color),1.6,Qt.PenStyle.SolidLine,Qt.PenCapStyle.RoundCap,Qt.PenJoinStyle.RoundJoin));p.setBrush(Qt.BrushStyle.NoBrush)
+    if name in ('chart','trading','analysis'):
+        for x,h in ((5,8),(11,15),(17,11)):p.drawRoundedRect(QRectF(x,21-h,3,h),.7,.7)
+    elif name in ('wallet','account'):
+        p.drawRoundedRect(QRectF(3,6,18,15),2,2);p.drawPolyline([QPointF(4,6),QPointF(15,2),QPointF(17,6)])
+        p.drawRoundedRect(QRectF(15,11,7,5),1,1);p.drawPoint(18,13)
+    elif name in ('pending','report','file'):
+        p.drawPolyline([QPointF(6,2),QPointF(15,2),QPointF(20,7),QPointF(20,22),QPointF(5,22),QPointF(5,2)])
+        p.drawPolyline([QPointF(15,2),QPointF(15,8),QPointF(20,8)])
+        for y in (12,16,19):p.drawLine(8,y,16,y)
+    elif name=='chat':
+        p.drawRoundedRect(QRectF(2,3,20,15),5,5);p.drawPolyline([QPointF(7,18),QPointF(5,22),QPointF(13,18)])
+    elif name=='sources':
+        p.drawEllipse(QRectF(10,8,4,4));p.drawLine(12,12,7,22);p.drawLine(12,12,17,22)
+        p.drawArc(QRectF(6,4,12,12),-65*16,310*16);p.drawArc(QRectF(2,0,20,20),-65*16,310*16)
+    elif name=='terminal':
+        p.drawRoundedRect(QRectF(2,3,20,16),2,2);p.drawLine(8,22,16,22);p.drawLine(12,19,12,22)
+        p.drawPolyline([QPointF(5,7),QPointF(8,10),QPointF(5,13)]);p.drawLine(11,13,16,13)
+    elif name=='bell':
+        p.drawArc(QRectF(6,3,12,15),0,180*16);p.drawPolyline([QPointF(6,10),QPointF(5,17),QPointF(3,19),QPointF(21,19),QPointF(19,17),QPointF(18,10)])
+        p.drawArc(QRectF(10,19,4,4),180*16,180*16)
+    elif name=='shield':
+        p.drawPolygon([QPointF(12,2),QPointF(21,6),QPointF(19,16),QPointF(12,22),QPointF(5,16),QPointF(3,6)])
+        p.drawPolyline([QPointF(8,12),QPointF(11,15),QPointF(16,9)])
+    elif name=='bolt':p.drawPolygon([QPointF(13,1),QPointF(4,13),QPointF(11,13),QPointF(9,23),QPointF(21,9),QPointF(13,9)])
+    elif name=='layers':
+        for y in (3,8,13):p.drawPolyline([QPointF(2,y+5),QPointF(12,y),QPointF(22,y+5),QPointF(12,y+10),QPointF(2,y+5)])
+    elif name=='refresh':
+        p.drawArc(QRectF(3,3,18,18),35*16,285*16);p.drawPolyline([QPointF(21,2),QPointF(21,8),QPointF(15,8)])
+    elif name=='clock':p.drawEllipse(QRectF(2,2,20,20));p.drawLine(12,5,12,12);p.drawLine(12,12,17,15)
+    elif name=='send':p.drawPolygon([QPointF(2,3),QPointF(22,12),QPointF(2,21),QPointF(6,12)]);p.drawLine(6,12,22,12)
+    elif name=='settings':
+        p.drawEllipse(QRectF(7,7,10,10));p.drawEllipse(QRectF(10,10,4,4))
+        for a in range(0,360,45):
+            r=math.radians(a);p.drawLine(QPointF(12+8*math.cos(r),12+8*math.sin(r)),QPointF(12+11*math.cos(r),12+11*math.sin(r)))
+    else:p.drawEllipse(QRectF(3,3,18,18));p.drawLine(12,7,12,13);p.drawPoint(12,17)
+    p.end();pix.setDevicePixelRatio(2);return QIcon(pix)
+
+def label(text='',role='body',color=None):
+    w=QLabel(str(text));w.setProperty('role',role);w.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    if color:w.setStyleSheet('color:'+color+';background:transparent;border:0;')
+    return w
+
+def button(text,callback=None,kind='',glyph=None):
+    w=QPushButton(str(text));w.setProperty('kind',kind);w.setCursor(Qt.CursorShape.PointingHandCursor)
+    w.setMinimumHeight(35)
+    if callback:w.clicked.connect(callback)
+    if glyph:w.setIcon(icon(glyph,'#e8f3ff' if kind=='primary' else INK['cyan']));w.setIconSize(QSize(20,20))
+    return w
+
+class Toggle(QCheckBox):
+    """Native accessible checkbox with an unambiguous moving switch thumb."""
+    def sizeHint(self):return QSize(48,26)
+    def paintEvent(self,event):
+        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r=QRectF(self.width()-44,3,42,21);p.setPen(QPen(QColor(INK['cyan'] if self.isChecked() else '#29627c'),1));p.setBrush(QColor(INK['cyan'] if self.isChecked() else '#102c40'));p.drawRoundedRect(r,10,10)
+        p.setBrush(QColor('#ffffff' if self.isEnabled() else '#71828b'));p.setPen(Qt.PenStyle.NoPen);p.drawEllipse(QRectF(r.left()+(23 if self.isChecked() else 3),r.top()+3,15,15))
+        if self.hasFocus():p.setPen(QPen(QColor(INK['cyan']),1,Qt.PenStyle.DotLine));p.setBrush(Qt.BrushStyle.NoBrush);p.drawRoundedRect(r.adjusted(-2,-2,2,2),11,11)
+    def hitButton(self,pos):return self.rect().contains(pos)
+
+class Card(QFrame):
+    def __init__(self,title='',glyph='',accent='',parent=None):
+        super().__init__(parent);self.setObjectName('card');self.setProperty('accent',accent)
+        self.setMinimumWidth(0);self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
+        self.body=QVBoxLayout(self);self.body.setContentsMargins(13,11,13,12);self.body.setSpacing(9)
+        self.heading=QHBoxLayout();self.heading.setSpacing(9)
+        if glyph:
+            self.symbol=QLabel();self.symbol.setPixmap(icon(glyph,accent or INK['cyan']).pixmap(24,24));self.heading.addWidget(self.symbol)
+        self.title=label(title,'cardTitle');self.heading.addWidget(self.title,1);self.body.addLayout(self.heading)
+
+class Metric(Card):
+    def __init__(self,title,glyph,color=INK['cyan']):
+        super().__init__('',accent=color);self.body.setSpacing(1);self.body.setContentsMargins(13,10,13,10)
+        self.title.hide();self.body.removeItem(self.heading)
+        line=QHBoxLayout();line.setSpacing(12);self.body.addLayout(line)
+        self.symbol=QLabel();self.symbol.setPixmap(icon(glyph,color,30).pixmap(30,30));line.addWidget(self.symbol)
+        values=QVBoxLayout();values.setSpacing(1);self.name_label=label(title,'micro');values.addWidget(self.name_label)
+        self.value=label('—','metric',color);values.addWidget(self.value)
+        self.caption=label('','muted');values.addWidget(self.caption);line.addLayout(values,1)
+        self.value.setWordWrap(True);self.caption.setWordWrap(True)
+        self.setMinimumHeight(90);self.setMaximumHeight(115)
+
+class DataTable(QTableWidget):
+    """Stable keys; changing ages must not reorder rows or lose the selection."""
+    def __init__(self,columns):
+        super().__init__(0,len(columns));self.columns=columns;self.rows={};self.keys=[]
+        self.setHorizontalHeaderLabels(columns);self.verticalHeader().hide();self.verticalHeader().setDefaultSectionSize(38)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.setShowGrid(False)
+        self.setAlternatingRowColors(True);self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel);self.setMinimumHeight(120)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
+        for index in range(len(columns)):self.setColumnWidth(index,110 if index else 130)
+
+    def selected_key(self):
+        row=self.currentRow();return self.keys[row] if 0<=row<len(self.keys) else None
+
+    def update_rows(self,rows):
+        # rows = (stable id, displayed cells, original data). No reset/model rebuild.
+        selected=self.selected_key();scroll=self.verticalScrollBar().value();self.blockSignals(True)
+        desired=[str(k) for k,_,_ in rows]
+        self.setUpdatesEnabled(False)
+        try:
+            if desired!=self.keys:
+                self.setRowCount(len(rows));self.keys=desired
+            self.rows={str(key):data for key,_,data in rows}
+            for row,(_,values,_) in enumerate(rows):
+                for col,value in enumerate(values[:len(self.columns)]):
+                    text=str(value if value is not None else '—');item=self.item(row,col)
+                    if item is None:item=QTableWidgetItem();self.setItem(row,col,item)
+                    if item.text()!=text:
+                        item.setText(text);item.setToolTip(text)
+                        color=INK['green'] if text.startswith(('BUY','DISPONIBLE','CONFIRMAD','ACTIVO')) else INK['pink'] if text.startswith(('SELL','ERROR','RECHAZ','DESCART')) else INK['amber'] if text.startswith(('ESPER','EN REVIS','SOLO','NO DISPON')) else INK['text']
+                        item.setForeground(QColor(color))
+            if selected in self.keys:self.selectRow(self.keys.index(selected))
+            self.verticalScrollBar().setValue(scroll)
+        finally:self.setUpdatesEnabled(True);self.blockSignals(False)
+
+class CandleChart(QWidget):
+    def __init__(self,parent=None):
+        super().__init__(parent);self.bars=[];self.levels={};self._signature=None
+        self.setMinimumHeight(95);self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
+    def set_data(self,bars,levels=None):
+        bars=list(bars or [])[-95:];signature=repr((bars,levels))
+        if signature!=self._signature:self.bars=bars;self.levels=levels or {};self._signature=signature;self.update()
+    def paintEvent(self,event):
+        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect=QRectF(self.rect()).adjusted(3,3,-64,-18);p.setPen(QPen(QColor('#10334b'),.6))
+        for n in range(1,5):p.drawLine(QPointF(rect.left(),rect.top()+n*rect.height()/5),QPointF(rect.right(),rect.top()+n*rect.height()/5))
+        valid=[]
+        for row in self.bars:
+            try:
+                values=tuple(float(row.get(key,0)) for key in ('open','high','low','close'))
+                if all(math.isfinite(v) for v in values) and values[1]>=values[2]:valid.append(values)
+            except (AttributeError,ValueError,TypeError):continue
+        if not valid:p.setPen(QColor(INK['muted']));p.drawText(rect,Qt.AlignmentFlag.AlignCenter,'—');return
+        low=min(b[2] for b in valid);high=max(b[1] for b in valid);span=max(1e-8,high-low);low-=span*.08;span*=1.16
+        y=lambda value:rect.bottom()-(value-low)/span*rect.height();step=rect.width()/max(1,len(valid))
+        for index,(op,hi,lo,cl) in enumerate(valid):
+            x=rect.left()+(index+.5)*step;color=QColor(INK['green'] if cl>=op else INK['pink']);p.setPen(QPen(color,1));p.setBrush(color)
+            p.drawLine(QPointF(x,y(lo)),QPointF(x,y(hi)));p.drawRect(QRectF(x-step*.29,min(y(op),y(cl)),max(1,step*.58),max(1,abs(y(op)-y(cl)))))
+        p.setFont(QFont('Rajdhani',10));p.setPen(QColor(INK['muted']))
+        for index in range(5):
+            value=low+span*index/4;p.drawText(QRectF(rect.right()+6,y(value)-8,58,18),f'{value:,.2f}')
+        for name,value in self.levels.items():
+            if isinstance(value,(int,float)) and low<=value<=low+span:
+                color=INK['pink'] if name=='SL' else INK['green'] if name=='TP' else INK['cyan'];p.setPen(QPen(QColor(color),1,Qt.PenStyle.DashLine))
+                p.drawLine(QPointF(rect.left(),y(value)),QPointF(rect.right(),y(value)))
+
+class AvatarWidget(QWidget):
+    def __init__(self,director,asset_root,reduce_motion=False,parent=None):
+        super().__init__(parent);self.director=director;self.asset_root=Path(asset_root);self.reduce_motion=reduce_motion
+        self.cache=OrderedDict();self.offset=QPointF();self.setMouseTracking(True);self.setMinimumSize(75,75)
+        self._previous=None;self._current=None;self._fade_value=1.;self._fade=QVariantAnimation(self);self._fade.setStartValue(0.);self._fade.setEndValue(1.);self._fade.setDuration(140);self._fade.valueChanged.connect(self.fade_changed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
+        from avatar_animation import StateSprites
+        self.states=StateSprites(self.asset_root);director.subscribe(self)
+    def winfo_ismapped(self):return self.isVisible()
+    def fade_changed(self,value):self._fade_value=float(value);self.update()
+    def _receive(self,name,entry,animate=False):
+        self._fade.stop();self._previous=self._current if animate and self.isVisible() and not self.reduce_motion else None
+        self.name=name;self.selected=entry;self._fade_value=1.
+        if self._previous is not None:self._fade.start()
+        self.update()
+    def _draw(self):self.update()
+    def _loading_ring(self):self.update()
+    def mouseMoveEvent(self,event):
+        if not self.reduce_motion:
+            self.offset=QPointF(max(-4,min(4,(event.position().x()-self.width()/2)/18)),max(-3,min(3,(event.position().y()-self.height()/2)/20)));self.update()
+    def leaveEvent(self,event):self.offset=QPointF();self.update()
+    def paintEvent(self,event):
+        if not hasattr(self,'selected'):return
+        width=max(1,self.width()-10);height=max(1,self.height()-10);director=self.director
+        state=None;entry=self.selected
+        if hasattr(entry,'path') and director.blink_frame is not None:
+            blink=next((item for item in director.catalog.entries if item.state=='blink'),None)
+            if blink:entry=blink
+        if not hasattr(self.selected,'path'):
+            state=5 if not director.online else 6 if self.name=='waking' else 4 if director.loading else director.blink_frame if director.blink_frame is not None else 7 if self.name=='listening' else 0 if self.name in ('idle','waiting','analyzing') else None
+        key=(entry.id,state,width,height)
+        if key not in self.cache:
+            image=self.states.image(state,width,height) if state is not None else director.catalog.image(entry,max(416,width),max(416,height))
+            image=image.convert('RGBA');bounds=image.getchannel('A').getbbox()
+            if bounds:
+                from PIL import Image
+                image=image.crop(bounds);image.thumbnail((width,height),Image.Resampling.NEAREST)
+            canvas=__import__('PIL.Image',fromlist=['Image']).new('RGBA',(width,height));canvas.alpha_composite(image,((width-image.width)//2,(height-image.height)//2));image=canvas
+            qimage=QImage(image.tobytes(),image.width,image.height,image.width*4,QImage.Format.Format_RGBA8888).copy()
+            self.cache[key]=QPixmap.fromImage(qimage)
+            while len(self.cache)>12:self.cache.popitem(last=False)
+        self._current=self.cache[key];p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if self._previous is not None and self._fade.state()==QVariantAnimation.State.Running:
+            p.setOpacity(1-self._fade_value);p.drawPixmap(QPointF(5,5)+self.offset,self._previous);p.setOpacity(self._fade_value)
+        p.drawPixmap(QPointF(5,5)+self.offset,self._current);p.setOpacity(1)
+        if director.loading and director.online:
+            side=min(38,self.width()*.3);r=QRectF(self.width()-side-6,self.height()-side-6,side,side)
+            p.setPen(QPen(QColor('#164762'),3));p.drawEllipse(r)
+            p.setPen(QPen(QColor(INK['cyan']),3,Qt.PenStyle.SolidLine,Qt.PenCapStyle.RoundCap));p.drawArc(r,int(-time.monotonic()*240*16),95*16)

@@ -232,6 +232,8 @@ class Gateway:
     def permissions(self,snap,entry=True):
         a,t=snap.account,snap.terminal
         if self.runtime_execution_block:raise Blocked(self.runtime_execution_block)
+        if self.cfg['mode']=='trade' and getattr(self,'requires_execution_lease',False) and not getattr(self,'execution_lease_active',False):raise Blocked('Activando operativa: esperando bloqueo exclusivo de la cuenta')
+        if entry and getattr(self,'network_available',True) is False:raise Blocked('Sin Internet: nuevas entradas en pausa; reconexión automática pendiente')
         if self.cfg['mode']!='trade':raise Blocked('OBSERVAR: sin envíos ni modificaciones')
         if not getattr(t,'connected',False):raise Blocked('MT5 desconectado')
         if not getattr(t,'trade_allowed',False) or getattr(t,'tradeapi_disabled',False):raise Blocked('Activa Trading algorítmico y API Python en MT5')

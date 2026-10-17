@@ -42,7 +42,8 @@ class PendingLearner:
                            if g.journal.data['orders'].get(str(getattr(d,'order',0)),{}).get('plan')), {})
             from trade_quality_gate import family
             rec.update(opened_at=min(float(d.time) for d in entries),strategy_key=str(plan.get('key','')),
-                strategy_id=family(plan) if plan.get('key') else 'SIN_TESIS_REGISTRADA')
+                strategy_id=family(plan) if plan.get('key') else 'SIN_TESIS_REGISTRADA',
+                selector_id=str(plan.get('selector_id') or ''),selector_version=int(plan.get('selector_version') or 0))
             if plan.get('learning_feature_version')=='pending_entry_v1' and plan.get('learning_features'):
                 rec.update(confirmed=True,lane='PENDING',feature_version='pending_entry_v1',features=list(plan['learning_features']),
                            net=round(net,8),opened_at=min(float(d.time) for d in entries),

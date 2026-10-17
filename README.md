@@ -1,28 +1,43 @@
-# AKIRA 16.3.4 R7
+# AKIRA 16.4.0 Studio Rev5
 
-Corrección de las seis regresiones de la ejecución Windows 12: instrucciones en `LEEME_FIX_R7_WINDOWS.md`. La verificación de este parche está en `VERIFICACION_R7_WINDOWS_FIX`; la nueva ejecución Windows queda pendiente.
+Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 y el documento maestro recibidos. La aplicación abre por defecto la nueva interfaz nativa Qt. Este ZIP contiene el programa fuente, sus recursos y la preparación del instalador; el EXE nuevo aún está pendiente de compilar.
 
-Código completo de la corrección de IA local, fuentes y expresiones. El código ha superado la verificación local R7. Todavía no se ha compilado ni probado el instalador R7 en Windows.
+## Cambios incluidos
 
-Para crear el instalador, copia **todo el contenido** de este ZIP en la raíz de tu repositorio `akira`, incluyendo `.github`, `assets`, `installer`, `tests` y `third_party`. Conserva los datos de usuario fuera del repositorio. En GitHub Desktop haz Commit y Push. Después abre Actions → AKIRA Windows - verificar y compilar → Run workflow.
+- Ocho pestañas: Trading, Pendientes, Cuenta, Análisis, Fuentes, Chat, Ajustes y Terminal. Tipografía Rajdhani incluida, paneles adaptables, tablas que conservan selección y desplazamiento, privacidad e informes PDF/Excel.
+- Análisis, MT5, chat, descargas y dibujo separados. Un responsable del envío y reconciliación. Propuestas y órdenes confirmadas se distinguen; un rechazo ya no aparece como éxito por existir otra operación. La revisión IA obligatoria por candidata se conserva.
+- Instalaciones nuevas permiten pendientes y runners normales LONG/SHORT cuando se autoriza operar y se cumplen las condiciones. Una preferencia anterior explícita de solo pendientes se conserva. Los umbrales de riesgo no se han ampliado. El estado inicial es observación, sin cuenta real vinculada.
+- Ajustes agrupados y guardado unificado con claves. Claves canónicas protegidas mediante DPAPI en Windows, eliminación explícita persistente y conservación del archivo si falla su lectura. El guardado informa resultados parciales.
+- Chat con historial y memoria, cancelación y prioridad sobre trabajos auxiliares. El contexto del modelo gestionado se verifica con su propia plantilla y tokenizador; se limita el historial sin recortar la pregunta actual. Si lo esencial no cabe, se informa antes de inferir. Se conservan corrección de escritura y consulta de fuentes para actualidad.
+- Avatar compartido entre pestañas: parpadeo, reacción al puntero, escucha/habla, transición entre expresiones, carga animada y sueño por desconexión. Se elimina el contador de expresiones y el acceso a su galería en la interfaz.
+- Personalización de nombre visible, colores, tipografías, idiomas y avatar propio. Importación y orden de sprites, hojas de fotogramas, duraciones y bucles editables. Fondo global de imagen o video con recorte, rotación, desplazamiento, ajuste, calidad, FPS y presupuesto de recursos.
+- Recuperación de conexión, conservación de la pausa manual y reconciliación antes de nuevos envíos. Selección de estrategias y registro de su procedencia en revisión y aprendizaje.
+- Versión e identidad unificadas a 16.4.0 Studio Rev5. El publicador Rev5 conserva los avisos de espacios de Git en un registro y continúa cuando `git diff --check` devuelve 2 por esos avisos.
 
-Cuando termine correctamente, descarga el artefacto `AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`. Ejecuta `AKIRA_16_3_4_R7_IA_INCLUIDA.exe` y comprueba que la ventana muestra 16.3.4 R7. El ZIP de código no instala ni actualiza por sí solo la aplicación.
+## Verificación terminada
 
-La compilación anterior #11, de R6, verificó instalación y una respuesta visible de la IA en Windows. Eso corrige el modelo eliminado por el instalador anterior; no prueba los cambios R7. La compilación R7 debe pasar de nuevo la instalación completa y la respuesta de su propio modelo instalado antes de publicar el EXE.
+**1.197 pruebas pytest y 102 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.194 pruebas unittest con la red bloqueada**, sin fallos ni omisiones. Los autocontroles nativos completaron 12 comprobaciones Qt y 27 Tk. Se comprobó el arranque predeterminado mediante `Akira.py` con FakeMT5, sin operar una cuenta real.
 
-Cambios de esta entrega:
+Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_REV5`. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
 
-- IA incluida en el instalador con SHA-256 verificado. Chat e investigación comparten un único supervisor; las revisiones de pendientes despiertan el modelo cuando se libera de memoria y recuperan la ruta del motor incluido en lugar del antiguo puerto de Ollama. Se conserva el modelo instalado y el motor CPU de respaldo. Se recuperan rutas antiguas o vacías desde la ubicación real de AKIRA.exe. El registro `IA_LOCAL.log` conserva la salida del proceso. Reparar solo confirma disponibilidad después de una respuesta visible real.
-- Ajustes → IA / INTERNET → ACCESO A FUENTES contiene campos enmascarados para CoinGlass y YouTube Data API. Los campos vacíos conservan claves anteriores. Windows protege las claves con DPAPI. CoinGlass directo es opcional; para oro no se presentan derivados BTC como datos XAU.
-- YouTube incluye Deno oficial verificado y los componentes EJS compatibles con yt-dlp. Se puede importar una sesión mediante un archivo Netscape seleccionado por el usuario. Akira no lee perfiles de navegadores. YouTube puede exigir sesión, limitar consultas o no ofrecer subtítulos; esos estados no se cuentan como videos aprendidos. Una clave Data API permite búsquedas, pero no garantiza acceso a subtítulos.
-- La IA textual incluida puede analizar subtítulos completos sin descargar imágenes para un modelo visual que no está instalado. La interfaz distingue análisis textual, parcial y visual muestreado. No afirma haber visto cada fotograma.
-- Se conservan las 108 ilustraciones originales basadas en las referencias del usuario. Barra lateral, operaciones, chat y llamada comparten la misma cara. Hay transiciones breves; la variación durante el habla usa el nivel del audio reproducido. No es sincronización fonética. Se retira el botón superior duplicado de chat.
-- Las transcripciones completas alimentan hipótesis finitas y citadas: dirección H1, volumen M15 y extensión RSI. Cada filtro observa las mismas candidatas válidas que la estrategia base, con bid/ask, comisiones estimadas y rechazo de huecos de datos. Requiere 40 cierres de entrenamiento y al menos 100 posteriores en 20 días distintos, comparación conservadora por días, suficientes entradas aceptadas/rechazadas y resultado neto positivo. Sin evidencia suficiente se conserva la selección base. Solo se aplica un filtro por familia, símbolo y dirección. Los cambios de cuenta, configuración, versión o costes separan los estudios. Los filtros no cambian lotes, Entry, SL, TP ni gestión, y por sí solos no cancelan pendientes vigentes.
+## Compilación pendiente
 
-El Directorio de estrategias → VER APRENDIZAJE muestra fuentes, reglas, tamaños de muestra, comparación y filtros aplicables. Las variantes geométricas anteriores del laboratorio siguen siendo experimentos sin activación automática. Aprender una fuente no demuestra rentabilidad ni garantiza mejores operaciones.
+El acceso conectado a `juanpablo-ordo/akira` devuelve **HTTP 403: Resource not accessible by integration** al escribir. Ningún cambio de esta revisión se ha publicado y ninguna ejecución nueva de Actions ha producido su instalador.
 
-La comprobación local no equivale a probar el PC del usuario, ejecutar órdenes reales ni demostrar beneficios. Los informes R6 se conservan como antecedentes; los resultados de esta revisión se guardan en VERIFICACION_R7.
+Para publicar desde un Windows con Git autenticado: extraer todo el ZIP y ejecutar `PUBLICAR_A_GITHUB_REV5.cmd`. El script usa una copia temporal, publica la rama `akira-studio-rev5-20261016` e inicia el workflow. No sustituye `main`. Los resultados aparecen en https://github.com/juanpablo-ordo/akira/actions.
 
-El código base R7 está en el commit c67f322e9a540afd64dc9f377667d98d8e6a4bb3. Para aplicar este parche se necesita un nuevo Commit y Push, seguido de Run workflow. En Actions, una ejecución nueva de este código mostrará el nombre «AKIRA 16.3.4 R7 · IA incluida». Repetir una ejecución antigua usa el código de su commit antiguo.
+La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
 
-Verificación inicial R7: 1.094 pruebas pytest y 83 subpruebas; 1.091 pruebas unittest con la red bloqueada; autocontrol nativo v7; 108 celdas distintas; 24 combinaciones de pantalla. También se comprobó conservación de pendientes con una muestra de cotizaciones aportadas por el usuario. Verificación local del parche Windows: 1.096 pruebas pytest y 83 subpruebas, y 1.093 pruebas unittest sin red, sin fallos, errores ni omisiones. Las cifras no son métricas de acierto ni de rentabilidad.
+El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP de código no incluye pesos GGUF/CLIP ni equivale al instalador final. `INSTALAR_AKIRA.cmd` es el instalador heredado desde fuentes; su comprobación Windows tampoco se ha ejecutado en esta revisión.
+
+## Alcance pendiente
+
+La lista de los **232 requisitos y 16 solicitudes adicionales** está en `REQUISITOS_232_ESTADO.json` y `.csv`, con evidencia local y aceptación pendiente. No se declara cumplimiento integral de los 248 puntos.
+
+Falta compilar e instalar en Windows, verificar el modelo local y el clasificador visual con sus pesos reales, audio físico, DPI y varios monitores, límites efectivos de recursos y una sesión MT5 demo de seis horas. Algunas razones dinámicas continúan en español y los idiomas de voz dependen de los modelos disponibles. El reconocimiento de sprites ofrece sugerencias editables y no garantiza identificar cualquier dibujo.
+
+Los límites duros CPU/RAM del fondo se aplican al decodificador propio en Windows y requieren esa validación; no existe un límite duro de GPU ni de toda la aplicación. La estrategia Adaptive es una selección inicial sobre reglas existentes: no demuestra superioridad ni convierte automáticamente todos los videos en estrategias rentables. La rapidez de envío y la rentabilidad con datos reales siguen pendientes de medir.
+
+## Integridad
+
+`PACKAGE_SHA256.json` identifica los archivos inmutables del programa. Se genera después de cerrar esta revisión; la configuración y los datos del usuario quedan fuera. `VALIDACION_STUDIO_REV5.json` registra las huellas de las dos entradas recibidas. Mantén juntos el código, los recursos, las pruebas y los manifiestos.

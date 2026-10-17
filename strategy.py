@@ -102,6 +102,10 @@ class Plan:
     selection_adjustment: float = 0.0
     selection_feature_version: str = ''
     selection_features: tuple = ()
+    strategy_id: str = ''
+    strategy_version: int = 1
+    selector_id: str = ''
+    selector_version: int = 0
 
     @property
     def rr(self):

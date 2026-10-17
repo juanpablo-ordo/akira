@@ -1,0 +1,19 @@
+{
+  "status": "PASSED",
+  "scope": "Freshly extracted R8 source ZIP and Linux install_checks child process; not the Windows executable installer.",
+  "build": "AKIRA_16_3_5_R8",
+  "collected": 1123,
+  "tests_run": 1123,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "exit_code": 0,
+  "child_exit_code": 0,
+  "network": "blocked",
+  "configuration_mode": "observe",
+  "live_account_used": false,
+  "windows_r8_installer_verified": false,
+  "qa_environment": "Inherited authenticated virtual display before launching validation child.",
+  "immutable_manifest_verified": true,
+  "immutable_manifest_files": 238
+}

@@ -59,9 +59,9 @@ class LlamaSetupTests(unittest.TestCase):
     def test_ci_generates_actual_installer_artifact(self):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
-        self.assertIn('AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA',workflow)
+        self.assertIn('AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA',workflow)
         self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
-        self.assertIn('python -m pytest -q tests\n',workflow)
+        self.assertIn('python -m pytest -q tests -ra --junitxml=diagnostics/REGRESSION_TESTS.xml',workflow)
 
 if __name__=='__main__':unittest.main()

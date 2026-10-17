@@ -1,0 +1,831 @@
+.................................................................... [  5%]
+........................................................................ [ 11%]
+.................................................................... [ 17%]
+.....................FFF........F..................sssFFFF...... [ 23%]
+..................................F..FFFFFFFF.....F................. [ 28%]
+........................................................................ [ 35%]
+.................................................................... [ 40%]
+........................................................................ [ 47%]
+........................................................................................................................................ [ 58%]
+................................................................... [ 64%]
+................................................................. [ 69%]
+............................................................................................................... [ 79%]
+........................................................................ [ 85%]
+.........................F....F..F.................................. [ 91%]
+............................................................... [ 96%]
+............s............s..............                                 [100%]
+=================================== FAILURES ===================================
+_ CandidateCockpit.test_confirmed_must_have_ticket_and_selection_is_read_only __
+
+self = <tests.test_r11_pending_ui.CandidateCockpit testMethod=test_confirmed_must_have_ticket_and_selection_is_read_only>
+
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+>       self.root=tk.Tk();self.addCleanup(self.root.destroy)
+                  ^^^^^^^
+
+tests/test_r11_pending_ui.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ CandidateCockpit.test_stale_scenario_ticket_does_not_claim_order_still_at_broker _
+
+self = <tests.test_r11_pending_ui.CandidateCockpit testMethod=test_stale_scenario_ticket_does_not_claim_order_still_at_broker>
+
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+>       self.root=tk.Tk();self.addCleanup(self.root.destroy)
+                  ^^^^^^^
+
+tests/test_r11_pending_ui.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+__________ CandidateCockpit.test_unconfirmed_is_not_displayed_as_sent __________
+
+self = <tests.test_r11_pending_ui.CandidateCockpit testMethod=test_unconfirmed_is_not_displayed_as_sent>
+
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+>       self.root=tk.Tk();self.addCleanup(self.root.destroy)
+                  ^^^^^^^
+
+tests/test_r11_pending_ui.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ ThemeBootTests.test_custom_colors_are_applied_to_real_shell_and_restore_original _
+
+self = <tests.test_r12_theme_boot.ThemeBootTests testMethod=test_custom_colors_are_applied_to_real_shell_and_restore_original>
+
+    def test_custom_colors_are_applied_to_real_shell_and_restore_original(self):
+        import cyber_ui
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg=load_config(DEFAULT)
+            cfg['assistant']['auto_install_local_ai']=False
+            cfg['desktop'].update(notifications=False,notification_popup=False)
+            cfg['studio'].update(theme='Océano',accent='#16dab6',secondary='#ef79be',font_scale=115,panel_texture='Circuit')
+            folder=Path(tmp);(folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+>           root=tk.Tk()
+                 ^^^^^^^
+
+tests/test_r12_theme_boot.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+__ SharedExpression.test_all_panels_and_call_share_face_and_playback_priority __
+
+self = <tests.test_r7_avatar_sync.SharedExpression testMethod=test_all_panels_and_call_share_face_and_playback_priority>
+
+    def test_all_panels_and_call_share_face_and_playback_priority(self):
+>       root=tk.Tk();self.addCleanup(root.destroy)
+             ^^^^^^^
+
+tests/test_r7_avatar_sync.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_____ SharedExpression.test_first_frame_exists_before_the_window_is_mapped _____
+
+self = <tests.test_r7_avatar_sync.SharedExpression testMethod=test_first_frame_exists_before_the_window_is_mapped>
+
+    def test_first_frame_exists_before_the_window_is_mapped(self):
+>       root=tk.Tk();self.addCleanup(root.destroy);root.withdraw()
+             ^^^^^^^
+
+tests/test_r7_avatar_sync.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ SharedExpression.test_hidden_changes_wait_until_map_without_decoding_or_painting _
+
+self = <tests.test_r7_avatar_sync.SharedExpression testMethod=test_hidden_changes_wait_until_map_without_decoding_or_painting>
+
+    def test_hidden_changes_wait_until_map_without_decoding_or_painting(self):
+>       root=tk.Tk();self.addCleanup(root.destroy);root.withdraw()
+             ^^^^^^^
+
+tests/test_r7_avatar_sync.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+___ SourceSettingsPage.test_source_fields_are_in_a_selectable_notebook_page ____
+
+self = <tests.test_r7_avatar_sync.SourceSettingsPage testMethod=test_source_fields_are_in_a_selectable_notebook_page>
+
+    def test_source_fields_are_in_a_selectable_notebook_page(self):
+        from desktop import Desktop
+        from settings import DEFAULT,load_config
+        with tempfile.TemporaryDirectory() as temporary,patch.dict(os.environ,{'LOCALAPPDATA':temporary}):
+            folder=Path(temporary);(folder/'akira_config.json').write_text(json.dumps(load_config(DEFAULT)),encoding='utf-8')
+>           root=tk.Tk();app=Desktop(root,folder,preview=True,start_actor=False)
+                 ^^^^^^^
+
+tests/test_r7_avatar_sync.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ StateAnimation.test_a_destroyed_auxiliary_pane_cannot_break_future_resize_callbacks _
+
+self = <tests.test_r8_ui_reactions.StateAnimation testMethod=test_a_destroyed_auxiliary_pane_cannot_break_future_resize_callbacks>
+
+    def test_a_destroyed_auxiliary_pane_cannot_break_future_resize_callbacks(self):
+>       root=tk.Tk();self.addCleanup(root.destroy)
+             ^^^^^^^
+
+tests/test_r8_ui_reactions.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ StateAnimation.test_loading_ring_has_twelve_phases_without_creating_new_photos _
+
+self = <tests.test_r8_ui_reactions.StateAnimation testMethod=test_loading_ring_has_twelve_phases_without_creating_new_photos>
+
+    def test_loading_ring_has_twelve_phases_without_creating_new_photos(self):
+>       root=tk.Tk();self.addCleanup(root.destroy);now=[0.0]
+             ^^^^^^^
+
+tests/test_r8_ui_reactions.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ DesktopBehavior.test_activating_real_execution_requires_confirmation_and_keeps_risk _
+
+self = <tests.test_r8_ui_reactions.DesktopBehavior testMethod=test_activating_real_execution_requires_confirmation_and_keeps_risk>
+
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.folder=Path(temporary.name)
+        environment=patch.dict(os.environ,{'LOCALAPPDATA':str(self.folder/'profile')});environment.start();self.addCleanup(environment.stop)
+        cfg=load_config(DEFAULT);cfg['desktop'].update(notifications=False,notification_popup=False,notification_sound=False)
+        (self.folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+        self.app=None;self.addCleanup(lambda:self.app.close() if self.app else None)
+>       self.open()
+
+tests/test_r8_ui_reactions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_r8_ui_reactions.py:66: in open
+    self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+              ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ DesktopBehavior.test_avatar_reacts_to_typing_and_network_recovery_without_a_public_gallery _
+
+self = <tests.test_r8_ui_reactions.DesktopBehavior testMethod=test_avatar_reacts_to_typing_and_network_recovery_without_a_public_gallery>
+
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.folder=Path(temporary.name)
+        environment=patch.dict(os.environ,{'LOCALAPPDATA':str(self.folder/'profile')});environment.start();self.addCleanup(environment.stop)
+        cfg=load_config(DEFAULT);cfg['desktop'].update(notifications=False,notification_popup=False,notification_sound=False)
+        (self.folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+        self.app=None;self.addCleanup(lambda:self.app.close() if self.app else None)
+>       self.open()
+
+tests/test_r8_ui_reactions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_r8_ui_reactions.py:66: in open
+    self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+              ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ DesktopBehavior.test_global_save_persists_masked_source_keys_across_application_restart _
+
+self = <tests.test_r8_ui_reactions.DesktopBehavior testMethod=test_global_save_persists_masked_source_keys_across_application_restart>
+
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.folder=Path(temporary.name)
+        environment=patch.dict(os.environ,{'LOCALAPPDATA':str(self.folder/'profile')});environment.start();self.addCleanup(environment.stop)
+        cfg=load_config(DEFAULT);cfg['desktop'].update(notifications=False,notification_popup=False,notification_sound=False)
+        (self.folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+        self.app=None;self.addCleanup(lambda:self.app.close() if self.app else None)
+>       self.open()
+
+tests/test_r8_ui_reactions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_r8_ui_reactions.py:66: in open
+    self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+              ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_______ DesktopBehavior.test_moving_a_window_does_not_rebuild_its_layout _______
+
+self = <tests.test_r8_ui_reactions.DesktopBehavior testMethod=test_moving_a_window_does_not_rebuild_its_layout>
+
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.folder=Path(temporary.name)
+        environment=patch.dict(os.environ,{'LOCALAPPDATA':str(self.folder/'profile')});environment.start();self.addCleanup(environment.stop)
+        cfg=load_config(DEFAULT);cfg['desktop'].update(notifications=False,notification_popup=False,notification_sound=False)
+        (self.folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+        self.app=None;self.addCleanup(lambda:self.app.close() if self.app else None)
+>       self.open()
+
+tests/test_r8_ui_reactions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_r8_ui_reactions.py:66: in open
+    self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+              ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_____ DesktopBehavior.test_resource_measurement_runs_outside_the_tk_thread _____
+
+self = <tests.test_r8_ui_reactions.DesktopBehavior testMethod=test_resource_measurement_runs_outside_the_tk_thread>
+
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.folder=Path(temporary.name)
+        environment=patch.dict(os.environ,{'LOCALAPPDATA':str(self.folder/'profile')});environment.start();self.addCleanup(environment.stop)
+        cfg=load_config(DEFAULT);cfg['desktop'].update(notifications=False,notification_popup=False,notification_sound=False)
+        (self.folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+        self.app=None;self.addCleanup(lambda:self.app.close() if self.app else None)
+>       self.open()
+
+tests/test_r8_ui_reactions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_r8_ui_reactions.py:66: in open
+    self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+              ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ DesktopBehavior.test_settings_sections_are_reachable_and_resource_close_leaves_no_empty_tail _
+
+self = <tests.test_r8_ui_reactions.DesktopBehavior testMethod=test_settings_sections_are_reachable_and_resource_close_leaves_no_empty_tail>
+
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.folder=Path(temporary.name)
+        environment=patch.dict(os.environ,{'LOCALAPPDATA':str(self.folder/'profile')});environment.start();self.addCleanup(environment.stop)
+        cfg=load_config(DEFAULT);cfg['desktop'].update(notifications=False,notification_popup=False,notification_sound=False)
+        (self.folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+        self.app=None;self.addCleanup(lambda:self.app.close() if self.app else None)
+>       self.open()
+
+tests/test_r8_ui_reactions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_r8_ui_reactions.py:66: in open
+    self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+              ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+_ DesktopBehavior.test_source_rows_keep_their_order_selection_and_scroll_as_age_changes _
+
+self = <tests.test_r8_ui_reactions.DesktopBehavior testMethod=test_source_rows_keep_their_order_selection_and_scroll_as_age_changes>
+
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.folder=Path(temporary.name)
+        environment=patch.dict(os.environ,{'LOCALAPPDATA':str(self.folder/'profile')});environment.start();self.addCleanup(environment.stop)
+        cfg=load_config(DEFAULT);cfg['desktop'].update(notifications=False,notification_popup=False,notification_sound=False)
+        (self.folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
+        self.app=None;self.addCleanup(lambda:self.app.close() if self.app else None)
+>       self.open()
+
+tests/test_r8_ui_reactions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_r8_ui_reactions.py:66: in open
+    self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+              ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tkinter.Tk object .>, screenName = None, baseName = '__main__'
+className = 'Tk', useTk = True, sync = False, use = None
+
+    def __init__(self, screenName=None, baseName=None, className='Tk',
+                 useTk=True, sync=False, use=None):
+        """Return a new top level widget on screen SCREENNAME. A new Tcl interpreter will
+        be created. BASENAME will be used for the identification of the profile file (see
+        readprofile).
+        It is constructed from sys.argv[0] without extensions if None is given. CLASSNAME
+        is the name of the widget class."""
+        self.master = None
+        self.children = {}
+        self._tkloaded = False
+        # to avoid recursions in the getattr code in case of failure, we
+        # ensure that self.tk is always _something_.
+        self.tk = None
+        if baseName is None:
+            import os
+            baseName = os.path.basename(sys.argv[0])
+            baseName, ext = os.path.splitext(baseName)
+            if ext not in ('.py', '.pyc'):
+                baseName = baseName + ext
+        interactive = False
+>       self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       _tkinter.TclError: couldn't connect to display "127.0.0.1:795"
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/tkinter/__init__.py:2346: TclError
+______ LanguagePackTests.test_custom_language_works_only_with_valid_pack _______
+
+self = <tests.test_r9_quality_features.LanguagePackTests testMethod=test_custom_language_works_only_with_valid_pack>
+
+    def test_custom_language_works_only_with_valid_pack(self):
+        import json
+        from akira_studio import DEFAULT,import_language_pack,read_language_pack,validate_studio
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);input_file=path/'Russian.json'
+            input_file.write_text(json.dumps({'locale':'ru-RU','translations':{'AJUSTES':'Настройки','TRADING':'Торговля'}},ensure_ascii=False),encoding='utf-8')
+            stored,locale=import_language_pack(path,input_file)
+            item=copy.deepcopy(DEFAULT);item['language_ui']=locale;item['language_pack']=stored
+            self.assertEqual(validate_studio(item)['language_ui'],'ru-RU')
+            self.assertEqual(read_language_pack(stored)['translations']['AJUSTES'],'Настройки')
+            item['language_pack']=''
+>           with self.assertRaises(ValueError):validate_studio(item)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: ValueError not raised
+
+tests/test_r9_quality_features.py:80: AssertionError
+_ LabTests.test_generation_creates_real_case_charts_from_supplied_closed_bars __
+
+self = <tests.test_v1628_strategies.LabTests testMethod=test_generation_creates_real_case_charts_from_supplied_closed_bars>
+
+    def test_generation_creates_real_case_charts_from_supplied_closed_bars(self):
+>    r=self.tick();self.assertEqual(r['generated_hypotheses'],12);self.assertEqual(len(r['strategies']),18)
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E    AssertionError: 19 != 18
+
+tests/test_v1628_strategies.py:182: AssertionError
+_ LabTests.test_realized_result_contains_actual_net_cost_not_a_technical_score _
+
+self = <tests.test_v1628_strategies.LabTests testMethod=test_realized_result_contains_actual_net_cost_not_a_technical_score>
+
+    def test_realized_result_contains_actual_net_cost_not_a_technical_score(self):
+     self.snap['confirmed_strategy_outcomes']=[{'symbol':'BTCUSDm','strategy_id':'PENDIENTE_RETROCESO','pnl':-.2,'closed_at':self.now-1}]
+>    r=self.tick();m=r['strategies'][0]['symbols']['BTCUSDm']['realized'];self.assertEqual(m['n'],1);self.assertAlmostEqual(m['net'],-.2);self.assertEqual(m['win_rate'],0)
+                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E    AssertionError: 0 != 1
+
+tests/test_v1628_strategies.py:208: AssertionError
+_ DirectoryUITests.test_directory_has_ordered_btc_and_gold_rows_without_a_fake_percentage _
+
+self = <tests.test_v1628_strategies.DirectoryUITests testMethod=test_directory_has_ordered_btc_and_gold_rows_without_a_fake_percentage>
+
+    def test_directory_has_ordered_btc_and_gold_rows_without_a_fake_percentage(self):
+     self.app.view={'symbols':{'BTCUSDm':{},'XAUUSDm':{}},'research':{}}
+     with patch.object(self.app,'service_dialog',return_value=Widget()),patch.object(Widget,'winfo_exists',return_value=True,create=True),patch('strategy_directory.tk.PanedWindow',Widget),patch('strategy_directory.ttk.Treeview',Widget):self.app.open_strategy_directory()
+>    self.assertEqual(len(self.app.strategy_tree.items),36);self.assertIn('Sin muestra',self.app.strategy_details.text)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E    AssertionError: 38 != 36
+
+tests/test_v1628_strategies.py:276: AssertionError
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_r6_expressions_layout.py:119: A graphical Tk display is required
+SKIPPED [1] tests/test_r6_expressions_layout.py:152: A graphical Tk display is required
+SKIPPED [1] tests/test_r6_expressions_layout.py:140: A graphical Tk display is required
+SKIPPED [1] tests/test_v1632_resource_and_wheel.py:27: Tk graphical display required
+SKIPPED [1] tests/test_v1633_startup_notice_regressions.py:7: Graphical Tk display required
+FAILED tests/test_r11_pending_ui.py::CandidateCockpit::test_confirmed_must_have_ticket_and_selection_is_read_only
+FAILED tests/test_r11_pending_ui.py::CandidateCockpit::test_stale_scenario_ticket_does_not_claim_order_still_at_broker
+FAILED tests/test_r11_pending_ui.py::CandidateCockpit::test_unconfirmed_is_not_displayed_as_sent
+FAILED tests/test_r12_theme_boot.py::ThemeBootTests::test_custom_colors_are_applied_to_real_shell_and_restore_original
+FAILED tests/test_r7_avatar_sync.py::SharedExpression::test_all_panels_and_call_share_face_and_playback_priority
+FAILED tests/test_r7_avatar_sync.py::SharedExpression::test_first_frame_exists_before_the_window_is_mapped
+FAILED tests/test_r7_avatar_sync.py::SharedExpression::test_hidden_changes_wait_until_map_without_decoding_or_painting
+FAILED tests/test_r7_avatar_sync.py::SourceSettingsPage::test_source_fields_are_in_a_selectable_notebook_page
+FAILED tests/test_r8_ui_reactions.py::StateAnimation::test_a_destroyed_auxiliary_pane_cannot_break_future_resize_callbacks
+FAILED tests/test_r8_ui_reactions.py::StateAnimation::test_loading_ring_has_twelve_phases_without_creating_new_photos
+FAILED tests/test_r8_ui_reactions.py::DesktopBehavior::test_activating_real_execution_requires_confirmation_and_keeps_risk
+FAILED tests/test_r8_ui_reactions.py::DesktopBehavior::test_avatar_reacts_to_typing_and_network_recovery_without_a_public_gallery
+FAILED tests/test_r8_ui_reactions.py::DesktopBehavior::test_global_save_persists_masked_source_keys_across_application_restart
+FAILED tests/test_r8_ui_reactions.py::DesktopBehavior::test_moving_a_window_does_not_rebuild_its_layout
+FAILED tests/test_r8_ui_reactions.py::DesktopBehavior::test_resource_measurement_runs_outside_the_tk_thread
+FAILED tests/test_r8_ui_reactions.py::DesktopBehavior::test_settings_sections_are_reachable_and_resource_close_leaves_no_empty_tail
+FAILED tests/test_r8_ui_reactions.py::DesktopBehavior::test_source_rows_keep_their_order_selection_and_scroll_as_age_changes
+FAILED tests/test_r9_quality_features.py::LanguagePackTests::test_custom_language_works_only_with_valid_pack
+FAILED tests/test_v1628_strategies.py::LabTests::test_generation_creates_real_case_charts_from_supplied_closed_bars
+FAILED tests/test_v1628_strategies.py::LabTests::test_realized_result_contains_actual_net_cost_not_a_technical_score
+FAILED tests/test_v1628_strategies.py::DirectoryUITests::test_directory_has_ordered_btc_and_gold_rows_without_a_fake_percentage
+21 failed, 1148 passed, 5 skipped, 90 subtests passed in 39.12s

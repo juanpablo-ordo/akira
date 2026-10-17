@@ -67,13 +67,15 @@ def process_usage():
         me = psutil.Process(os.getpid())
         local = round(me.memory_info().rss/1048576)
         providers={'ollama':0,'llama_server':0}
-        for proc in psutil.process_iter(['name','memory_info']):
+        for proc in psutil.process_iter(['name']):
             name = str(proc.info.get('name') or '').lower()
             # This is observation only. NEVER terminate another app's model process.
             kind = 'llama_server' if ('llama-server' in name or 'llama_server' in name) else 'ollama' if 'ollama' in name else None
             if kind:
-                try:providers[kind] += proc.info['memory_info'].rss
-                except (KeyError, AttributeError, TypeError):pass
+                try:
+                    memory=proc.info.get('memory_info') or proc.memory_info()
+                    providers[kind] += memory.rss
+                except Exception:pass
         return {'akira_mb': local, 'ollama_mb': round(providers['ollama']/1048576),
                 'llama_server_mb':round(providers['llama_server']/1048576),
                 'system_ram_pct': round(psutil.virtual_memory().percent),

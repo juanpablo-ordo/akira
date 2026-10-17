@@ -49,6 +49,8 @@ class Engine:
         self.g.entry_quality_guard=self.entry_quality_guard
         self.entry_checks={};self._confirmed_outcomes=[]
         self._quality_notices=set()
+        from activity_watchdog import SessionWatchdog
+        self.session_watchdog=SessionWatchdog(self.g.clock())
 
     def close(self):
         # Existing broker SL/TP and pending orders survive application shutdown.
@@ -892,7 +894,9 @@ class Engine:
                         'technical_detail':runner_detail,'plan':plan.to_dict() if plan else None}
                     self.status[symbol]={'state':'EJECUCIÓN BLOQUEADA','detail':g.runtime_execution_block};continue
                 if self.paused:self.status[symbol]={'state':'PAUSA','detail':'Niveles conservados en MT5; análisis sigue activo'};continue
-                if self.cfg['mode']!='trade':self.status[symbol]={'state':'OBSERVAR','detail':f'{len(plans)} candidatas evaluadas; sin envíos'};continue
+                if getattr(g,'network_available',True) is False:
+                    self.status[symbol]={'state':'SIN INTERNET','detail':'Nuevas entradas en pausa; reconexión automática. Se conservan los niveles confirmados en MT5.'};continue
+                if self.cfg['mode']!='trade':self.status[symbol]={'state':'OBSERVAR','detail':f'Solo análisis: {len(plans)} candidatas evaluadas; no se envían órdenes. Activa la operativa desde el encabezado o Ajustes → Operación.'};continue
                 if symbol in g.journal.data['intents']:self.status[symbol]={'state':'RECONCILIANDO','detail':'Esperando evidencia MT5 de la solicitud anterior'};continue
                 if self.try_runner(symbol,q):continue
                 self.execute_pending_map(symbol,plans,q)
@@ -913,7 +917,11 @@ class Engine:
         # No network call, additional broker query or extra order check.
         technical_ms=(time.perf_counter()-started)*1000
         view_started=time.perf_counter()
-        view=self.view();self._last_view=copy.deepcopy(view)
+        view=self.view();view['network_available']=getattr(g,'network_available',True)
+        # Supervises prolonged silence; reads existing actor facts only.
+        # It never sends a trade or alters risk to manufacture activity.
+        view['session_activity']=self.session_watchdog.inspect(view,now)
+        self._last_view=copy.deepcopy(view)
         snapshot_ms=(time.perf_counter()-view_started)*1000
         if now>=self._pending_auto_due:
             from pending_verification import targets
@@ -983,6 +991,13 @@ class Engine:
     def handle_command(self,cmd):
         """Se ejecuta exclusivamente en el actor MT5; el chat envía mensajes."""
         action=cmd.get('action');g=self.g
+        if action=='network_state':
+            if type(cmd.get('online')) is not bool:return {'ok':False,'error':'Estado de conexión inválido'}
+            g.network_available=cmd['online']
+            if self.context:
+                self.context.internet_available=cmd['online']
+                if cmd['online']:self.context.refresh()
+            return {'ok':True,'online':g.network_available}
         if action=='assistant_snapshot':return {'ok':True,'snapshot':self.view()}
         if action=='refresh_sources':
             if self.context:
@@ -1026,7 +1041,7 @@ class Engine:
             saved=validate_form(cmd['config']);rows=changes(self.cfg,saved);self.cfg.update(saved)
             if revision:self.settings_revision=revision
             paths=cmd.get('changed_paths') or [r['path'] for r in rows]
-            if any(not p.startswith(('desktop.','assistant.','knowledge.','charts.')) for p in paths):
+            if any(not p.startswith(('desktop.','assistant.','knowledge.','charts.','studio.')) for p in paths):
                 self.map_cache.clear();self.allocation_cache.clear();self._analysis_evaluations.clear()
             if self.context and any(p.startswith(('research.','assistant.')) for p in paths):self.context.refresh()
             return {'ok':True,'settings_applied':True,'changed_paths':paths,'detail':'Cambios aplicados por sus componentes: '+', '.join(paths),'effective':{p:__import__('settings_effects').value_at(self.cfg,p) for p in paths}}
@@ -1071,7 +1086,7 @@ class Engine:
         if not symbols:return {'ok':False,'error':'Símbolo no activo en Akira'}
         results=[]
         for symbol in symbols:
-            detail='';unconfirmed=False;runner={};positions=[]
+            detail='';unconfirmed=False;runner={};positions=[];accepted=False
             try:
                 cache=self.planner.caches[symbol];cache.advance(g.clock())
                 snap=g.snapshot();g.reconcile(snap);ready,reason=self.evidence_ready(symbol,g.clock())
@@ -1083,6 +1098,13 @@ class Engine:
                     plan=Plan(symbol,'CHAT:'+str(cmd.get('request_id',g.clock())),side,'PENDING',str(cmd.get('kind')).upper(),
                               float(cmd['entry']),float(cmd['sl']),float(cmd['tp']),f.atr,0,
                               str(cmd.get('reason') or 'Orden exacta del usuario'),int(f.bars[-1].time))
+                    if cmd.get('candidate_id'):
+                        from pending_verification import identity
+                        original=next((p for p in self.candidates.get(symbol,[]) if identity(p.to_dict())==cmd['candidate_id']),None)
+                        if original is None:raise Blocked('La candidata ya no está vigente. Actualiza la ficha antes de enviarla.')
+                        if any(float(getattr(original,key))!=float(cmd[key]) for key in ('entry','sl','tp')) or original.side!=side or original.kind!=str(cmd.get('kind')).upper():
+                            raise Blocked('Los niveles o la dirección cambiaron. No se envió una propuesta distinta de la seleccionada.')
+                        plan=original
                     accepted=g.send_immediate_plan(self.with_learning_features(plan,q))
                 else:
                     if self.context:self.planner.research_context=self.read_context()
@@ -1114,8 +1136,9 @@ class Engine:
             self.log.event(symbol,'CHAT · '+detail)
             scenarios=[] if runner_only else self.directional_scenarios(symbol)
             results.append({'symbol':symbol,'levels':levels,'scenarios':scenarios,'runner':runner,
-                            'positions':positions,'detail':detail,'risk_cap_usd':g.trade_cap(g.snapshot()),'unconfirmed':unconfirmed})
-        return {'ok':any(r['levels'] or r['positions'] for r in results),'results':results,
+                            'positions':positions,'detail':detail,'execution_confirmed':bool(accepted),'risk_cap_usd':g.trade_cap(g.snapshot()),'unconfirmed':unconfirmed})
+        return {'ok':any(r['execution_confirmed'] for r in results) if action=='assistant_plan' else any(r['levels'] or r['positions'] for r in results),'results':results,
+                'execution_confirmed':any(r['execution_confirmed'] for r in results),
                 'portfolio_risk':g.reservation_ledger(g.snapshot()),'unconfirmed':any(r['unconfirmed'] for r in results)}
 
     def view(self):
@@ -1158,9 +1181,13 @@ class Engine:
             symbols[s]['decision']=decision_status(s,self.candidates.get(s,[]),
                 self.planner.pending_candidate_audit.get(s,[]),symbols[s]['scenario_book'],
                 self.allocation_checks.get(s,[]),book,self.pending_cycles.get(s,{}),self.status.get(s,{}),
-                self.g.trade_cap(snap),self.g.runtime_execution_block,self.cfg['mode'],self.paused)
-        view={'build':BUILD_ID,'connected':True,'mode':self.cfg['mode'],'paused':self.paused,
-                'execution_block':self.g.runtime_execution_block,'execution_allowed':not bool(self.g.runtime_execution_block) and self.cfg['mode']=='trade' and not self.paused,
+                self.g.trade_cap(snap),self.g.runtime_execution_block or ('Sin Internet: nuevas entradas en pausa' if getattr(self.g,'network_available',True) is False else ''),self.cfg['mode'],self.paused)
+        from operation_health import execution_gate
+        effective_gate=execution_gate(self.cfg['mode'],self.paused,self.g.runtime_execution_block,
+                                     getattr(self.g,'network_available',True),account)
+        view={'build':BUILD_ID,'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
+                'execution_gate':effective_gate,
+                'execution_block':self.g.runtime_execution_block,'execution_allowed':not bool(self.g.runtime_execution_block) and self.cfg['mode']=='trade' and not self.paused and getattr(self.g,'network_available',True),
                 'account':account,'orders':rows,'positions':positions,'symbols':symbols,'as_of_utc':self.g.clock(),
                 'status':self.status,'candidates':{s:[p.to_dict() for p in ps[:16]] for s,ps in self.candidates.items()},
                 'audit':self.planner.pending_candidate_audit,'research':self.planner.research_context,
@@ -1195,25 +1222,21 @@ class Engine:
                 temp.write_text(__import__('json').dumps({'account':self.review_account,'required':self.review_requirements},ensure_ascii=False),encoding='utf-8');temp.replace(self.review_preferences)
         view['required_pending_reviews']=list(self.review_requirements) if list(self.g.identity or ())==self.review_account else []
         view['pending_verifications']=reports(view,self.pending_checks)
-        for job in self.pending_verification_requests.values():
-            finished=0;changed=[];missing=[]
-            for pid in job['targets']:
-                report=view['pending_verifications'].get(pid)
-                if not report or report['fingerprint']!=job['fingerprints'][pid]:changed.append(pid);continue
-                check=self.pending_checks.get(pid) or {}
-                if check.get('fingerprint')==report['fingerprint'] and float(check.get('at') or 0)>=job['requested']:finished+=1
-                review=report.get('ai') or {}
-                if job['deep'] and review.get('state') in ('COMPLETE','ERROR') and float(review.get('updated') or 0)>=job['requested']:finished+=1
-                missing.extend(report['critical_missing'])
-            total=len(job['targets'])*(2 if job['deep'] else 1)
-            job.update(completed=finished,total=total,phase='DATOS O NIVELES CAMBIADOS' if changed else 'REVISIÓN TERMINADA' if finished==total else 'REVISANDO',
-                changed=changed,missing=sorted(set(missing)),ai_available=self.context is not None)
-            if job['deep'] and self.context is None:job['phase']='SIN SERVICIO DE IA'
+        from operation_health import verification_job
+        reviews=(view.get('research') or {}).get('pending_reviews') or {}
+        for jid,job in list(self.pending_verification_requests.items()):
+            # A finished job keeps its original decision; it cannot become a
+            # waiting job again when a provider refreshes after the deadline.
+            if job.get('terminal'):
+                continue
+            self.pending_verification_requests[jid]=verification_job(
+                job,view['pending_verifications'],self.pending_checks,reviews,
+                self.g.clock(),self.context is not None)
         view['pending_verification_requests']=copy.deepcopy(self.pending_verification_requests)
         return view
 
     def verification_configuration(self):
-        return {**{k:copy.deepcopy(self.cfg[k]) for k in ('strategy','symbol_profiles','execution','pending','risk','sizing','management','runner','lot','mode')},
+        return {**{k:copy.deepcopy(self.cfg[k]) for k in ('strategy_choice','strategy','symbol_profiles','execution','pending','risk','sizing','management','runner','lot','mode')},
             'research':{k:v for k,v in self.cfg['research'].items() if isinstance(v,bool) or k in ('model','pending_score_weight','dom_score_weight','cloud_pick_bonus','pending_activation_weight')},
             'model_configuration':{k:self.cfg.get('assistant',{}).get(k) for k in ('cloud','local_primary','model','trading_model','local_model','local_model_lite','local_vision_model')},
             'evolution_model':self.cfg.get('evolution',{}).get('analysis_model')}
@@ -1282,8 +1305,9 @@ class Engine:
         reviews=self.planner.research_context.get('pending_reviews') or {};reason='revisión individual aún pendiente, desactualizada o sin asistente disponible'
         for review_id,row in choices:
             review=reviews.get(review_id) or {};data=review.get('data') or {}
+            if not isinstance(data,dict):data={}
             valid=review.get('fingerprint')==fingerprint(current,row) and review.get('state')=='COMPLETE' and -5<=self.g.clock()-float(review.get('updated') or 0)<=180
-            if valid and data.get('verdict')=='APPROVE' and not data.get('missing'):return
+            if valid and data.get('verdict')=='APPROVE' and isinstance(data.get('reason'),str) and data['reason'].strip() and isinstance(data.get('missing'),list) and not data['missing']:return
             reason=review.get('error') or data.get('reason') or reason
         if self.context and hasattr(self.context,'request_pending_reviews'):
             self.context.request_pending_reviews([proposed],current)

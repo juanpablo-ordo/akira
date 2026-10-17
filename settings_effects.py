@@ -2,11 +2,11 @@
 import copy,math
 from settings import load_config
 
-TARGETS={'desktop':'Interfaz, rendimiento y notificaciones','risk':'Gateway: riesgo y margen','sizing':'Gateway: lote',
+TARGETS={'mode':'Modo de operación','desktop':'Interfaz, rendimiento y notificaciones','risk':'Gateway: riesgo y margen','sizing':'Gateway: lote',
  'lot':'Gateway: lote base','pending':'Motor: vigencia y sustitución','execution':'Motor: ejecución',
  'strategy':'Selector técnico','symbol_profiles':'Selector por símbolo','research':'Fuentes en segundo plano',
  'assistant':'Conversación y permisos','management':'Gestión de posiciones','runner':'Gestión de continuidad',
- 'knowledge':'Actualización de conocimiento','charts':'Representación de indicadores'}
+ 'studio':'Personalización de interfaz (no opera MT5)','knowledge':'Actualización de conocimiento','charts':'Representación de indicadores'}
 
 def value_at(cfg,path):
     value=cfg
@@ -24,6 +24,9 @@ def changes(before,after):
 
 def validate_form(cfg):
     cfg=load_config(copy.deepcopy(cfg))
+    from strategy_choice import ADAPTIVE,FAMILIES
+    if (cfg.get('strategy_choice') or {}).get('selected',ADAPTIVE) not in (ADAPTIVE,*FAMILIES):
+        raise ValueError('La estrategia elegida no corresponde a una familia implementada.')
     for key in ('width','height'):
         value=cfg['desktop'][key]
         if type(value) is not int or not 600<=value<=8000:raise ValueError('Dimensión inválida: '+key)

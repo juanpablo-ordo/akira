@@ -255,7 +255,7 @@
     "fast_warmup_m15_h1_first": true,
     "pending_attempts_per_cycle": 8,
     "pending_rejection_retry_seconds": 15.0,
-    "pending_only": true
+    "pending_only": false
   },
   "learning": {
     "min_samples_pending": 20,
@@ -493,5 +493,51 @@
   },
   "charts": {
     "indicator": "Medias y Bollinger"
+  },
+  "studio": {
+    "brand_name": "AKIRA",
+    "language_ui": "es",
+    "language_chat": "auto",
+    "language_voice_in": "auto",
+    "language_voice_out": "es",
+    "translate_input": false,
+    "translate_output": false,
+    "theme": "AKIRA Original",
+    "accent": "#00ddff",
+    "secondary": "#ff2585",
+    "font": "Rajdhani",
+    "font_scale": 100,
+    "glow": 65,
+    "panel_texture": "Neon grid",
+    "wallpaper": {
+      "kind": "default",
+      "file": "",
+      "fit": "cover",
+      "rotation": 0,
+      "opacity": 30,
+      "fps": 12,
+      "quality": 70,
+      "max_memory_mb": 128,
+      "max_cpu_percent": 10,
+      "enabled": false,
+      "offset_x": 0,
+      "offset_y": 0,
+      "crop_left": 0,
+      "crop_right": 0,
+      "crop_top": 0,
+      "crop_bottom": 0
+    },
+    "avatar": {
+      "active": false,
+      "entries": [],
+      "sequences": {},
+      "profile": "default"
+    },
+    "language_pack": "",
+    "reduce_motion": false
+  },
+  "strategy_choice": {
+    "selected": "AKIRA_ADAPTATIVA",
+    "version": 1
   }
 }

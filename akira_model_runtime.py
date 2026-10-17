@@ -57,6 +57,7 @@ class ManagedLlamaProcess:
         self._closed=False
         self.log_path=Path(log_root)/'logs'/'IA_LOCAL.log' if log_root is not None else None
         self.path_resolution={}
+        self._launch_command=None;self._requested_command=None
 
     def _paths(self):
         exe_value=str(self.settings.get('local_runtime_exe') or '').strip()
@@ -98,7 +99,7 @@ class ManagedLlamaProcess:
         port=self._port(endpoint)
         desktop=desktop or {}
         profile=self.profile
-        ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))))
+        ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))),max(1024,int(desktop.get('memory_budget_mb',3072))*2))
         use_gpu=bool(desktop.get('model_use_gpu',True)) and not self._force_cpu
         gpu=max(0,int(profile['gpu_layers'])) if use_gpu else 0
         exe=paths[0]
@@ -108,7 +109,7 @@ class ManagedLlamaProcess:
         if exe.parent.name.lower()=='cpu':gpu=0
         return [str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
-                '--threads',str(profile['cpu_threads']),'--parallel','1']
+                '--threads',str(profile['cpu_threads']),'--parallel','1','--jinja']
 
     def _terminate_own(self):
         proc=self.proc
@@ -129,11 +130,15 @@ class ManagedLlamaProcess:
         with self.lock:
             if self._closed:raise RuntimeError('La aplicación cerró su motor de IA.')
             if self.proc and self.proc.poll() is None:
-                self.last_use=self.clock();return True
+                self._requested_command=command
+                if self._launch_command is not None and command!=self._launch_command and self.active<=1:self._terminate_own()
+                else:self.last_use=self.clock();return True
             # No apropiarse de otro servidor/modelo, que puede ser ajeno a Akira.
             if self._health(port):
                 raise RuntimeError('El puerto de la IA está ocupado por un servidor externo. Akira no lo cerrará.')
-            flags=getattr(subprocess,'CREATE_NO_WINDOW',0)
+            # Keep the owned model below normal CPU priority so MT5 and Tk
+            # retain scheduling preference when the machine is under load.
+            flags=getattr(subprocess,'CREATE_NO_WINDOW',0)|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)
             stream=None
             try:
                 if self.log_path is not None:
@@ -144,6 +149,9 @@ class ManagedLlamaProcess:
                     stream.write(('\nINICIO IA '+time.strftime('%Y-%m-%d %H:%M:%S')+'\n').encode('utf-8'))
                 self.proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=stream or subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,creationflags=flags)
+                self._launch_command=list(command);self._requested_command=list(command)
+                if self._closed:
+                    self._terminate_own();raise RuntimeError('La aplicación cerró mientras arrancaba el modelo')
             finally:
                 if stream is not None:stream.close()
             self.last_use=self.clock()
@@ -157,24 +165,29 @@ class ManagedLlamaProcess:
             time.sleep(2)
             with self.lock:
                 if self.proc is None:return
-                idle=int(self.settings.get('local_runtime_idle_seconds',self.profile['idle_unload_seconds']))
+                idle=int(getattr(self,'_idle_override',self.settings.get('local_runtime_idle_seconds',self.profile['idle_unload_seconds'])))
                 idle=max(0,min(900,idle))
-                if not self.active and self.clock()-self.last_use>=idle:
+                pending=self._launch_command is not None and self._requested_command is not None and self._launch_command!=self._requested_command
+                if not self.active and (pending or self.clock()-self.last_use>=idle):
                     self._terminate_own()
                     return
 
     @contextmanager
-    def session(self,endpoint,desktop=None):
+    def session(self,endpoint,desktop=None,cancel_event=None):
+        if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         if not self.enabled():
             yield
             return
-        with self.lock:self.active+=1
+        with self.lock:
+            self.active+=1
+            if desktop and 'model_keep_alive_seconds' in desktop:self._idle_override=max(0,min(600,int(desktop['model_keep_alive_seconds'])))
         try:
             self.start(endpoint,desktop)
             # Give the server a short bootstrap window, never block MT5.
             port=self._port(endpoint)
             deadline=self.clock()+90
             while self.clock()<deadline and not self._health(port):
+                if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
                 with self.lock:
                     if self.proc is None or self.proc.poll() is not None:
                         if not self._force_cpu and bool((desktop or {}).get('model_use_gpu',True)):
@@ -186,7 +199,8 @@ class ManagedLlamaProcess:
                             raise RuntimeError('El motor local no pudo iniciar, ni con CPU')
                 time.sleep(.4)
             if not self._health(port):raise TimeoutError('llama.cpp no completó el inicio en 90 s')
-            yield
+            from akira_local_ai import owned_context
+            with owned_context(self.effective_parameters().get('context_tokens') or int((desktop or {}).get('model_context_tokens',self.profile['context_tokens']))):yield
         finally:
             with self.lock:
                 self.active=max(0,self.active-1)
@@ -203,3 +217,25 @@ class ManagedLlamaProcess:
             self._closed=True
             self.active=0
             self._terminate_own()
+
+    def shutdown_async(self):
+        """Signal the owned child before UI exit; reap without freezing the window."""
+        self._closed=True;proc=self.proc;self.proc=None;self.active=0
+        if proc is None or proc.poll() is not None:return
+        try:proc.terminate()
+        except OSError:return
+        def reap():
+            try:proc.wait(timeout=4)
+            except subprocess.TimeoutExpired:
+                try:proc.kill();proc.wait(timeout=3)
+                except (OSError,subprocess.TimeoutExpired):pass
+        threading.Thread(target=reap,name='AkiraModelReaper',daemon=True).start()
+
+    def effective_parameters(self):
+        command=self._launch_command or []
+        def value(flag):
+            try:return int(command[command.index(flag)+1])
+            except (ValueError,IndexError):return None
+        return {'owned_pid':self.proc.pid if self.proc and self.proc.poll() is None else None,
+                'context_tokens':value('--ctx-size'),'gpu_layers':value('--n-gpu-layers'),'cpu_threads':value('--threads'),
+                'pending_reload':bool(self._requested_command is not None and self._launch_command!=self._requested_command)}

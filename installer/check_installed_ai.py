@@ -66,12 +66,22 @@ def check_installed_ai(root):
             raise RuntimeError('Componentes instalados sin verificar: '+str(components.get('error') or result.stderr[-500:]))
         if Path(components.get('model','')).resolve()!=files['model'].resolve():
             raise RuntimeError('La aplicación no encontró su propio modelo instalado.')
+        studio_report=Path(temporary)/'studio.json'
+        result=subprocess.run([str(files['application']),'--self-check',str(studio_report),'--app-root',temporary],timeout=120,capture_output=True,text=True,encoding='utf-8',errors='replace')
+        actual=json.loads(studio_report.read_text(encoding='utf-8')) if studio_report.is_file() else {}
+        if result.returncode or actual.get('status')!='PASSED':raise RuntimeError('La interfaz del programa instalado no pasó: '+str(actual.get('error') or result.stderr[-500:]))
+        from native_studio_check import require_studio_check
+        require_studio_check(actual)
+        visual_report=Path(temporary)/'sprites.json'
+        result=subprocess.run([str(files['application']),'--sprite-ai-check',str(visual_report),'--app-root',temporary],timeout=90,capture_output=True,text=True,encoding='utf-8',errors='replace')
+        visual=json.loads(visual_report.read_text(encoding='utf-8')) if visual_report.is_file() else {}
+        if result.returncode or visual.get('status')!='PASSED':raise RuntimeError('El componente visual instalado no pasó: '+str(visual.get('error') or result.stderr[-500:]))
     # Call smoke directly: get_model would conceal a missing installed file by
     # downloading another copy. A health check alone cannot pass this test.
     smoke(files['cpu_server'], files['model'])
     return {'status': 'PASSED', 'model_sha256': SHA, 'model_present_after_setup': True,
             'visible_chat_verified': True, 'model_downloaded_by_check': False,
-            'installed_components_verified': True, 'live_account_used': False, 'root': str(Path(root).resolve())}
+            'installed_components_verified': True, 'installed_studio_verified':True,'installed_sprite_ai_verified':True,'live_account_used': False, 'root': str(Path(root).resolve())}
 
 
 def main():

@@ -9,6 +9,9 @@ AKIRA_SECRETS.json
 state/
 logs/
 exports/
+studio/
+diagnostics/
+dist_installer/
 Akira_Datos_Conservados/
 Akira_Diagnostico_Instalacion/
 # Runtime y compilaciones

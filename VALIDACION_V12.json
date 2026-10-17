@@ -1,11 +1,12 @@
 {
-  "build": "AKIRA_16_3_4_R7",
-  "tests": 1093,
-  "status": "VALIDACION_LOCAL_R7_WINDOWS_FIX_COMPLETA_WINDOWS_PENDIENTE",
-  "date": "2026-10-15",
+  "build": "AKIRA_16_4_0_STUDIO_REV5",
+  "tests": 1194,
+  "status": "CODIGO_VERIFICADO_WINDOWS_PENDIENTE",
+  "date": "2026-10-16",
   "skipped": 0,
-  "scope": "Linux: pytest completo, unittest con red bloqueada, autocontrol nativo v7 y reproducción de los cinco fallos mediante alias de carpeta aprobados. Nueva compilación e instalador Windows pendientes.",
-  "test_report": "VERIFICACION_R7_WINDOWS_FIX/PRUEBAS_COMPLETAS.xml",
-  "pytest_tests": 1096,
-  "pytest_subtests": 83
+  "scope": "Suite Linux completa, sin red y autocontroles Tk y Qt aprobados. No constituye aceptación del ejecutable Windows.",
+  "pytest_tests": 1197,
+  "pytest_subtests": 102,
+  "post_suite_check": "Compilar esta revisión en Windows, verificar IA real y componentes visuales, instalar el mismo EXE y comprobar MT5 demo. GitHub bloquea la publicación con HTTP 403.",
+  "notes_file": "README.md"
 }

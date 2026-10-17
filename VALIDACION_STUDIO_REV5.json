@@ -1,0 +1,83 @@
+{
+  "build": "AKIRA_16_4_0_STUDIO_REV5",
+  "date": "2026-10-16",
+  "status": "SOURCE_VERIFIED_WINDOWS_PENDING",
+  "pytest": {
+    "passed": 1197,
+    "subtests_passed": 102,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 51.4,
+    "report": "VERIFICACION_STUDIO_REV5/REGRESIONES_FINALES.xml"
+  },
+  "offline_unittest": {
+    "build": "AKIRA_16_4_0_STUDIO_REV5",
+    "collected": 1194,
+    "tests_run": 1194,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failed_tests": [],
+    "failure_details": [],
+    "skipped_tests": [],
+    "seconds": 45.084,
+    "network": "blocked"
+  },
+  "native_studio": {
+    "passed": true,
+    "gates": 12,
+    "report": "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json",
+    "data": "FakeMT5"
+  },
+  "native_legacy": {
+    "passed": true,
+    "gates": 27,
+    "report": "VERIFICACION_STUDIO_REV5/NATIVE_LEGACY.json"
+  },
+  "default_entrypoint": "VERIFICACION_STUDIO_REV5/ARRANQUE_PREDETERMINADO.json",
+  "performance_scope": "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json: solo 12,34 s en Linux, chat simulado; no prueba Windows, modelo, voz física ni rentabilidad.",
+  "github": {
+    "repository": "juanpablo-ordo/akira",
+    "published": false,
+    "error": "HTTP 403: Resource not accessible by integration",
+    "branch_prepared": "akira-studio-rev5-20261016",
+    "new_ci_run": false
+  },
+  "windows_exe_built": false,
+  "windows_install_verified": false,
+  "mt5_demo_verified": false,
+  "six_hour_session_verified": false,
+  "real_model_inference_verified": false,
+  "visual_semantic_inference_verified": false,
+  "physical_audio_verified": false,
+  "profitability_verified": false,
+  "target_hardware": {
+    "cpu": "Intel Core i7-12700K",
+    "gpu": "NVIDIA RTX 5060 Ti 8 GB",
+    "ram": "32 GB DDR5-6000",
+    "board": "ASUS ROG STRIX Z790-H",
+    "tested": false
+  },
+  "inputs": {
+    "rev4_zip": {
+      "name": "AKIRA_REV4_GITHUB_Y_COMPILACION_PREPARADO(1).zip",
+      "sha256": "0cc53e27a19aaffab5d96f08893e5554b91e88e13a421fc4a23b3c71484d289c"
+    },
+    "master_docx": {
+      "name": "AKIRA_Instrucciones_Maestras(4).docx",
+      "sha256": "9b495dadb29e70adf59dd20662daa169cd8553243ec9a1120868d1dea8dd04e2"
+    }
+  },
+  "acceptance_matrix": "REQUISITOS_232_ESTADO.json",
+  "financial_risk_thresholds_changed": false,
+  "new_install_defaults": {
+    "mode": "observe",
+    "bound_account": 0,
+    "pending_only": false
+  },
+  "existing_explicit_pending_only_preserved": true
+}

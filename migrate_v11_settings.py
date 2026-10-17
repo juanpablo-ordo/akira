@@ -91,7 +91,7 @@ def restore_user_data(current,restored,destination):
     destination=Path(destination);destination.mkdir(parents=True,exist_ok=True)
     current=Path(current) if current else None;restored=Path(restored) if restored else None
     if current and current.is_dir():
-        for name in ('state','logs','exports','AKIRA_SECRETS.json'):
+        for name in ('state','logs','exports','studio','AKIRA_SECRETS.json'):
             source=current/name;target=destination/name
             if name=='state' and source.is_dir():
                 target.mkdir(exist_ok=True)
@@ -108,7 +108,42 @@ def restore_user_data(current,restored,destination):
             if name=='knowledge.sqlite3':merge_memory(restored/'state'/name,destination/'state'/name)
             else:copy_missing(restored/'state'/name,destination/'state'/name)
         copy_missing(restored/'exports',destination/'exports')
+        copy_missing(restored/'studio',destination/'studio')
         copy_missing(restored/'AKIRA_SECRETS.json',destination/'AKIRA_SECRETS.json')
+    # Studio assets reside under a versioned release. Rebase their safe,
+    # app-owned paths before an updater may delete the inactive release.
+    # Never rewrite or import paths outside the previous Studio directories.
+    cfgpath=destination/'akira_config.json'
+    if cfgpath.is_file():
+        raw=json.loads(cfgpath.read_text(encoding='utf-8-sig'))
+        studio=raw.get('studio') if isinstance(raw,dict) else None
+        changed=False
+        if isinstance(studio,dict):
+            def rebase(location):
+                nonlocal changed
+                if not location:return location
+                try:
+                    path=Path(location).resolve()
+                    for previous in (current,restored):
+                        if previous and path.is_relative_to((previous/'studio').resolve()):
+                            target=destination/'studio'/path.relative_to((previous/'studio').resolve())
+                            if target.is_file():
+                                changed=True
+                                return str(target.resolve())
+                except (ValueError,TypeError,OSError):pass
+                return location
+            studio['language_pack']=rebase(studio.get('language_pack',''))
+            wallpaper=studio.get('wallpaper') or {}
+            if isinstance(wallpaper,dict):
+                wallpaper['file']=rebase(wallpaper.get('file'))
+            avatar=studio.get('avatar') or {}
+            if isinstance(avatar,dict):
+                for row in avatar.get('entries') or []:
+                    if isinstance(row,dict):row['path']=rebase(row.get('path'))
+            if changed:
+                temp=cfgpath.with_suffix('.studio.tmp')
+                temp.write_text(json.dumps(raw,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+                temp.replace(cfgpath)
     return {'current':str(current or ''),'restored':str(restored or ''),'destination':str(destination)}
 
 def main():

@@ -402,6 +402,8 @@ def load_config(path):
     if cfg['strategy']['max_tick_age_seconds']<=0:raise ValueError('La edad máxima de tick debe ser positiva')
     for k in ('news_refresh_seconds','coinglass_refresh_seconds','youtube_discovery_seconds','model_refresh_seconds'):
         if cfg['research'][k]<5:raise ValueError('Intervalo de fuente inválido: '+k)
+    from akira_studio import validate_studio,safe_studio
+    cfg['studio']=validate_studio(safe_studio(cfg))
     return cfg
 
 

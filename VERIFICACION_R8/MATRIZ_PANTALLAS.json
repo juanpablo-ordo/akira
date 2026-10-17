@@ -1,0 +1,247 @@
+{
+  "status": "PASSED",
+  "checks": [
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 0,
+      "rendered": true,
+      "page_height": 393
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 1,
+      "rendered": true,
+      "page_height": 393
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 2,
+      "rendered": true,
+      "page_height": 393
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 3,
+      "rendered": true,
+      "page_height": 393
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 4,
+      "rendered": true,
+      "page_height": 475
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 5,
+      "rendered": true,
+      "page_height": 475
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 6,
+      "rendered": true,
+      "page_height": 475
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1024,
+        640
+      ],
+      "page": 7,
+      "rendered": true,
+      "page_height": 475
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 0,
+      "rendered": true,
+      "page_height": 445
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 1,
+      "rendered": true,
+      "page_height": 445
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 2,
+      "rendered": true,
+      "page_height": 445
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 3,
+      "rendered": true,
+      "page_height": 445
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 4,
+      "rendered": true,
+      "page_height": 523
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 5,
+      "rendered": true,
+      "page_height": 523
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 6,
+      "rendered": true,
+      "page_height": 523
+    },
+    {
+      "scale": 1.333,
+      "size": [
+        1334,
+        688
+      ],
+      "page": 7,
+      "rendered": true,
+      "page_height": 523
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 0,
+      "rendered": true,
+      "page_height": 381
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 1,
+      "rendered": true,
+      "page_height": 381
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 2,
+      "rendered": true,
+      "page_height": 381
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 3,
+      "rendered": true,
+      "page_height": 381
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 4,
+      "rendered": true,
+      "page_height": 483
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 5,
+      "rendered": true,
+      "page_height": 483
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 6,
+      "rendered": true,
+      "page_height": 483
+    },
+    {
+      "scale": 2.0,
+      "size": [
+        1280,
+        688
+      ],
+      "page": 7,
+      "rendered": true,
+      "page_height": 483
+    }
+  ],
+  "network_used": false,
+  "live_account_used": false
+}

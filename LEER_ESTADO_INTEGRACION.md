@@ -1,18 +1,11 @@
-# AKIRA — integración de fuentes, hipótesis y llamada (14 octubre 2026)
+# Estado de AKIRA 16.3.5 R8
 
-**ESTADO:** proyecto fuente consolidado, NO instalador verificado en Windows.
+Código completo preparado a partir del commit 109d8b2bbb18da02c86dcc69342ac1732c72caf5.
 
-Cambios reales en esta revisión:
-- `strategy_research.py`: múltiples análisis con procedencia y fechas de YouTube/noticias; los resultados nunca se autorizan para live.
-- `assistant_akira.py`: almacena descubrimientos, transcripciones, visión y noticias para BTC y oro, diferenciando snippets no verificados de evidencia leída.
-- `strategy_lab.py`: presenta resumen de investigación; sus hipótesis experimentales originales permanecen desacopladas del broker.
-- `akira_live2d.py`: expresiones sencillas para preguntas y fases de una llamada, sin añadir estados visuales pesados.
-- `desktop.py`: cambia el avatar al escuchar, procesar, hablar, pausar, interrumpir y finalizar; evita que el temporizador reemplace el estado durante una llamada.
-- Assets: se conservan las expresiones simples basadas en el logo original del perro con huesito.
-- Pendientes: conserva la revisión anti-bucle y sus límites de riesgo.
+Verificación local: 1.126 pruebas pytest y 87 subpruebas, sin fallos ni omisiones; 1.123 pruebas unittest con red bloqueada; autocontrol nativo v8 y 24 combinaciones de página, tamaño y escala. Los informes están en VERIFICACION_R8.
 
-**PRUEBAS:** 96 pasaron, 1 fue omitida en la batería de regresión seleccionada. La batería íntegra se interrumpió al 71% por el tiempo disponible; no hay afirmación de aprobación general.
+La compilación R8, la IA real y el instalador en Windows están pendientes de una nueva ejecución de Actions. Las pruebas locales utilizan Linux y datos sintéticos, sin operar una cuenta.
 
-**FALTANTE CRÍTICO:** Instalador nativo validado en Windows, binarios oficiales llama.cpp y modelo GGUF descargados y ejecutados, build PyInstaller, pruebas Windows/MT5, pruebas de voz con micrófono, rendimiento medido en RTX 5060 Ti.
+Para aplicar los cambios, sigue LEER_R8_PRIMERO.txt. README.md explica los cambios, el modo Solo análisis y la activación de operativa en la cuenta confirmada.
 
-No se debe activar trading automático real a partir de esta compilación.
+El informe de integración anterior se conserva como histórico en VERIFICACION_R7/LEER_ESTADO_INTEGRACION_HISTORICO.md.

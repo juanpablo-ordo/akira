@@ -1,0 +1,214 @@
+{
+  "base": "109d8b2bbb18da02c86dcc69342ac1732c72caf5",
+  "build": "AKIRA_16_3_5_R8",
+  "files": [
+    {
+      "file": ".github/workflows/build-windows.yml",
+      "change": "modified"
+    },
+    {
+      "file": "INSTALAR_ACTUALIZACION_GITHUB.txt",
+      "change": "modified"
+    },
+    {
+      "file": "INSTALL_AKIRA.ps1",
+      "change": "modified"
+    },
+    {
+      "file": "LEER_ANTES_DE_INSTALAR.txt",
+      "change": "modified"
+    },
+    {
+      "file": "LEER_ESTADO_INTEGRACION.md",
+      "change": "modified"
+    },
+    {
+      "file": "LEER_PRIMERO.txt",
+      "change": "modified"
+    },
+    {
+      "file": "LEER_R8_PRIMERO.txt",
+      "change": "added"
+    },
+    {
+      "file": "README.md",
+      "change": "modified"
+    },
+    {
+      "file": "VALIDACION_V12.json",
+      "change": "modified"
+    },
+    {
+      "file": "akira_live2d.py",
+      "change": "modified"
+    },
+    {
+      "file": "akira_local_ai.py",
+      "change": "modified"
+    },
+    {
+      "file": "akira_model_runtime.py",
+      "change": "modified"
+    },
+    {
+      "file": "akira_secrets.py",
+      "change": "modified"
+    },
+    {
+      "file": "akira_version.py",
+      "change": "modified"
+    },
+    {
+      "file": "assets/avatar_states/akira_r8_states.png",
+      "change": "added"
+    },
+    {
+      "file": "assets/avatar_states/states.json",
+      "change": "added"
+    },
+    {
+      "file": "assistant_akira.py",
+      "change": "modified"
+    },
+    {
+      "file": "avatar_animation.py",
+      "change": "added"
+    },
+    {
+      "file": "connectivity.py",
+      "change": "added"
+    },
+    {
+      "file": "cyber_ui.py",
+      "change": "modified"
+    },
+    {
+      "file": "desktop.py",
+      "change": "modified"
+    },
+    {
+      "file": "desktop_layout.py",
+      "change": "modified"
+    },
+    {
+      "file": "desktop_services.py",
+      "change": "modified"
+    },
+    {
+      "file": "engine.py",
+      "change": "modified"
+    },
+    {
+      "file": "execution.py",
+      "change": "modified"
+    },
+    {
+      "file": "frozen_ui_contract.py",
+      "change": "modified"
+    },
+    {
+      "file": "installer/akira.iss",
+      "change": "modified"
+    },
+    {
+      "file": "installer/smoke_local_ai.py",
+      "change": "modified"
+    },
+    {
+      "file": "language_normalization.py",
+      "change": "added"
+    },
+    {
+      "file": "local_inference.py",
+      "change": "added"
+    },
+    {
+      "file": "native_ui_check.py",
+      "change": "modified"
+    },
+    {
+      "file": "providers.py",
+      "change": "modified"
+    },
+    {
+      "file": "research.py",
+      "change": "modified"
+    },
+    {
+      "file": "resource_optimizer.py",
+      "change": "modified"
+    },
+    {
+      "file": "runtime.py",
+      "change": "modified"
+    },
+    {
+      "file": "settings_effects.py",
+      "change": "modified"
+    },
+    {
+      "file": "tests/test_desktop_flow.py",
+      "change": "modified"
+    },
+    {
+      "file": "tests/test_general_ai.py",
+      "change": "modified"
+    },
+    {
+      "file": "tests/test_r8_assistant_protocol.py",
+      "change": "added"
+    },
+    {
+      "file": "tests/test_r8_network_runtime.py",
+      "change": "added"
+    },
+    {
+      "file": "tests/test_r8_ui_reactions.py",
+      "change": "added"
+    },
+    {
+      "file": "tests/test_v124_reflex.py",
+      "change": "modified"
+    },
+    {
+      "file": "tests/test_v125_sentinel.py",
+      "change": "modified"
+    },
+    {
+      "file": "tests/test_v126_hunter.py",
+      "change": "modified"
+    },
+    {
+      "file": "tests/test_v130_astra.py",
+      "change": "modified"
+    },
+    {
+      "file": "tests/test_v1632_llama_setup.py",
+      "change": "modified"
+    },
+    {
+      "file": "ui_updates.py",
+      "change": "added"
+    },
+    {
+      "file": "validate_install.py",
+      "change": "modified"
+    },
+    {
+      "file": "web_facts.py",
+      "change": "modified"
+    },
+    {
+      "file": "windows_identity.py",
+      "change": "modified"
+    },
+    {
+      "file": "windows_version.txt",
+      "change": "modified"
+    },
+    {
+      "file": "youtube_support.py",
+      "change": "modified"
+    }
+  ]
+}

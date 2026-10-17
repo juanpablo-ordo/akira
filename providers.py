@@ -272,7 +272,7 @@ def coinglass_bundle(asset="BTC"):
     asset=str(asset).upper()
     if asset!='BTC':return {'asset':asset,'state':'UNSUPPORTED','detail':'CoinGlass no aporta derivados XAU confirmados. Se conserva el contexto MT5 y macro; no se sustituyen por BTC.'}
     if not get_secret('COINGLASS_API_KEY'):
-        return {'asset':asset,'state':'CONFIG_REQUIRED','detail':'Clave CoinGlass opcional: Ajustes → IA / INTERNET → ACCESO A FUENTES. Los derivados públicos se consultan por separado.'}
+        return {'asset':asset,'state':'CONFIG_REQUIRED','detail':'Clave CoinGlass opcional: Ajustes → FUENTES → ACCESO A FUENTES. Los derivados públicos se consultan por separado.'}
     probe=coinglass_auth_probe()
     if probe.get("state")=="plan_limited":
         detail='CoinGlass reconoció la clave pero el plan no habilita endpoints. '

@@ -884,6 +884,10 @@ class PendingPlanner:
         fused=[]
         features=frame_features(self.caches[symbol].frames)
         for plan in valid:
+            from strategy_choice import allows
+            if not allows(plan,self.cfg):
+                reject(plan,'strategy_not_selected','La familia no corresponde a la estrategia elegida para esta sesión.')
+                continue
             allowed,detail=candidate_decision(plan,features,self.research_context,self.g.clock())
             if allowed:fused.append(replace(plan,reason=plan.reason+' · '+detail) if detail else plan)
             else:
@@ -911,6 +915,8 @@ class PendingPlanner:
         self.pending_filter_reasons[symbol]=reasons
         self.pending_candidate_audit[symbol]=sorted(audit,key=lambda x:(x['status'] not in ('QUALIFIED','SOFT_FALLBACK'),abs(x['distance'])))[:40]
         chosen=sorted(chosen,key=self._pending_priority,reverse=True)
+        from strategy_choice import tag
+        chosen=[tag(plan,self.cfg) for plan in chosen]
         self.pending_cached_candidates[symbol]=(self.g.clock(),chosen)
         return chosen
 
