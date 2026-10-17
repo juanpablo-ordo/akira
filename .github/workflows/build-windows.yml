@@ -1,5 +1,5 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 3 · ${{ github.ref_name }}
+run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 4 · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
       - name: Comprobar y aislar Tcl-Tk de Python antes de las regresiones
         shell: pwsh
         run: |
-          python installer/check_tk_runtime.py --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
+          python -m installer.check_tk_runtime --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
           if ($LASTEXITCODE -ne 0) { throw 'La biblioteca gráfica de Python está incompleta o no carga. Revisa TK_RUNTIME.json.' }
 
       - name: Verificar que se incorporo REV5 antes de construir el instalador

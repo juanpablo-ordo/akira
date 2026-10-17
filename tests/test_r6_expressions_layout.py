@@ -1,4 +1,5 @@
 """Artwork and actual Tk integration regressions for the user's R6 request."""
+from tk_runtime import create_root
 from pathlib import Path
 import json
 import tempfile
@@ -111,7 +112,7 @@ class NativeBuildDiagnostics(unittest.TestCase):
 class TkRegressions(unittest.TestCase):
     def setUp(self):
         try:
-            self.root = tk.Tk()
+            self.root = create_root()
         except tk.TclError:
             self.skipTest('A graphical Tk display is required')
         self.addCleanup(self.root.destroy)

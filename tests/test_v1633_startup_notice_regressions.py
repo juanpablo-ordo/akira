@@ -1,3 +1,4 @@
+from tk_runtime import create_root
 import tempfile,tkinter as tk,unittest
 from pathlib import Path
 from desktop_layout import scroll_frame,bind_direct_scroll_subtree
@@ -5,7 +6,7 @@ from knowledge_update import KnowledgeUpdater
 
 class NotificationWheelTests(unittest.TestCase):
     def test_wheel_over_child_label_is_not_bar_only(self):
-        try:r=tk.Tk()
+        try:r=create_root()
         except tk.TclError:self.skipTest('Graphical Tk display required')
         self.addCleanup(r.destroy)
         w=tk.Toplevel(r);w.geometry('440x270+60+60')

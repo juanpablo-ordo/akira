@@ -1,4 +1,5 @@
 """Pending cockpit uses real engine fields and never invents broker tickets."""
+from tk_runtime import create_root
 import json,tempfile,tkinter as tk,unittest
 from pathlib import Path
 from desktop import Desktop
@@ -8,7 +9,7 @@ class CandidateCockpit(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.app=None
-        self.root=tk.Tk();self.addCleanup(self.close_ui)
+        self.root=create_root();self.addCleanup(self.close_ui)
         folder=Path(self.temp.name);cfg=load_config(DEFAULT)
         cfg['assistant']['auto_install_local_ai']=False
         cfg['desktop'].update(notifications=False,notification_sound=False,notification_popup=False)

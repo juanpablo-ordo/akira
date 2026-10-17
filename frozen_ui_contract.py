@@ -1,6 +1,6 @@
 """Critical modules and executable render checks shared by builder and app."""
 UI_CHECK_VERSION=8
-UI_MODULES=('desktop_qt','studio_controller','studio_widgets','studio_settings_qt','studio_background','studio_translations','strategy_choice','sprite_recognition','native_studio_check','PySide6.QtWidgets','PySide6.QtGui','PySide6.QtCore','studio_theme','localized_navigation','operation_health','activity_watchdog','desktop','desktop_services','security_details','settings_effects',
+UI_MODULES=('tk_runtime','desktop_qt','studio_controller','studio_widgets','studio_settings_qt','studio_background','studio_translations','strategy_choice','sprite_recognition','native_studio_check','PySide6.QtWidgets','PySide6.QtGui','PySide6.QtCore','studio_theme','localized_navigation','operation_health','activity_watchdog','desktop','desktop_services','security_details','settings_effects',
     'youtube_support','strategy_adaptation','local_components','avatar_animation','connectivity','language_normalization','local_inference','ui_updates',
     'akira_studio','akira_studio_ui','akira_expressions','akira_live2d','expression_gallery','desktop_layout','cyber_ui','chart_render','chart_indicators','analysis_details','operation_report',
     'risk_reservations','operation_verifier','pending_verification','selection_trials','paired_study','quality_study',

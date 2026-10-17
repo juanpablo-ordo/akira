@@ -1,3 +1,4 @@
+from tk_runtime import create_root
 import json,tempfile,tkinter as tk,unittest
 from pathlib import Path
 from desktop import Desktop
@@ -13,7 +14,7 @@ class ThemeBootTests(unittest.TestCase):
             cfg['desktop'].update(notifications=False,notification_popup=False)
             cfg['studio'].update(theme='Océano',accent='#16dab6',secondary='#ef79be',font_scale=115,panel_texture='Circuit')
             folder=Path(tmp);(folder/'akira_config.json').write_text(json.dumps(cfg),encoding='utf-8')
-            root=tk.Tk()
+            root=create_root()
             app=None
             try:
                 app=Desktop(root,folder,preview=True,start_actor=False)

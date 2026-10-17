@@ -142,7 +142,11 @@ def scroll_frame(parent,bg):
     content._scroll_canvas=canvas;shell._scroll_canvas=canvas
     canvas._sync_pending=None
     def sync():
+        pending=canvas._sync_pending
         canvas._sync_pending=None
+        if pending is not None:
+            try:canvas.after_cancel(pending)
+            except tk.TclError:pass
         try:
             width=max(1,canvas.winfo_width());height=max(1,canvas.winfo_height())
             needed=max(height,content.winfo_reqheight())
@@ -153,7 +157,8 @@ def scroll_frame(parent,bg):
             # Let Tk report the content's natural height. A fixed canvas-window
             # height suppresses Configure when children shrink and retains an
             # obsolete scroll region (the empty tail seen after reflow).
-            canvas.itemconfigure(window,width=width,height=0)
+            if int(float(canvas.itemcget(window,'width') or 0))!=width:
+                canvas.itemconfigure(window,width=width)
             canvas.configure(scrollregion=(0,0,width,needed))
             canvas.yview_moveto(min(top,max(0,needed-height))/needed)
             if getattr(canvas,'_wheel_job',None) is None:canvas._wheel_target=canvas.yview()[0]
@@ -163,7 +168,9 @@ def scroll_frame(parent,bg):
         try:
             if not canvas.winfo_ismapped():return
         except tk.TclError:return
-        if canvas._sync_pending is None:canvas._sync_pending=canvas.after_idle(sync)
+        # Batch resize requests into the next frame; never refill the same
+        # idle pass indefinitely while native labels are still reflowing.
+        if canvas._sync_pending is None:canvas._sync_pending=canvas.after(16,sync)
     def destroyed(event):
         if event.widget is not canvas:return
         canvas._bounds_destroyed=True
@@ -221,6 +228,8 @@ def wheel_over_panel(event):
     while widget is not None:
         canvas=getattr(widget,'_scroll_canvas',None)
         if canvas is not None:
+            sync=getattr(canvas,'_sync_content',None)
+            if callable(sync):sync()
             delta=getattr(event,'delta',0);num=getattr(event,'num',0)
             units=-1 if num==4 or delta>0 else 1 if num==5 or delta<0 else 0
             if units:
@@ -258,6 +267,8 @@ def bind_direct_scroll_subtree(parent, canvas):
             direction = (-1 if getattr(event, 'num',None)==4 or getattr(event,'delta',0)>0
                          else 1 if getattr(event,'num',None)==5 or getattr(event,'delta',0)<0 else 0)
             if direction:
+                sync=getattr(canvas,'_sync_content',None)
+                if callable(sync):sync()
                 # No animation: notices must respond immediately and avoid
                 # multiple queued GUI callbacks during rapid wheel scrolling.
                 delta=abs(int(getattr(event,'delta',0) or 0))

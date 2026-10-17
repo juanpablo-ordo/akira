@@ -1,4 +1,5 @@
 """Actual Tk regressions for key persistence, stable tables and state sprites."""
+from tk_runtime import create_root
 import hashlib,json,os,tempfile,tkinter as tk,unittest,threading
 from pathlib import Path
 from unittest.mock import patch
@@ -33,7 +34,7 @@ class StateAnimation(unittest.TestCase):
         self.assertEqual(len(seen),8)
 
     def test_loading_ring_has_twelve_phases_without_creating_new_photos(self):
-        root=tk.Tk();self.addCleanup(root.destroy);now=[0.0]
+        root=create_root();self.addCleanup(root.destroy);now=[0.0]
         director=AvatarDirector(get_catalog(ROOT),clock=lambda:now[0])
         avatar=AkiraLive2D(root,width=170,height=125,director=director);avatar.pack();root.update()
         director.busy(True);phases=set()
@@ -46,7 +47,7 @@ class StateAnimation(unittest.TestCase):
         self.assertEqual(avatar._state_frame(),5);self.assertEqual(avatar.canvas.itemcget(avatar._spinner,'state'),'hidden')
 
     def test_a_destroyed_auxiliary_pane_cannot_break_future_resize_callbacks(self):
-        root=tk.Tk();self.addCleanup(root.destroy)
+        root=create_root();self.addCleanup(root.destroy)
         with tempfile.TemporaryDirectory() as temporary:
             layout=PanelLayout(root,Path(temporary)/'layout.json');pane=layout.pane(root,'closed');pane.destroy()
             layout.queue_restore('closed');layout.restore('closed')
@@ -63,7 +64,7 @@ class DesktopBehavior(unittest.TestCase):
         self.open()
 
     def open(self):
-        self.root=tk.Tk();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
+        self.root=create_root();self.app=Desktop(self.root,self.folder,preview=True,start_actor=False)
         self.app.assistant.local_ai_status=lambda:{'ready':False,'phase':'DISABLED','detail':'Fixture sin modelo'}
         self.root.geometry('1024x640+0+0');self.root.update()
 

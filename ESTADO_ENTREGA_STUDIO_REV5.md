@@ -1,3 +1,3 @@
-# Studio Rev5 · corrección Windows 3
+# Studio Rev5 · corrección Windows 4
 
-FIX2 está publicado pero su ejecución 24 se bloqueó durante la prueba nueva de gráficos de alto DPI, antes de crear el ejecutable. FIX3 aísla y limita esa prueba, conserva diagnósticos y retira una llamada que vuelve a procesar eventos en la decoración de Windows. La causa interna Win32 y la compilación deben confirmarse allí. Consulta `CORRECCION_WINDOWS_3.md`, `README.md` y `VERIFICACION_STUDIO_FIX3`. Publicar con `PUBLICAR_A_GITHUB_REV5.cmd`; no reejecutar el código antiguo.
+FIX3 terminó en Windows con dos fallos: bloqueo en el primer dibujo de alto DPI y fallo de tcl_findLibrary al crear Tk. FIX4 modifica el reflujo de etiquetas y paneles, ajusta la prueba al monitor disponible e inicializa explícitamente el cargador Tcl antes de Tk. Las verificaciones actuales están en `VERIFICACION_STUDIO_FIX4`. La revisión necesita un commit nuevo, regresiones Windows, EXE e instalación aprobados. Consulta `CORRECCION_WINDOWS_4.md`.

@@ -1,0 +1,11 @@
+CHART_VIEWPORT: initializing
+CHART_VIEWPORT: constructing_desktop
+CHART_VIEWPORT: before_resize_1366x768
+CHART_VIEWPORT: before_render_1366x768
+CHART_VIEWPORT: drawn_1366x768
+CHART_VIEWPORT: before_resize_1024x640
+CHART_VIEWPORT: before_render_1024x640
+CHART_VIEWPORT: drawn_1024x640
+CHART_VIEWPORT: before_short_pane
+CHART_VIEWPORT: closing
+CHART_VIEWPORT: complete

@@ -47,15 +47,16 @@ if __name__=='__main__':
                 if sealed==probe or opened!=probe:raise RuntimeError('La protección de credenciales de Windows no pasó su autocomprobación')
                 result['credential_protection']='DPAPI round-trip PASSED'
             import tkinter as tk
+            from tk_runtime import create_root
             from windows_identity import apply_window_icon,APP_ID
-            window=tk.Tk();window.withdraw();result['window_icon']=apply_window_icon(window,application_root());result['app_id']=APP_ID;window.destroy()
+            window=create_root();window.withdraw();result['tk_bootstrap']=window._akira_tk_bootstrap;result['window_icon']=apply_window_icon(window,application_root());result['app_id']=APP_ID;window.destroy()
             if not result['window_icon']:raise RuntimeError('No se pudo aplicar el icono de AKIRA a la ventana nativa')
             from frozen_ui_contract import UI_MODULES,require_render_check
             for name in UI_MODULES:
                 importlib.import_module(name)
                 if name not in result['modules']:result['modules'].append(name)
             from native_ui_check import run_ui_check
-            window=tk.Tk();window.withdraw()
+            window=create_root();window.withdraw()
             result['render_check']=run_ui_check(window)
             require_render_check(result)
             from native_studio_check import run_studio_check,require_studio_check

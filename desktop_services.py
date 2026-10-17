@@ -28,7 +28,6 @@ class DesktopServices:
         button(panel,'COMPROBAR FUENTES',self.check_source_access,BLUE).pack(fill='x',pady=3)
         self.source_access_status=label(panel,'Las claves se protegen con tu usuario de Windows. No se leen perfiles de navegadores.',MUTED,9,anchor='w',justify='left',wraplength=620)
         self.source_access_status.pack(fill='x',pady=6)
-        panel.bind('<Configure>',lambda e:self.source_access_status.configure(wraplength=max(180,e.width-20)),add='+')
 
     def save_source_access(self):
         try:
@@ -170,7 +169,6 @@ class DesktopServices:
                 color=RED if row['severity']=='error' else AMBER if row['severity']=='warning' else CYAN
                 outer,card=neon_card(body,datetime.fromtimestamp(row['at']).strftime('%d/%m %H:%M')+' · '+row['title'],color);outer.pack(fill='x',pady=5)
                 text=label(card,row['body'],TEXT,10,anchor='w',justify='left',wraplength=650);text.pack(fill='x')
-                card.bind('<Configure>',lambda e,w=text:w.configure(wraplength=max(200,e.width-35)))
             if more:button(body,'CARGAR 25 MÁS',lambda:(page.set(page.get()+page_size),refresh()),CYAN).pack(fill='x',pady=10)
             # Reattach after every refresh because every notice card is replaced.
             bind_direct_scroll_subtree(body, shell._scroll_canvas)

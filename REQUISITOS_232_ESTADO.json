@@ -1,7 +1,7 @@
 {
   "source": "AKIRA_Instrucciones_Maestras.docx",
   "scope": "R001-R232 y E01-E16",
-  "release": "AKIRA 16.4.0 Studio Rev5 · corrección Windows 3; ejecutable pendiente",
+  "release": "AKIRA 16.4.0 Studio Rev5 · corrección Windows 4; ejecutable pendiente",
   "rows": [
     {
       "id": "R001",
@@ -2666,7 +2666,7 @@
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "FIX2 publicado en la ejecución 24, bloqueada en prueba gráfica de alto DPI. FIX3 limita y diagnostica la espera, pendiente de publicar, compilar, instalar y comprobar en MT5 demo."
+      "acceptance_pending": "FIX3 publicado: ejecución 25 con 2 fallos. FIX4 corrige reflujo y arranque Tcl, con pruebas locales; pendiente de CI Windows, EXE, instalación y MT5 demo."
     }
   ],
   "rule": "Evidence from Linux mocks/tests is partial; no item marked fully complete until user-acceptance on delivered Windows installer.",

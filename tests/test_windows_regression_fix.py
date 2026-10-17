@@ -1,4 +1,5 @@
 """Reproduce Windows CI path, native geometry and Tcl library regressions."""
+from tk_runtime import create_root
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,6 +12,8 @@ class TkRuntimeCopyTests(unittest.TestCase):
     def fixture(self,root):
         source=root/'python/tcl'
         files={'tcl8.6/init.tcl':'# Tcl initialization',
+               'tcl8.6/auto.tcl':'# library loader',
+               'tcl8.6/tclIndex':'# command index',
                'tk8.6/tk.tcl':'# Tk initialization',
                'tk8.6/ttk/ttk.tcl':'source -encoding utf-8 [file join $::ttk::library progress.tcl]',
                'tk8.6/ttk/progress.tcl':'# native progress support'}
@@ -25,6 +28,13 @@ class TkRuntimeCopyTests(unittest.TestCase):
             with self.assertRaisesRegex(FileNotFoundError,'progress.tcl'):copy_libraries(source,destination)
             self.assertFalse(destination.exists())
 
+    def test_missing_tcl_loader_fails_before_copying_runtime(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);source=self.fixture(root);destination=root/'verified'
+            (source/'tcl8.6/auto.tcl').unlink()
+            with self.assertRaisesRegex(FileNotFoundError,'auto.tcl'):copy_libraries(source,destination)
+            self.assertFalse(destination.exists())
+
     def test_every_referenced_ttk_script_must_exist(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);source=self.fixture(root)
@@ -35,7 +45,7 @@ class TkRuntimeCopyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='Akira Windows ñ ') as tmp:
             root=Path(tmp);source=self.fixture(root);destination=root/'verified'
             report=copy_libraries(source,destination)
-            self.assertEqual(report['verified_files'],4)
+            self.assertEqual(report['verified_files'],6)
             for path in source.rglob('*.tcl'):
                 copied=destination/path.relative_to(source)
                 self.assertEqual(path.read_bytes(),copied.read_bytes())
@@ -78,7 +88,7 @@ class NativeGeometryTests(unittest.TestCase):
     def test_native_measurement_accepts_small_buttons_and_rejects_both_axes_of_clipping(self):
         import tkinter as tk
         from native_ui_check import control_geometry
-        root=tk.Tk()
+        root=create_root()
         try:
             root.geometry('400x250+0+0')
             for size in (-7,-11,-16):

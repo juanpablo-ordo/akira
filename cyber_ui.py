@@ -104,8 +104,16 @@ def label(parent,text='',color=TEXT,size=10,bold=False,**kw):
 
 def responsive_wrap(widget,padding=4):
     """Use the granted width, not an old 650px request inside a 200px pane."""
+    pending=[None];target=[None];closed=[False]
+    def apply():
+        pending[0]=None
+        if closed[0] or target[0] is None:return
+        try:
+            if abs(int(float(widget.cget('wraplength') or 0))-target[0])>3:
+                widget.configure(wraplength=target[0])
+        except tk.TclError:pass
     def fit(event):
-        if event.widget is not widget or event.width<30:return
+        if closed[0] or event.widget is not widget or event.width<30:return
         # Only a layout-constrained label may follow its granted width. A
         # centered label sized by its own text would otherwise shrink itself
         # again on every Configure until only one letter remained visible.
@@ -114,10 +122,19 @@ def responsive_wrap(widget,padding=4):
             if manager=='pack' and widget.pack_info().get('fill') not in ('x','both'):return
             if manager=='grid' and not all(c in widget.grid_info().get('sticky','') for c in 'ew'):return
         except (AttributeError,tk.TclError):return
-        width=max(24,event.width-padding)
-        if abs(int(float(widget.cget('wraplength') or 0))-width)>3:
-            widget.configure(wraplength=width)
+        target[0]=max(24,event.width-padding)
+        # Reflow outside the current native Configure/idle pass. In Win32 an
+        # immediate geometry change can continuously refill update()'s queue.
+        if pending[0] is None:pending[0]=widget.after(16,apply)
+    def destroy(event):
+        if event.widget is not widget:return
+        closed[0]=True
+        if pending[0] is not None:
+            try:widget.after_cancel(pending[0])
+            except tk.TclError:pass
+            pending[0]=None
     widget.bind('<Configure>',fit,add='+')
+    widget.bind('<Destroy>',destroy,add='+')
     return widget
 
 def button(parent,text,command,color=CYAN,primary=False):
@@ -327,7 +344,7 @@ def toggle(parent,variable,title,hint=''):
     canvas.pack(side='right',padx=(12,2))
     copy=tk.Frame(row,bg=PANEL);copy.pack(side='left',fill='x',expand=True)
     caption=label(copy,title,TEXT,10,True,anchor='w',justify='left',wraplength=640);caption.pack(fill='x')
-    copy.bind('<Configure>',lambda e:caption.configure(wraplength=max(160,e.width-5)))
+    # label() owns the caption's wrap width, including narrow/high-DPI panes.
     if hint:label(copy,hint,MUTED,8,anchor='w',justify='left',wraplength=660).pack(fill='x',pady=(5,0))
     def draw(*args):
         on=bool(variable.get());canvas.delete('all')

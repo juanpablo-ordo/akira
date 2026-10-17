@@ -1,12 +1,12 @@
 {
   "build": "AKIRA_16_4_0_STUDIO_REV5",
-  "tests": 1204,
-  "status": "FIX3_CODIGO_VERIFICADO_WINDOWS_PENDIENTE",
+  "tests": 1208,
+  "status": "FIX4_CODIGO_VERIFICADO_WINDOWS_PENDIENTE",
   "date": "2026-10-17",
   "skipped": 0,
-  "scope": "Espera de prueba gráfica acotada y diagnóstico persistente. Suites locales Linux; bloqueo interno Win32 y ejecutable todavía pendientes.",
-  "pytest_tests": 1207,
+  "scope": "Corrección de reflujo y cargador Tcl. Suites Linux con monitores pequeño/grande; revisión Windows, EXE e instalación pendientes.",
+  "pytest_tests": 1211,
   "pytest_subtests": 102,
-  "post_suite_check": "Publicar FIX3 con el script local; exigir regresiones, EXE, IA instalada y aceptación MT5 demo. No reejecutar el commit FIX2 bloqueado.",
-  "notes_file": "CORRECCION_WINDOWS_3.md"
+  "post_suite_check": "Publicar FIX4 como commit nuevo; exigir regresiones, ejecutable, IA instalada y aceptación MT5 demo.",
+  "notes_file": "CORRECCION_WINDOWS_4.md"
 }

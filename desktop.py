@@ -919,7 +919,6 @@ class Desktop(DesktopServices,StrategyDirectory):
             textcol=tk.Frame(row,bg=CARD);textcol.pack(side='left',fill='x',expand=True)
             label(textcol,title,TEXT,10,True,anchor='w').pack(fill='x')
             description=label(textcol,desc,MUTED,8,anchor='w',justify='left',wraplength=460);description.pack(fill='x')
-            textcol.bind('<Configure>',lambda e,w=description:w.configure(wraplength=max(120,e.width-6)))
             state=label(row,'Esperando',MUTED,9,True,anchor='e');state.pack(side='right',padx=(8,0))
             self.friendly_source_cards[key]=(dot,state)
 
@@ -1173,7 +1172,6 @@ class Desktop(DesktopServices,StrategyDirectory):
             row=tk.Frame(parent,bg=PANEL);row.pack(fill='x',pady=5)
             left=tk.Frame(row,bg=PANEL);left.pack(side='left',fill='x',expand=True)
             caption=label(left,title,TEXT,10,True,anchor='w',justify='left',wraplength=600);caption.pack(fill='x')
-            left.bind('<Configure>',lambda e,w=caption:w.configure(wraplength=max(150,e.width-4)))
             if hint:label(left,hint,MUTED,8,anchor='w',wraplength=620,justify='left').pack(fill='x')
             var=tk.StringVar(value=str(path_get(self.cfg,path,'')));self.setting_vars[path]=var;self.setting_types[path]=kind
             ent=tk.Entry(row,textvariable=var,bg=CARD,fg=TEXT,insertbackground=CYAN,relief='flat',font=(FONT,10),width=16,justify='center');ent.pack(side='right',ipady=6,padx=(10,0));__import__('cyber_ui').attach_tooltip(ent,hint or title)
@@ -2342,7 +2340,6 @@ class Desktop(DesktopServices,StrategyDirectory):
         ttk.Combobox(shell,textvariable=mode,values=tuple(PROFILES),state='readonly',style='Akira.TCombobox').pack(fill='x',ipady=3,pady=(0,5))
         effective=label(shell,'',CYAN,9,anchor='w',wraplength=389,justify='left')
         effective.pack(fill='x',pady=(0,12))
-        effective.bind('<Configure>',lambda e:effective.configure(wraplength=max(220,e.width-10)))
         def preview_profile(*_):
             p=PROFILES.get(mode.get(),PROFILES['Equilibrado'])
             effective.configure(text=(f"Pantalla: {p['target_fps']} FPS objetivo · paneles cada {p['render_seconds']:.2f} s · "
@@ -2635,7 +2632,8 @@ def main(preview=False):
     import desktop_services, strategy_directory
     config=load_config(folder/'akira_config.json')
     activate_style(config['studio'],(sys.modules[__name__],desktop_services,strategy_directory))
-    set_identity();root=tk.Tk()
+    from tk_runtime import create_root
+    set_identity();root=create_root()
     percent=config['studio'].get('font_scale',100)
     if int(percent)!=100:
         try:root.tk.call('tk','scaling',float(root.tk.call('tk','scaling'))*int(percent)/100)

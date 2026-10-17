@@ -1,22 +1,14 @@
-AKIRA 16.4.0 Studio Rev5 - corrección Windows 3
+AKIRA 16.4.0 Studio Rev5 - corrección Windows 4
 
-La ejecución 24 se bloqueó en la nueva prueba de gráficos de alto DPI.
-No es una descarga de la IA ni se generó un instalador en esos intentos.
+El registro de FIX3 confirmó 2 fallos y 1.205 pruebas aprobadas en Windows.
+Esta corrección modifica el dibujo y el arranque de Tcl/Tk; conserva los
+controles de gráficos, de instalación y de riesgo.
 
-1. Cancela la ejecución 24 si sigue activa.
-2. Extrae este ZIP actualizado en una carpeta nueva.
-3. Ejecuta PUBLICAR_A_GITHUB_REV5.cmd.
-4. En https://github.com/juanpablo-ordo/akira/actions busca una ejecución
-   nueva cuyo título incluya corrección Windows 3.
+1. Extrae el ZIP completo en una carpeta nueva de Windows.
+2. Ejecuta PUBLICAR_A_GITHUB_REV5.cmd.
+3. En https://github.com/juanpablo-ordo/akira/actions busca una ejecución
+   nueva cuyo título incluya corrección Windows 4.
 
-Actualiza la misma rama akira-studio-rev5-20261016.
-Reejecutar la ejecución 24 conserva el código que se bloqueó.
-
-La prueba gráfica tiene ahora un límite externo de 45 segundos, conserva
-estado y trazas y falla si se agota. No se omite ni se acepta como aprobada.
-El paso completo tiene un límite de 15 minutos y muestra cada nombre de prueba.
-Se retiró el procesamiento anidado de eventos en la decoración Windows.
-El bloqueo concreto requiere confirmación en Windows; no se declara resuelto.
-
-Consulta CORRECCION_WINDOWS_3.md y VERIFICACION_STUDIO_FIX3.
-Este ZIP es código completo; el instalador EXE debe generarse y validarse en CI.
+Usa la misma rama akira-studio-rev5-20261016 y un commit nuevo.
+La revisión aún debe superar Windows antes de disponer de instalador validado.
+Consulta CORRECCION_WINDOWS_4.md y VERIFICACION_STUDIO_FIX4.

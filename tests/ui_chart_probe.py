@@ -28,8 +28,10 @@ def run_probe_process(command,folder,timeout=45):
 
 def probe(output):
     import tkinter as tk
+    from tk_runtime import create_root
     import faulthandler
     from desktop import Desktop
+    from desktop_layout import fitted_geometry
     from native_ui_check import chart_layout
     from settings import DEFAULT,load_config,save_config
     from engine import Engine
@@ -71,7 +73,7 @@ def probe(output):
             cfg['assistant']['auto_install_local_ai']=False
             cfg['desktop'].update(privacy=False,notifications=False,notification_popup=False,notification_sound=False)
             save_config(cfg,folder/'akira_config.json')
-            root=tk.Tk();root.tk.call('tk','scaling',2.0)
+            root=create_root();root.tk.call('tk','scaling',2.0)
             state.update(tcl=root.tk.call('info','patchlevel'),tk=root.tk.call('package','provide','Tk'))
             checkpoint('constructing_desktop')
             app=Desktop(root,folder,preview=True,start_actor=False)
@@ -82,7 +84,12 @@ def probe(output):
             gateway=Gateway(api,cfg,Journal(folder/'journal.json'),log,clock)
             engine=Engine(gateway,cfg,log);view=engine.step();view['preview']=True
             app.view=view;app.navigate(0)
-            for width,height in ((1366,768),(1024,640)):
+            for profile_width,profile_height in ((1366,768),(1024,640)):
+                # Match application startup: a 1024px CI desktop cannot host
+                # a 1366px visible window. Still test both intended profiles
+                # and require the exact fitted viewport, never a silent clamp.
+                width,height,*_=fitted_geometry(profile_width,profile_height,
+                    root.winfo_screenwidth(),root.winfo_screenheight())
                 checkpoint(f'before_resize_{width}x{height}')
                 root.geometry(f'{width}x{height}+0+0');settle()
                 checkpoint(f'before_render_{width}x{height}')
@@ -92,7 +99,8 @@ def probe(output):
                 layout=chart_layout(app);require(bool(layout),'No hay gráficos')
                 for symbol,row in layout.items():
                     require(row['height']>=70 and row['bars']>0 and row['items']>20,(symbol,row))
-                state['snapshots'].append({'requested_window':[width,height],
+                state['snapshots'].append({'profile_window':[profile_width,profile_height],
+                    'requested_window':[width,height],
                     'actual_window':[root.winfo_width(),root.winfo_height()],'charts':layout})
                 checkpoint(f'drawn_{width}x{height}')
             app.layout.dragging.add('dashboard_neon_lower')
@@ -106,6 +114,16 @@ def probe(output):
                 require(row['height']>=70 and row['items']>20,row)
             require(not api.sent,'No se deben enviar órdenes')
             require(len(changes)<100,'El ajuste de texto no converge: '+str(len(changes)))
+            # Reflow the source cards and source settings as well: captions in
+            # those sections used to have competing parent/label callbacks.
+            for page in (4,6):
+                checkpoint(f'before_page_{page}')
+                app.navigate(page)
+                if page==6:app.settings_notebook.select(app.settings_sources_tab)
+                settle()
+            heartbeat=[];root.after(20,lambda:heartbeat.append(True));settle()
+            require(bool(heartbeat),'El bucle nativo no atendió el temporizador')
+            state['ui_heartbeat']=True
             checkpoint('closing')
             engine.close();engine=None
             app.close();app=None;root=None

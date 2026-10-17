@@ -24,7 +24,8 @@ def copy_libraries(source,destination,tcl_version='8.6',tk_version='8.6'):
     if destination.exists():raise FileExistsError('El destino Tcl/Tk debe ser nuevo: '+str(destination))
     if destination.is_relative_to(source):raise ValueError('El destino no puede estar dentro de la biblioteca original')
     names=('tcl'+tcl_version,'tk'+tk_version)
-    required=[names[0]+'/init.tcl',names[1]+'/tk.tcl',names[1]+'/ttk/ttk.tcl',names[1]+'/ttk/progress.tcl']
+    required=[names[0]+'/init.tcl',names[0]+'/auto.tcl',names[0]+'/tclIndex',
+              names[1]+'/tk.tcl',names[1]+'/ttk/ttk.tcl',names[1]+'/ttk/progress.tcl']
     ttk=source/names[1]/'ttk/ttk.tcl'
     if ttk.is_file():
         for name in re.findall(r'\[file join \$::ttk::library ([A-Za-z0-9_.-]+\.tcl)\]',ttk.read_text(encoding='utf-8-sig')):
@@ -51,12 +52,13 @@ def copy_libraries(source,destination,tcl_version='8.6',tk_version='8.6'):
                               for name,values in expected.items()}}
 
 
-def probe_libraries(info,trials=3):
+def probe_libraries(info,trials=12):
     os.environ.update(TCL_LIBRARY=info['tcl_library'],TK_LIBRARY=info['tk_library'])
     import tkinter as tk
     from tkinter import ttk
+    from tk_runtime import create_root
     for _ in range(trials):
-        root=tk.Tk()
+        root=create_root()
         try:
             root.withdraw()
             if not Path(str(root.tk.call('info','library'))).samefile(info['tcl_library']):
@@ -68,6 +70,7 @@ def probe_libraries(info,trials=3):
             root.update()
             info['tcl_patchlevel']=str(root.tk.call('info','patchlevel'))
             info['tk_patchlevel']=str(root.tk.call('package','provide','Tk'))
+            info['bootstrap']=root._akira_tk_bootstrap
         finally:root.destroy()
     info.update(status='PASSED',native_initializations=trials)
     return info
@@ -94,4 +97,7 @@ def main(argv=None):
     return 0 if result['status']=='PASSED' else 1
 
 
-if __name__=='__main__':raise SystemExit(main())
+if __name__=='__main__':
+    # Support both `python -m installer.check_tk_runtime` and the script path.
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+    raise SystemExit(main())

@@ -79,7 +79,7 @@ $author = (& $script:GitExe -C $RepoDir config user.name)
 if (!$author) { throw 'Git no tiene configurado user.name; configúralo en GitHub Desktop/Git antes de publicar.' }
 $email = (& $script:GitExe -C $RepoDir config user.email)
 if (!$email) { throw 'Git no tiene configurado user.email; configúralo antes de publicar.' }
-RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA Studio 16.4.0 Rev5: acotar bloqueo de pruebas Windows 3')
+RunGit -CmdArgs @('-C',$RepoDir,'commit','-m','AKIRA Studio 16.4.0 Rev5: corregir reflujo y arranque Tcl Windows 4')
 Write-Host 'Subiendo rama a GitHub. Puede solicitar inicio de sesión.'
 RunGit -CmdArgs @('-C',$RepoDir,'push','--set-upstream','origin',$Branch)
 Write-Host ''
