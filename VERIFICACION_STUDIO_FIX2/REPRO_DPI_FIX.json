@@ -1,0 +1,56 @@
+[
+  {
+    "scale": 1.333,
+    "status": "PASSED",
+    "charts": {
+      "BTCUSDm": {
+        "width": 648,
+        "height": 107,
+        "requested_height": 107,
+        "mapped": true,
+        "bars": 80,
+        "items": 183,
+        "market_closed": false,
+        "timeframe": "M5"
+      },
+      "XAUUSDm": {
+        "width": 648,
+        "height": 107,
+        "requested_height": 107,
+        "mapped": true,
+        "bars": 80,
+        "items": 183,
+        "market_closed": false,
+        "timeframe": "M5"
+      }
+    },
+    "report": "NATIVE_LEGACY.json"
+  },
+  {
+    "scale": 2.667,
+    "status": "PASSED",
+    "charts": {
+      "BTCUSDm": {
+        "width": 641,
+        "height": 107,
+        "requested_height": 107,
+        "mapped": true,
+        "bars": 80,
+        "items": 183,
+        "market_closed": false,
+        "timeframe": "M5"
+      },
+      "XAUUSDm": {
+        "width": 641,
+        "height": 107,
+        "requested_height": 107,
+        "mapped": true,
+        "bars": 80,
+        "items": 183,
+        "market_closed": false,
+        "timeframe": "M5"
+      }
+    },
+    "report": "NATIVE_LEGACY_LARGE_TEXT.json"
+  }
+]

@@ -9,6 +9,29 @@ import json,tempfile,time
 
 from frozen_ui_contract import UI_CHECK_VERSION,require_render_check
 
+class NativeRenderError(RuntimeError):
+    def __init__(self,message,diagnostics):
+        super().__init__(message)
+        self.render_diagnostics=diagnostics
+
+def chart_layout(app):
+    """Record the actual canvas state, including blank but data-filled charts."""
+    return {symbol:{'width':chart.winfo_width(),'height':chart.winfo_height(),
+                    'requested_height':chart.winfo_reqheight(),
+                    'mapped':bool(chart.winfo_ismapped()),
+                    'bars':len(chart.data.get('bars') or []),'items':len(chart.find_all()),
+                    'market_closed':bool(chart.data.get('market_closed')),
+                    'timeframe':chart.data.get('timeframe')}
+            for symbol,(chart,*_) in app.charts.items()}
+
+def layout_diagnostics(app,checks=None):
+    window=app.root
+    return {'checks':checks or {},'charts':chart_layout(app),
+            'window':{'width':window.winfo_width(),'height':window.winfo_height(),
+                      'screen_width':window.winfo_screenwidth(),'screen_height':window.winfo_screenheight(),
+                      'tk_scaling':float(window.tk.call('tk','scaling'))},
+            'render_health':getattr(app,'_render_health',{})}
+
 def settle_layout(window):
     """Let the 75/170 ms resize and divider callbacks finish before measuring."""
     deadline=time.monotonic()+.25
@@ -107,11 +130,12 @@ def run_ui_check(window):
                 if all(c.data.get('bars') and len(c.find_all())>20 for c,_,_,_ in app.charts.values()):
                     break
                 time.sleep(.03)
-            if not app._render_health.get('complete'):raise RuntimeError('Paneles incompletos: '+', '.join(app._render_health.get('errors') or []))
+            if not app._render_health.get('complete'):raise NativeRenderError('Paneles incompletos: '+', '.join(app._render_health.get('errors') or []),layout_diagnostics(app))
+            painted_charts=chart_layout(app)
             checks={
                 'orders':len(app.orders.get_children())==len(snapshot['orders'])>0,
                 'positions':len(app.positions.get_children())==len(snapshot['positions'])>0,
-                'charts':all(chart.data.get('bars') and len(chart.find_all())>20 for chart,title,state,tf in app.charts.values()),
+                'charts':bool(painted_charts) and all(state['bars'] and state['items']>20 for state in painted_charts.values()),
                 'analysis':bool(app.frames.get_children()) and 'BITCOIN' in app.analysis_summary.get('1.0','end'),
                 'sources':app.source_status['mt5'].cget('text')=='ACTIVO' and bool(app.analysis_sources.get_children()),
                 'context':'BITCOIN' in app.sources_summary.get('1.0','end') and 'BTCUSDm' in app.brain_status.get('1.0','end')}
@@ -180,13 +204,16 @@ def run_ui_check(window):
                 detail='No se completó el dibujado de '+', '.join(k for k,v in checks.items() if not v)
                 failed={name:row for name,row in compact_layout.items() if not row['passed']}
                 if failed:detail+='; controles: '+json.dumps(failed,ensure_ascii=False)
-                raise RuntimeError(detail)
+                diagnostics=layout_diagnostics(app,checks)
+                diagnostics['initial_charts']=painted_charts
+                diagnostics['compact_layout']=compact_layout
+                raise NativeRenderError(detail,diagnostics)
             if (root/'logs/INTERFAZ_ERRORES.log').exists():raise RuntimeError('La autocomprobación detectó errores de interfaz; no se activa el ejecutable.')
             report={'version':UI_CHECK_VERSION,'status':'PASSED','data':'SYNTHETIC','broker':'FakeMT5',
                 'network_used':False,'live_account_used':False,'order_rows':len(snapshot['orders']),
                 'position_rows':len(snapshot['positions']),'frame_rows':len(app.frames.get_children()),
                 'expression_count':artwork['count'],'distinct_expression_cells':artwork['distinct_cells'],
-                'compact_layout':compact_layout,**checks}
+                'compact_layout':compact_layout,'chart_layout':painted_charts,**checks}
             # Exercise the exact installer gate here as well, before reporting success.
             require_render_check({'render_check':report})
             return report

@@ -16,6 +16,9 @@ def read_self_check_report(path,returncode,stderr=''):
  if returncode or report.get('status')!='PASSED':
   parts=['Código de salida: '+str(returncode)]
   if report.get('error'):parts.append(str(report['error']))
+  detail=report.get('render_diagnostics')
+  if isinstance(detail,dict) and detail.get('charts'):
+   parts.append('Estado de gráficos: '+json.dumps(detail['charts'],ensure_ascii=True))
   if read_error:parts.append(read_error)
   if stderr.strip():parts.append(stderr.strip()[-1200:])
   raise RuntimeError('Falló la comprobación nativa: '+'; '.join(parts)+'. Revisa NATIVE_SELF_CHECK.json y NATIVE_SELF_CHECK_STDERR.log; no se activa.')

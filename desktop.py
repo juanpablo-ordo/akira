@@ -555,7 +555,13 @@ class Desktop(DesktopServices,StrategyDirectory):
         split.add(lower,minsize=170,stretch='always')
         outer,market=neon_card(lower,'COBERTURA DE MERCADO · BTC + ORO',CYAN,padx=7,pady=5)
         lower.add(outer,minsize=115,stretch='always')
-        charts=tk.Frame(market,bg=PANEL);charts.pack(fill='both',expand=True)
+        # Native font metrics can make the price/state labels taller on Windows
+        # or high DPI. Keep the chart's natural height and scroll the content
+        # instead of squeezing the canvas below its drawable 70-pixel viewport.
+        market_shell,market_content=scroll_frame(market,PANEL)
+        market_shell.pack(fill='both',expand=True)
+        self.dashboard_market_scroll=market_shell._scroll_canvas
+        charts=tk.Frame(market_content,bg=PANEL);charts.pack(fill='both',expand=True)
         self.charts={}
         enabled=[symbol for symbol,on in self.cfg['symbols'].items() if on]
         for i,symbol in enumerate(enabled):
@@ -571,7 +577,8 @@ class Desktop(DesktopServices,StrategyDirectory):
             chart=CandleChart(card,height=105);chart.pack(fill='both',expand=True,pady=2)
             info=label(card,'Esperando precio vigente',MUTED,8,anchor='w',wraplength=450)
             info.pack(fill='x');self.charts[symbol]=(chart,title,info,tf_var)
-            card.bind('<Configure>',lambda event,w=info:w.configure(wraplength=max(100,event.width-22)))
+            # label() already fits its text to the label's granted width.
+            # A second card-width handler fights it and oscillates the height.
 
         outer,bottom=neon_card(lower,'PENDIENTES CONFIRMADAS Y CANDIDATAS · CONSULTA',GREEN,padx=6,pady=3)
         lower.add(outer,minsize=55,stretch='always')

@@ -120,11 +120,11 @@ NOTES={
  'E02':'Nombre visible configurable. Identidad binaria y del instalador AKIRA conservada.',
  'E05':'Paquetes de idioma y generación local implementados. Persisten motivos técnicos dinámicos en español; traducción universal pendiente.',
  'E06':'Selecciones persistentes y sesiones conectadas al avatar. Catálogos limitan idiomas/voz disponibles; micrófono y reproducción físicos no probados.',
- 'E08':'Clasificador CLIP opcional y componentes fijados. Pesos no disponibles aquí; sin inferencia semántica real validada. Las sugerencias ambiguas requieren revisión.',
+ 'E08':'La ejecución Windows 23 aprobó CLIP CPU de origen con un sprite dormido; el margen exige revisión. Inferencia del ejecutable y reconocimiento universal pendientes.',
  'E12':'FPS, calidad y búfer acotados. Límites duros CPU/RAM solo para decodificador Windows propio, sin validar aquí. No existe límite duro GPU ni de toda la aplicación.',
  'E14':'Ejecución y rechazo se confirman por resultado, sin cuotas de entradas. Latencia bróker real, sesión prolongada y rentabilidad neta no verificadas.',
  'E15':'Contrato, contexto exacto del servidor, historial acotado, cancelación, escritura y selección de fuentes cubiertos por pruebas; modelo GGUF real y respuesta actual en Windows pendientes.',
- 'E16':'Publicación bloqueada por GitHub HTTP 403: Resource not accessible by integration. EXE, instalación Windows y MT5 demo pendientes.',
+ 'E16':'FIX1 pasó regresiones Windows y se construyó, pero falló el autocontrol de gráficos. FIX2 requiere un commit nuevo, ejecutable validado, instalación y MT5 demo. Escritura conectada rechazada con 403.',
 }
 
 def generate(source,output):
@@ -144,7 +144,7 @@ def generate(source,output):
                 evidence=EXTRA_EVIDENCE.get(rid,[]),windows_verified=False,mt5_demo_verified=False,
                 complete=False, acceptance_pending=NOTES.get(rid,'Falta aceptación integral del instalador Windows.')) for rid,description in EXTRA]
     obj={'source':Path(source).name,'scope':'R001-R232 y E01-E16',
-         'release':'AKIRA 16.4.0 Studio Rev5 · código verificado; Windows pendiente','rows':rows,'extra_requests':extra,
+         'release':'AKIRA 16.4.0 Studio Rev5 · corrección Windows 2; ejecutable pendiente','rows':rows,'extra_requests':extra,
          'rule':'Evidence from Linux mocks/tests is partial; no item marked fully complete until user-acceptance on delivered Windows installer.',
          'counts':{'master':len(rows),'extras':len(extra),'partial_local':sum(x['status'].startswith('PARCIAL') for x in rows+extra),
                     'fully_validated':0,'need_windows_acceptance':len(rows)+len(extra)}}

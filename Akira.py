@@ -63,6 +63,8 @@ if __name__=='__main__':
         except Exception as exc:
             import traceback
             result.update(status='FAILED',error=type(exc).__name__+': '+str(exc),traceback=traceback.format_exc())
+            diagnostics=getattr(exc,'render_diagnostics',None)
+            if isinstance(diagnostics,dict):result['render_diagnostics']=diagnostics
         Path(args.self_check).write_text(json.dumps(result,indent=2),encoding='utf-8');sys.exit(0 if result['status']=='PASSED' else 1)
     try:
         if args.legacy_ui:

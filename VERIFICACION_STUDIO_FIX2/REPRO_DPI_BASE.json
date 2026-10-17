@@ -1,0 +1,130 @@
+[
+  {
+    "scale": 1.0,
+    "status": "PASSED",
+    "layout": {
+      "window": [
+        1280,
+        760
+      ],
+      "charts": {
+        "BTCUSDm": {
+          "width": 655,
+          "height": 135,
+          "bars": 80,
+          "closed": false,
+          "items": 183,
+          "texts": [
+            "59,864.39",
+            "59,915.27",
+            "59,966.16"
+          ]
+        },
+        "XAUUSDm": {
+          "width": 656,
+          "height": 135,
+          "bars": 80,
+          "closed": false,
+          "items": 183,
+          "texts": [
+            "2,496.61",
+            "2,497.88",
+            "2,499.15"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "scale": 1.333,
+    "status": "PASSED",
+    "layout": {
+      "window": [
+        1280,
+        760
+      ],
+      "charts": {
+        "BTCUSDm": {
+          "width": 655,
+          "height": 107,
+          "bars": 80,
+          "closed": false,
+          "items": 183,
+          "texts": [
+            "59,864.39",
+            "59,915.27",
+            "59,966.16"
+          ]
+        },
+        "XAUUSDm": {
+          "width": 656,
+          "height": 107,
+          "bars": 80,
+          "closed": false,
+          "items": 183,
+          "texts": [
+            "2,496.61",
+            "2,497.88",
+            "2,499.15"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "scale": 2.0,
+    "error": "No se completó el dibujado de charts",
+    "layout": {
+      "window": [
+        1280,
+        760
+      ],
+      "charts": {
+        "BTCUSDm": {
+          "width": 655,
+          "height": 21,
+          "bars": 80,
+          "closed": false,
+          "items": 0,
+          "texts": []
+        },
+        "XAUUSDm": {
+          "width": 656,
+          "height": 21,
+          "bars": 80,
+          "closed": false,
+          "items": 0,
+          "texts": []
+        }
+      }
+    }
+  },
+  {
+    "scale": 2.667,
+    "error": "No se completó el dibujado de charts",
+    "layout": {
+      "window": [
+        1280,
+        760
+      ],
+      "charts": {
+        "BTCUSDm": {
+          "width": 1,
+          "height": 1,
+          "bars": 80,
+          "closed": false,
+          "items": 0,
+          "texts": []
+        },
+        "XAUUSDm": {
+          "width": 1,
+          "height": 1,
+          "bars": 80,
+          "closed": false,
+          "items": 0,
+          "texts": []
+        }
+      }
+    }
+  }
+]

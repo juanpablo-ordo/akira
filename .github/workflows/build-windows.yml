@@ -1,5 +1,5 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 1 · ${{ github.ref_name }}
+run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 2 · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -78,6 +78,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
+          python Akira.py --self-check diagnostics/SOURCE_SELF_CHECK.json --app-root .
+          if ($LASTEXITCODE -ne 0) { throw 'El autocontrol gráfico de origen falló. Revisa SOURCE_SELF_CHECK.json antes de compilar.' }
           python build_windows.py --source . --diagnostic diagnostics
           if ($LASTEXITCODE -ne 0) { throw 'No pasó el ejecutable nuevo; no publicar' }
           $visual = Start-Process -FilePath './native/AKIRA/AKIRA.exe' -ArgumentList @('--sprite-ai-check', 'diagnostics/SPRITE_AI_FROZEN.json') -Wait -PassThru

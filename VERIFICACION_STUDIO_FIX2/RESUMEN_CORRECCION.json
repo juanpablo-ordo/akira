@@ -1,0 +1,33 @@
+{
+  "build": "AKIRA_16_4_0_STUDIO_REV5",
+  "revision": "WINDOWS_REGRESSION_FIX_2",
+  "input_video": "2026-10-16 20-01-03.mp4",
+  "input_sha256": "0187d8efb4a83d9d99aa9782d91f5a87dd0bcd87c2a99294dac7d69bb92e4466",
+  "base_source_zip_sha256": "bd5ec295e4f0b7298d67615b15d156664a2e4ef372b3db9498f5ea69a677a084",
+  "reported_run": "https://github.com/juanpablo-ordo/akira/actions/runs/38989618802",
+  "reported_job": 117268870258,
+  "reported_commit": "b5e8cf5550bb5cd3d361701b8a29eba525e48e0a",
+  "windows_previous_regressions": {
+    "tests": 1202,
+    "subtests": 102,
+    "failures": 0,
+    "skipped": 0
+  },
+  "reported_frozen_error": "No se completó el dibujado de charts",
+  "reproduction": "Native font scaling 2.0 reduced canvas to 21 px while it retained 80 real synthetic bars; renderer correctly requires 70 px. Larger scale could reduce to 1 px.",
+  "implementation": [
+    "Dashboard market content scrolls while preserving natural chart height.",
+    "Only the responsive label handler owns text wrapping; removed competing card handler.",
+    "Windowed failure JSON and build error expose actual chart dimensions, bars, item count and scale.",
+    "Workflow checks source UI before compiling and retains the strict frozen UI gate."
+  ],
+  "pytest_passed": 1204,
+  "subtests_passed": 102,
+  "offline_tests_passed": 1201,
+  "skipped": 0,
+  "windows_fix2_verified": false,
+  "live_account_used": false,
+  "financial_engine_changed": false,
+  "github_write_error": "403",
+  "workflow_title": "AKIRA 16.4.0 Studio Rev5 · corrección Windows 2"
+}

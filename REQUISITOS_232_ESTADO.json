@@ -1,7 +1,7 @@
 {
   "source": "AKIRA_Instrucciones_Maestras.docx",
   "scope": "R001-R232 y E01-E16",
-  "release": "AKIRA 16.4.0 Studio Rev5 · código verificado; Windows pendiente",
+  "release": "AKIRA 16.4.0 Studio Rev5 · corrección Windows 2; ejecutable pendiente",
   "rows": [
     {
       "id": "R001",
@@ -2555,7 +2555,7 @@
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "Clasificador CLIP opcional y componentes fijados. Pesos no disponibles aquí; sin inferencia semántica real validada. Las sugerencias ambiguas requieren revisión."
+      "acceptance_pending": "La ejecución Windows 23 aprobó CLIP CPU de origen con un sprite dormido; el margen exige revisión. Inferencia del ejecutable y reconocimiento universal pendientes."
     },
     {
       "id": "E09",
@@ -2666,7 +2666,7 @@
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "Publicación bloqueada por GitHub HTTP 403: Resource not accessible by integration. EXE, instalación Windows y MT5 demo pendientes."
+      "acceptance_pending": "FIX1 pasó regresiones Windows y se construyó, pero falló el autocontrol de gráficos. FIX2 requiere un commit nuevo, ejecutable validado, instalación y MT5 demo. Escritura conectada rechazada con 403."
     }
   ],
   "rule": "Evidence from Linux mocks/tests is partial; no item marked fully complete until user-acceptance on delivered Windows installer.",

@@ -1,6 +1,6 @@
-# AKIRA 16.4.0 Studio Rev5 · corrección Windows 1
+# AKIRA 16.4.0 Studio Rev5 · corrección Windows 2
 
-Corrección vigente de las cuatro regresiones Windows: consulta `CORRECCION_WINDOWS_1.md`.
+Corrección vigente del fallo de dibujo de gráficos en el ejecutable: consulta `CORRECCION_WINDOWS_2.md`.
 
 Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 y el documento maestro recibidos. La aplicación abre por defecto la nueva interfaz nativa Qt. Este ZIP contiene el programa fuente, sus recursos y la preparación del instalador; el EXE nuevo aún está pendiente de compilar.
 
@@ -18,17 +18,17 @@ Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 
 
 ## Verificación terminada
 
-**1.202 pruebas pytest y 102 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.199 pruebas unittest con la red bloqueada**, sin fallos ni omisiones. Los autocontroles nativos completaron 12 comprobaciones Qt y 27 Tk. Se comprobó el arranque predeterminado mediante `Akira.py` con FakeMT5, sin operar una cuenta real.
+**1.204 pruebas pytest y 102 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.201 pruebas unittest con la red bloqueada**, sin fallos ni omisiones. Los autocontroles nativos completaron 12 comprobaciones Qt y 27 Tk. Se comprobó el arranque predeterminado mediante `Akira.py` con FakeMT5, sin operar una cuenta real.
 
-Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX1`. La evidencia original de Rev5 está en `VERIFICACION_STUDIO_REV5`. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
+Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX2`. La evidencia original de Rev5 está en `VERIFICACION_STUDIO_REV5`. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
 
 ## Compilación pendiente
 
-La Rev5 original ya está publicada en la rama `akira-studio-rev5-20261016`; su ejecución 22 falló en cuatro regresiones. Este paquete incorpora la **corrección Windows 1**. El acceso conectado sigue devolviendo **HTTP 403: Resource not accessible by integration** al escribir, por lo que esta corrección requiere publicarse con Git desde tu computadora y aún no tiene un instalador nuevo.
+La corrección Windows 1 ya está publicada y sus regresiones pasaron en Windows. La ejecución 23 se detuvo en el autocontrol de gráficos del ejecutable. Este paquete incorpora la **corrección Windows 2**. El acceso conectado sigue devolviendo **HTTP 403: Resource not accessible by integration** al escribir, por lo que esta corrección requiere publicarse con Git desde tu computadora y aún no tiene un instalador validado.
 
 Para publicar desde un Windows con Git autenticado: extraer todo el ZIP y ejecutar `PUBLICAR_A_GITHUB_REV5.cmd`. El script usa una copia temporal, crea o actualiza la rama `akira-studio-rev5-20261016` e inicia el workflow con el código nuevo. No sustituye `main`. Los resultados aparecen en https://github.com/juanpablo-ordo/akira/actions.
 
-La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 1**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
+La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 2**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
 
 El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP de código no incluye pesos GGUF/CLIP ni equivale al instalador final. `INSTALAR_AKIRA.cmd` es el instalador heredado desde fuentes; su comprobación Windows tampoco se ha ejecutado en esta revisión.
 
@@ -36,7 +36,7 @@ El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP 
 
 La lista de los **232 requisitos y 16 solicitudes adicionales** está en `REQUISITOS_232_ESTADO.json` y `.csv`, con evidencia local y aceptación pendiente. No se declara cumplimiento integral de los 248 puntos.
 
-Falta compilar e instalar en Windows, verificar el modelo local y el clasificador visual con sus pesos reales, audio físico, DPI y varios monitores, límites efectivos de recursos y una sesión MT5 demo de seis horas. Algunas razones dinámicas continúan en español y los idiomas de voz dependen de los modelos disponibles. El reconocimiento de sprites ofrece sugerencias editables y no garantiza identificar cualquier dibujo.
+Falta compilar e instalar en Windows, verificar el modelo local y el clasificador visual dentro del ejecutable, audio físico, DPI y varios monitores, límites efectivos de recursos y una sesión MT5 demo de seis horas. Algunas razones dinámicas continúan en español y los idiomas de voz dependen de los modelos disponibles. El reconocimiento de sprites ofrece sugerencias editables y no garantiza identificar cualquier dibujo. La ejecución Windows anterior sí aprobó la inferencia CPU de origen con un sprite dormido; su margen resultó ambiguo y requiere revisión.
 
 Los límites duros CPU/RAM del fondo se aplican al decodificador propio en Windows y requieren esa validación; no existe un límite duro de GPU ni de toda la aplicación. La estrategia Adaptive es una selección inicial sobre reglas existentes: no demuestra superioridad ni convierte automáticamente todos los videos en estrategias rentables. La rapidez de envío y la rentabilidad con datos reales siguen pendientes de medir.
 

@@ -1,5 +1,3 @@
-# Estado de entrega Studio Rev5 · corrección Windows 1
+# Studio Rev5 · corrección Windows 2
 
-La Rev5 original está en GitHub y falló cuatro regresiones. La corrección está implementada y probada localmente; debe publicarse en la misma rama con el publicador actualizado para ejecutar CI Windows.
-
-Consulta `CORRECCION_WINDOWS_1.md`, `README.md` y `VERIFICACION_STUDIO_FIX1`. El acceso de escritura conectado sigue bloqueado por HTTP 403. EXE e instalación Windows pendientes.
+FIX1 ya pasó sus regresiones en Windows. Su ejecutable falló en el dibujo de gráficos. FIX2 está implementado y probado localmente; necesita publicarse y superar el nuevo autocontrol Windows. Consulta `CORRECCION_WINDOWS_2.md`, `README.md` y `VERIFICACION_STUDIO_FIX2`. El acceso de escritura conectado sigue rechazado con HTTP 403.
