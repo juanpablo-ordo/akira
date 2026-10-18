@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_4_1_STUDIO_REV6",
   "date": "2026-10-18",
-  "status": "SOURCE_VERIFIED_WINDOWS_IN_PROGRESS",
+  "status": "ARTWORK_MAPPING_CORRECTED_WINDOWS_REBUILD_PENDING",
   "native_studio": {
     "version": 1,
     "status": "PASSED",
@@ -70,6 +70,10 @@
     "run_id": 39101728210,
     "source_regressions": "PASSED",
     "source_sprite_recognition": "PASSED",
-    "build": "IN_PROGRESS"
-  }
+    "build": "PASSED",
+    "frozen_ui": "PASSED",
+    "real_model": "PASSED",
+    "production_conversation": "IN_PROGRESS"
+  },
+  "artwork_correction": "Joy and concern atlas assignments corrected after visual inspection. All 108 images remain distinct and unchanged in pixels."
 }
