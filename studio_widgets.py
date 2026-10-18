@@ -1,6 +1,7 @@
 """Native, high-DPI Studio components. Painting never enters the broker actor."""
 from __future__ import annotations
 import math,time
+from functools import lru_cache
 from collections import OrderedDict
 from pathlib import Path
 from PySide6.QtCore import Qt,QRectF,QPointF,QTimer,QSize,QVariantAnimation
@@ -9,6 +10,7 @@ from PySide6.QtWidgets import QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPus
 
 INK={'bg':'#020c18','panel':'#041426','line':'#164762','cyan':'#00ddff','pink':'#ff2585','green':'#00e8b5','amber':'#ffc548','text':'#e8f3ff','muted':'#80acc9'}
 
+@lru_cache(maxsize=160)
 def icon(name,color='#00ddff',size=22):
     pix=QPixmap(size*2,size*2);pix.fill(Qt.GlobalColor.transparent)
     p=QPainter(pix);p.setRenderHint(QPainter.RenderHint.Antialiasing);p.scale(size/24*2,size/24*2)
@@ -22,6 +24,10 @@ def icon(name,color='#00ddff',size=22):
         p.drawPolyline([QPointF(6,2),QPointF(15,2),QPointF(20,7),QPointF(20,22),QPointF(5,22),QPointF(5,2)])
         p.drawPolyline([QPointF(15,2),QPointF(15,8),QPointF(20,8)])
         for y in (12,16,19):p.drawLine(8,y,16,y)
+    elif name=='eye':
+        p.drawEllipse(QRectF(2,6,20,12));p.drawEllipse(QRectF(9,9,6,6))
+    elif name=='phone':
+        p.drawPolyline([QPointF(4,3),QPointF(8,2),QPointF(10,7),QPointF(7,10),QPointF(14,17),QPointF(17,14),QPointF(22,17),QPointF(21,21),QPointF(17,22),QPointF(9,17),QPointF(3,9),QPointF(4,3)])
     elif name=='chat':
         p.drawRoundedRect(QRectF(2,3,20,15),5,5);p.drawPolyline([QPointF(7,18),QPointF(5,22),QPointF(13,18)])
     elif name=='sources':
@@ -114,7 +120,7 @@ class DataTable(QTableWidget):
 
     def update_rows(self,rows):
         # rows = (stable id, displayed cells, original data). No reset/model rebuild.
-        selected=self.selected_key();scroll=self.verticalScrollBar().value();self.blockSignals(True)
+        selected=self.selected_key();scroll=self.verticalScrollBar().value();top=self.rowAt(0);anchor=self.keys[top] if 0<=top<len(self.keys) else None;offset=self.rowViewportPosition(top) if top>=0 else 0;self.blockSignals(True)
         desired=[str(k) for k,_,_ in rows]
         self.setUpdatesEnabled(False)
         try:
@@ -130,6 +136,8 @@ class DataTable(QTableWidget):
                         color=INK['green'] if text.startswith(('BUY','DISPONIBLE','CONFIRMAD','ACTIVO')) else INK['pink'] if text.startswith(('SELL','ERROR','RECHAZ','DESCART')) else INK['amber'] if text.startswith(('ESPER','EN REVIS','SOLO','NO DISPON')) else INK['text']
                         item.setForeground(QColor(color))
             if selected in self.keys:self.selectRow(self.keys.index(selected))
+            if anchor in self.keys:
+                scroll=self.verticalScrollBar().value()+self.rowViewportPosition(self.keys.index(anchor))-offset
             self.verticalScrollBar().setValue(scroll)
         finally:self.setUpdatesEnabled(True);self.blockSignals(False)
 
@@ -167,11 +175,11 @@ class CandleChart(QWidget):
 class AvatarWidget(QWidget):
     def __init__(self,director,asset_root,reduce_motion=False,parent=None):
         super().__init__(parent);self.director=director;self.asset_root=Path(asset_root);self.reduce_motion=reduce_motion
-        self.cache=OrderedDict();self.offset=QPointF();self.setMouseTracking(True);self.setMinimumSize(75,75)
+        self.cache=OrderedDict();self.offset=QPointF();self.setMouseTracking(True);self.setMinimumSize(140,100)
         self._previous=None;self._current=None;self._fade_value=1.;self._fade=QVariantAnimation(self);self._fade.setStartValue(0.);self._fade.setEndValue(1.);self._fade.setDuration(140);self._fade.valueChanged.connect(self.fade_changed)
         self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
-        from avatar_animation import StateSprites
-        self.states=StateSprites(self.asset_root);director.subscribe(self)
+        from avatar_animation import MotionSprites
+        self.states=MotionSprites(self.asset_root);director.subscribe(self)
     def winfo_ismapped(self):return self.isVisible()
     def fade_changed(self,value):self._fade_value=float(value);self.update()
     def _receive(self,name,entry,animate=False):
@@ -193,15 +201,11 @@ class AvatarWidget(QWidget):
             blink=next((item for item in director.catalog.entries if item.state=='blink'),None)
             if blink:entry=blink
         if not hasattr(self.selected,'path'):
-            state=5 if not director.online else 6 if self.name=='waking' else 4 if director.loading else director.blink_frame if director.blink_frame is not None else 7 if self.name=='listening' else 0 if self.name in ('idle','waiting','analyzing') else None
+            state=15 if not director.online else 14 if self.name=='waking' else int(time.monotonic()*8)%8 if director.loading else 10 if director.blink_frame==2 else 9 if director.blink_frame is not None else 12 if self.name=='listening' else (13 if director.last_level>.08 else 8) if director.playing else 8 if self.name in ('idle','waiting','analyzing') else None
         key=(entry.id,state,width,height)
         if key not in self.cache:
-            image=self.states.image(state,width,height) if state is not None else director.catalog.image(entry,max(416,width),max(416,height))
-            image=image.convert('RGBA');bounds=image.getchannel('A').getbbox()
-            if bounds:
-                from PIL import Image
-                image=image.crop(bounds);image.thumbnail((width,height),Image.Resampling.NEAREST)
-            canvas=__import__('PIL.Image',fromlist=['Image']).new('RGBA',(width,height));canvas.alpha_composite(image,((width-image.width)//2,(height-image.height)//2));image=canvas
+            image=self.states.image(state,width,height) if state is not None else director.catalog.image(entry,width,height)
+            image=image.convert('RGBA')
             qimage=QImage(image.tobytes(),image.width,image.height,image.width*4,QImage.Format.Format_RGBA8888).copy()
             self.cache[key]=QPixmap.fromImage(qimage)
             while len(self.cache)>12:self.cache.popitem(last=False)
@@ -209,7 +213,21 @@ class AvatarWidget(QWidget):
         if self._previous is not None and self._fade.state()==QVariantAnimation.State.Running:
             p.setOpacity(1-self._fade_value);p.drawPixmap(QPointF(5,5)+self.offset,self._previous);p.setOpacity(self._fade_value)
         p.drawPixmap(QPointF(5,5)+self.offset,self._current);p.setOpacity(1)
-        if director.loading and director.online:
-            side=min(38,self.width()*.3);r=QRectF(self.width()-side-6,self.height()-side-6,side,side)
-            p.setPen(QPen(QColor('#164762'),3));p.drawEllipse(r)
-            p.setPen(QPen(QColor(INK['cyan']),3,Qt.PenStyle.SolidLine,Qt.PenCapStyle.RoundCap));p.drawArc(r,int(-time.monotonic()*240*16),95*16)
+
+
+class SignalWave(QWidget):
+    def __init__(self,parent=None):
+        super().__init__(parent);self.setFixedHeight(32);self.timer=QTimer(self);self.timer.setInterval(125);self.timer.timeout.connect(self.tick);self.timer.start()
+    def tick(self):
+        if not self.isVisible() or self.window().isMinimized():return
+        if getattr(self.window(),'_visual_studio',{}).get('reduce_motion') or getattr(self.window(),'_render_interval',.4)>=.9:return
+        self.update()
+    def paintEvent(self,event):
+        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing);t=time.monotonic();style=getattr(self.window(),'_visual_studio',{})
+        for j,color in enumerate((style.get('accent','#00ddff'),style.get('secondary','#ff2585'))):
+            p.setPen(QPen(QColor(color),1));path=QPainterPath()
+            for x in range(0,self.width()+4,4):
+                y=16+math.sin(x/24+t*(1 if j else -1)+j)*7*math.sin(x/max(1,self.width())*math.pi)
+                if x==0:path.moveTo(x,y)
+                else:path.lineTo(x,y)
+            p.drawPath(path)

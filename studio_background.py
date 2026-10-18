@@ -95,21 +95,25 @@ def video_filter(size,config):
     crop=[max(0,min(45,float(config.get('crop_'+k,0)))) for k in ('left','top','right','bottom')]
     left,top,right,bottom=crop
     if any(crop):filters.append(f'crop=iw*{1-(left+right)/100:.4f}:ih*{1-(top+bottom)/100:.4f}:iw*{left/100:.4f}:ih*{top/100:.4f}')
-    rotation=int(config.get('rotation',0))%360
+    rotation=float(config.get('rotation',0))%360
     if rotation==90:filters.append('transpose=1')
     elif rotation==180:filters.extend(('hflip','vflip'))
     elif rotation==270:filters.append('transpose=2')
+    elif rotation:filters.append(f'rotate={math.radians(rotation):.7f}:ow=rotw({math.radians(rotation):.7f}):oh=roth({math.radians(rotation):.7f}):c=0x020c18')
     fps=max(1,min(144,int(config.get('fps',24))))
     filters.append('fps='+str(fps))
     fit=config.get('fit','cover')
     if fit=='cover':
-        fx=(max(-100,min(100,int(config.get('offset_x',0))))+100)/200
-        fy=(max(-100,min(100,int(config.get('offset_y',0))))+100)/200
+        fx=(100-max(-100,min(100,int(config.get('offset_x',0)))))/200
+        fy=(100-max(-100,min(100,int(config.get('offset_y',0)))))/200
         filters.extend((f'scale={width}:{height}:force_original_aspect_ratio=increase',f'crop={width}:{height}:(iw-ow)*{fx:.4f}:(ih-oh)*{fy:.4f}'))
     elif fit=='contain':
         fx=(max(-100,min(100,int(config.get('offset_x',0))))+100)/200;fy=(max(-100,min(100,int(config.get('offset_y',0))))+100)/200
         filters.extend((f'scale={width}:{height}:force_original_aspect_ratio=decrease',f'pad={width}:{height}:(ow-iw)*{fx:.4f}:(oh-ih)*{fy:.4f}:color=0x020c18'))
     else:filters.append(f'scale={width}:{height}')
+    zoom=max(.5,min(2,float(config.get('zoom',100))/100))
+    if zoom>1:filters.extend((f'scale={round(width*zoom)//2*2}:{round(height*zoom)//2*2}',f'crop={width}:{height}'))
+    elif zoom<1:filters.extend((f'scale={max(2,round(width*zoom)//2*2)}:{max(2,round(height*zoom)//2*2)}',f'pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color=0x020c18'))
     return ','.join(filters)
 
 
@@ -139,7 +143,7 @@ class WallpaperWorker:
             import imageio_ffmpeg
             width,height=self.size;fps=max(1,min(144,int(self.config.get('fps',24))))
             flags=getattr(subprocess,'CREATE_NO_WINDOW',0)|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)
-            command=[imageio_ffmpeg.get_ffmpeg_exe(),'-nostdin','-v','error','-threads','1','-stream_loop','-1','-i',str(self.config['file']),'-an','-sn','-vf',video_filter(self.size,self.config),'-threads','1','-f','rawvideo','-pix_fmt','rgb24','pipe:1']
+            command=[imageio_ffmpeg.get_ffmpeg_exe(),'-nostdin','-v','error','-threads','1',*(['-stream_loop','-1'] if self.config.get('loop',True) else []),*(['-ignore_loop','1'] if Path(self.config['file']).suffix.lower()=='.gif' else []),'-i',str(self.config['file']),'-an','-sn','-vf',video_filter(self.size,self.config),'-threads','1','-f','rawvideo','-pix_fmt','rgb24','pipe:1']
             errors=tempfile.TemporaryFile()
             if not self.stop_event.is_set():
                 process=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=errors,creationflags=flags,close_fds=True)
@@ -161,7 +165,9 @@ class WallpaperWorker:
                         data.extend(chunk)
                     if len(data)!=count:
                         if not self.stop_event.is_set():
-                            errors.seek(0);raise RuntimeError(errors.read(2000).decode('utf-8','replace') or 'No se pudo decodificar el fondo')
+                            errors.seek(0);detail=errors.read(2000).decode('utf-8','replace')
+                            if not detail and not self.config.get('loop',True):self.status['state']='ENDED';break
+                            raise RuntimeError(detail or 'No se pudo decodificar el fondo')
                         break
                     self.frames.append((bytes(data),width,height));now=time.monotonic()
                     self.status.update(state='PLAYING',frames_buffered=len(self.frames),last_frame=now,effective_fps=round(1/delay,1))
@@ -190,7 +196,7 @@ class WallpaperWorker:
             finally:
                 if limits:limits.close()
                 if errors:errors.close()
-                self.frames.clear()
+                if self.stop_event.is_set():self.frames.clear()
                 if self.stop_event.is_set() and self.shutdown_error is None:self.status['state']='STOPPED'
                 self.finished.set()
 
@@ -200,7 +206,7 @@ class BackgroundSurface(QWidget):
     def __init__(self,parent=None):
         super().__init__(parent);self.config={};self.worker=None;self.frame=QImage();self.image=QImage();self._default=QPixmap()
         self.accent='#00ddff';self.secondary='#ff2585';self._cache_size=None
-        self._generation=0;self._ready_image=None;self.media_status={};self.style={}
+        self._generation=0;self._ready_image=None;self.media_status={};self.style={};self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
         self._tick=QTimer(self);self._tick.setInterval(33);self._tick.timeout.connect(self.advance)
         self._resize=QTimer(self);self._resize.setSingleShot(True);self._resize.setInterval(180);self._resize.timeout.connect(self.restart)
     def configure(self,config,accent='#00ddff',secondary='#ff2585',style=None):
@@ -220,8 +226,8 @@ class BackgroundSurface(QWidget):
         self._resize.stop()
         self._generation+=1;generation=self._generation;self._ready_image=None
         self.frame=QImage();self.image=QImage();self._tick.stop();self.media_status={}
-        if self.config.get('enabled') and self.config.get('kind')=='video' and Path(self.config.get('file','')).is_file():
-            config=dict(self.config);hz=max(1,round(self.screen().refreshRate() or 60));config['fps']=min(hz,int(config.get('fps',30)))
+        if self.config.get('enabled') and (self.config.get('kind') in ('video','gif') or Path(self.config.get('file','')).suffix.lower()=='.gif') and Path(self.config.get('file','')).is_file():
+            config=dict(self.config);hz=max(1,round(self.screen().refreshRate() or 60));config['fps']=min(hz,int(config.get('fps',30))) if config.get('vsync',True) else int(config.get('fps',30))
             self.worker=WallpaperWorker(config,(max(320,round(self.width()*self.devicePixelRatioF())),max(240,round(self.height()*self.devicePixelRatioF()))));self.worker.start();self._tick.setInterval(max(7,round(1000/config['fps'])));self._tick.start()
         elif self.config.get('enabled') and self.config.get('kind')=='image':
             config=dict(self.config);size=frame_geometry((max(320,round(self.width()*self.devicePixelRatioF())),max(240,round(self.height()*self.devicePixelRatioF()))),config)
@@ -240,7 +246,7 @@ class BackgroundSurface(QWidget):
                 self.image=image;self.media_status={'state':'ERROR','error':error} if error else {'state':'IMAGE','buffer_bytes':image.sizeInBytes()};self.update()
             if not self.worker:self._tick.stop()
         if not self.worker:return
-        if self.worker.status.get('state')=='ERROR':self.frame=QImage();self._tick.stop();self.update();return
+        if self.worker.status.get('state')=='ERROR':self._tick.stop();self.update();return
         if self.isVisible() and not self.window().isMinimized():
             self.worker.visible.set()
             try:pending=self.worker.frames.pop()
@@ -248,6 +254,7 @@ class BackgroundSurface(QWidget):
             if pending:
                 data,width,height=pending;self.frame=QImage(data,width,height,width*3,QImage.Format.Format_RGB888).copy();self.update()
         else:self.worker.visible.clear()
+        if self.worker.status.get('state')=='ENDED' and not self.worker.frames:self._tick.stop()
     def resizeEvent(self,event):
         self._cache_size=None
         if self.worker or self.config.get('enabled') and self.config.get('kind')=='image':self._resize.start()
@@ -282,14 +289,14 @@ class BackgroundSurface(QWidget):
                 # QImage is decoded/scaled by a worker; painting only transforms
                 # the existing image in C++, without reopening or PIL-resizing it.
                 w,h=image.width(),image.height();left,top,right,bottom=[self.config.get('crop_'+k,0)/100 for k in ('left','top','right','bottom')]
-                source=QRectF(w*left,h*top,w*(1-left-right),h*(1-top-bottom));rotation=int(self.config.get('rotation',0))%360
-                sw,sh=(source.height(),source.width()) if rotation in (90,270) else (source.width(),source.height())
+                source=QRectF(w*left,h*top,w*(1-left-right),h*(1-top-bottom));rotation=float(self.config.get('rotation',0))%360
+                angle=math.radians(rotation);sw=abs(source.width()*math.cos(angle))+abs(source.height()*math.sin(angle));sh=abs(source.height()*math.cos(angle))+abs(source.width()*math.sin(angle))
                 fit=self.config.get('fit','cover')
                 if fit=='stretch':sx,sy=rect.width()/max(1,sw),rect.height()/max(1,sh)
                 else:sx=sy=(max if fit=='cover' else min)(rect.width()/max(1,sw),rect.height()/max(1,sh))
-                dx=(sw*sx-rect.width())*self.config.get('offset_x',0)/200;dy=(sh*sy-rect.height())*self.config.get('offset_y',0)/200
-                p.setClipRect(rect);p.translate(rect.center()-QPointF(dx,dy));p.rotate(rotation)
-                if rotation in (90,270):sx,sy=sy,sx
+                zoom=float(self.config.get('zoom',100))/100;sx*=zoom;sy*=zoom
+                dx=abs(sw*sx-rect.width())*self.config.get('offset_x',0)/200;dy=abs(sh*sy-rect.height())*self.config.get('offset_y',0)/200
+                p.setClipRect(rect);p.translate(rect.center()+QPointF(dx,dy));p.rotate(rotation)
                 target=QRectF(-source.width()*sx/2,-source.height()*sy/2,source.width()*sx,source.height()*sy)
                 p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform,self.config.get('quality',70)>=60);p.drawImage(target,image,source)
             p.restore()

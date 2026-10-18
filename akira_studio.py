@@ -333,21 +333,25 @@ class UserCatalog:
         rows=[r for r in rows if isinstance(r,dict) and all(isinstance(r.get(k),str) and r[k] for k in ('id','path','state')) and r['state'] in STATES and isinstance(r.get('order',0),(int,float))]
         self.entries=[Item(r['id'],r['path'],r['state']) for r in ordered_entries(rows) if Path(r['path']).is_file()]
         self.by_id={r.id:r for r in self.entries}
-        self.sequences=config.get('sequences',{});self.sequences=self.sequences if isinstance(self.sequences,dict) else {}
+        self.animate=bool(config.get('animate',True));self.sequences=config.get('sequences',{});self.sequences=self.sequences if isinstance(self.sequences,dict) else {}
     def choose(self,state,sequence=0,context=''):
         if state in ('AKIRA_046','AKIRA_047'):state='talking'
         if state in self.by_id:return self.by_id[state]
         candidates=[r for r in self.entries if r.state==state]
         if not candidates:candidates=[r for r in self.entries if r.state=='idle']
-        if candidates:return candidates[int(sequence)%len(candidates)]
+        if candidates:
+            ids=(self.sequences.get(state) or {}).get('frames') or []
+            if self.animate and ids and ids[0] in self.by_id:return self.by_id[ids[0]]
+            return candidates[int(sequence)%len(candidates)]
         return self.base.choose(state,sequence,context)
     def next_in_sequence(self,state,now,current):
         sequence=self.sequences.get(state)
-        if not isinstance(sequence,dict):return None
+        if not self.animate or not isinstance(sequence,dict):return None
         frames=[self.by_id[i] for i in sequence.get('frames',[]) if i in self.by_id]
         if len(frames)<2:return None
         if now<getattr(self,'_animation_next',0) and state==getattr(self,'_animation_state',None):return None
-        try:index=frames.index(current)+1
+        first=state!=getattr(self,'_animation_state',None)
+        try:index=frames.index(current)+(0 if first else 1)
         except ValueError:index=0
         if index>=len(frames):index=0 if sequence.get('loop',True) else len(frames)-1
         delays=sequence.get('durations_ms') or []

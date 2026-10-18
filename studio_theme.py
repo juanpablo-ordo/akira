@@ -16,6 +16,10 @@ PRESETS={
     'AKIRA Original':{},
     'Nebulosa':{'BG':'#100d25','PANEL':'#1c1635','CARD':'#231c44','LINE':'#51447e','BLUE':'#6545bd'},
     'Océano':{'BG':'#031722','PANEL':'#072936','CARD':'#0b3445','LINE':'#205e6c','BLUE':'#0d83a6'},
+    'Aurora':{'BG':'#031b22','PANEL':'#082f39','CARD':'#103944','LINE':'#23737b','BLUE':'#087589'},
+    'Violeta':{'BG':'#120c27','PANEL':'#21153f','CARD':'#2d1c50','LINE':'#755692','BLUE':'#7442b7'},
+    'Cobre':{'BG':'#1d120d','PANEL':'#2e2117','CARD':'#412c1f','LINE':'#966642','BLUE':'#9c5e28'},
+    'Noche polar':{'BG':'#050912','PANEL':'#0d1729','CARD':'#14243b','LINE':'#35516f','BLUE':'#246387'},
     'Carbono':{'BG':'#101315','PANEL':'#1a2127','CARD':'#252d34','LINE':'#45525c','BLUE':'#27648b'},
 }
 
@@ -24,7 +28,8 @@ def palette_for(studio):
     """Return valid static colors; do not execute/load any user-supplied code."""
     from re import fullmatch
     studio=studio or {}
-    palette={**ORIGINAL,**PRESETS.get(studio.get('theme'),{})}
+    profile=(studio.get('theme_profiles') or {}).get(studio.get('theme'),{})
+    palette={**ORIGINAL,**PRESETS.get(profile.get('theme',studio.get('theme')), {})}
     for key,source in (('CYAN','accent'),('PINK','secondary'),('BG','background_color')):
         value=studio.get(source)
         if isinstance(value,str) and fullmatch(r'#[0-9a-fA-F]{6}',value):

@@ -99,7 +99,7 @@ class ExpressionCatalog:
         if not 0<=bounds[0]<bounds[2]<=width or not 0<=bounds[1]<bounds[3]<=height:
             raise ValueError('Ilustración fuera de límites: '+entry.id)
         sprite=source.crop(bounds)
-        if max(sprite.size)>self.canvas_size:raise ValueError('El avatar excede su lienzo: '+entry.id)
+        if max(sprite.size)>self.canvas_size-16:sprite.thumbnail((self.canvas_size-16,self.canvas_size-16),Image.Resampling.LANCZOS)
         # Actual illustrated bounds can cross a nominal grid line. A shared
         # transparent canvas prevents clipping tails or showing a neighbor's
         # outline, while keeping every dog's feet at the same display height.
