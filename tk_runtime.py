@@ -1,7 +1,7 @@
 """Initialize Tcl's library loader before asking the native Tk DLL to load."""
 from pathlib import Path
 import tkinter as tk
-import gc,os,sys,time
+import gc,os,re,sys,time
 
 _WINDOWS_BOOTSTRAP=sys.platform=='win32'
 
@@ -61,15 +61,37 @@ def create_interpreter(**options):
         return window
 
 
+def _transient_selected_script_read(error,window):
+    if not _WINDOWS_BOOTSTRAP or not isinstance(error,tk.TclError):return False
+    detail=str(error)
+    if any(word in detail.lower() for word in ('version conflict','incompatible','syntax error','permission denied')):return False
+    files=re.findall(r'''couldn't read file "([^"]+)": (?:no error|no such file or directory)''',detail,re.I)
+    if not files:return False
+    try:
+        roots=[Path(os.environ[name]).resolve() for name in ('TCL_LIBRARY','TK_LIBRARY') if os.environ.get(name)]
+        library=Path(str(window.tk.call('info','library'))).resolve();roots.extend([library,library.parent/('tk'+str(tk.TkVersion))])
+        for name in set(files):
+            script=Path(name).resolve()
+            if script.suffix.lower()!='.tcl' or not any(script.is_relative_to(root) for root in roots):return False
+            if not script.is_file() or not 0<script.stat().st_size<=2*1024*1024 or not script.read_bytes():return False
+    except (OSError,ValueError,tk.TclError):return False
+    return True
+
+
 def create_root(**options):
     if 'useTk' in options:raise TypeError('create_root siempre inicializa Tcl y Tk')
-    window=create_interpreter(**options)
-    try:
-        window=initialize_tk(window)
-        window._akira_tk_bootstrap['initialization_attempts']=window._akira_tcl_initialization_attempts
-        return window
-    except Exception:
+    for attempt in range(3):
+        window=create_interpreter(**options)
         try:
-            if window.tk.call('info','commands','destroy'):window.destroy()
-        except tk.TclError:pass
-        raise
+            window=initialize_tk(window)
+            window._akira_tk_bootstrap.update(initialization_attempts=window._akira_tcl_initialization_attempts,tk_initialization_attempts=attempt+1)
+            return window
+        except Exception as error:
+            recover=attempt<2 and _transient_selected_script_read(error,window)
+            try:
+                if window.tk.call('info','commands','destroy'):window.destroy()
+            except tk.TclError:pass
+            if not recover:raise
+            # Only retry initialization, never a failed widget/test assertion.
+            # A genuinely missing, unreadable or incompatible library fails above.
+            gc.collect();time.sleep(.05*(attempt+1))

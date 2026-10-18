@@ -1,11 +1,11 @@
 {
   "build": "AKIRA_16_4_2_STUDIO_REV7",
-  "tests": 1274,
+  "tests": 1276,
   "status": "VALIDATING",
   "date": "2026-10-18",
   "skipped": 0,
   "scope": "Rev7: certificados, descubrimiento de IA, recortes, ahorro y planificación de interfaz",
   "notes_file": "ACEPTACION_REV7.md",
-  "pytest_tests": 1277,
+  "pytest_tests": 1279,
   "pytest_subtests": 120
 }

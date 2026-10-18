@@ -50,6 +50,25 @@ class TclBootstrapTests(unittest.TestCase):
 
 
 class TransientWindowsLibraryRead(unittest.TestCase):
+    def test_existing_selected_theme_recovers_a_native_false_missing_file_error(self):
+        from unittest.mock import Mock,patch
+        import tk_runtime
+        with tempfile.TemporaryDirectory() as t:
+            script=Path(t)/'ttk/classicTheme.tcl';script.parent.mkdir();script.write_text('# selected intact theme')
+            first=Mock();first.tk.call.return_value=t;second=Mock();second._akira_tk_bootstrap={};second._akira_tcl_initialization_attempts=1
+            failure=tk.TclError('couldn\'t read file "'+str(script)+'": no such file or directory')
+            with patch.object(tk_runtime,'_WINDOWS_BOOTSTRAP',True),patch.dict('os.environ',{'TK_LIBRARY':t}),patch('tk_runtime.create_interpreter',side_effect=[first,second]) as create,patch('tk_runtime.initialize_tk',side_effect=[failure,second]),patch('tk_runtime.time') as timer,patch('tk_runtime.gc'):
+                self.assertIs(create_root(),second)
+            self.assertEqual(create.call_count,2);self.assertEqual(second._akira_tk_bootstrap['tk_initialization_attempts'],2);timer.sleep.assert_called_once_with(.05);first.destroy.assert_called_once()
+    def test_actually_missing_or_incompatible_theme_is_not_retried(self):
+        from unittest.mock import Mock,patch
+        import tk_runtime
+        with tempfile.TemporaryDirectory() as t:
+            script=Path(t)/'ttk/classicTheme.tcl';window=Mock()
+            for text in ('couldn\'t read file "'+str(script)+'": no such file or directory','version conflict for package Tk'):
+                with patch.object(tk_runtime,'_WINDOWS_BOOTSTRAP',True),patch.dict('os.environ',{'TK_LIBRARY':t}),patch('tk_runtime.create_interpreter',return_value=window) as create,patch('tk_runtime.initialize_tk',side_effect=tk.TclError(text)),patch('tk_runtime.time') as timer:
+                    with self.assertRaises(tk.TclError):create_root()
+                    create.assert_called_once();timer.sleep.assert_not_called()
     def test_selected_auto_loader_recovers_native_read_failure_using_the_same_bytes(self):
         from unittest.mock import Mock,patch
         import tk_runtime

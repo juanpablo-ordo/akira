@@ -21,3 +21,5 @@ La compilación también comprueba la recuperación de la lectura de auto.tcl en
 En el perfil de ahorro las revisiones auxiliares del modelo se programan con un intervalo mínimo de diez minutos. Las solicitudes individuales explícitas conservan prioridad. La frecuencia del actor financiero sigue siendo de 0,2 segundos en el ensayo y no se reduce por esta política.
 
 El chat descarta también el estado negativo almacenado antes de cargar su motor. Durante el redimensionado, el avatar reutiliza su imagen en Qt y sólo recalcula la resolución al terminar; no vuelve a procesar el atlas por cada píxel de movimiento.
+
+La recuperación de inicio gráfico se limita a archivos Tcl que existen, pueden leerse y pertenecen a la biblioteca seleccionada. Si el lector nativo indica erróneamente que faltan, se reinicia solamente el intérprete, con un máximo de tres intentos. Una biblioteca realmente ausente, incompatible o con errores de código sigue deteniendo la comprobación. No se repite ninguna prueba fallida para ocultar su resultado.
