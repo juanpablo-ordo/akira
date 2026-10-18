@@ -4,7 +4,7 @@ Revisión de las observaciones del propietario del 17–18 de octubre de 2026. S
 
 | Solicitud | Implementación y comprobación |
 |---|---|
-| Ajustes y API que se pierden | `StudioController` combina cambios con la base del formulario y los guarda en orden. Pruebas de dos formularios simultáneos, último valor y riesgo cambiado desde otro panel. API canónicas con DPAPI, reemplazo y eliminación persistentes. |
+| Ajustes y API que se pierden | `StudioController` combina cambios con la base del formulario y los guarda en orden. Pruebas de dos formularios simultáneos, último valor, reversión mientras llega una confirmación y riesgo cambiado desde otro panel. API canónicas con DPAPI, reemplazo y eliminación persistentes. |
 | Chat incoherente y faltas | Contexto de conversación reducido, separación de temas y corrección conservadora. `qa_real_conversation_rev6.py` usa el asistente de producción con Qwen real: RAM/disco con faltas, seguimiento, cambio de tema, ficha sintética de Xbox y JSON estricto. El caso de noticias es ficticio y no acredita búsquedas actuales en vivo. |
 | Fuentes feas y scroll forzado | Hipervínculos por nombre y HTML escapado. El desplazamiento solo sigue nuevas entradas si el lector estaba al final. |
 | Reparación poco clara | Descarga con SHA256, archivo temporal, conservación del anterior ante fallo e inferencia antes de anunciar éxito. Sticker de Akira feliz tras confirmación. No hay botón Copiar en esos diálogos. |

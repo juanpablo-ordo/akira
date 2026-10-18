@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_4_1_STUDIO_REV6",
-  "tests": 1250,
-  "status": "REV6_SOURCE_ACCEPTANCE_IN_PROGRESS",
+  "tests": 1251,
+  "status": "REV6_FINAL_SETTINGS_ACK_AND_ARTWORK_VALIDATION",
   "date": "2026-10-18",
   "skipped": 0,
   "scope": "Studio Rev6: preferencias, conversación, medios y ejecución; resultado definitivo en VALIDACION_STUDIO_REV6.json",

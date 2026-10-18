@@ -15,7 +15,7 @@ from notification_center import NotificationCenter,safe_text
 
 class ConfigSnapshot(dict):
     def __init__(self,data):
-        super().__init__(data);self.baseline=copy.deepcopy(dict(data))
+        super().__init__(data);self.baseline=copy.deepcopy(dict(data));self.dirty_paths=set()
 
 
 class StudioController:
@@ -170,7 +170,7 @@ class StudioController:
             if self.preview or not self.bridge.connected or not login or confirmed_account!=login:raise ValueError('Confirma la cuenta conectada antes de activar la operativa.')
             if validated.get('expected_login') not in (0,login):raise ValueError('La cuenta autorizada no coincide con MT5.')
             validated['expected_login']=int(login)
-        paths=[row['path'] for row in changes(before,validated)]
+        paths=list(dict.fromkeys([row['path'] for row in changes(before,validated)]+list(getattr(draft,'dirty_paths',()))))
         def at(data,path):
             for key in path.split('.'):data=data[key]
             return copy.deepcopy(data)

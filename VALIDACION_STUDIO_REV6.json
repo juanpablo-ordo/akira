@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_4_1_STUDIO_REV6",
   "date": "2026-10-18",
-  "status": "ARTWORK_MAPPING_CORRECTED_WINDOWS_REBUILD_PENDING",
+  "status": "FINAL_SAVE_REVERSION_FIX_WINDOWS_REBUILD_PENDING",
   "native_studio": {
     "version": 1,
     "status": "PASSED",
@@ -24,7 +24,8 @@
     "interface_and_preferences": 20,
     "media_strategy_and_priority": 6,
     "additional_small_model_review": 1,
-    "scope": "Linux, synthetic UI/financial data and real owned FFmpeg files"
+    "scope": "Linux, synthetic UI/financial data and real owned FFmpeg files",
+    "additional_delayed_ack_reversion": 1
   },
   "full_acceptance": "Windows workflow must pass regressions, real model scenarios, frozen UI and installed AI. Physical audio, multiple monitors and prolonged MT5 demo are not certified.",
   "requirements": "REQUISITOS_232_ESTADO.json",
@@ -75,5 +76,6 @@
     "real_model": "PASSED",
     "production_conversation": "IN_PROGRESS"
   },
-  "artwork_correction": "Joy and concern atlas assignments corrected after visual inspection. All 108 images remain distinct and unchanged in pixels."
+  "artwork_correction": "Joy and concern atlas assignments corrected after visual inspection. All 108 images remain distinct and unchanged in pixels.",
+  "final_save_fix": "Explicit edited fields survive a return to their original value while an earlier save is awaiting its acknowledgement. Covered by a blocked-ack UI regression."
 }

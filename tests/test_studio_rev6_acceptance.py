@@ -25,6 +25,20 @@ class PreferenceAcceptance(unittest.TestCase):
         a['studio']['secondary']='#a012b3';b['risk']['max_trade_pct']=2.3;d['studio']['secondary']='#091827'
         self.assertTrue(c.save(a));self.assertTrue(c.save(b));self.assertTrue(c.save(d));self.assertTrue(wait_for(lambda:not c._jobs))
         saved=load_config(Path(self.tmp.name)/'akira_config.json');self.assertEqual(saved['risk']['max_trade_pct'],2.3);self.assertEqual(saved['studio']['secondary'],'#091827')
+    def test_reverting_a_field_while_its_previous_save_waits_for_ack_is_preserved(self):
+        panel=self.w.settings_panel;c=self.w.controller;field=panel.fields['studio.secondary'][0];original=field.value();started=threading.Event();release=threading.Event();calls=[]
+        def apply(command):
+            calls.append(command)
+            if len(calls)==1:started.set();release.wait(3)
+            return {'ok':True,'settings_applied':True}
+        c.bridge.connected=True
+        try:
+            with patch.object(c.bridge,'request',side_effect=apply):
+                field.setValue('#abc123');submitted=panel.draft();panel.persist_visual();self.assertTrue(started.wait(2))
+                field.setValue(original);panel.persist_visual();panel.saved({'config':submitted,'submitted':submitted});self.assertEqual(field.value(),original)
+                release.set();self.assertTrue(wait_for(lambda:not c._jobs));self.settle(.3)
+            self.assertEqual(c.cfg['studio']['secondary'],original);self.assertEqual(load_config(Path(self.tmp.name)/'akira_config.json')['studio']['secondary'],original);self.assertEqual(field.value(),original)
+        finally:release.set();c.bridge.connected=False
     def test_general_form_does_not_undo_risk_changed_elsewhere(self):
         panel=self.w.settings_panel;c=self.w.controller;draft=copy.deepcopy(c.cfg);draft['risk']['max_trade_pct']=2.4;c.save(draft);self.assertTrue(wait_for(lambda:not c._jobs))
         panel.saved({'config':c.cfg,'submitted':draft});self.assertEqual(panel.draft()['risk']['max_trade_pct'],2.4)

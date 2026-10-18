@@ -27,7 +27,7 @@ def put(data,path,value):
 
 class SettingsPanel(QWidget):
     def __init__(self,window):
-        super().__init__();self.window=window;self.controller=window.controller;self.tr=window.tr;self.fields={};self.initial={};self.keys={};self.extra={};self.avatar=copy.deepcopy(self.controller.cfg['studio']['avatar']);self.avatar_initial=copy.deepcopy(self.avatar)
+        super().__init__();self.window=window;self.controller=window.controller;self.tr=window.tr;self.fields={};self.initial={};self.touched=set();self.keys={};self.extra={};self.avatar=copy.deepcopy(self.controller.cfg['studio']['avatar']);self.avatar_initial=copy.deepcopy(self.avatar);self.avatar_touched=False
         layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(10)
         self.tabs=QTabWidget();layout.addWidget(self.tabs,1)
         self.categories=[]
@@ -76,8 +76,9 @@ class SettingsPanel(QWidget):
         if help:
             note=label(help,'muted');note.setWordWrap(True);card.body.addWidget(note)
         row.addWidget(widget,1);card.body.addLayout(row);self.fields[path]=(widget,read);self.initial[path]=copy.deepcopy(read())
+        signal=widget.valueChanged if isinstance(widget,ColorButton) else widget.currentTextChanged if isinstance(widget,QComboBox) else widget.toggled if isinstance(widget,QCheckBox) else widget.textChanged if isinstance(widget,QLineEdit) else widget.valueChanged
+        signal.connect(lambda *args,p=path:self.touched.add(p))
         if path.startswith('studio.') or path.startswith('desktop.model_') or path in ('desktop.performance_profile','desktop.memory_budget_mb'):
-            signal=widget.valueChanged if isinstance(widget,ColorButton) else widget.currentTextChanged if isinstance(widget,QComboBox) else widget.toggled if isinstance(widget,QCheckBox) else widget.textChanged if isinstance(widget,QLineEdit) else widget.valueChanged
             signal.connect(self.schedule_preview)
         return widget
     def add_button(self,card,title,callback,kind='',glyph=None):
@@ -182,9 +183,11 @@ class SettingsPanel(QWidget):
         result=copy.deepcopy(self.controller.cfg)
         for path,(_,read) in self.fields.items():
             value=read()
-            if value!=self.initial.get(path):put(result,path,value)
+            if path in self.touched or value!=self.initial.get(path):put(result,path,value)
         for path,value in self.extra.items():put(result,path,copy.deepcopy(value))
-        if self.avatar!=self.avatar_initial:result['studio']['avatar']=copy.deepcopy(self.avatar)
+        if self.avatar_touched or self.avatar!=self.avatar_initial:result['studio']['avatar']=copy.deepcopy(self.avatar)
+        result.dirty_paths=set(self.touched)|set(self.extra)
+        if self.avatar_touched or self.avatar!=self.avatar_initial:result.dirty_paths.add('studio.avatar')
         voice=result['studio']['language_voice_in'];result['voice']['language']=None if voice=='auto' else voice.split('-')[0]
         return result
 
@@ -192,7 +195,7 @@ class SettingsPanel(QWidget):
         submitted=data.get('submitted') or data['config'];current=data['config']
         for path,(widget,read) in self.fields.items():
             value=read()
-            if value==self.initial.get(path) or value==get(submitted,path):
+            if path not in self.touched or value==get(submitted,path):
                 target=get(current,path);widget.blockSignals(True)
                 try:
                     if isinstance(widget,ColorButton):widget.setValue(target)
@@ -202,15 +205,17 @@ class SettingsPanel(QWidget):
                     else:widget.setValue(target)
                 finally:widget.blockSignals(False)
                 self.initial[path]=copy.deepcopy(read())
+                if value==get(submitted,path):self.touched.discard(path)
         for path in list(self.extra):
             if self.extra[path]==get(submitted,path):self.extra.pop(path)
-        if self.avatar==submitted['studio']['avatar']:self.avatar_initial=copy.deepcopy(self.avatar)
+        if self.avatar==submitted['studio']['avatar']:self.avatar_initial=copy.deepcopy(self.avatar);self.avatar_touched=False
 
     def persist_visual(self):
         if not hasattr(self,'autosave_timer'):return
         self.autosave_timer.stop();draft=self.draft();target=copy.deepcopy(self.controller.cfg);target['studio']=draft['studio']
         for key in ('performance_profile','memory_budget_mb','model_context_tokens','model_keep_alive_seconds','model_use_gpu'):target['desktop'][key]=draft['desktop'][key]
-        if target!=self.controller.cfg:self.controller.save(target)
+        target.dirty_paths={p for p in draft.dirty_paths if p.startswith('studio.') or p in ('desktop.performance_profile','desktop.memory_budget_mb','desktop.model_context_tokens','desktop.model_keep_alive_seconds','desktop.model_use_gpu')}
+        if target!=self.controller.cfg or target.dirty_paths:self.controller.save(target)
 
     def schedule_preview(self,*args):
         if hasattr(self,'preview_timer'):self.preview_timer.start()
@@ -300,8 +305,8 @@ class SettingsPanel(QWidget):
 
     def edit_avatar(self):
         dialog=SpriteEditor(self.window,self.avatar)
-        if dialog.exec()==QDialog.DialogCode.Accepted:self.avatar=dialog.result_avatar();self.update_avatar_info();self.window.set_avatar(self.avatar);self.schedule_preview()
-    def original_avatar(self):self.avatar['active']=False;self.update_avatar_info();self.window.set_avatar(self.avatar);self.schedule_preview()
+        if dialog.exec()==QDialog.DialogCode.Accepted:self.avatar=dialog.result_avatar();self.avatar_touched=True;self.update_avatar_info();self.window.set_avatar(self.avatar);self.schedule_preview()
+    def original_avatar(self):self.avatar['active']=False;self.avatar_touched=True;self.update_avatar_info();self.window.set_avatar(self.avatar);self.schedule_preview()
     def update_avatar_info(self):self.avatar_info.setText(('Personalizado' if self.avatar.get('active') else 'Akira original')+' · '+str(len(self.avatar.get('entries',[])))+' sprites propios')
     def retranslate(self):
         for i,(source,_) in enumerate(self.categories):self.tabs.setTabText(i,self.tr.text(source))

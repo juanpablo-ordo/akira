@@ -10,7 +10,7 @@ Al abrir: comprueba la versión en Acerca de; guarda tus API en Ajustes > Fuente
 
 ## Cambios de Rev6
 
-- Guardado en una cola ordenada. Combina cambios de formularios distintos, conserva el último cambio del mismo campo y evita que Apariencia restaure un riesgo anterior. API con control para mostrarlas y botón propio de guardado; una clave nueva sustituye la anterior.
+- Guardado en una cola ordenada. Combina cambios de formularios distintos, conserva el último cambio del mismo campo incluso si vuelves al valor original durante un guardado, y evita que Apariencia restaure un riesgo anterior. API con control para mostrarlas y botón propio de guardado; una clave nueva sustituye la anterior.
 - Chat con respuesta visible progresiva, corrección conservadora de faltas, seguimientos y cambios de tema. Las preguntas de actualidad consultan fuentes; Xbox/Gears conserva su tema en las búsquedas. Los enlaces se presentan con el nombre de la fuente. El lector conserva su posición al actualizarse el contenido.
 - Reparación explícita de IA con descarga verificada y reemplazo atómico de componentes oficiales cuando falten o estén dañados. Solo anuncia éxito después de generar texto real. Una ruta de modelo personalizado existente se conserva.
 - Nuevos 108 fotogramas de expresión y atlas adicional con carga, parpadeo, habla, escucha, reparación y sueño. El círculo forma parte de los sprites; no se superpone un aro externo. Un director de estados comparte las reacciones entre pestañas.

@@ -644,7 +644,7 @@ class StudioWindow(QMainWindow):
             except Exception as error:self.show_error(str(error))
     def pause(self):self.controller.request({'action':'pause','paused':not self.controller.view.get('paused',False)})
     def toggle_privacy(self):
-        self.private=not self.private;draft=copy.deepcopy(self.cfg);draft['desktop']['privacy']=self.private
+        self.private=not self.private;draft=copy.deepcopy(self.cfg);draft['desktop']['privacy']=self.private;draft.dirty_paths.add('desktop.privacy')
         try:self.controller.save(draft)
         except Exception as error:self.show_error(str(error))
         self.render(self.controller.view)
@@ -747,7 +747,7 @@ class StudioWindow(QMainWindow):
         row=self.strategy_definitions.get(self.strategy_selector.currentData()) or {};measured=((self.controller.view.get('research') or {}).get('strategy_lab') or {}).get('strategies') or [];match=next((r for r in measured if r.get('id')==row.get('id')),{});count=sum(int((v.get('realized') or {}).get('n') or 0) for v in (match.get('symbols') or {}).values())
         set_document(self.strategy_description,'<b>'+html.escape(row.get('name',''))+'</b><p>'+rich_text(row.get('rules',''))+'</p><p>Cierres confirmados medidos: '+str(count)+'. Las variantes en prueba no se declaran rentables sin resultados.</p>')
     def apply_strategy(self):
-        draft=copy.deepcopy(self.controller.cfg);draft['strategy_choice']['selected']=self.strategy_selector.currentData();self.controller.save(draft)
+        draft=copy.deepcopy(self.controller.cfg);draft['strategy_choice']['selected']=self.strategy_selector.currentData();draft.dirty_paths.add('strategy_choice.selected');self.controller.save(draft)
     @staticmethod
     def source_result(data):
         if not isinstance(data,dict):return human(data)
@@ -826,7 +826,8 @@ class StudioWindow(QMainWindow):
         if hasattr(self.controller,'knowledge'):self.controller.knowledge.refresh()
         else:self.information('Conocimiento','La actualización de Internet está desactivada en vista previa.')
     def import_youtube_session(self):
-        self.information('Preparar sesión de YouTube','1. Abre YouTube en tu navegador e inicia sesión.\n2. Exporta únicamente las cookies de youtube.com en formato Netscape, con una herramienta de exportación de cookies de tu navegador. Guarda un archivo .txt.\n3. Selecciona ese archivo aquí. No sirven una captura, un enlace ni un archivo JSON.\n\nLa sesión permite consultar contenido al que tu cuenta tiene acceso; no garantiza que el vídeo tenga subtítulos. Si no tienes el archivo, puedes cancelar y seguir usando las demás fuentes.')
+        instructions,_=self.dialog_text('Preparar sesión de YouTube','1. Abre YouTube en tu navegador e inicia sesión.\n2. Exporta únicamente las cookies de youtube.com en formato Netscape, con una herramienta de exportación de cookies de tu navegador. Guarda un archivo .txt.\n3. Selecciona ese archivo aquí. No sirven una captura, un enlace ni un archivo JSON.\n\nLa sesión permite consultar contenido al que tu cuenta tiene acceso; no garantiza que el vídeo tenga subtítulos. Si no tienes el archivo, puedes cancelar y seguir usando las demás fuentes.')
+        instructions.exec()
         path,_=QFileDialog.getOpenFileName(self,'Sesión YouTube','','Netscape cookies (*.txt)')
         if path:
             from youtube_support import import_session
@@ -902,7 +903,7 @@ class StudioWindow(QMainWindow):
         from voice_session import VoiceSession
         self.stop_call();options=copy.deepcopy(self.cfg['voice']);options.update(input_device=self.voice_input.currentData(),output_device=self.voice_output.currentData())
         language=self.cfg['studio'].get('language_voice_in','auto');options['language']=None if language=='auto' else language.split('-')[0]
-        draft=copy.deepcopy(self.cfg);draft['voice'].update(input_device=options['input_device'],output_device=options['output_device'],voice_id=voice['id'])
+        draft=copy.deepcopy(self.cfg);draft['voice'].update(input_device=options['input_device'],output_device=options['output_device'],voice_id=voice['id']);draft.dirty_paths.update(('voice.input_device','voice.output_device','voice.voice_id'))
         self.controller.save(draft)
         self.controller.voice=VoiceSession(self.controller.folder,lambda data:self.controller.emit('voice',data),options,voice);self.controller.voice.start()
     def stop_call(self):
