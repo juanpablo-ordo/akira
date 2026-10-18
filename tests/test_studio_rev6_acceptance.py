@@ -100,6 +100,13 @@ class DataAndChatAcceptance(unittest.TestCase):
         from studio_presenter import rich_text
         result=rich_text('Ver [Xbox Wire](https://news.xbox.com/es-es/gears/) <script>alert(1)</script> https://www.reuters.com/test')
         self.assertIn('>Xbox Wire</a>',result);self.assertIn('>Reuters</a>',result);self.assertNotIn('<script>',result);self.assertNotIn('href="javascript:',rich_text('[x](javascript:bad)'))
+    def test_bundled_small_model_reviews_current_source_claims_instead_of_skipping(self):
+        from assistant_akira import AkiraAssistant
+        with tempfile.TemporaryDirectory() as t:
+            bot=AkiraAssistant(load_config(DEFAULT),Path(t),auto_prepare=False)
+            with patch('assistant_akira.ollama_chat',return_value='Se anunció; no se lanzó.') as review:
+                answer=bot._self_review_answer('Se lanzó.','¿Ya salió?','Estado: anunciado, no lanzado.','Qwen3-4B-Q4_K_M.gguf','http://127.0.0.1:18987/v1/chat/completions',30,strict=True)
+            self.assertIn('no se lanzó',answer);review.assert_called_once();self.assertIn('Estado: anunciado',review.call_args.args[0][-1]['content'])
     def test_typo_repair_preserves_identifiers_numbers_and_negation(self):
         from language_normalization import normalize_message
         raw='No abras BTCUSDm; esplicame la memroia RAM y diferncia, SL=60234.5 https://site.test/esplicas `memroia` AKIRA_01'

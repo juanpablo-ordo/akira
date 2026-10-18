@@ -1,0 +1,47 @@
+{
+  "build": "AKIRA_16_4_1_STUDIO_REV6",
+  "date": "2026-10-18",
+  "status": "WINDOWS_BUILD_PENDING",
+  "native_studio": {
+    "version": 1,
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "broker": "FakeMT5",
+    "eight_pages": true,
+    "real_records": true,
+    "privacy": true,
+    "stable_selection": true,
+    "responsive": true,
+    "shared_avatar": true,
+    "no_expression_gallery": true,
+    "global_wallpaper": true,
+    "live_theme": true,
+    "language_switch": true,
+    "event_loop": true,
+    "no_broker_requests": true
+  },
+  "offline_previous_pass": {
+    "build": "AKIRA_16_4_1_STUDIO_REV6",
+    "collected": 1249,
+    "tests_run": 1249,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failed_tests": [],
+    "failure_details": [],
+    "skipped_tests": [],
+    "seconds": 213.465,
+    "network": "blocked"
+  },
+  "owner_acceptance_cases": {
+    "interface_and_preferences": 20,
+    "media_strategy_and_priority": 6,
+    "additional_small_model_review": 1,
+    "scope": "Linux, synthetic UI/financial data and real owned FFmpeg files"
+  },
+  "full_acceptance": "Windows workflow must pass regressions, real model scenarios, frozen UI and installed AI. Physical audio, multiple monitors and prolonged MT5 demo are not certified.",
+  "requirements": "REQUISITOS_232_ESTADO.json"
+}

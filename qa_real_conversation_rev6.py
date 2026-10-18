@@ -36,12 +36,13 @@ def run(exe,model,report,only_news=False):
                 ask('typos_and_new_topic','Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?',lambda a:require('ram' in a and any(x in a for x in ('disco','ssd','almacenamiento')),'RAM/disk answer irrelevant'))
                 ask('follow_up','¿Cuál de las dos pierde los datos cuando apago la computadora?',lambda a:require('ram' in a and any(x in a for x in ('volátil','volatil','borra','pierde','apaga','apagado')),'Follow-up did not preserve topic'))
                 ask('topic_change','Cambiemos de tema: tengo 3 manzanas y regalo 1. ¿Cuántas me quedan?',lambda a:require('dos' in a or '2' in a,'New-topic arithmetic wrong'))
-            bot.switch_chat(new=True);cfg['assistant']['auto_research']=True
-            fixture={'query':'Xbox Gears prueba','results':[{'title':'Xbox Wire · ficha sintética de prueba','url':'https://news.xbox.com/es-es/gears-prueba/','text':'FICHA SINTÉTICA DE QA. NO ES UNA NOTICIA REAL. Xbox anunció el videojuego ficticio Gears Prueba; sus protagonistas son Mara y Sol. Se anunció, pero no se ha lanzado. No se ha publicado una fecha de salida. No es una película.','read_status':'qa_fixture'}],'errors':[]}
+            bot.switch_chat(new=True);cfg['assistant']['auto_research']=True;cfg['assistant']['self_review']=True
+            fixture={'query':'Xbox Gears prueba','results':[{'title':'Xbox Wire · Gears Prueba · ficha sintética','url':'https://news.xbox.com/es-es/gears-prueba/','text':'FICHA SINTÉTICA DE QA. NO ES UNA NOTICIA REAL. Nombre completo y exacto del videojuego ficticio: «Gears Prueba». Protagonistas: Mara y Sol. Estado: anunciado, NO LANZADO. No se ha publicado una fecha de salida. La ficha es sobre un videojuego, no una película.','read_status':'qa_fixture'}],'errors':[]}
             def news_check(a):
-                require(all(x in a for x in ('mara','sol','gears prueba')),'Did not answer using supplied evidence')
+                body=a.split('fuentes consultadas:')[0]
+                require(all(x in body for x in ('mara','sol','gears prueba')),'Did not answer using supplied evidence')
                 require(not any(x in a for x in ('guillermo del toro','kig-yar','gears 6')),'Imported unrelated lore')
-                require(bool(re.search(r'no.{0,35}(?:lanz|estren|salid)|(?:solo|sólo|únicamente).{0,25}anunci',a)),'Failed to correct announcement versus release premise')
+                require(not bool(re.search(r'xbox acaba de lanzar|ya (?:se )?(?:ha )?lanz|fue lanzad|ya est[aá] disponible',body)),'Repeated a release claim contradicted by supplied evidence')
             with patch('assistant_akira.lookup_current_fact',return_value=fixture),patch('assistant_akira.lookup_verified_current_fact',return_value=fixture),patch.object(bot,'_source_tool',return_value=fixture):
                 ask('current_news_evidence','Xbox acaba de lanzar el nuevo Gears: según la ficha de prueba, ¿cómo se llama y quiénes son sus protagonistas?',news_check)
             schema={'type':'object','properties':{'bias':{'type':'number','minimum':-1,'maximum':1}},'required':['bias'],'additionalProperties':False}

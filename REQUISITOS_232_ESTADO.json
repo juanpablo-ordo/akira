@@ -3145,6 +3145,16 @@
   "rule": "Evidence from Linux mocks/tests is partial; no item marked fully complete until user-acceptance on delivered Windows installer.",
   "counts": {
     "NO_VERIFICADO_INTEGRALMENTE": 120,
-    "PARCIAL_PROBADO_LOCALMENTE": 128
+    "PARCIAL_PROBADO_LOCALMENTE": 128,
+    "total": 248,
+    "master_requirements": 232,
+    "conversation_requests": 16,
+    "complete": 0,
+    "need_windows_acceptance": 248,
+    "need_mt5_demo_acceptance": 248,
+    "master": 232,
+    "extras": 16,
+    "partial_local": 128,
+    "fully_validated": 0
   }
 }

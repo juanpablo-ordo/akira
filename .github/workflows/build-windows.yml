@@ -55,7 +55,9 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $required = @('akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
-                        'installer/smoke_local_ai.py', 'installer/akira.iss')
+                        'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
+                        'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
+                        'assets/avatar_states/akira_rev6_motion.png')
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) {
               throw "Código REV6 incompleto: falta $file. No publicar un instalador antiguo."

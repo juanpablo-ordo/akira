@@ -826,6 +826,7 @@ class StudioWindow(QMainWindow):
         if hasattr(self.controller,'knowledge'):self.controller.knowledge.refresh()
         else:self.information('Conocimiento','La actualización de Internet está desactivada en vista previa.')
     def import_youtube_session(self):
+        self.information('Preparar sesión de YouTube','1. Abre YouTube en tu navegador e inicia sesión.\n2. Exporta únicamente las cookies de youtube.com en formato Netscape, con una herramienta de exportación de cookies de tu navegador. Guarda un archivo .txt.\n3. Selecciona ese archivo aquí. No sirven una captura, un enlace ni un archivo JSON.\n\nLa sesión permite consultar contenido al que tu cuenta tiene acceso; no garantiza que el vídeo tenga subtítulos. Si no tienes el archivo, puedes cancelar y seguir usando las demás fuentes.')
         path,_=QFileDialog.getOpenFileName(self,'Sesión YouTube','','Netscape cookies (*.txt)')
         if path:
             from youtube_support import import_session
@@ -835,8 +836,8 @@ class StudioWindow(QMainWindow):
         if ok and self.confirm('Eliminar clave',key):
             from akira_secrets import save_secrets
             def remove():
-                save_secrets({key:''},merge=True);return {'removed':key}
-            self.settings_panel.keys[key].clear();self.controller.job('delete_key',remove,'source_check')
+                save_secrets({key:''},merge=True);self.controller.refresh_provider_access();return {'removed':key}
+            self.settings_panel.keys[key].clear();self.controller.job('delete_key',remove,'source_check',executor=self.controller.settings_io)
     def translate_interface(self):
         if self._translating:return
         self._translating=True
