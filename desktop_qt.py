@@ -61,6 +61,7 @@ def stylesheet(studio):
     QPushButton[kind="danger"] {{border-color:{secondary};color:{secondary};}}
     QPushButton:disabled {{color:#436276;border-color:#153042;background:rgba(3,19,30,150);}}
     QPushButton[nav="true"] {{background:transparent;text-align:left;padding:10px 13px;min-height:25px;border-color:transparent;font-size:{round(16*scale)}px;}}
+    QPushButton[nav="true"]:checked {{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #004169,stop:1 #002039);border:1px solid {accent};border-left:3px solid {accent};color:white;}}
     QLineEdit,QComboBox,QSpinBox,QDoubleSpinBox,QPlainTextEdit,QTextBrowser,QListWidget {{background:rgba(1,17,31,205);border:1px solid #184d69;border-radius:4px;selection-background-color:#00658b;padding:6px;}}
     QLineEdit:focus,QComboBox:focus,QPlainTextEdit:focus {{border-color:{accent};}}
     QComboBox QAbstractItemView {{background:#041526;color:#e8f3ff;selection-background-color:#00658b;}}
@@ -170,7 +171,7 @@ class StudioWindow(QMainWindow):
     def build_metrics(self,layout):
         self.metrics_widget=QWidget();row=QGridLayout(self.metrics_widget);row.setContentsMargins(0,0,0,0);row.setSpacing(9);self.metrics_layout=row;self._metric_columns=6
         self.metrics={}
-        for key,title,glyph,color,caption in [('balance','BALANCE','wallet','#00ddff','Capital actual'),('equity','PATRIMONIO','layers','#00ddff','Valor total'),('floating','FLOTANTE','chart','#00e8b5','Ganancia / pérdida'),('daily_net','P/L DEL DÍA','chart','#ff2585','Resultado de hoy'),('reserved_risk','RIESGO','shield','#ffc548','Riesgo reservado'),('cycle_ms','CICLO','bolt','#00ddff','Tiempo del motor')]:
+        for key,title,glyph,color,caption in [('balance','BALANCE','wallet','#e8f3ff','Capital actual'),('equity','PATRIMONIO','layers','#00ddff','Valor total'),('floating','FLOTANTE','chart','#00e8b5','Ganancia / pérdida'),('daily_net','P/L DEL DÍA','chart','#ff2585','Resultado de hoy'),('reserved_risk','RIESGO','shield','#ffc548','Riesgo reservado'),('cycle_ms','CICLO','bolt','#00ddff','Tiempo del motor')]:
             metric=Metric(self.text(title),glyph,color);self.tr.bind(metric.caption,caption);row.addWidget(metric,0,len(self.metrics));self.metrics[key]=metric
         layout.addWidget(self.metrics_widget)
 
@@ -322,6 +323,7 @@ class StudioWindow(QMainWindow):
         brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
         QApplication.instance().setApplicationDisplayName(brand)
         self.setWindowTitle(brand+' · Studio · 16.4.2');desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
+        for wave in self.findChildren(SignalWave):wave.set_saving(profile=='Ahorro de energía' or bool(studio.get('reduce_motion')))
         if profile=='Ahorro de energía':wallpaper.update(fps=min(12,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
         self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
         locale=studio.get('language_ui','es')

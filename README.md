@@ -1,3 +1,13 @@
+# AKIRA 16.4.2 · Studio Rev7
+
+Revisión de los fallos observados en la laptop: certificados de noticias incluidos, descubrimiento del modelo local después del arranque, recortes individuales de sprites y menos trabajo repetido de interfaz e investigación. El control de MT5 conserva su frecuencia y sus comprobaciones de riesgo.
+
+Esta compilación se valida antes de publicar su instalador. Los resultados de Rev6 que aparecen en el historial no certifican Rev7.
+
+Consulta [ACEPTACION_REV7.md](ACEPTACION_REV7.md) para el alcance y las pruebas.
+
+## Historial técnico de Rev6
+
 # AKIRA 16.4.1 Studio Rev6
 
 Aplicación de Windows con IA local incluida. Esta revisión incorpora las correcciones solicitadas después de probar Studio Rev5: conversación, guardado de ajustes, fuentes, avatar, personalización y gestión del instalador. El código se conserva en GitHub; el instalador aparece únicamente cuando termina correctamente el workflow de Windows.

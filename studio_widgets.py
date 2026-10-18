@@ -252,13 +252,22 @@ class AvatarWidget(QWidget):
 
 class SignalWave(QWidget):
     def __init__(self,parent=None):
-        super().__init__(parent);self.setFixedHeight(32);self.timer=QTimer(self);self.timer.setInterval(125);self.timer.timeout.connect(self.tick);self.timer.start()
+        super().__init__(parent);self.setFixedHeight(32);self.saving=False;self.timer=QTimer(self);self.timer.setInterval(125);self.timer.timeout.connect(self.tick)
+    def set_saving(self,saving):
+        self.saving=bool(saving)
+        if self.saving or not self.isVisible():self.timer.stop()
+        else:self.timer.start()
+        self.update()
+    def showEvent(self,event):
+        super().showEvent(event);self.set_saving(self.saving)
+    def hideEvent(self,event):
+        self.timer.stop();super().hideEvent(event)
     def tick(self):
         if not self.isVisible() or self.window().isMinimized():return
         if getattr(self.window(),'_visual_studio',{}).get('reduce_motion') or getattr(self.window(),'_render_interval',.4)>=.9:return
         self.update()
     def paintEvent(self,event):
-        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing);t=time.monotonic();style=getattr(self.window(),'_visual_studio',{})
+        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing);t=0 if self.saving else time.monotonic();style=getattr(self.window(),'_visual_studio',{})
         for j,color in enumerate((style.get('accent','#00ddff'),style.get('secondary','#ff2585'))):
             p.setPen(QPen(QColor(color),1));path=QPainterPath()
             for x in range(0,self.width()+4,4):

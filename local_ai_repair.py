@@ -17,7 +17,7 @@ def digest(path):
 def download_verified(url,path,sha,limit,cancel=None,progress=lambda text:None,opener=urlopen,deadline=None):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True);part=path.with_name(path.name+'.repair.part');part.unlink(missing_ok=True);h=hashlib.sha256();size=0;last=0;deadline=deadline or time.monotonic()+900
     try:
-        with opener(Request(url,headers={'User-Agent':'AKIRA/16.4.1 Repair'}),timeout=30) as response,part.open('wb') as f:
+        with opener(Request(url,headers={'User-Agent':'AKIRA/16.4.2 Repair'}),timeout=30) as response,part.open('wb') as f:
             for b in iter(lambda:response.read(2*1024*1024),b''):
                 if cancel is not None and cancel.is_set():raise RuntimeError('Reparación cancelada')
                 if time.monotonic()>deadline:raise TimeoutError('La descarga no terminó a tiempo; vuelve a intentarlo')
