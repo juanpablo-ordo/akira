@@ -1,6 +1,6 @@
 """Real bundled-model acceptance through the production assistant; synthetic news only."""
 from pathlib import Path
-import argparse,json,subprocess,tempfile,time,traceback
+import argparse,json,re,subprocess,tempfile,time,traceback
 from urllib.request import urlopen
 from unittest.mock import patch
 from settings import DEFAULT,load_config
@@ -8,9 +8,9 @@ from assistant_akira import AkiraAssistant
 from akira_local_ai import chat,owned_context
 
 
-def run(exe,model,report):
+def run(exe,model,report,only_news=False):
     report=Path(report);report.parent.mkdir(parents=True,exist_ok=True);rows=[];endpoint='http://127.0.0.1:18997/v1/chat/completions';proc=None;bot=None
-    result={'status':'FAILED','scenarios':rows,'news_data':'SYNTHETIC; not a real Xbox announcement','live_account_used':False}
+    result={'status':'FAILED','scenarios':rows,'news_data':'SYNTHETIC; not a real Xbox announcement','live_account_used':False,'scenario_filter':'news_and_schema' if only_news else 'all'}
     with report.with_suffix('.llama.log').open('wb') as log,tempfile.TemporaryDirectory(prefix='AKIRA_REAL_REV6_') as tmp:
         try:
             proc=subprocess.Popen([str(Path(exe).resolve()),'--model',str(Path(model).resolve()),'--host','127.0.0.1','--port','18997','--ctx-size','4096','--n-gpu-layers','0','--threads','4','--parallel','1','--jinja'],stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT)
@@ -32,14 +32,16 @@ def run(exe,model,report):
                 row={'name':name,'question':question,'answer':answer,'seconds':round(time.monotonic()-start,3),'first_visible_seconds':round(first,3) if first is not None else None};rows.append(row);print(name+' '+str(row['seconds'])+' s '+answer[:150],flush=True);check(low)
             def require(value,message):
                 if not value:raise AssertionError(message)
-            ask('typos_and_new_topic','Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?',lambda a:require('ram' in a and any(x in a for x in ('disco','ssd','almacenamiento')),'RAM/disk answer irrelevant'))
-            ask('follow_up','¿Cuál de las dos pierde los datos cuando apago la computadora?',lambda a:require('ram' in a and any(x in a for x in ('volátil','volatil','borra','pierde','apaga','apagado')),'Follow-up did not preserve topic'))
-            ask('topic_change','Cambiemos de tema: tengo 3 manzanas y regalo 1. ¿Cuántas me quedan?',lambda a:require('dos' in a or '2' in a,'New-topic arithmetic wrong'))
+            if not only_news:
+                ask('typos_and_new_topic','Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?',lambda a:require('ram' in a and any(x in a for x in ('disco','ssd','almacenamiento')),'RAM/disk answer irrelevant'))
+                ask('follow_up','¿Cuál de las dos pierde los datos cuando apago la computadora?',lambda a:require('ram' in a and any(x in a for x in ('volátil','volatil','borra','pierde','apaga','apagado')),'Follow-up did not preserve topic'))
+                ask('topic_change','Cambiemos de tema: tengo 3 manzanas y regalo 1. ¿Cuántas me quedan?',lambda a:require('dos' in a or '2' in a,'New-topic arithmetic wrong'))
             bot.switch_chat(new=True);cfg['assistant']['auto_research']=True
             fixture={'query':'Xbox Gears prueba','results':[{'title':'Xbox Wire · ficha sintética de prueba','url':'https://news.xbox.com/es-es/gears-prueba/','text':'FICHA SINTÉTICA DE QA. NO ES UNA NOTICIA REAL. Xbox anunció el videojuego ficticio Gears Prueba; sus protagonistas son Mara y Sol. Se anunció, pero no se ha lanzado. No se ha publicado una fecha de salida. No es una película.','read_status':'qa_fixture'}],'errors':[]}
             def news_check(a):
                 require(all(x in a for x in ('mara','sol','gears prueba')),'Did not answer using supplied evidence')
                 require(not any(x in a for x in ('guillermo del toro','kig-yar','gears 6')),'Imported unrelated lore')
+                require(bool(re.search(r'no.{0,35}(?:lanz|estren|salid)|(?:solo|sólo|únicamente).{0,25}anunci',a)),'Failed to correct announcement versus release premise')
             with patch('assistant_akira.lookup_current_fact',return_value=fixture),patch('assistant_akira.lookup_verified_current_fact',return_value=fixture),patch.object(bot,'_source_tool',return_value=fixture):
                 ask('current_news_evidence','Xbox acaba de lanzar el nuevo Gears: según la ficha de prueba, ¿cómo se llama y quiénes son sus protagonistas?',news_check)
             schema={'type':'object','properties':{'bias':{'type':'number','minimum':-1,'maximum':1}},'required':['bias'],'additionalProperties':False}
@@ -57,4 +59,4 @@ def run(exe,model,report):
             report.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--exe',required=True);p.add_argument('--model',required=True);p.add_argument('--report',required=True);a=p.parse_args();print(json.dumps(run(a.exe,a.model,a.report),ensure_ascii=False))
+    p=argparse.ArgumentParser();p.add_argument('--exe',required=True);p.add_argument('--model',required=True);p.add_argument('--report',required=True);p.add_argument('--only-news',action='store_true');a=p.parse_args();print(json.dumps(run(a.exe,a.model,a.report,a.only_news),ensure_ascii=False))

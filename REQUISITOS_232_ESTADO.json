@@ -1,7 +1,7 @@
 {
   "source": "AKIRA_Instrucciones_Maestras.docx",
   "scope": "R001-R232 y E01-E16",
-  "release": "AKIRA 16.4.0 Studio Rev5 · corrección Windows 4; ejecutable pendiente",
+  "release": "AKIRA 16.4.1 Studio Rev6; aceptación de componentes; ver workflow de Windows",
   "rows": [
     {
       "id": "R001",
@@ -173,12 +173,17 @@
     {
       "id": "R017",
       "requirement": "Reproduce la pregunta sobre el presidente actual de Guatemala y el fallo que devuelve Google Translate y bancos. Comprueba el recorrido real del mensaje, la consulta generada, las fuentes seleccionadas, la respuesta del modelo y el manejo del fallo.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "web_facts.py",
+        "akira_local_ai.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R018",
@@ -186,12 +191,15 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "akira_local_ai.py",
-        "tests/test_r8_assistant_protocol.py"
+        "tests/test_r8_assistant_protocol.py",
+        "assistant_akira.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R019",
@@ -223,12 +231,13 @@
       "evidence": [
         "studio_settings_qt.py",
         "studio_controller.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R022",
@@ -273,32 +282,44 @@
     {
       "id": "R026",
       "requirement": "Define colas acotadas, prioridades y cancelación. Atiende primero protección y reconciliación, después las decisiones ejecutables; preserva capacidad para el chat interactivo sin convertir una investigación extensa en una espera indefinida.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R027",
       "requirement": "Evita acumular trabajos iguales. Fusiona actualizaciones reemplazables de interfaz y contexto, pero conserva todos los eventos financieros y las confirmaciones necesarias para reconstruir una operación.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R028",
       "requirement": "Cada tarea llevará identificador, instrumento, cuenta cuando corresponda, versión de estrategia, contexto de entrada, fecha, vencimiento y resultado. Descarta resultados materialmente obsoletos sin reiniciar trabajos que siguen siendo válidos.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R029",
@@ -402,32 +423,46 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "operation_health.py",
-        "tests/test_r11_operation_health.py"
+        "tests/test_r11_operation_health.py",
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R039",
       "requirement": "Separa los requisitos esenciales de ejecución, las condiciones de la estrategia y los enriquecimientos opcionales. Calcula la cobertura sobre requisitos aplicables y muestra por separado la evidencia opcional disponible.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R040",
       "requirement": "No muestres una revisión interminable de doce casillas cuando algunas no aplican al instrumento o a la estrategia. Mantén el detalle técnico accesible sin convertirlo en el contenido principal para el usuario.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R041",
@@ -435,42 +470,61 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "operation_health.py",
-        "tests/test_r11_operation_health.py"
+        "tests/test_r11_operation_health.py",
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R042",
       "requirement": "Valida cada estrategia con las dependencias que declaró. Una noticia, derivado o video auxiliar ausente no debe bloquear universalmente todas las pendientes y runners.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R043",
       "requirement": "Conserva las huellas que evitan aplicar un dictamen a niveles diferentes. Investiga si cambios irrelevantes de recepción, estado de fuentes ajenas o metadatos están invalidando revisiones correctas.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R044",
       "requirement": "Reutiliza evidencia vigente de niveles y contexto sin repetir todas las comprobaciones. Antes de enviar vuelve a verificar únicamente lo que puede haber cambiado, incluyendo cotización, exposición, margen, permisos y restricciones del bróker.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R045",
@@ -478,22 +532,31 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "operation_health.py",
-        "tests/test_r11_operation_health.py"
+        "tests/test_r11_operation_health.py",
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R046",
       "requirement": "Revisa las exigencias de IA persistidas por orden y cuenta para que una preferencia antigua no bloquee indefinidamente escenarios nuevos. Expón el estado efectivo y conserva la intención vigente del usuario.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R047",
@@ -501,12 +564,16 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "operation_health.py",
-        "tests/test_r11_operation_health.py"
+        "tests/test_r11_operation_health.py",
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R048",
@@ -514,22 +581,30 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "pending_verification.py",
-        "tests/test_v1626_verification.py"
+        "tests/test_v1626_verification.py",
+        "engine.py",
+        "research.py",
+        "tests/test_studio_rev6_media_strategy.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R049",
       "requirement": "Prueba expresamente que una candidata termina su revisión, conserva el resultado mientras sigue siendo válido y alcanza el ejecutor cuando reúne todos los requisitos esenciales.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "engine.py",
+        "research.py",
+        "pending_verification.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R050",
@@ -940,122 +1015,182 @@
     {
       "id": "R090",
       "requirement": "Convierte cada estrategia seleccionada en reglas ejecutables y comprobables. Si un creador usa conceptos discrecionales que no puedan reproducirse, registra la ambigüedad y evita inventar resultados.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R091",
       "requirement": "Permite elegir una estrategia para la sesión o el día y mantenerla fija. Añade un modo automático que solo cambie entre estrategias autorizadas y muestre el motivo del cambio.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R092",
       "requirement": "Presenta en cada ficha cuándo se utiliza, cuándo se abstiene, qué operaciones permite, qué evidencia existe y qué falta comprobar. Separa popularidad pública, resultados declarados por el autor y resultados medidos por Akira.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R093",
       "requirement": "Conserva una versión de las reglas aplicada a cada operación. Cambiar de estrategia no debe modificar silenciosamente la gestión de posiciones abiertas; define y muestra su política de continuidad.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R094",
       "requirement": "Evita incluir como opción operativa una estrategia que solo tiene una tarjeta visual. El estado debe distinguir investigación, implementación, prueba y disponibilidad para demo.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R095",
       "requirement": "Desarrolla una estrategia propia identificable, inicialmente denominada Akira Adaptativa. Colócala como primera opción del catálogo por ser la estrategia principal del producto; su posición no equivaldrá a una superioridad estadística demostrada.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R096",
       "requirement": "Combina selección de régimen, tesis estructural, disparador, invalidación y selección de orden. Elige entre pendientes y runners según reglas definidas, autorización, exposición y evidencia disponible.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R097",
       "requirement": "Permite que la estrategia principal seleccione entre métodos previamente implementados y evaluados, conservando el motivo y la versión de su decisión. Evita una mezcla opaca que cambie todas las reglas en cada inferencia.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R098",
       "requirement": "Usa la IA para sintetizar contexto y contradicciones dentro de un contrato estructurado. Los niveles y los cálculos financieros deben poder reproducirse sin depender de una explicación inventada después del resultado.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R099",
       "requirement": "Diseña el objetivo de evaluación para equilibrar resultado neto, drawdown, estabilidad, activación, duración, costes y frecuencia de oportunidades. Una mayor tasa de acierto o de activación por sí sola no demuestra una estrategia mejor.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R100",
       "requirement": "Compara la estrategia propia con las alternativas bajo los mismos datos, costes, instrumentos, riesgo y periodos. Guarda los intentos de ajuste para poder reconocer selección retrospectiva y sobreajuste.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R101",
       "requirement": "El objetivo de desarrollo es superar las alternativas en criterios definidos. Utiliza la etiqueta superior únicamente cuando exista evidencia comparable suficiente; informa empates, incertidumbre y condiciones donde otra estrategia funcione mejor.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "strategy_choice.py",
+        "planner.py",
+        "strategy_lab.py",
+        "tests/test_studio_rev6_media_strategy.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R102",
@@ -1103,212 +1238,317 @@
     {
       "id": "R106",
       "requirement": "Evalúa utilidad con esperanza neta, pérdidas, costes y estabilidad. Una estrategia con muchas operaciones pequeñas ganadoras puede deteriorarse por pérdidas mayores; el informe debe permitir comprobarlo.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R107",
       "requirement": "La comparación con parámetros que antes daba ChatGPT usará casos guardados con la misma hora y datos disponibles. Evita afirmar que Akira es mejor que ChatGPT basándose únicamente en velocidad o ejemplos elegidos.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R108",
       "requirement": "Separa actualizar conocimiento, ajustar una estrategia y entrenar un modelo. Consultar internet no equivale a aprender permanentemente ni a demostrar que una modificación mejora la operativa.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R109",
       "requirement": "Conserva un diario con contexto anterior a la entrada, plan, ejecución, gestión y resultado. Utilízalo para localizar errores y formular hipótesis comprobables.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R110",
       "requirement": "Evalúa los ajustes con datos separados y pruebas de continuidad. Una propuesta de mejora debe conservar su configuración y una comparación con la base antes de convertirse en política activa.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R111",
       "requirement": "Impide que una noticia, video o conversación reescriba automáticamente el código o eleve el riesgo de una cuenta. La evolución del producto tendrá revisiones, pruebas y una forma de restaurar la configuración anterior.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R112",
       "requirement": "El aprendizaje debe respetar cuentas y privacidad. Los datos de un usuario no se utilizarán para otro ni para entrenamiento compartido sin una autorización definida.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R113",
       "requirement": "Haz que el chat principal funcione con el motor local incluido, sin requerir créditos de OpenAI ni instalaciones manuales de Ollama para el uso normal. OpenAI seguirá siendo un complemento opcional elegido por el usuario.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R114",
       "requirement": "Comprueba que modelo, ejecutable, plantilla de conversación, endpoint y contrato de herramientas correspondan a la misma instalación. Detecta respuestas vacías, truncadas, inválidas y errores de arranque antes de anunciar disponibilidad.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R115",
       "requirement": "Separa salud del proceso, modelo cargado y éxito de la última respuesta. Una prueba correcta de arranque no certifica comprensión de cualquier pregunta posterior.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R116",
       "requirement": "Elimina la salida de emergencia que presenta resultados irrelevantes como si fueran una respuesta resuelta. Ante una investigación fallida, explica la limitación y conserva el contexto para reintentar con una consulta pertinente.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R117",
       "requirement": "Usa búsqueda de hechos cambiantes cuando la pregunta lo requiera. Lee evidencia relevante, comprueba entidad y fecha y responde primero al dato solicitado con sus fuentes accesibles.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R118",
       "requirement": "Conserva conversaciones y memoria útil con límites claros. Comprende referencias como esa pendiente, la anterior, hazlo más corto y por qué no lo hiciste, sin convertir reclamos o preguntas en órdenes de trading.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R119",
       "requirement": "Corrige errores de escritura y entiende variantes coloquiales. Conserva literalmente precios, lotes, símbolos, identificadores y negaciones cuando su modificación pueda cambiar una acción.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R120",
       "requirement": "Los mensajes normales, las consultas de estado y los comandos operativos tendrán recorridos definidos. Las órdenes del chat usarán el mismo ejecutor y las mismas reglas que la operación automática.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R121",
       "requirement": "Implementa personalidad y orquestación propias de Akira. Antes de entrenar un modelo desde cero, mide las limitaciones del modelo existente y evalúa mejoras de contexto, herramientas y ajuste especializado; decide según recursos y resultados observados.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R122",
       "requirement": "Evita confundir identidad comercial con procedencia tecnológica. Presenta Akira como asistente del producto y conserva los detalles técnicos en diagnóstico, junto con las obligaciones de licencia que correspondan.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R123",
       "requirement": "Akira debe hablar con naturalidad, cercanía y continuidad, como una amiga que escucha. Adapta la extensión y el tono a la conversación sin respuestas mecánicas ni introducciones repetidas.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R124",
       "requirement": "Reconoce frustración, dudas y correcciones de forma breve y útil. Recuerda preferencias pertinentes y evita repetir errores que el usuario acaba de señalar.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R125",
       "requirement": "Cuando desconozca un dato, admítelo y usa las herramientas disponibles. Una expresión segura o una voz cálida no reemplazarán una respuesta sustentada.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R126",
       "requirement": "Conserva una identidad coherente sin afirmar sentimientos humanos reales ni fomentar dependencia emocional. Acompaña al usuario y respeta su autonomía al tomar decisiones.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "assistant_akira.py",
+        "language_normalization.py",
+        "web_facts.py",
+        "qa_real_conversation_rev6.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R127",
@@ -1406,22 +1646,30 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_widgets.py",
-        "tests/test_r8_ui_reactions.py"
+        "tests/test_r8_ui_reactions.py",
+        "avatar_animation.py",
+        "assets/expressions/PROVENANCE_REV6.json",
+        "native_studio_check.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R137",
       "requirement": "Conserva la apariencia del personaje de referencia. Mantén tamaño, posición, proporciones y rasgos consistentes entre fotogramas y estados; evita cambios de personaje al pasar de una emoción a otra.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "avatar_animation.py",
+        "studio_widgets.py",
+        "assets/expressions/PROVENANCE_REV6.json",
+        "native_studio_check.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R138",
@@ -1429,12 +1677,15 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_widgets.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "avatar_animation.py",
+        "assets/expressions/PROVENANCE_REV6.json",
+        "native_studio_check.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R139",
@@ -1442,12 +1693,15 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_widgets.py",
-        "tests/test_r8_ui_reactions.py"
+        "tests/test_r8_ui_reactions.py",
+        "avatar_animation.py",
+        "assets/expressions/PROVENANCE_REV6.json",
+        "native_studio_check.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R140",
@@ -1455,12 +1709,14 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_widgets.py",
-        "native_studio_check.py"
+        "native_studio_check.py",
+        "avatar_animation.py",
+        "assets/expressions/PROVENANCE_REV6.json"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "Reacción acotada al puntero y reducción de movimiento implementadas; aceptación visual personal pendiente."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R141",
@@ -1468,12 +1724,15 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_widgets.py",
-        "tests/test_r8_ui_reactions.py"
+        "tests/test_r8_ui_reactions.py",
+        "avatar_animation.py",
+        "assets/expressions/PROVENANCE_REV6.json",
+        "native_studio_check.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R142",
@@ -1481,12 +1740,16 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "desktop_qt.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "avatar_animation.py",
+        "studio_widgets.py",
+        "assets/expressions/PROVENANCE_REV6.json",
+        "native_studio_check.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R143",
@@ -1494,12 +1757,14 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_widgets.py",
-        "native_studio_check.py"
+        "native_studio_check.py",
+        "avatar_animation.py",
+        "assets/expressions/PROVENANCE_REV6.json"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R144",
@@ -1578,22 +1843,32 @@
       "evidence": [
         "desktop_qt.py",
         "studio_widgets.py",
-        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json"
+        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R152",
       "requirement": "Organiza la navegación principal en Inicio, Operaciones, Estrategias, Análisis y fuentes, Chat, Informes y Ajustes. Integra cuenta, avisos y diagnóstico donde resulte útil, conservando acceso a las funciones existentes.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R153",
@@ -1601,12 +1876,16 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "desktop_qt.py",
-        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json"
+        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R154",
@@ -1614,12 +1893,16 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "desktop_qt.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R155",
@@ -1627,42 +1910,64 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "desktop_qt.py",
-        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json"
+        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R156",
       "requirement": "Prueba 1366 por 768, 1920 por 1080, 2560 por 1440 y, cuando el equipo de prueba lo permita, 4K. Incluye escalas de Windows de 100, 125, 150 y 200 por ciento y desplazamiento entre monitores.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "No se ha probado DPI real de Windows ni traslado entre monitores físicos."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R157",
       "requirement": "Al restaurar o maximizar, reorganiza el contenido sin reconstruirlo innecesariamente. Conserva proporciones de paneles y ajusta posiciones guardadas que ya no quepan en el monitor actual.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R158",
       "requirement": "Evita mensajes modales repetidos, botones de reparación permanentes cuando todo funciona y nombres internos en las pantallas habituales. Los errores esenciales seguirán visibles y con acciones concretas.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R159",
@@ -1670,22 +1975,32 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_settings_qt.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "desktop_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R160",
       "requirement": "Explica qué cambia cada ajuste, cuándo se aplica y si requiere recargar un componente. Distingue activar análisis, autorizar operación automática y pausar la gestión.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R161",
@@ -1693,12 +2008,16 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_controller.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R162",
@@ -1706,32 +2025,48 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_controller.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R163",
       "requirement": "Conserva estrategia elegida, modos, riesgo, voces, privacidad y distribución de paneles después de cerrar, reiniciar y actualizar. Aplica migraciones explícitas cuando cambie la estructura de configuración.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R164",
       "requirement": "Una actualización no debe activar operación real ni volver silenciosamente a observación. Conserva la elección autorizada y muestra cualquier condición nueva que impida aplicarla.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R165",
@@ -1739,12 +2074,17 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "akira_secrets.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R166",
@@ -1752,42 +2092,65 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "akira_secrets.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R167",
       "requirement": "Distingue guardado local de autenticación correcta. Comprueba cada proveedor y clasifica clave ausente, rechazada, sin permisos, cuota agotada, timeout y servicio no disponible.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R168",
       "requirement": "Evita incluir claves, cookies o datos de autenticación en registros, capturas de diagnóstico, informes, instaladores o repositorio. El diagnóstico compartible debe ocultarlos automáticamente.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R169",
       "requirement": "Una fuente opcional sin clave se mostrará como no configurada, con su impacto concreto. No bloqueará estrategias que no la requieren ni aparecerá falsamente como activa.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R170",
@@ -1795,12 +2158,17 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "akira_secrets.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "desktop_qt.py",
+        "studio_settings_qt.py",
+        "studio_controller.py",
+        "studio_presenter.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R171",
@@ -1808,12 +2176,16 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_settings_qt.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R172",
@@ -1821,62 +2193,91 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_widgets.py",
-        "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json"
+        "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json",
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R173",
       "requirement": "Mide por separado aplicación, modelo, voz y otros trabajadores propios. Identifica procesos para evitar atribuir a Akira el consumo agregado de servidores de IA de otras aplicaciones.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R174",
       "requirement": "Distingue presupuesto orientativo y límite efectivo de RAM o GPU. Ajusta modelo, contexto, lotes de inferencia y concurrencia al hardware; no anuncies un límite que el sistema no está imponiendo.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "El presupuesto del modelo es orientativo. Los límites duros del decodificador propio requieren verificar Windows Job Objects."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R175",
       "requirement": "Evita recargar el modelo entre mensajes próximos si esa política aumenta demora y consumo. Coordina su tiempo de permanencia con la carga real de trabajo y la disponibilidad para conversar.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R176",
       "requirement": "Reduce investigación y animaciones cuando no haya cambios relevantes, la aplicación esté minimizada o el mercado esté cerrado. Mantén el trabajo necesario para proteger posiciones existentes y detectar la reapertura.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R177",
       "requirement": "Mide el rendimiento con chat, voz, análisis y movimiento de ventana simultáneos. Registra cola de interfaz, duración de tareas, memoria y periodos de saturación para localizar el origen del retraso.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "Prueba Linux de 12,34 s con FakeMT5 y chat simulado; sin voz física ni inferencia real simultáneas."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R178",
@@ -1884,12 +2285,16 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "activity_watchdog.py",
-        "tests/test_r11_activity_watchdog.py"
+        "tests/test_r11_activity_watchdog.py",
+        "resource_optimizer.py",
+        "akira_model_runtime.py",
+        "studio_background.py",
+        "tests/test_studio_rev6_acceptance.py"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R179",
@@ -1954,132 +2359,184 @@
     {
       "id": "R185",
       "requirement": "Entrega un instalador nativo de Windows con identidad e icono de Akira, progreso comprensible, mensajes correctos y desinstalación disponible desde el sistema. Evita consolas persistentes como interfaz habitual del instalador.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R186",
       "requirement": "Antes de reemplazar, comprueba requisitos y prepara la nueva aplicación. Actualiza binarios y recursos como una unidad coherente y verifica que el paquete coincide con los manifiestos generados después de la compilación.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R187",
       "requirement": "La limpieza de versiones antiguas debe retirar binarios obsoletos identificados, conservando cuenta, ajustes, límites, claves, voces elegidas, chats y diario. Evita borrar carpetas por coincidencias amplias de nombre.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R188",
       "requirement": "Si falla la actualización, conserva o restaura una instalación utilizable y describe cuál quedó activa. La aplicación que abra debe corresponder al estado informado por el instalador.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R189",
       "requirement": "Los reintentos deben tener un resultado finito. Evita el ciclo de cerrar Akira, repetir instalación y volver a mostrar el mismo error sin una causa y una salida claras.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R190",
       "requirement": "Comprueba instalación limpia, actualización, reinstalación, rutas con espacios o caracteres propios del idioma, archivos en uso, accesos directos y desinstalación con conservación de datos elegida.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R191",
       "requirement": "Incluye modelo local, ejecutables y recursos de forma compatible con sus licencias y con el instalador. Comprueba que el chat arranque usando exactamente esos componentes en una máquina limpia.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "CI prepara el modelo y sus componentes. No hay un instalador nuevo compilado ni inferencia GGUF real comprobada aquí."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R192",
       "requirement": "Identifica la compilación de forma interna y en Acerca de. El usuario habitual no necesita ver nombres de pruebas, contadores de expresiones, rutas internas ni etiquetas de desarrollo dispersas.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "installer/akira.iss",
+        "application_management.py",
+        ".github/workflows/build-windows.yml"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R193",
       "requirement": "Conserva el botón Descargar informe con elección PDF o Excel. Incluye operaciones reales, propuestas descartadas, motivos, resultados, costes, tiempos y comparación entre BTC y oro.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_presenter.py",
+        "operation_report.py",
+        "desktop_qt.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R194",
       "requirement": "Distingue datos de replay, simulación, demo y cuenta real en los informes. Conserva zona horaria, instrumento, cuenta identificada de forma adecuada y versión de estrategia.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_presenter.py",
+        "operation_report.py",
+        "desktop_qt.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R195",
       "requirement": "Retira de la interfaz habitual el botón de prueba de calidad solicitado anteriormente. Mantén la evidencia necesaria en fichas e informes de forma comprensible y accesible.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_presenter.py",
+        "operation_report.py",
+        "desktop_qt.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R196",
       "requirement": "Conserva historial de chats, memoria elegida, opciones de voces, llamadas, avisos y paneles ajustables. Verifica que actualizar una función no elimine otra que ya se utiliza.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_presenter.py",
+        "operation_report.py",
+        "desktop_qt.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R197",
       "requirement": "Añade un diagnóstico descargable que reúna estado, errores recientes, tiempos y configuración sin secretos. Su generación debe funcionar aunque el motor de IA esté temporalmente caído.",
-      "status": "NO_VERIFICADO_INTEGRALMENTE",
-      "evidence": [],
+      "status": "PARCIAL_PROBADO_LOCALMENTE",
+      "evidence": [
+        "studio_presenter.py",
+        "operation_report.py",
+        "desktop_qt.py"
+      ],
       "windows_verified": false,
       "mt5_demo_verified": false,
       "complete": false,
-      "acceptance_pending": "La evidencia local cubre componentes; falta aceptación integral Windows/MT5 demo."
+      "acceptance_pending": "Rev6 incorpora correcciones y casos automatizados; ver ACEPTACION_REV6.md y resultados del workflow. Falta aceptación integral del requisito en Windows/MT5 demo."
     },
     {
       "id": "R198",
@@ -2452,7 +2909,8 @@
       "evidence": [
         "desktop_qt.py",
         "studio_widgets.py",
-        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json"
+        "VERIFICACION_STUDIO_REV5/NATIVE_STUDIO.json",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2466,7 +2924,8 @@
       "evidence": [
         "desktop_qt.py",
         "studio_settings_qt.py",
-        "native_studio_check.py"
+        "native_studio_check.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2480,7 +2939,8 @@
       "evidence": [
         "studio_background.py",
         "studio_settings_qt.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2495,7 +2955,8 @@
         "desktop_qt.py",
         "studio_settings_qt.py",
         "assets/fonts",
-        "native_studio_check.py"
+        "native_studio_check.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2508,7 +2969,8 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_translations.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2522,7 +2984,8 @@
       "evidence": [
         "voice_session.py",
         "studio_controller.py",
-        "studio_settings_qt.py"
+        "studio_settings_qt.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2536,7 +2999,8 @@
       "evidence": [
         "akira_studio.py",
         "studio_settings_qt.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2550,7 +3014,8 @@
       "evidence": [
         "sprite_recognition.py",
         "installer/prepare_sprite_ai.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2564,7 +3029,8 @@
       "evidence": [
         "akira_studio.py",
         "studio_settings_qt.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2577,7 +3043,8 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_background.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2590,7 +3057,8 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_background.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2603,7 +3071,8 @@
       "status": "PARCIAL_PROBADO_LOCALMENTE",
       "evidence": [
         "studio_background.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2617,7 +3086,8 @@
       "evidence": [
         "akira_studio.py",
         "studio_background.py",
-        "native_studio_check.py"
+        "native_studio_check.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2631,7 +3101,8 @@
       "evidence": [
         "engine.py",
         "strategy_choice.py",
-        "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json"
+        "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2647,7 +3118,8 @@
         "akira_model_runtime.py",
         "language_normalization.py",
         "web_facts.py",
-        "tests/test_studio_rev5.py"
+        "tests/test_studio_rev5.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2661,7 +3133,8 @@
       "evidence": [
         ".github/workflows/build-windows.yml",
         "build_windows.py",
-        "installer/check_installed_ai.py"
+        "installer/check_installed_ai.py",
+        "ACEPTACION_REV6.md"
       ],
       "windows_verified": false,
       "mt5_demo_verified": false,
@@ -2671,10 +3144,7 @@
   ],
   "rule": "Evidence from Linux mocks/tests is partial; no item marked fully complete until user-acceptance on delivered Windows installer.",
   "counts": {
-    "master": 232,
-    "extras": 16,
-    "partial_local": 55,
-    "fully_validated": 0,
-    "need_windows_acceptance": 248
+    "NO_VERIFICADO_INTEGRALMENTE": 120,
+    "PARCIAL_PROBADO_LOCALMENTE": 128
   }
 }

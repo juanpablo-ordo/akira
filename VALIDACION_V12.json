@@ -5,6 +5,6 @@
   "date": "2026-10-18",
   "skipped": 0,
   "scope": "Studio Rev6: preferencias, conversación, medios y ejecución; resultado definitivo en VALIDACION_STUDIO_REV6.json",
-  "post_suite_check": "Publicar FIX6 como commit nuevo y exigir el workflow Windows completo y la IA instalada.",
+  "post_suite_check": "Exigir regresión, IA real, conversación de producción, ejecutable e instalación Windows Rev6.",
   "notes_file": "ACEPTACION_REV6.md"
 }
