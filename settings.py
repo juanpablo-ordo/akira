@@ -44,6 +44,8 @@ def load_config(path):
     raw=copy.deepcopy(path) if isinstance(path,dict) else json.loads(Path(path).read_text(encoding='utf-8-sig'))
     if not isinstance(raw,dict):raise ValueError('Configuración: se requiere un objeto JSON')
     cfg=merge(DEFAULT,raw)
+    from akira_studio import safe_studio
+    cfg['studio']=safe_studio(raw)
     # Migrate only the legacy default Ollama endpoint when a complete, local
     # llama.cpp runtime is actually bundled alongside AKIRA.exe. This does not
     # download programs or change an explicitly selected custom endpoint.
@@ -59,7 +61,7 @@ def load_config(path):
                             'auto_install_local_ai'):
                     cfg['assistant'][key]=copy.deepcopy(DEFAULT['assistant'][key])
     # This update makes amounts visible. Later explicit privacy choices persist.
-    if not (raw.get('desktop') or {}).get('visibility_preference_saved',False):cfg['desktop']['privacy']=False
+    if 'privacy' not in (raw.get('desktop') or {}):cfg['desktop']['privacy']=True
     cfg['desktop']['visibility_preference_saved']=True
     # Legacy defaults were Work Mode aliases, not documented public API IDs.
     # Preserve every other explicitly selected model and every trading limit.
@@ -361,7 +363,7 @@ def load_config(path):
             for k,v in value.items():finite(v,name+'.'+k)
         elif isinstance(value,(int,float)) and not isinstance(value,bool):
             if not math.isfinite(value) or value<0:raise ValueError(name+' debe ser número finito no negativo')
-    finite(cfg,'config')
+    finite({k:v for k,v in cfg.items() if k!='studio'},'config')
     attempts=cfg['execution']['pending_attempts_per_cycle']
     if type(attempts) is not int or not 1<=attempts<=16:raise ValueError('Intentos por ciclo deben ser entero entre 1 y 16')
     if cfg['execution']['pending_rejection_retry_seconds']<1:raise ValueError('Reintento de pendiente rechazada debe esperar al menos 1 segundo')

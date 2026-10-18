@@ -20,7 +20,7 @@ PROFILE_BUDGETS = {
                     'model_keep_alive_seconds': 60, 'model_use_gpu': True},
     'Equilibrado': {'memory_budget_mb': 3072, 'model_context_tokens': 4096,
                    'model_keep_alive_seconds': 15, 'model_use_gpu': True},
-    'Ahorro de energía': {'memory_budget_mb': 1024, 'model_context_tokens': 1024,
+    'Ahorro de energía': {'memory_budget_mb': 3072, 'model_context_tokens': 2048,
                          'model_keep_alive_seconds': 0, 'model_use_gpu': False},
 }
 

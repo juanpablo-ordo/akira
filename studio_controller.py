@@ -13,15 +13,20 @@ from settings_effects import validate_form,changes
 from notification_center import NotificationCenter,safe_text
 
 
+class ConfigSnapshot(dict):
+    def __init__(self,data):
+        super().__init__(data);self.baseline=copy.deepcopy(dict(data))
+
+
 class StudioController:
     def __init__(self,folder,preview=False,start_actor=True):
         self.folder=Path(folder);self.folder.mkdir(parents=True,exist_ok=True)
         config_path=self.folder/'akira_config.json'
-        self.cfg=load_config(config_path if config_path.exists() else DEFAULT);self.preview=bool(preview)
+        self.cfg=ConfigSnapshot(load_config(config_path if config_path.exists() else DEFAULT));self.preview=bool(preview)
         if not config_path.exists():save_config(self.cfg,config_path)
         self.commands=queue.Queue(maxsize=128);self.bridge=CommandBridge(self.commands)
         self.events=queue.Queue(maxsize=512);self.stop=threading.Event();self.view={};self._latest=None;self._snapshot_lock=threading.Lock()
-        self.log_rows=deque(maxlen=300);self._jobs=set();self._jobs_lock=threading.Lock()
+        self._settings_lock=threading.RLock();self._save_serial=0;self.log_rows=deque(maxlen=300);self._jobs=set();self._jobs_lock=threading.Lock()
         self.io=ThreadPoolExecutor(max_workers=3,thread_name_prefix='AkiraStudioIO');self.chat_busy=False;self.closed=False
         self.notices=NotificationCenter(self.folder);self.network=None;self.online=None;self.last_evidence=-100
         self.voice=None;self.voice_rows=[];self.resources={};self._usage_due=0;self._usage_loading=False
@@ -97,7 +102,7 @@ class StudioController:
 
     def request(self,command):
         name='command:'+str(time.monotonic_ns())
-        return self.job(name,lambda:self.bridge.request(command),'command_result')
+        return self.job(name,lambda:{**self.bridge.request(command),'command':command},'command_result')
 
     def notify(self,title,body,severity='info'):
         self.notices.add(title,safe_text(body),severity=severity)
@@ -157,36 +162,59 @@ class StudioController:
         return self.job('spoken_translation',translate)
 
     def save(self,draft,keys=None,confirmed_account=None):
-        validated=validate_form(draft);before=copy.deepcopy(self.cfg)
-        new_trade=validated['mode']=='trade' and (before['mode']!='trade' or before['expected_login']!=validated['expected_login'])
-        if new_trade:
+        validated=validate_form(draft)
+        with self._settings_lock:
+            before=copy.deepcopy(getattr(draft,'baseline',self.cfg));self._save_serial+=1;serial=self._save_serial
+        if validated['mode']=='trade' and (before['mode']!='trade' or before['expected_login']!=validated['expected_login']):
             login=(self.view.get('account') or {}).get('login')
-            if self.preview or not self.bridge.connected or not login or confirmed_account!=login:
-                raise ValueError('Confirma la cuenta conectada antes de activar la operativa.')
+            if self.preview or not self.bridge.connected or not login or confirmed_account!=login:raise ValueError('Confirma la cuenta conectada antes de activar la operativa.')
             if validated.get('expected_login') not in (0,login):raise ValueError('La cuenta autorizada no coincide con MT5.')
             validated['expected_login']=int(login)
         paths=[row['path'] for row in changes(before,validated)]
+        def at(data,path):
+            for key in path.split('.'):data=data[key]
+            return copy.deepcopy(data)
+        def put(data,path,value):
+            keys=path.split('.')
+            for key in keys[:-1]:data=data.setdefault(key,{})
+            data[keys[-1]]=value
+        updates={path:at(validated,path) for path in paths}
         def persist():
-            keys_written=False
-            from akira_secrets import canonical_values,save_secrets
-            if keys and any(str(value).strip() for value in keys.values()):
-                existing=canonical_values();updated={name:value for name,value in keys.items() if str(value).strip() and value!=existing.get(name)}
-                if updated:save_secrets(updated,merge=True);keys_written=True;self.refresh_provider_access()
-            try:save_config(validated,self.folder/'akira_config.json')
-            except OSError as error:
-                if keys_written:raise RuntimeError('Las claves se guardaron; los ajustes no pudieron escribirse. Se conserva la configuración anterior: '+str(error)) from error
-                raise
-            result={'ok':True,'settings_applied':True,'local_only':not self.bridge.connected}
-            if self.bridge.connected and paths:
-                result=self.bridge.request({'action':'apply_settings','config':validated,'changed_paths':paths})
-                if not result.get('ok') and not result.get('unconfirmed'):
-                    save_config(before,self.folder/'akira_config.json')
-                    raise RuntimeError(('Las claves se guardaron. ' if keys_written else '')+'No se aplicaron los ajustes; configuración anterior conservada. '+str(result.get('error','')))
-            self.cfg=copy.deepcopy(validated);self.assistant.cfg=self.cfg
-            self.assistant._managed_model.settings=self.cfg.get('assistant') or {}
-            if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
-            return {'config':copy.deepcopy(self.cfg),'paths':paths,'result':result,'saved':True,'keys_saved':bool(keys)}
-        return self.job('save_settings',persist,'settings_saved')
+            with self._settings_lock:
+                previous=copy.deepcopy(self.cfg);merged=copy.deepcopy(previous)
+                for path,value in updates.items():put(merged,path,value)
+                merged=validate_form(merged)
+                if keys:self._save_keys(keys)
+                save_config(merged,self.folder/'akira_config.json');result={'ok':True,'settings_applied':True,'local_only':not self.bridge.connected}
+                if self.bridge.connected and paths:
+                    result=self.bridge.request({'action':'apply_settings','config':merged,'changed_paths':paths})
+                    if not result.get('ok') and not result.get('unconfirmed'):
+                        save_config(previous,self.folder/'akira_config.json');raise RuntimeError('No se aplicaron los ajustes. Se conservan los anteriores. '+str(result.get('error','')))
+                self.cfg=ConfigSnapshot(copy.deepcopy(merged));self.assistant.cfg=self.cfg;runtime=self.assistant._managed_model;runtime.settings=self.cfg.get('assistant') or {}
+                if hasattr(runtime,'reconfigure') and any(p.startswith('desktop.') for p in paths):runtime.reconfigure(self.cfg.get('desktop') or {})
+                if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
+                return {'config':copy.deepcopy(self.cfg),'paths':paths,'submitted':validated,'result':result,'saved':True,'keys_saved':bool(keys)}
+        return self.job('save_settings:'+str(serial),persist,'settings_saved')
+
+    def _save_keys(self,keys):
+        from akira_secrets import canonical_values,save_secrets
+        previous=canonical_values();updated={name:str(value).strip() for name,value in keys.items() if str(value).strip() and str(value).strip()!=previous.get(name)}
+        if updated:save_secrets(updated,merge=True);self.refresh_provider_access()
+        return {'saved':True,'changed':len(updated)}
+
+    def save_keys(self,keys):return self.job('save_keys:'+str(time.monotonic_ns()),lambda:self._save_keys(keys),'keys_saved')
+
+    def repair_ai(self):
+        if self.chat_busy:self.emit('ai_repair',{'ready':False,'detail':'Termina o detén la conversación antes de reparar la IA.'});return False
+        self.assistant.reset_cancel()
+        def work():
+            self.assistant.retry_local_preparation();deadline=time.monotonic()+1000
+            while not self.closed and time.monotonic()<deadline:
+                with self.assistant._status_lock:busy=self.assistant._repair_loading;status=copy.deepcopy(self.assistant._status)
+                if not busy:return status
+                self.emit('repair_progress',status.get('detail') or 'Comprobando la IA…');self.stop.wait(.3)
+            return {'ready':False,'detail':'No se completó la reparación. Revisa la conexión y vuelve a intentarlo.'}
+        return self.job('repair_ai',work,'ai_repair')
 
     def refresh_provider_access(self):
         """Drop cached authentication failures when the user changes a credential."""
@@ -249,5 +277,5 @@ class StudioController:
         if self.voice:self.voice.stop()
         if self.network:self.network.close()
         if hasattr(self,'knowledge'):self.knowledge.close()
-        self.io.shutdown(wait=False,cancel_futures=True)
+        self.io.shutdown(wait=False,cancel_futures=False)
         self.assistant._managed_model.shutdown_async()

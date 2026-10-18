@@ -43,10 +43,10 @@ UI_LABELS={
 DEFAULT={
  'brand_name':'AKIRA','language_ui':'es','language_chat':'auto','language_voice_in':'auto','language_voice_out':'es',
  'translate_input':False,'translate_output':False,'language_pack':'',
- 'theme':'AKIRA Original','accent':'#00ddff','secondary':'#ff2585','font':'Rajdhani','font_scale':100,
+ 'theme':'AKIRA Original','accent':'#00ddff','secondary':'#ff2585','font':'Rajdhani','font_scale':100,'font_bold':False,'theme_profiles':{},'theme_profile_name':'',
  'glow':65,'panel_texture':'Neon grid','reduce_motion':False,'background_color':'',
- 'wallpaper':{'kind':'default','file':'','fit':'cover','rotation':0,'offset_x':0,'offset_y':0,'opacity':30,'fps':12,'quality':70,'max_memory_mb':128,'max_cpu_percent':10,'crop_left':0,'crop_right':0,'crop_top':0,'crop_bottom':0,'enabled':False},
- 'avatar':{'active':False,'entries':[],'sequences':{},'profile':'default'}
+ 'wallpaper':{'kind':'default','file':'','fit':'cover','rotation':0,'offset_x':0,'offset_y':0,'opacity':65,'fps':30,'quality':70,'max_memory_mb':128,'max_cpu_percent':10,'crop_left':0,'crop_right':0,'crop_top':0,'crop_bottom':0,'enabled':False,'loop':True,'vsync':True,'zoom':100},
+ 'avatar':{'active':False,'entries':[],'sequences':{},'profile':'default','animate':True,'repeat':True}
 }
 
 def read_language_pack(path):
@@ -135,11 +135,15 @@ def validate_studio(value):
     if not 60<=int(c['font_scale'])<=160:raise ValueError('Escala de fuente fuera de 60–160%')
     if not 0<=int(c['glow'])<=100:raise ValueError('Brillo fuera de rango')
     w=c['wallpaper']
-    if w['kind'] not in ('default','image','video'):raise ValueError('Tipo de fondo inválido')
+    if w['kind'] not in ('default','image','video','gif'):raise ValueError('Tipo de fondo inválido')
     if w['fit'] not in ('cover','contain','stretch'):raise ValueError('Ajuste de fondo inválido')
     for k,low,high in (('fps',1,144),('quality',20,100),('max_memory_mb',32,512),('max_cpu_percent',1,40),('opacity',0,100)):
         if not low<=int(w[k])<=high:raise ValueError('Parámetro de fondo fuera de rango: '+k)
-    if int(w['rotation'])%90:raise ValueError('Rotación: 0°, 90°, 180° o 270°')
+    if not math.isfinite(float(w['rotation'])) or not -360<=float(w['rotation'])<=360:raise ValueError('Rotación fuera de rango')
+    if not 50<=float(w.get('zoom',100))<=200:raise ValueError('Zoom fuera de 50–200%')
+    for key in ('enabled','loop','vsync'):
+        if type(w.get(key)) is not bool:raise ValueError('Selecciona una casilla válida: '+key)
+    if not isinstance(c.get('theme_profiles'),dict) or len(c['theme_profiles'])>40:raise ValueError('Máximo 40 temas personalizados')
     for key in ('offset_x','offset_y'):
         if not -100<=int(w.get(key,0))<=100:raise ValueError('Desplazamiento fuera de -100 a 100')
     for key in ('crop_left','crop_right','crop_top','crop_bottom'):
@@ -157,10 +161,10 @@ def import_media(folder,source,kind):
     source=Path(source)
     if not source.is_file():raise ValueError('No existe el archivo seleccionado')
     suffix=source.suffix.casefold()
-    valid=('.png','.jpg','.jpeg','.webp','.gif') if kind=='image' else ('.mp4','.webm','.mov','.mkv')
+    valid=('.png','.jpg','.jpeg','.webp','.gif') if kind in ('image','gif') else ('.mp4','.webm','.mov','.mkv')
     if suffix not in valid:raise ValueError('Formato de archivo no permitido')
     if source.stat().st_size>300*1024*1024:raise ValueError('El archivo supera el límite de 300 MB')
-    if kind=='image':
+    if kind in ('image','gif'):
         from PIL import Image
         with Image.open(source) as im:
             if im.width*im.height>45_000_000:raise ValueError('Imagen demasiado grande')
