@@ -82,7 +82,7 @@ class MediaIsolationTests(unittest.TestCase):
         from studio_background import frame_geometry,video_filter
         cfg={'quality':100,'max_memory_mb':32,'rotation':90,'crop_left':10,'fit':'cover','offset_x':100,'fps':144}
         w,h=frame_geometry((7680,4320),cfg);self.assertLessEqual(w*h*12,32*1048576*.5)
-        filters=video_filter((w,h),cfg);self.assertIn('crop=iw*0.9000',filters);self.assertIn('transpose=1',filters);self.assertIn('fps=144',filters);self.assertIn('1.0000',filters)
+        filters=video_filter((w,h),cfg);self.assertIn('crop=iw*0.9000',filters);self.assertIn('transpose=1',filters);self.assertIn('fps=144',filters);self.assertIn('crop='+str(w)+':'+str(h)+':(iw-ow)*0.0000',filters)
 
 class PersistentCredentialTests(unittest.TestCase):
     def setUp(self):
@@ -109,7 +109,7 @@ class SpriteBehaviorTests(unittest.TestCase):
             for i in range(2):
                 file=Path(tmp)/(str(i)+'.png');Image.new('RGBA',(20,20),(i*255,20,30,255)).save(file);rows.append({'id':str(i),'path':str(file),'state':'talking','order':i})
             catalog=UserCatalog(get_catalog(ROOT),{'entries':[{},*rows],'sequences':{'talking':{'frames':['0','1'],'durations_ms':[50,200],'loop':False}}})
-            self.assertEqual(catalog.choose('AKIRA_047').state,'talking');first=catalog.by_id['0'];second=catalog.next_in_sequence('talking',1,first)
+            self.assertEqual(catalog.choose('AKIRA_047').state,'talking');first=catalog.by_id['0'];self.assertEqual(catalog.next_in_sequence('talking',1,first).id,'0');second=catalog.next_in_sequence('talking',1.06,first)
             self.assertEqual(second.id,'1');self.assertIsNone(catalog.next_in_sequence('talking',1.1,second));self.assertEqual(catalog.next_in_sequence('talking',1.3,second).id,'1')
     def test_unavailable_visual_model_cannot_claim_semantic_recognition(self):
         from sprite_recognition import annotate,SpriteRecognizer

@@ -1,45 +1,34 @@
-# AKIRA 16.4.0 Studio Rev5 · corrección Windows 6
+# AKIRA 16.4.1 Studio Rev6
 
-Revisión vigente del bloqueo en pruebas de gráficos: consulta `CORRECCION_WINDOWS_4.md`.
+Aplicación de Windows con IA local incluida. Esta revisión incorpora las correcciones solicitadas después de probar Studio Rev5: conversación, guardado de ajustes, fuentes, avatar, personalización y gestión del instalador. El código se conserva en GitHub; el instalador aparece únicamente cuando termina correctamente el workflow de Windows.
 
-Entrega de código consolidado del 16 de octubre de 2026, sobre el paquete Rev4 y el documento maestro recibidos. La aplicación abre por defecto la nueva interfaz nativa Qt. Este ZIP contiene el programa fuente, sus recursos y la preparación del instalador; el EXE nuevo aún está pendiente de compilar.
+## Descargar la versión correcta
 
-## Cambios incluidos
+En la ejecución aprobada de GitHub Actions, descarga el artefacto **AKIRA-16.4.1-Studio-Rev6-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA**. Extrae y ejecuta **AKIRA_16_4_1_STUDIO_REV6_IA_INCLUIDA.exe**. Incluye Qwen3-4B Q4_K_M, llama.cpp CPU/Vulkan, reconocimiento visual de sprites y los componentes de YouTube. El ZIP de código y el artefacto de binarios sin modelo no son el instalador principal.
 
-- Ocho pestañas: Trading, Pendientes, Cuenta, Análisis, Fuentes, Chat, Ajustes y Terminal. Tipografía Rajdhani incluida, paneles adaptables, tablas que conservan selección y desplazamiento, privacidad e informes PDF/Excel.
-- Análisis, MT5, chat, descargas y dibujo separados. Un responsable del envío y reconciliación. Propuestas y órdenes confirmadas se distinguen; un rechazo ya no aparece como éxito por existir otra operación. La revisión IA obligatoria por candidata se conserva.
-- Instalaciones nuevas permiten pendientes y runners normales LONG/SHORT cuando se autoriza operar y se cumplen las condiciones. Una preferencia anterior explícita de solo pendientes se conserva. Los umbrales de riesgo no se han ampliado. El estado inicial es observación, sin cuenta real vinculada.
-- Ajustes agrupados y guardado unificado con claves. Claves canónicas protegidas mediante DPAPI en Windows, eliminación explícita persistente y conservación del archivo si falla su lectura. El guardado informa resultados parciales.
-- Chat con historial y memoria, cancelación y prioridad sobre trabajos auxiliares. El contexto del modelo gestionado se verifica con su propia plantilla y tokenizador; se limita el historial sin recortar la pregunta actual. Si lo esencial no cabe, se informa antes de inferir. Se conservan corrección de escritura y consulta de fuentes para actualidad.
-- Avatar compartido entre pestañas: parpadeo, reacción al puntero, escucha/habla, transición entre expresiones, carga animada y sueño por desconexión. Se elimina el contador de expresiones y el acceso a su galería en la interfaz.
-- Personalización de nombre visible, colores, tipografías, idiomas y avatar propio. Importación y orden de sprites, hojas de fotogramas, duraciones y bucles editables. Fondo global de imagen o video con recorte, rotación, desplazamiento, ajuste, calidad, FPS y presupuesto de recursos.
-- Recuperación de conexión, conservación de la pausa manual y reconciliación antes de nuevos envíos. Selección de estrategias y registro de su procedencia en revisión y aprendizaje.
-- Versión e identidad unificadas a 16.4.0 Studio Rev5. El publicador Rev5 conserva los avisos de espacios de Git en un registro y continúa cuando `git diff --check` devuelve 2 por esos avisos.
+Al abrir: comprueba la versión en Acerca de; guarda tus API en Ajustes > Fuentes; comprueba la IA y conecta tu terminal MT5. Una instalación nueva empieza en observación. Las preferencias existentes de modo, cuenta y riesgo se conservan. Para autorizar envíos se confirma la cuenta desde la aplicación.
 
-## Verificación terminada
+## Cambios de Rev6
 
-**1.226 pruebas pytest y 118 subpruebas aprobadas, cero fallos y cero omisiones.** Además, **1.223 pruebas unittest con la red bloqueada** pasaron sin fallos ni omisiones. Las pruebas del fondo verifican doce ciclos reales de reproducción/cierre/borrado y conservan otro proceso intacto. Se comprueba el cierre nativo Win32 con un handle simulado; estos resultados locales no certifican Windows. La inferencia CPU real de FIX5 con llama.cpp b10355/Qwen3 queda conservada como evidencia anterior; sus scripts y el cliente de IA no cambian en FIX6.
+- Guardado en una cola ordenada. Combina cambios de formularios distintos, conserva el último cambio del mismo campo y evita que Apariencia restaure un riesgo anterior. API con control para mostrarlas y botón propio de guardado; una clave nueva sustituye la anterior.
+- Chat con respuesta visible progresiva, corrección conservadora de faltas, seguimientos y cambios de tema. Las preguntas de actualidad consultan fuentes; Xbox/Gears conserva su tema en las búsquedas. Los enlaces se presentan con el nombre de la fuente. El lector conserva su posición al actualizarse el contenido.
+- Reparación explícita de IA con descarga verificada y reemplazo atómico de componentes oficiales cuando falten o estén dañados. Solo anuncia éxito después de generar texto real. Una ruta de modelo personalizado existente se conserva.
+- Nuevos 108 fotogramas de expresión y atlas adicional con carga, parpadeo, habla, escucha, reparación y sueño. El círculo forma parte de los sprites; no se superpone un aro externo. Un director de estados comparte las reacciones entre pestañas.
+- Informes y paneles con explicaciones, tablas y fuentes con nombre. Presupuesto calculado desde la reserva real, privacidad inicial y ojo para mostrar la cuenta. Avisos filtrables por tipo.
+- Revisión IA individual conservada al navegar y priorizada frente al trabajo opcional. Se eliminan los botones de forzar envíos de los paneles. El actor de ejecución continúa decidiendo, reconciliando, modificando y retirando órdenes según las condiciones vigentes.
+- Estrategias en Pendientes: siete selecciones de reglas existentes y doce variantes acotadas que aplican filtros comprobables a los planes técnicos. Conservan niveles, riesgo e identidad de versión. Los resultados experimentales y los cierres reales se distinguen; una hipótesis sin resultados no se presenta como superior.
+- Idiomas en listas visibles; llamada junto al chat; fuentes TTF/OTF con vista previa; paletas de color y perfiles de tema guardables. Ocho temas, brillo, textura, escala y negrita aplicables.
+- Fondos globales de imagen, vídeo y GIF, bucle, FPS y ajuste al refresco. Edición con ratón para desplazamiento, recorte, giro y zoom. El decodificador pertenece a esta instalación y libera el archivo al cerrarse.
+- Avatares propios por emoción, orden, duración, animación y repetición persistentes. El reconocimiento ofrece sugerencias editables y requiere revisar dibujos ambiguos.
+- Ahorro reduce IA auxiliar, hilos y movimiento, limita el fondo y libera el modelo cuando está inactivo. Los controles financieros mantienen su frecuencia. Los límites del modelo son presupuestos; no se promete un límite duro de toda la GPU.
+- La desinstalación cierra únicamente procesos propios bajo la carpeta de esta instalación. No cierra MT5 ni servidores de otras aplicaciones.
 
-Informes actuales: `VALIDACION_STUDIO_REV5.json` y `VERIFICACION_STUDIO_FIX6`. La evidencia original de Rev5 y las correcciones anteriores se conservan en sus propias carpetas. La medición de fluidez corresponde a una carga sintética de 12,34 segundos en Linux con chat simulado. No mide Windows ni el equipo del propietario. Los informes R6/R7/R8/Rev2/Rev3/Rev4 y las regresiones iniciales son históricos.
+## Evidencia y alcance
 
-## Compilación pendiente
+`ACEPTACION_REV6.md`, `VALIDACION_STUDIO_REV6.json` y `VERIFICACION_STUDIO_REV6` identifican las comprobaciones de esta revisión. El workflow exige regresiones, interfaz de origen y congelada, reconocimiento visual, IA real, conversación por el asistente de producción e instalación con respuesta del modelo instalado. Los diagnósticos y las ocho capturas del ejecutable se adjuntan a esa ejecución.
 
-FIX5 está publicado: la ejecución 27 aprobó la comprobación de importaciones, pero falló al borrar `fixture.mp4` con WinError 32. Terminó con 1.215 pruebas aprobadas, una fallida y una omitida por falta de pantalla Tk. La **corrección Windows 6** confirma el cierre del proceso, libera sus handles y evita decodificadores solapados al cambiar el fondo o el tamaño. La prueba exige que el video se borre realmente. Consulta `CORRECCION_WINDOWS_6.md`. La conexión de GitHub se reparó autorizando el conector en la cuenta propietaria `juanpablo-ordo`. Se verificó la escritura y esta corrección se publica en la rama `akira-studio-rev5-20261016`. El instalador Windows sigue pendiente de la nueva ejecución completa.
+`REQUISITOS_232_ESTADO.json` y `.csv` conservan los 232 requisitos y 16 adicionales. Los resultados de versiones anteriores son evidencia histórica. Una prueba sintética o un tiempo de ciclo no demuestra rentabilidad ni sustituye una sesión de MT5 demo.
 
-Para publicar desde un Windows con Git autenticado: extraer todo el ZIP y ejecutar `PUBLICAR_A_GITHUB_REV5.cmd`. El script usa una copia temporal, crea o actualiza la rama `akira-studio-rev5-20261016` e inicia el workflow con el código nuevo. No sustituye `main`. Los resultados aparecen en https://github.com/juanpablo-ordo/akira/actions.
+Falta comprobar con hardware físico el audio, varios monitores/DPI, el consumo en tu equipo y una sesión demo prolongada. La traducción de todos los motivos dinámicos no está terminada; las voces dependen de los modelos disponibles. La fidelidad visual de todos los modales y la conversión automática de cualquier estrategia discrecional de un vídeo siguen siendo parciales. La matriz indica estas limitaciones; no se declara cumplimiento integral de los 248 puntos.
 
-La ejecución nueva debe identificar **AKIRA 16.4.0 Studio Rev5 · corrección Windows 6**. Solo tras superar regresiones, modelo real, compilación, autocontroles y prueba de instalación se genera el artefacto `AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`, con `AKIRA_16_4_0_STUDIO_REV5_IA_INCLUIDA.exe`. Los artefactos de ejecuciones anteriores corresponden a su propio código.
-
-El instalador final empaqueta el modelo y los componentes mediante CI. Este ZIP de código no incluye pesos GGUF/CLIP ni equivale al instalador final. `INSTALAR_AKIRA.cmd` es el instalador heredado desde fuentes; su comprobación Windows tampoco se ha ejecutado en esta revisión.
-
-## Alcance pendiente
-
-La lista de los **232 requisitos y 16 solicitudes adicionales** está en `REQUISITOS_232_ESTADO.json` y `.csv`, con evidencia local y aceptación pendiente. No se declara cumplimiento integral de los 248 puntos.
-
-Falta completar el workflow Windows de esta corrección y la instalación real con su IA, audio físico, DPI y varios monitores, límites efectivos de recursos y una sesión MT5 demo de seis horas. Algunas razones dinámicas continúan en español y los idiomas de voz dependen de los modelos disponibles. El reconocimiento de sprites ofrece sugerencias editables y no garantiza identificar cualquier dibujo. FIX4 aprobó la inferencia visual de origen y del ejecutable con el sprite de prueba; el margen ambiguo requiere revisión.
-
-Los límites duros CPU/RAM del fondo se aplican al decodificador propio en Windows y requieren esa validación; no existe un límite duro de GPU ni de toda la aplicación. La estrategia Adaptive es una selección inicial sobre reglas existentes: no demuestra superioridad ni convierte automáticamente todos los videos en estrategias rentables. La rapidez de envío y la rentabilidad con datos reales siguen pendientes de medir.
-
-## Integridad
-
-`PACKAGE_SHA256.json` identifica los archivos inmutables del programa. Se genera después de cerrar esta revisión; la configuración y los datos del usuario quedan fuera. `VALIDACION_STUDIO_REV5.json` registra las huellas de las dos entradas recibidas. Mantén juntos el código, los recursos, las pruebas y los manifiestos.
+`PACKAGE_SHA256.json` identifica archivos inmutables. Configuración, claves, chats, diario y demás datos del usuario quedan fuera del manifiesto.

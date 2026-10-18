@@ -60,7 +60,7 @@ def load_config(path):
                             'local_runtime_enabled','local_runtime_exe','local_runtime_model',
                             'auto_install_local_ai'):
                     cfg['assistant'][key]=copy.deepcopy(DEFAULT['assistant'][key])
-    # This update makes amounts visible. Later explicit privacy choices persist.
+    # Hide amounts for fresh installs; preserve every explicit visibility choice.
     if 'privacy' not in (raw.get('desktop') or {}):cfg['desktop']['privacy']=True
     cfg['desktop']['visibility_preference_saved']=True
     # Legacy defaults were Work Mode aliases, not documented public API IDs.

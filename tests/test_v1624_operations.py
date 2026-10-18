@@ -116,7 +116,8 @@ class LiveUIOperationsTests(unittest.TestCase):
     setUp=ui_fixture.StartupUITests.setUp
     def snapshot(self):
         e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close);return e.step()
-    def test_visible_amounts_are_default_and_no_timer_hides_the_choice(self):
+    def test_explicit_visible_amounts_are_preserved_without_timer(self):
+        self.app.cfg['desktop']['privacy']=False
         view=self.snapshot();self.app.view=view;self.app.render(view)
         self.assertIn('USD',self.app.metrics['balance'].options['text'])
         with patch.object(self.window,'after',wraps=self.window.after) as timers:
@@ -124,9 +125,9 @@ class LiveUIOperationsTests(unittest.TestCase):
             self.app.toggle_account_privacy();self.assertFalse(load_config(self.root/'akira_config.json')['desktop']['privacy'])
             self.assertFalse(any(call.args[0]==15000 for call in timers.call_args_list))
         self.assertIn('USD',self.app.metrics['balance'].options['text'])
-    def test_old_hidden_default_migrates_once_but_explicit_new_choice_survives(self):
+    def test_hidden_preference_survives_migration_and_new_install_is_private(self):
         old=copy.deepcopy(DEFAULT);old['desktop'].pop('visibility_preference_saved');old['desktop']['privacy']=True
-        self.assertFalse(load_config(old)['desktop']['privacy'])
+        self.assertTrue(load_config(old)['desktop']['privacy']);self.assertTrue(load_config({})['desktop']['privacy'])
         new=load_config(old);new['desktop']['privacy']=True;self.assertTrue(load_config(new)['desktop']['privacy'])
     def test_confirmed_pending_is_first_and_cycle_is_visible(self):
         view=self.snapshot();self.app.render(view);panel=self.app.panels['BTCUSDm']

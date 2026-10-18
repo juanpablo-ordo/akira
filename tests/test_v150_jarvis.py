@@ -313,7 +313,7 @@ class Language150Tests(PendingCase,unittest.TestCase):
             answer=bot.reply('Ayúdame a organizar mis ideas para mañana',{},use_cloud=False)
         self.assertIn('Podemos',answer);self.assertEqual(call.call_args.kwargs['model'],'qwen3:8b')
         self.assertEqual(call.call_args.kwargs['max_rounds'],1);self.assertFalse(call.call_args.kwargs['reasoning'])
-        self.assertFalse(call.call_args.args[1]);self.assertEqual(call.call_args.kwargs['timeout'],25)
+        self.assertFalse(call.call_args.args[1]);self.assertEqual(call.call_args.kwargs['timeout'],75)
 
     def test_fast_model_selection_keeps_strong_model_for_research(self):
         models=['qwen3:8b','qwen3:14b']

@@ -145,6 +145,12 @@ jobs:
           python -m installer.smoke_local_ai --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/LOCAL_AI_SCENARIOS.json
           if ($LASTEXITCODE -ne 0) { throw 'La IA real no pasó los escenarios. Revisa LOCAL_AI_SCENARIOS.json y LOCAL_AI_SCENARIOS.llama.log.' }
 
+      - name: Probar conversación Rev6 con faltas, seguimiento y cambio de tema
+        shell: pwsh
+        run: |
+          python qa_real_conversation_rev6.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CONVERSATION_REV6_WINDOWS.json
+          if ($LASTEXITCODE -ne 0) { throw 'La conversación real de Rev6 no pasó; no se publica el instalador.' }
+
       - name: Empaquetar ejecutable con motor local (sin el modelo GGUF)
         shell: pwsh
         run: |

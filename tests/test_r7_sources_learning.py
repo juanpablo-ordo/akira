@@ -146,6 +146,8 @@ class RepairedAssistantState(unittest.TestCase):
             with self.subTest(text=text),tempfile.TemporaryDirectory() as temporary:
                 assistant=AkiraAssistant(load_config(DEFAULT),Path(temporary))
                 assistant._managed_model=Mock()
+                import threading
+                assistant._managed_model.lock=threading.RLock();assistant._managed_model.active=0
                 assistant._managed_model.enabled.return_value=True
                 assistant._managed_model._paths.return_value=(Path('engine.exe'),Path('model.gguf'))
                 assistant._managed_model.session.return_value=nullcontext()

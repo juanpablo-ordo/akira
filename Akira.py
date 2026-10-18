@@ -63,7 +63,7 @@ if __name__=='__main__':
             result['render_check']=run_ui_check(window)
             require_render_check(result)
             from native_studio_check import run_studio_check,require_studio_check
-            result['studio_check']=run_studio_check();require_studio_check(result)
+            result['studio_check']=run_studio_check(screenshot_dir=Path(args.self_check).parent/'studio_pages');require_studio_check(result)
         except Exception as exc:
             import traceback
             result.update(status='FAILED',error=type(exc).__name__+': '+str(exc),traceback=traceback.format_exc())

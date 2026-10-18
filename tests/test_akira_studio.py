@@ -38,7 +38,7 @@ class StudioTests(unittest.TestCase):
                 im=path/(f'habla_{i}.png');Image.new('RGBA',(32,32),(i*60,20,30,255)).save(im);frames.append(im)
             rows=import_sprites(path,frames)
             catalog=UserCatalog(get_catalog(Path(__file__).resolve().parents[1]),{'entries':rows,'sequences':{'talking':{'frames':[r['id'] for r in rows],'delay_ms':150,'loop':True}}})
-            first=catalog.choose('talking');next_frame=catalog.next_in_sequence('talking',100,first)
+            first=catalog.choose('talking');self.assertEqual(catalog.next_in_sequence('talking',99.8,first).id,first.id);next_frame=catalog.next_in_sequence('talking',100,first)
             self.assertIsNotNone(next_frame);self.assertNotEqual(first.id,next_frame.id)
             self.assertIsNone(catalog.next_in_sequence('talking',100.01,next_frame))
     def test_avatar_files_survive_release_migration(self):

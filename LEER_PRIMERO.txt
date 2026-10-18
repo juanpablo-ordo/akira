@@ -1,16 +1,5 @@
-AKIRA 16.4.0 Studio Rev5 - corrección Windows 6
+AKIRA 16.4.1 Studio Rev6
 
-La ejecución anterior falló al borrar fixture.mp4 con WinError 32.
-Esta revisión confirma el cierre del decodificador propio, libera sus
-handles y evita iniciar otro mientras siga vivo. La prueba exige que
-el archivo se borre y que otros procesos permanezcan intactos.
-
-1. Extrae el ZIP completo en una carpeta nueva de Windows.
-2. Ejecuta PUBLICAR_A_GITHUB_REV5.cmd.
-3. En https://github.com/juanpablo-ordo/akira/actions busca una ejecución
-   nueva cuyo título incluya corrección Windows 6.
-
-Usa la misma rama akira-studio-rev5-20261016 y un commit nuevo.
-Reejecutar el intento anterior conserva el código que falló.
-Consulta CORRECCION_WINDOWS_6.md y VERIFICACION_STUDIO_FIX6.
-La instalación Windows completa sigue pendiente de esa ejecución.
+Descarga el artefacto AKIRA-16.4.1-Studio-Rev6-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA de la ejecución aprobada en https://github.com/juanpablo-ordo/akira/actions
+Extrae y ejecuta AKIRA_16_4_1_STUDIO_REV6_IA_INCLUIDA.exe. No uses un instalador de una ejecución antigua.
+Consulta README.md para funciones, pruebas y límites pendientes.
