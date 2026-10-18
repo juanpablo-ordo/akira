@@ -17,3 +17,5 @@ Los resultados cuantitativos se publican después de la compilación. La prueba 
 En ahorro, la IA recibe un resumen de indicadores en todas las temporalidades y una selección de contexto vigente. El motor técnico conserva sus cálculos completos y la revisión se etiqueta expresamente como resumida. Se conserva el contexto elegido de 2.048 tokens; no se aumenta la memoria del modelo para eludir ese límite. La revisión de lenguaje es auxiliar y no sustituye los controles de riesgo.
 
 La compilación también comprueba la recuperación de la lectura de auto.tcl en Windows: evalúa los mismos bytes de la biblioteca seleccionada sólo ante el error nativo de lectura identificado; otros errores se propagan.
+
+En el perfil de ahorro las revisiones auxiliares del modelo se programan con un intervalo mínimo de diez minutos. Las solicitudes individuales explícitas conservan prioridad. La frecuencia del actor financiero sigue siendo de 0,2 segundos en el ensayo y no se reduce por esta política.

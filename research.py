@@ -250,9 +250,10 @@ class ContextWorker:
         stamp=self.clock();stale=self.cfg['research'].get('external_stale_seconds',600)
         relevant={name:row for name,row in sources.items() if isinstance(row,dict) and row.get('data') and not row.get('error') and stamp-float(row.get('updated') or 0)<(86400 if name=='macro:FRED' else stale)}
         rank=lambda name:0 if name=='news' else 1 if name.startswith(('coinglass:','derivatives:','macro:')) else 2 if name=='fed' else 3
-        names=sorted(relevant,key=lambda name:(rank(name),name))[:8];selected={name:relevant[name] for name in names}
-        payload,meta=review_input({**snapshot,'symbols':symbols},selected,stamp,stale,max_chars=min(3800,max_chars),scenario_limit=min(1,scenario_limit))
+        names=sorted(relevant,key=lambda name:(rank(name),name))[:4];selected={name:relevant[name] for name in names}
+        payload,meta=review_input({**snapshot,'symbols':symbols},selected,stamp,stale,max_chars=min(2400,max_chars),scenario_limit=min(1,scenario_limit))
         meta.update(input_scope='COMPACT_INDICATORS_COMPLETE_TIMEFRAMES',engine_indicators_complete=True,omitted_raw_indicator_values=omitted,timeframe_count=frames_count,sources_omitted_for_budget=[name for name in sources if name not in selected])
+        digest=json.loads(payload);digest['scope']='Resumen para la IA en ahorro: indicadores seleccionados en todas las temporalidades disponibles. El motor técnico conserva sus cálculos completos. Las fuentes omitidas no fueron leídas por esta revisión.';payload=json.dumps(digest,ensure_ascii=False,separators=(',',':'));meta['input_chars']=len(payload)
         return payload,meta
 
     def _pending_summary(self,batch,sources):
@@ -266,7 +267,7 @@ class ContextWorker:
     def _pending_summary_impl(self,batch,sources):
         """One bounded committee request, with a separate verdict for every order."""
         symbols=list(dict.fromkeys(r['plan']['symbol'] for r in batch))
-        if len(symbols)>1:
+        if (self.cfg.get('assistant') or {}).get('local_runtime_enabled') and len(symbols)>1:
             combined={}
             for symbol in symbols:
                 selected=[{**r,'snapshot':{**r['snapshot'],'symbols':{symbol:r['snapshot'].get('symbols',{}).get(symbol,{})}}} for r in batch if r['plan']['symbol']==symbol]
@@ -459,12 +460,12 @@ class ContextWorker:
     def _summary_impl(self,snapshot,sources,cloud=False):
         """Fast structured review outside the MT5 loop; completion needs all assets."""
         active=[s for s in (snapshot.get('symbols') or {}) if not (snapshot.get('markets') or {}).get(s,{}).get('scheduled_closed')]
-        if not cloud and len(active)>1:
+        if not cloud and (self.cfg.get('assistant') or {}).get('local_runtime_enabled') and len(active)>1:
             combined={};metas=[]
             for symbol in active:
                 row=self._summary_impl({**snapshot,'symbols':{symbol:snapshot['symbols'][symbol]}},sources,False)
                 metas.append(row.pop('_meta'));combined.update(row)
-            combined['_meta']={**metas[-1],'active_symbols':active,'input_chars':sum(m['input_chars'] for m in metas),'review_seconds':round(sum(m['review_seconds'] for m in metas),3),'mode':'SEQUENTIAL_COMPLETE_ASSET_REVIEW','verified_twice':all(m['verified_twice'] for m in metas)}
+            combined['_meta']={**metas[-1],'active_symbols':active,'input_chars':sum(m['input_chars'] for m in metas),'review_seconds':round(sum(m['review_seconds'] for m in metas),3),'mode':'SEQUENTIAL_COMPLETE_ASSET_REVIEW','verified_twice':all(m['verified_twice'] for m in metas),'verification_error':'; '.join(m.get('verification_error','') for m in metas if m.get('verification_error'))[:400],'timeframe_count':sum(m.get('timeframe_count',0) for m in metas),'omitted_raw_indicator_values':sum(m.get('omitted_raw_indicator_values',0) for m in metas)}
             return combined
         if cloud:
             if not (self.cfg.get('assistant',{}).get('cloud',False) and self.cfg.get('assistant',{}).get('cloud_optional',True)):
@@ -492,9 +493,9 @@ class ContextWorker:
             model_name=AssistantStartup(self.root,self.cfg).preferred_model(available,endpoint) or choose_text_model(available,
                 str(acfg.get('local_model') or self.cfg['research'].get('local_ai_model') or 'qwen3:8b'),
                 str(acfg.get('local_model_lite') or 'qwen3:4b'),prefer_fast=True)
-            text=ollama_chat([{'role':'system','content':'Eres AKIRA. Revisa indicadores completos; conserva incertidumbre y nunca inventes niveles.'},
-                {'role':'user','content':prompt+payload}],model=model_name,endpoint=endpoint,timeout=60,
-                options={'num_predict':350,'num_ctx':8192,'temperature':0.10},think=False,response_format=schema,
+            text=ollama_chat([{'role':'system','content':('Eres AKIRA. Revisa el resumen técnico; no afirmes haber leído los valores omitidos.' if meta.get('input_scope')=='COMPACT_INDICATORS_COMPLETE_TIMEFRAMES' else 'Eres AKIRA. Revisa indicadores completos; conserva incertidumbre y nunca inventes niveles.')},
+                {'role':'user','content':prompt+payload}],model=model_name,endpoint=endpoint,timeout=(90 if (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía' else 60) if acfg.get('local_runtime_enabled') else 30,
+                options={'num_predict':350 if (self.cfg.get('assistant') or {}).get('local_runtime_enabled') else 700,'num_ctx':8192,'temperature':0.10},think=False,response_format=schema,
                 cancel_event=getattr(self._inference,'cancel',None))
         def parse(text):
             if isinstance(text,dict):text=text.get('text',text.get('output_text',''))
@@ -509,7 +510,7 @@ class ContextWorker:
                 second=ollama_chat([{'role':'system','content':'Verifica todos los símbolos y corrige sesgos sin soporte. Conserva el esquema JSON.'},
                     {'role':'user','content':prompt+'BORRADOR: '+json.dumps(first,ensure_ascii=False)+'\nEVIDENCIA: '+payload}],
                     model=model_name,endpoint=endpoint,timeout=min(12,remaining),
-                    options={'num_predict':350,'num_ctx':8192,'temperature':0.05},think=False,response_format=schema,
+                    options={'num_predict':350 if (self.cfg.get('assistant') or {}).get('local_runtime_enabled') else 700,'num_ctx':8192,'temperature':0.05},think=False,response_format=schema,
                     cancel_event=getattr(self._inference,'cancel',None))
                 first=parse(second);verified=True
             except Exception as exc:verification_error=type(exc).__name__+': '+str(exc)[:200]
@@ -556,7 +557,7 @@ class ContextWorker:
             jobs['youtube']=(r['youtube_discovery_seconds'],self._youtube)
             jobs['strategy_reference']=(86400,self._strategy_reference)
         if r.get('local_model',True) and snapshot.get('symbols'):jobs['model']=(r['model_refresh_seconds'],lambda:self._models(snapshot))
-        if self.source_enabled('local_ai') and snapshot.get('symbols') and self.pending_future is None and not self.pending_queue:jobs['local_ai']=(max(180,r.get('local_ai_summary_seconds',180)) if (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía' else r.get('local_ai_summary_seconds',180),lambda:self._summary(snapshot,sources))
+        if self.source_enabled('local_ai') and snapshot.get('symbols') and self.pending_future is None and not self.pending_queue:jobs['local_ai']=(max(600,r.get('local_ai_summary_seconds',180)) if (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía' else r.get('local_ai_summary_seconds',180),lambda:self._summary(snapshot,sources))
         if r.get('cloud',False) and self.cfg.get('assistant',{}).get('cloud',False) and self.cfg.get('assistant',{}).get('cloud_optional',True) and snapshot.get('symbols'):jobs['cloud']=(r.get('cloud_refresh_seconds',180),lambda:self._summary(snapshot,sources,True))
         return jobs
 

@@ -163,7 +163,7 @@ class SettingsPanel(QWidget):
         for path,title,low,high in [('desktop.memory_budget_mb','Presupuesto del modelo (MB)',512,16384),('desktop.model_context_tokens','Contexto (tokens)',1024,16384),('desktop.model_keep_alive_seconds','Mantener modelo cargado (s)',0,600)]:self.field(card,path,title,limits=(low,high))
         self.field(card,'desktop.model_use_gpu','Usar GPU para el modelo')
         profile.currentTextChanged.connect(self.apply_profile)
-        note=label('La interfaz responde por eventos; la frecuencia de datos es independiente de la animación. El fondo tiene un decodificador propio. Los límites del modelo son presupuestos orientativos.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
+        note=label('Ahorro reduce efectos y espacia las revisiones auxiliares de IA a diez minutos. Cotizaciones, órdenes y riesgo mantienen su frecuencia. El fondo tiene un decodificador propio. Los límites del modelo son presupuestos orientativos.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
     def apply_profile(self,name):
         from resource_optimizer import profile_budget
         for key,value in profile_budget(name).items():

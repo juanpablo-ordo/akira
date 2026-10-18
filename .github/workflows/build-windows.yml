@@ -165,7 +165,7 @@ jobs:
           python qa_review_rev7.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/ECO_REAL_REVIEW_REV7.json
           if ($LASTEXITCODE -ne 0) { throw 'La revisión de ambos activos en ahorro no pasó con el modelo real.' }
 
-      - name: Probar conversación Rev6 con faltas, seguimiento y cambio de tema
+      - name: Probar conversación con faltas, seguimiento y cambio de tema
         shell: pwsh
         run: |
           python qa_real_conversation_rev6.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CONVERSATION_REV6_WINDOWS.json

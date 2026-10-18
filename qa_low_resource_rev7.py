@@ -1,5 +1,5 @@
 """Bounded two-core GUI + market actor workload. FakeMT5; no live account."""
-import argparse,copy,json,os,sys,tempfile,threading,time
+import argparse,copy,json,math,os,sys,tempfile,threading,time
 from pathlib import Path
 
 
@@ -28,10 +28,12 @@ def run(report=None,screenshots=None):
             cfg=window.cfg;cfg['mode']='observe';clock=Clock();clock.now=1792407600 # synthetic Monday market session
             api=FakeMT5(clock);gateway=Gateway(api,cfg,Journal(root/'bench.json'),Reporter(root/'bench-log',console=False),clock)
             worker=ContextWorker(cfg,root,clock);worker.sources={'news':{'updated':clock(),'data':{'items':[{'title':'Synthetic market context '+str(i),'url':'https://example.com/'+str(i),'date':'2026-10-19T10:00:00Z'} for i in range(80)]},'error':''}}
-            engine=Engine(gateway,cfg,gateway.log,worker);cycles=[]
+            engine=Engine(gateway,cfg,gateway.log,worker);cycles=[];fresh=[];base={s:row.bid for s,row in api.ticks.items()}
             def market_loop():
                 while not stop.is_set():
-                    began=time.monotonic();clock.advance(cfg['poll_seconds']);view=engine.step();cycles.append(float(view['cycle_ms']));window.controller.publish(view);stop.wait(max(.02,cfg['poll_seconds']-(time.monotonic()-began)))
+                    began=time.monotonic();clock.advance(cfg['poll_seconds'])
+                    for symbol in base:api.set_quote(symbol,base[symbol]+math.sin(clock.now*2)*(5 if symbol.startswith('BTC') else .15),fill=False)
+                    view=engine.step();cycles.append(float(view['cycle_ms']));fresh.append(all(row.get('quote_time') is not None and 0<=clock()-row['quote_time']<1 for row in view['symbols'].values()));window.controller.publish(view);stop.wait(max(.02,cfg['poll_seconds']-(time.monotonic()-began)))
             actor=threading.Thread(target=market_loop,name='AkiraSyntheticActor',daemon=True);actor.start()
             def settle(seconds):
                 deadline=time.monotonic()+seconds
@@ -43,10 +45,10 @@ def run(report=None,screenshots=None):
                 else:window.showNormal()
                 settle(.5);window.ui_delays=[];first=len(cycles);started=time.monotonic();cpu=time.process_time();settle(8);elapsed=time.monotonic()-started;cpu=time.process_time()-cpu
                 delays=sorted(window.ui_delays);times=sorted(cycles[first:]);key='minimized' if minimized else profile
-                result['profiles'][key]={'cpu_seconds':round(cpu,3),'wall_seconds':round(elapsed,3),'cpu_percent_of_two_cores':round(cpu/elapsed/max(1,len(selected))*100,2),'ui_delay_p95_ms':round(delays[min(len(delays)-1,int(len(delays)*.95))],2) if delays else None,'engine_cycle_p95_ms':round(times[min(len(times)-1,int(len(times)*.95))],2) if times else None,'engine_cycles':len(times),'rss_mb':round(rss_mb(),1),'financial_poll_seconds':cfg['poll_seconds']}
+                result['profiles'][key]={'cpu_seconds':round(cpu,3),'wall_seconds':round(elapsed,3),'cpu_percent_of_two_cores':round(cpu/elapsed/max(1,len(selected))*100,2),'ui_delay_p95_ms':round(delays[min(len(delays)-1,int(len(delays)*.95))],2) if delays else None,'engine_cycle_p95_ms':round(times[min(len(times)-1,int(len(times)*.95))],2) if times else None,'engine_cycles':len(times),'fresh_quote_cycles':sum(fresh[first:]),'rss_mb':round(rss_mb(),1),'financial_poll_seconds':cfg['poll_seconds']}
                 if screenshots and not minimized:
                     Path(screenshots).mkdir(parents=True,exist_ok=True);window.grab().save(str(Path(screenshots)/('low_resource_'+('eco' if profile=='Ahorro de energía' else 'balanced')+'.png')))
-            eco=result['profiles']['Ahorro de energía'];result['status']='PASSED' if eco['cpu_percent_of_two_cores']<15 and eco['ui_delay_p95_ms']<150 and all(r['engine_cycles']>=15 for r in result['profiles'].values()) else 'FAILED'
+            eco=result['profiles']['Ahorro de energía'];result['status']='PASSED' if eco['cpu_percent_of_two_cores']<15 and eco['ui_delay_p95_ms']<150 and all(r['engine_cycles']>=15 and r['fresh_quote_cycles']==r['engine_cycles'] for r in result['profiles'].values()) else 'FAILED'
     finally:
         stop.set()
         if actor:actor.join(10)

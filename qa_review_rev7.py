@@ -20,7 +20,8 @@ def run(exe,model,report):
         with _STATUS_LOCK:_STATUS.update(when=time.monotonic(),ok=False,models=[],endpoint=endpoint)
         result={'status':'FAILED','data':'SYNTHETIC','live_account_used':False,'requested_context_tokens':2048};started=time.monotonic()
         try:
-            summary=worker._summary(view,{})
+            stamp=time.time();sources={name:{'updated':stamp,'data':{'items':[{'title':'Dato sintético de prueba, sin noticia real ni señal confirmada.','url':'https://example.com/test','date':'2026-10-18T00:00:00Z'}]},'error':''} for name in ('news','global_news:BLS')}
+            summary=worker._summary(view,sources)
             if not all(symbol in summary for symbol in view['symbols']):raise AssertionError('Falta un activo en la revisión')
             result.update(status='PASSED',summary=summary,effective_parameters=runtime.effective_parameters())
         except Exception as error:result['error']=type(error).__name__+': '+str(error)
