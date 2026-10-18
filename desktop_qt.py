@@ -49,6 +49,8 @@ def stylesheet(studio):
     QFrame#card {{ background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {rgba(card.darker(130),alpha)},stop:1 {rgba(panel.darker(150),max(150,alpha-12))}); border:1px solid {border}; border-radius:6px; }}
     QLabel {{ border:0;background:transparent; }} QLabel[role="title"] {{font-size:{round(25*scale)}px;font-weight:600;}}
     QLabel[role="cardTitle"] {{color:#eef5ff;font-size:{round(18*scale)}px;font-weight:600;}}
+    QLabel[role="statusPill"] {{font-size:{round(12*scale)}px;border:1px solid #126070;border-radius:4px;padding:8px 10px;background:rgba(0,35,48,140);}}
+    QLabel[role="metricName"] {{font-size:{round(13*scale)}px;color:#d6e8f7;}}
     QLabel[role="metric"] {{font-size:{round(26*scale)}px;font-weight:600;}}
     QLabel[role="brand"] {{font-size:36px;font-weight:600;color:{accent};letter-spacing:2px;}}
     QLabel[role="muted"],QLabel[role="micro"] {{color:#83adca;font-size:{round(14*scale)}px;}}
@@ -165,7 +167,7 @@ class StudioWindow(QMainWindow):
     def build_header(self,layout):
         row=QHBoxLayout();row.setSpacing(12);self.page_title=label('','title');row.addWidget(self.page_title)
         self.page_description=label('','muted');row.addWidget(self.page_description,1)
-        self.connection=label('● MT5','micro',INK['green']);row.addWidget(self.connection)
+        self.connection=label('● MT5','statusPill');row.addWidget(self.connection)
         self.account_badge=button('',self.toggle_privacy,glyph='eye');row.addWidget(self.account_badge)
         self.notice_button=button('',self.open_notices,glyph='bell');self.notice_button.setMaximumWidth(65);row.addWidget(self.notice_button);layout.addLayout(row)
     def build_metrics(self,layout):
@@ -185,7 +187,7 @@ class StudioWindow(QMainWindow):
         self.activity=ActivityFeed();activity.body.addWidget(self.activity,1);left.addWidget(activity,3)
         coverage=self.card('COBERTURA DE MERCADO','analysis');grid=QHBoxLayout();self.home_markets={}
         for symbol,title in [('BTCUSDm','Bitcoin'),('XAUUSDm','Oro')]:
-            card=self.card(symbol);price=label('—','metric',INK['cyan']);card.body.addWidget(price);status=label('','muted');status.setWordWrap(True);card.body.addWidget(status);chart=CandleChart();chart.setMinimumHeight(88);card.body.addWidget(chart,1);grid.addWidget(card,1);self.home_markets[symbol]=(price,status,chart)
+            card=self.card(symbol,'bitcoin' if symbol.startswith('BTC') else 'gold');price=label('—','metric',INK['cyan']);card.body.addWidget(price);status=label('','muted');status.setWordWrap(True);card.body.addWidget(status);chart=CandleChart();chart.setMinimumHeight(88);card.body.addWidget(chart,1);grid.addWidget(card,1);self.home_markets[symbol]=(price,status,chart)
         coverage.body.addLayout(grid);left.addWidget(coverage,2)
         system=self.card('ESTADO DEL SISTEMA','shield');inside=QHBoxLayout();self.avatar(inside,140);self.system_text=label('','body');self.system_text.setWordWrap(True);inside.addWidget(self.system_text,2);system.body.addLayout(inside);system.body.addWidget(SignalWave());right.addWidget(system,3)
         quick=self.card('ACCIONES RÁPIDAS','bolt');grid=QGridLayout()
@@ -457,6 +459,8 @@ class StudioWindow(QMainWindow):
     def render(self,view):
         self.view=view;a=view.get('account') or {};currency=a.get('currency','USD');mode=view.get('mode',self.cfg['mode']);gate=view.get('execution_gate') or {}
         connected=bool(view.get('connected'));self.connection.setText(('● '+self.text('CONECTADO')) if connected else '● '+self.text('ESPERANDO MT5'))
+        if connected!=getattr(self,'_connection_ready',None):
+            self._connection_ready=connected;self.connection.setStyleSheet('color:'+ (INK['green'] if connected else INK['amber'])+';')
         self.connection_footer.setText('● MT5 '+('conectado' if connected else 'esperando'))
         self.account_badge.setText('Cuenta privada' if self.private else 'Cuenta: '+str(a.get('login','—'))+' · Libre '+number(a.get('margin_free'))+' '+currency)
         for key,metric in self.metrics.items():

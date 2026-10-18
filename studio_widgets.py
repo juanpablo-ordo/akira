@@ -15,7 +15,13 @@ def icon(name,color='#00ddff',size=22):
     pix=QPixmap(size*2,size*2);pix.fill(Qt.GlobalColor.transparent)
     p=QPainter(pix);p.setRenderHint(QPainter.RenderHint.Antialiasing);p.scale(size/24*2,size/24*2)
     p.setPen(QPen(QColor(color),1.6,Qt.PenStyle.SolidLine,Qt.PenCapStyle.RoundCap,Qt.PenJoinStyle.RoundJoin));p.setBrush(Qt.BrushStyle.NoBrush)
-    if name in ('chart','trading','analysis'):
+    if name=='bitcoin':
+        p.setPen(Qt.PenStyle.NoPen);p.setBrush(QColor('#f7931a'));p.drawEllipse(QRectF(1,1,22,22));p.setPen(QPen(QColor('#fff4d9'),1.5));p.setFont(QFont('Rajdhani',17,QFont.Weight.Bold));p.drawText(QRectF(1,-1,22,25),Qt.AlignmentFlag.AlignCenter,'B');p.drawLine(10,3,10,6);p.drawLine(13,3,13,6);p.drawLine(10,18,10,21);p.drawLine(13,18,13,21)
+    elif name=='gold':
+        p.setPen(QPen(QColor('#f6c34c'),1));p.setBrush(QColor('#e6a624'))
+        for x,y in ((8,2),(2,12),(13,12)):p.drawPolygon([QPointF(x+2,y),QPointF(x+8,y),QPointF(x+10,y+8),QPointF(x,y+8)])
+        p.setPen(QPen(QColor('#fff2ad'),1));p.drawLine(11,4,15,4);p.drawLine(5,14,9,14);p.drawLine(16,14,20,14)
+    elif name in ('chart','trading','analysis'):
         for x,h in ((5,8),(11,15),(17,11)):p.drawRoundedRect(QRectF(x,21-h,3,h),.7,.7)
     elif name in ('wallet','account'):
         p.drawRoundedRect(QRectF(3,6,18,15),2,2);p.drawPolyline([QPointF(4,6),QPointF(15,2),QPointF(17,6)])
@@ -87,18 +93,22 @@ class Card(QFrame):
         if glyph:
             self.symbol=QLabel();self.symbol.setPixmap(icon(glyph,accent or INK['cyan']).pixmap(24,24));self.heading.addWidget(self.symbol)
         self.title=label(title,'cardTitle');self.heading.addWidget(self.title,1);self.body.addLayout(self.heading)
+    def paintEvent(self,event):
+        super().paintEvent(event);p=QPainter(self);p.setPen(QPen(QColor(self.property('accent') or INK['cyan']),1));p.drawLine(10,0,36,0)
 
 class Metric(Card):
     def __init__(self,title,glyph,color=INK['cyan']):
         super().__init__('',accent=color);self.body.setSpacing(1);self.body.setContentsMargins(13,10,13,10)
         self.title.hide();self.body.removeItem(self.heading)
         line=QHBoxLayout();line.setSpacing(12);self.body.addLayout(line)
-        self.symbol=QLabel();self.symbol.setPixmap(icon(glyph,color,30).pixmap(30,30));line.addWidget(self.symbol)
-        values=QVBoxLayout();values.setSpacing(1);self.name_label=label(title,'micro');values.addWidget(self.name_label)
+        self.metric_color=color;self.symbol=QLabel();self.symbol.setFixedWidth(40);self.symbol.setAlignment(Qt.AlignmentFlag.AlignCenter);self.symbol.setPixmap(icon(glyph,color,32).pixmap(32,32));line.addWidget(self.symbol)
+        values=QVBoxLayout();values.setSpacing(1);self.name_label=label(title,'metricName');values.addWidget(self.name_label)
         self.value=label('—','metric',color);values.addWidget(self.value)
         self.caption=label('','muted');values.addWidget(self.caption);line.addLayout(values,1)
         self.value.setWordWrap(True);self.caption.setWordWrap(True)
         self.setMinimumHeight(90);self.setMaximumHeight(115)
+    def paintEvent(self,event):
+        super().paintEvent(event);p=QPainter(self);color=QColor(self.metric_color);color.setAlpha(24);gradient=QLinearGradient(0,0,65,self.height());gradient.setColorAt(0,color);color.setAlpha(1);gradient.setColorAt(1,color);p.fillRect(QRectF(1,1,62,max(1,self.height()-2)),gradient);p.setPen(QPen(QColor('#15415d'),.7));p.drawLine(64,1,64,self.height()-1)
 
 class DataTable(QTableWidget):
     """Stable keys; changing ages must not reorder rows or lose the selection."""
