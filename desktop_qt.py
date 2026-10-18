@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from PySide6.QtCore import Qt,QTimer,QSize,QUrl,QSettings
 from PySide6.QtGui import QFont,QFontDatabase,QIcon,QDesktopServices,QColor
 from PySide6.QtWidgets import QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,QStackedWidget,QSplitter,QLineEdit,QComboBox,QTextBrowser,QPlainTextEdit,QListWidget,QListWidgetItem,QTabWidget,QScrollArea,QDialog,QDialogButtonBox,QFileDialog,QMessageBox,QInputDialog,QCheckBox,QDoubleSpinBox,QFormLayout,QProgressBar,QMenu
-from studio_widgets import Card,Metric,DataTable,CandleChart,AvatarWidget,SignalWave,label,button,icon,INK,Toggle
+from studio_widgets import Card,Metric,DataTable,ActivityFeed,CandleChart,AvatarWidget,SignalWave,label,button,icon,INK,Toggle
 from studio_presenter import human,rich_text,set_document,frame_html,budget_summary,plan_summary,report_html,source_abstract,INDICATORS
 from studio_editors import ChoiceBox
 from studio_background import BackgroundSurface
@@ -139,6 +139,7 @@ class StudioWindow(QMainWindow):
         for n in ratio:
             widget=QWidget();box=QVBoxLayout(widget);box.setContentsMargins(0,0,0,0);box.setSpacing(12);splitter.addWidget(widget)
         for i,value in enumerate(ratio):splitter.setStretchFactor(i,value)
+        splitter.setSizes([value*500 for value in ratio])
         layout.addWidget(splitter,1);return splitter,[splitter.widget(i).layout() for i in range(len(ratio))]
     def table(self,columns):
         table=DataTable(columns);self.tables.append(table);table.setHorizontalHeaderLabels([self.text(t) for t in columns]);return table
@@ -176,8 +177,11 @@ class StudioWindow(QMainWindow):
     def build_home(self):
         _,layout=self.page();self.home_split,(left,right)=self.split(layout,(2,1))
         activity=self.card('ACTIVIDAD EN TIEMPO REAL','trading');filters=QHBoxLayout()
-        self.activity_filter=ChoiceBox();self.activity_filter.addItems(['TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR']);self.activity_filter.currentTextChanged.connect(self.render_logs);filters.addWidget(self.activity_filter);filters.addStretch();activity.body.addLayout(filters)
-        self.activity=self.table(['Hora','Módulo','Estado','Motivo / contexto']);activity.body.addWidget(self.activity,1);left.addWidget(activity,3)
+        self.activity_filter=ChoiceBox();self.activity_filter.addItems(['TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR']);self.activity_filter.currentTextChanged.connect(self.render_logs);self.activity_filter.hide();self.activity_tabs=[]
+        for title in ('TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR'):
+            tab=self.btn(title,lambda _=False,t=title:self.activity_filter.setCurrentText(t));tab.setCheckable(True);tab.setChecked(title=='TODOS');filters.addWidget(tab);self.activity_tabs.append(tab)
+        self.activity_filter.currentTextChanged.connect(lambda current:[b.setChecked(b.text()==current) for b in self.activity_tabs]);filters.addStretch();activity.body.addLayout(filters)
+        self.activity=ActivityFeed();activity.body.addWidget(self.activity,1);left.addWidget(activity,3)
         coverage=self.card('COBERTURA DE MERCADO','analysis');grid=QHBoxLayout();self.home_markets={}
         for symbol,title in [('BTCUSDm','Bitcoin'),('XAUUSDm','Oro')]:
             card=self.card(symbol);price=label('—','metric',INK['cyan']);card.body.addWidget(price);status=label('','muted');status.setWordWrap(True);card.body.addWidget(status);chart=CandleChart();chart.setMinimumHeight(88);card.body.addWidget(chart,1);grid.addWidget(card,1);self.home_markets[symbol]=(price,status,chart)
@@ -295,6 +299,11 @@ class StudioWindow(QMainWindow):
         super().showEvent(event)
         if self.windowHandle() and not getattr(self,'_monitor_hook',False):
             self._monitor_hook=True;self.windowHandle().screenChanged.connect(self.monitor_changed);self.monitor_changed(self.screen())
+        if not getattr(self,'_initial_split_done',False):
+            self._initial_split_done=True
+            if self._layout_file.value('layout_revision')!='7':
+                QTimer.singleShot(0,lambda:self.home_split.setSizes([960,480]))
+                self._layout_file.setValue('layout_revision','7')
     def monitor_changed(self,screen):
         previous=getattr(self,'_monitor',None)
         if previous:
@@ -312,7 +321,7 @@ class StudioWindow(QMainWindow):
         if sheet!=getattr(self,'_sheet',None):self.setStyleSheet(sheet);self._sheet=sheet
         brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
         QApplication.instance().setApplicationDisplayName(brand)
-        self.setWindowTitle(brand+' · Studio · 16.4.1');desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
+        self.setWindowTitle(brand+' · Studio · 16.4.2');desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
         if profile=='Ahorro de energía':wallpaper.update(fps=min(12,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
         self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
         locale=studio.get('language_ui','es')
@@ -454,8 +463,9 @@ class StudioWindow(QMainWindow):
         self.mode_label.setText(('VISTA PREVIA · ' if self.controller.preview else '')+(str(gate.get('reason')) if gate.get('reason') else self.text('SOLO ANÁLISIS · NO ENVÍA ÓRDENES') if mode!='trade' else self.text('OPERATIVA AUTORIZADA')))
         self.mode_button.setText(self.text('ACTIVAR OPERATIVA') if mode!='trade' else self.text('REANUDAR GESTIÓN' if view.get('paused') else 'PAUSAR GESTIÓN'))
         self.clock_label.setText('America/Guatemala\n'+when(view.get('as_of_utc') or view.get('updated')))
-        summary=['IA local disponible' if self._model_status.get('ready') else 'IA: '+str(self._model_status.get('phase') or 'comprobando'),self.mode_label.text()]
-        summary.extend(symbol+': '+str(state.get('detail') or state.get('state') or '') for symbol,state in (view.get('status') or {}).items())
+        phase=self._model_status.get('phase');summary=['● IA local disponible' if self._model_status.get('ready') else '◷ IA en reposo · se activa al necesitarla' if phase=='IDLE' else '◷ Preparando el asistente' if phase in ('CHECKING','PREPARING') else '◷ IA pendiente de comprobar']
+        summary.append('● MT5 conectado' if connected else '◷ Esperando conexión con MT5')
+        summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
         self.system_text.setText('\n\n'.join(summary))
         for symbol,(price,status,chart) in self.home_markets.items():
             info=(view.get('symbols') or {}).get(symbol) or {};price.setText(number(info.get('bid')));status.setText(str((view.get('status') or {}).get(symbol,{}).get('state','Esperando datos')));chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [])

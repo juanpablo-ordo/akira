@@ -566,11 +566,23 @@ class ContextWorker:
                     if name in ('youtube','strategy_reference') and classify_error(e) in ('AUTH_REQUIRED','RATE_LIMITED','MISSING_RUNTIME'):
                         self.due[name]=now+3600
                 self._save()
-            snapshot=copy.deepcopy(self.snapshot);sources={name:copy.deepcopy(row) for name,row in self.sources.items() if self.source_enabled(name)}
-            self._pending_tick(now,sources)
+            from snapshot_copy import snapshot_copy
+            sources=None
+            if self.pending_future is not None or self.pending_queue:
+                sources={name:snapshot_copy(row) for name,row in self.sources.items() if self.source_enabled(name)}
+                self._pending_tick(now,sources)
+            # Queue/finished-job handling remains prompt. Rebuilding the entire
+            # research/evolution tree four times a second served no new data.
+            marker=(id(self.snapshot),tuple((name,id(row)) for name,row in self.sources.items()))
+            if now<getattr(self,'_schedule_due',0) and marker==getattr(self,'_schedule_marker',None):return
+            self._schedule_due=now+.75;self._schedule_marker=marker
+            snapshot=snapshot_copy(self.snapshot)
+            if sources is None:sources={name:snapshot_copy(row) for name,row in self.sources.items() if self.source_enabled(name)}
             if self._evolution_started:
                 videos=[{'url':r.get('url'),'symbol':r.get('topic'),'date':r.get('published')} for r in sources.get('youtube',{}).get('data',{}).get('rows',[])]
-                self.evolution.submit(snapshot,videos)
+                evolution_marker=(id(self.snapshot),sources.get('youtube',{}).get('updated'))
+                if evolution_marker!=getattr(self,'_evolution_marker',None):
+                    self.evolution.submit(snapshot,videos);self._evolution_marker=evolution_marker
             for name,(interval,fn) in self.jobs_for(snapshot,sources).items():
                 if not self.internet_available and name not in ('local_ai','model'):continue
                 if name in ('local_ai','cloud') and PRIORITY.users:continue
@@ -591,7 +603,8 @@ class ContextWorker:
     def read(self):
         now=self.clock()
         with self.lock:
-            sources=copy.deepcopy(self.sources);inflight=set(self.jobs);pending_reviews=copy.deepcopy(self.pending_reviews)
+            from snapshot_copy import snapshot_copy
+            sources=snapshot_copy(self.sources);inflight=set(self.jobs);pending_reviews=snapshot_copy(self.pending_reviews)
             for index,pid in enumerate(self.pending_queue):
                 if pid in pending_reviews:pending_reviews[pid]['queue_ahead']=index+len(self.pending_batch)
         fusion={};statuses={};component_errors={};fresh_seconds=self.cfg['research'].get('external_fresh_seconds',90)

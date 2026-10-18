@@ -6,7 +6,7 @@ from collections import OrderedDict
 from pathlib import Path
 from PySide6.QtCore import Qt,QRectF,QPointF,QTimer,QSize,QVariantAnimation
 from PySide6.QtGui import QColor,QPainter,QPen,QLinearGradient,QPainterPath,QPixmap,QImage,QFont,QIcon
-from PySide6.QtWidgets import QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QSizePolicy,QCheckBox
+from PySide6.QtWidgets import QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QSizePolicy,QCheckBox,QStyledItemDelegate
 
 INK={'bg':'#020c18','panel':'#041426','line':'#164762','cyan':'#00ddff','pink':'#ff2585','green':'#00e8b5','amber':'#ffc548','text':'#e8f3ff','muted':'#80acc9'}
 
@@ -140,6 +140,38 @@ class DataTable(QTableWidget):
                 scroll=self.verticalScrollBar().value()+self.rowViewportPosition(self.keys.index(anchor))-offset
             self.verticalScrollBar().setValue(scroll)
         finally:self.setUpdatesEnabled(True);self.blockSignals(False)
+
+class ActivityDelegate(QStyledItemDelegate):
+    def paint(self,painter,option,index):
+        painter.save();rect=QRectF(option.rect);text=str(index.data() or '')
+        colors={'SISTEMA':INK['green'],'TRADING':INK['cyan'],'ANÁLISIS':INK['cyan'],'AVISO':INK['amber'],'ERROR':INK['pink']}
+        category=str(index.siblingAtColumn(1).data() or 'SISTEMA');color=QColor(colors.get(category,INK['cyan']))
+        if index.row()%2:painter.fillRect(rect,QColor(0,26,44,120))
+        if self.parent().currentRow()==index.row():painter.fillRect(rect,QColor(0,90,130,80))
+        painter.setPen(QPen(QColor('#12364e'),.7));painter.drawLine(rect.bottomLeft(),rect.bottomRight());painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if index.column()==0:
+            painter.setPen(Qt.PenStyle.NoPen);painter.setBrush(color);painter.drawEllipse(QPointF(rect.left()+13,rect.center().y()),5,5);painter.setPen(QColor(INK['muted']));painter.drawText(rect.adjusted(28,0,0,0),Qt.AlignmentFlag.AlignVCenter,text)
+        elif index.column()==1:
+            badge=rect.adjusted(5,20,-7,-20);painter.setPen(QPen(color,1));painter.setBrush(QColor(color.red(),color.green(),color.blue(),30));painter.drawRoundedRect(badge,4,4);painter.drawText(badge,Qt.AlignmentFlag.AlignCenter,text)
+        else:
+            title,_,body=text.partition('\n');painter.setPen(QColor(INK['text']));font=QFont(option.font);font.setBold(True);painter.setFont(font);painter.drawText(rect.adjusted(8,9,-12,-30),Qt.AlignmentFlag.AlignVCenter,painter.fontMetrics().elidedText(title,Qt.TextElideMode.ElideRight,max(10,int(rect.width()-22))))
+            font.setBold(False);painter.setFont(font);painter.setPen(QColor(INK['muted']));painter.drawText(rect.adjusted(8,32,-12,-7),Qt.AlignmentFlag.AlignVCenter,painter.fontMetrics().elidedText(body,Qt.TextElideMode.ElideRight,max(10,int(rect.width()-22))))
+        painter.restore()
+
+
+class ActivityFeed(DataTable):
+    """Two readable lines per event, sharing the stable-scroll table contract."""
+    def __init__(self):
+        super().__init__(['Hora','Tipo','Actividad']);self.horizontalHeader().hide();self.verticalHeader().setDefaultSectionSize(68);self.setColumnWidth(0,102);self.setColumnWidth(1,110);self.setItemDelegate(ActivityDelegate(self))
+    def update_rows(self,rows):
+        presented=[]
+        for key,values,data in rows:
+            stamp,module,state,detail=values
+            words=(module+' '+state).upper()
+            kind='ERROR' if any(w in words for w in ('ERROR','FALLO')) else 'AVISO' if any(w in words for w in ('AVISO','RECHAZ','BLOQUE')) else 'ANÁLISIS' if any(w in words for w in ('ANÁLISIS','REVISION','REVISIÓN','MAPA','DATOS')) else 'TRADING' if any(w in words for w in ('PENDIENT','RUNNER','ORDEN','BTC','XAU','MT5')) else 'SISTEMA'
+            presented.append((key,[stamp,kind,state+'\n'+detail],data))
+        super().update_rows(presented)
+
 
 class CandleChart(QWidget):
     def __init__(self,parent=None):

@@ -8,7 +8,7 @@ from __future__ import annotations
 import sys
 
 ORIGINAL={
-    'BG':'#061022','PANEL':'#091b2b','CARD':'#0b2135','LINE':'#204960',
+    'BG':'#010b18','PANEL':'#031326','CARD':'#031a31','LINE':'#164762',
     'CYAN':'#23ddf4','BLUE':'#1079c5','PINK':'#ed58cc','AMBER':'#ffc45a',
     'GREEN':'#44e5b5','RED':'#ff6d89','MUTED':'#88a9bf','TEXT':'#e3effa',
 }

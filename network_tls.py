@@ -18,8 +18,8 @@ def https_context():
 
 def urlopen(url, data=None, timeout=10, **kwargs):
     # An explicit context is also needed after an HTTP -> HTTPS redirect.
-    return request.urlopen(url, data=data, timeout=timeout,
-                           context=https_context(), **kwargs)
+    if data is not None:kwargs['data']=data
+    return request.urlopen(url, timeout=timeout,context=https_context(), **kwargs)
 
 
 def connection_message(error):
@@ -36,3 +36,30 @@ def connection_message(error):
     if any(s in text for s in ('urlerror','connectionerror','connection refused','getaddrinfo','name resolution')):
         return ('SIN CONEXIÓN CON LA FUENTE', 'Esta fuente no respondió. Las demás fuentes siguen activas y se reintentará automáticamente.')
     return ('NO DISPONIBLE', 'Esta consulta no pudo completarse. Se reintentará en segundo plano. Puedes consultar el diagnóstico en Terminal.')
+
+
+def check_packaged_https():
+    import certifi,os
+    from pathlib import Path
+    from urllib.parse import urlsplit
+    context=https_context()
+    checks={'bundled_ca_present':Path(certifi.where()).is_file(),
+            'trusted_roots':context.cert_store_stats()['x509_ca'],
+            'certificate_required':context.verify_mode==ssl.CERT_REQUIRED,
+            'hostname_required':context.check_hostname}
+    for name in ('GOOD','BAD_HOST','BAD_CHAIN'):
+        url=os.environ.get('AKIRA_TEST_HTTPS_'+name)
+        if not url:raise ValueError('La comprobación necesita su servidor TLS de prueba')
+        if urlsplit(url).hostname not in ('127.0.0.1','localhost'):raise ValueError('La prueba TLS requiere localhost')
+        try:
+            with urlopen(url,timeout=5) as response:body=response.read(100)
+        except Exception as error:
+            if name=='GOOD':raise
+            reason=getattr(error,'reason',error)
+            if not isinstance(reason,ssl.SSLCertVerificationError):raise
+            checks[name.lower()+'_rejected']=True
+        else:
+            if name!='GOOD':raise AssertionError('Se aceptó un certificado inválido')
+            checks['trusted_https']=body==b'AKIRA TLS OK'
+    if not all(checks.values()) or checks['trusted_roots']<100:raise AssertionError('Configuración HTTPS incompleta')
+    return {'status':'PASSED',**checks}
