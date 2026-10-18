@@ -47,3 +47,47 @@ def launch_uninstaller(folder,platform=None,launch=None,executable=None,localapp
     except Exception:
         shutil.rmtree(staging,ignore_errors=True)
         raise
+
+
+def prepare_native_uninstall(app_dir,timeout=25,processes=None,close_windows=None):
+    """Close only helpers whose executable is inside this installation."""
+    import time
+    root=Path(app_dir).resolve();owned=[]
+    if processes is None:
+        import psutil
+        processes=psutil.process_iter(['pid','exe','name'])
+    for process in processes:
+        try:
+            info=process.info;pid=int(info.get('pid',process.pid))
+            if pid==os.getpid():continue
+            exe=Path(info.get('exe') or process.exe()).resolve()
+            if not exe.is_relative_to(root):continue
+            name=exe.name.casefold()
+            if name not in ('akira.exe','llama-server.exe','piper.exe') and not (name.startswith('ffmpeg') and name.endswith('.exe')):continue
+            owned.append(process)
+        except (OSError,ValueError,AttributeError):continue
+        except Exception:continue
+    ids={p.pid for p in owned}
+    if close_windows is not None:close_windows(ids)
+    elif os.name=='nt' and ids:
+        import ctypes
+        from ctypes import wintypes
+        user=ctypes.windll.user32
+        @ctypes.WINFUNCTYPE(wintypes.BOOL,wintypes.HWND,wintypes.LPARAM)
+        def visit(hwnd,_):
+            pid=wintypes.DWORD();user.GetWindowThreadProcessId(hwnd,ctypes.byref(pid))
+            if pid.value in ids:user.PostMessageW(hwnd,0x0010,0,0)
+            return True
+        user.EnumWindows(visit,0)
+    def alive(p):
+        try:return p.is_running()
+        except Exception:return False
+    deadline=time.monotonic()+max(0,float(timeout))
+    while any(alive(p) for p in owned) and time.monotonic()<deadline:time.sleep(.1)
+    for p in owned:
+        if not alive(p):continue
+        try:p.terminate();p.wait(timeout=4)
+        except Exception:
+            try:p.kill();p.wait(timeout=3)
+            except Exception:pass
+    return {'status':'READY' if not any(alive(p) for p in owned) else 'BUSY','owned_processes':len(owned)}

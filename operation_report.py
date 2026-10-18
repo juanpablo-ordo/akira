@@ -120,7 +120,7 @@ def source_rows(research,as_of):
     for name,row in (research.get('sources') or {}).items():
         if not isinstance(row,dict):continue
         age=finite(row.get('age_seconds'))
-        if age is None and finite(row.get('updated')) is not None:age=max(0,as_of-float(row['updated']))
+        if age is None and finite(row.get('updated'),0)>0:age=max(0,as_of-float(row['updated']))
         state='Vigente según proveedor' if row.get('fresh') is True else 'Sin vigencia confirmada'
         rows.append([str(name),state,f'{age:.0f} s' if age is not None else 'Sin fecha','Contexto auxiliar',str(row.get('error') or row.get('state') or '')])
     from email.utils import parsedate_to_datetime
@@ -326,7 +326,13 @@ def write_pdf(model,path):
     def safe(value):
         text='Sin dato' if value is None else f'{value:,.3f}' if isinstance(value,float) else str(value)
         text=text.replace('★','*').replace('☆','-')
-        return escape(text).replace('\n','<br/>')
+        from urllib.parse import urlsplit
+        parts=[];pos=0
+        for match in re.finditer(r'https?://[^\s<>]+',text):
+            url=match.group(0);host=urlsplit(url).hostname or 'Fuente'
+            parts.append(escape(text[pos:match.start()]));parts.append('<link href="'+escape(url,{'"':'&quot;'})+'" color="#087E9B">'+escape(host.removeprefix('www.'))+'</link>');pos=match.end()
+        parts.append(escape(text[pos:]))
+        return ''.join(parts).replace('\n','<br/>')
     def paragraph(value,small=False):return Paragraph(safe(value),styles['AkiraSmall' if small else 'AkiraBody'])
     def table(headers,rows,widths=None):
         data=[[paragraph(x,True) for x in headers]]+[[paragraph(x,True) for x in r] for r in rows]

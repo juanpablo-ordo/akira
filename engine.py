@@ -866,7 +866,7 @@ class Engine:
         snap=self.review_loss_pendings(snap)
         # El primer envío no espera una consulta de 90 días de deals.
         self.planner.research_context=self.read_context()
-        if not self.paused and not g.runtime_execution_block:self.positions.step(snap)
+        if not self.paused and not g.runtime_execution_block and getattr(g,'network_available',True) is not False:self.positions.step(snap)
         symbols=list(self.planner.caches)
         # Rotate first priority so one symbol cannot consume every available turn.
         shift=self.cycle%max(1,len(symbols));symbols=symbols[shift:]+symbols[:shift]
@@ -931,7 +931,7 @@ class Engine:
                     candidates=[p for p in plans if p['symbol']==symbol and p.get('side')==side and not p.get('confirmed')]
                     if candidates:automatic.append(max(candidates,key=lambda p:float(p.get('quality_score') or 0)))
             self.queue_pending_verification(automatic,view,deep=True)
-            self._pending_auto_due=now+20
+            self._pending_auto_due=now+{'Ahorro de energía':180,'Equilibrado':60,'Rendimiento':20}.get(self.cfg.get('desktop',{}).get('performance_profile'),60)
         if self.context and hasattr(self.context,'study') and now>=self._study_due:
             self.context.study.submit({**view,**self.report_history()});self._study_due=now+30
         self.heartbeat(view)
@@ -1310,6 +1310,7 @@ class Engine:
             if valid and data.get('verdict')=='APPROVE' and isinstance(data.get('reason'),str) and data['reason'].strip() and isinstance(data.get('missing'),list) and not data['missing']:return
             reason=review.get('error') or data.get('reason') or reason
         if self.context and hasattr(self.context,'request_pending_reviews'):
+            current['required_pending_reviews']=[identity(proposed)]
             self.context.request_pending_reviews([proposed],current)
         raise Blocked('Verificación IA exigida para '+pid+': '+str(reason)[:240]+'. Revisa su ficha o desactiva la exigencia y solicita de nuevo.')
 
@@ -1331,7 +1332,7 @@ class Engine:
 
     def process_pending_verification(self):
         """One read-only MT5 check per cycle, always in the actor thread."""
-        if not self.pending_check_queue:return
+        if not self.pending_check_queue or getattr(self.g,'network_available',True) is False:return
         from pending_verification import identity,levels
         from execution import PENDING,MODIFY,BUY_LIMIT,SELL_LIMIT,BUY_STOP,SELL_STOP
         data=self.pending_check_queue.pop(0);pid=identity(data)

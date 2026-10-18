@@ -18,7 +18,7 @@ def require_studio_check(report):
         if check.get(key) is not True:raise RuntimeError('Autocomprobación Studio falló en '+key)
     return check
 
-def run_studio_check():
+def run_studio_check(screenshot_dir=None):
     from PySide6.QtCore import QTimer
     from PySide6.QtWidgets import QApplication,QPushButton
     from PIL import Image
@@ -38,6 +38,8 @@ def run_studio_check():
             view=engine.step();view['preview']=True;window.controller.view=view;window.render(view);before=len(api.sent)
             for i in range(8):
                 window.navigate(i);settle(app)
+                if screenshot_dir:
+                    output=Path(screenshot_dir);output.mkdir(parents=True,exist_ok=True);window.grab().save(str(output/f'page_{i}.png'))
                 if window.book.currentIndex()!=i or window.grab().isNull():raise RuntimeError('Página Studio '+str(i)+' no dibujada')
             checks['eight_pages']=window.book.count()==8
             window.navigate(2);settle(app)

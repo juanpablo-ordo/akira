@@ -24,8 +24,8 @@ def changes(before,after):
 
 def validate_form(cfg):
     cfg=load_config(copy.deepcopy(cfg))
-    from strategy_choice import ADAPTIVE,FAMILIES
-    if (cfg.get('strategy_choice') or {}).get('selected',ADAPTIVE) not in (ADAPTIVE,*FAMILIES):
+    from strategy_choice import ADAPTIVE,known
+    if not known((cfg.get('strategy_choice') or {}).get('selected',ADAPTIVE)):
         raise ValueError('La estrategia elegida no corresponde a una familia implementada.')
     for key in ('width','height'):
         value=cfg['desktop'][key]

@@ -1,5 +1,5 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.0 Studio Rev5 · corrección Windows 6 · ${{ github.ref_name }}
+run-name: AKIRA 16.4.1 Studio Rev6 · interfaz, conversación y preferencias · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -49,7 +49,7 @@ jobs:
           python -m installer.check_tk_runtime --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
           if ($LASTEXITCODE -ne 0) { throw 'La biblioteca gráfica de Python está incompleta o no carga. Revisa TK_RUNTIME.json.' }
 
-      - name: Verificar que se incorporo REV5 antes de construir el instalador
+      - name: Verificar que se incorporo REV6 antes de construir el instalador
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -58,14 +58,14 @@ jobs:
                         'installer/smoke_local_ai.py', 'installer/akira.iss')
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) {
-              throw "Código REV5 incompleto: falta $file. No publicar un instalador antiguo."
+              throw "Código REV6 incompleto: falta $file. No publicar un instalador antiguo."
             }
           }
           $build = python -c "from akira_version import BUILD_ID; print(BUILD_ID)"
-          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_0_STUDIO_REV5') {
+          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_1_STUDIO_REV6') {
             throw "Identidad de compilación inesperada: $build"
           }
-          Write-Host 'Fuente Studio Rev5 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
+          Write-Host 'Fuente Studio Rev6 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
       - name: Pruebas de regresion principales
         timeout-minutes: 15
@@ -181,7 +181,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.4.0-Studio-Rev5-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.4.1-Studio-Rev6-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

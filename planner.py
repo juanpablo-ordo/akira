@@ -884,10 +884,14 @@ class PendingPlanner:
         fused=[]
         features=frame_features(self.caches[symbol].frames)
         for plan in valid:
-            from strategy_choice import allows
+            from strategy_choice import allows,variant_decision
             if not allows(plan,self.cfg):
                 reject(plan,'strategy_not_selected','La familia no corresponde a la estrategia elegida para esta sesión.')
                 continue
+            variant_ok,variant_detail=variant_decision(plan,self.cfg,self.caches[symbol].frames)
+            if not variant_ok:
+                reject(plan,'variant_conditions',variant_detail);continue
+            if variant_detail:plan=replace(plan,reason=plan.reason+' · '+variant_detail)
             allowed,detail=candidate_decision(plan,features,self.research_context,self.g.clock())
             if allowed:fused.append(replace(plan,reason=plan.reason+' · '+detail) if detail else plan)
             else:

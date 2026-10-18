@@ -196,7 +196,7 @@ class ContextWorker:
     def request_pending_reviews(self,plans,snapshot,force=False):
         """Queue exact-level reviews; no MT5 and no waiting on the caller."""
         from pending_verification import identity,fingerprint,levels
-        minimal={k:copy.deepcopy(snapshot.get(k)) for k in ('updated','as_of_utc','markets','research','selection_configuration')}
+        minimal={k:copy.deepcopy(snapshot.get(k)) for k in ('updated','as_of_utc','markets','research','selection_configuration','required_pending_reviews')}
         minimal['symbols']={s:{k:copy.deepcopy(row.get(k)) for k in ('bid','ask','spread','quote_time','frames')}
             for s,row in snapshot.get('symbols',{}).items()}
         now=self.clock();queued=[]
@@ -205,15 +205,18 @@ class ContextWorker:
             for p in plans[:32]:
                 if (snapshot.get('markets') or {}).get(p['symbol'],{}).get('scheduled_closed'):continue
                 pid=identity(p);fp=fingerprint(snapshot,p);old=self.pending_reviews.get(pid) or {}
+                priority=0 if pid in (snapshot.get('required_pending_reviews') or []) else 1 if force else 2
                 if old.get('fingerprint')==fp and (old.get('state') in ('QUEUED','RUNNING') or
-                        not force and now-float(old.get('updated') or 0)<(30 if old.get('error') else 120)):continue
+                        not force and now-float(old.get('updated') or 0)<(30 if old.get('error') else 120)):
+                    if pid in self.pending_queue:self.pending_queue[pid]['priority']=min(priority,self.pending_queue[pid].get('priority',2))
+                    continue
                 self._review_attempt+=1
                 attempt=self._review_attempt
-                self.pending_queue[pid]={'plan':copy.deepcopy(p),'snapshot':minimal,'fingerprint':fp,'attempt_id':attempt}
+                self.pending_queue[pid]={'plan':copy.deepcopy(p),'snapshot':minimal,'fingerprint':fp,'attempt_id':attempt,'priority':priority}
                 self.pending_reviews[pid]={'fingerprint':fp,'levels':levels(p),'symbol':p['symbol'],'state':'QUEUED','updated':now,'requested':now,'attempt_id':attempt}
                 queued.append(pid)
             while len(self.pending_queue)>32:
-                pid=next(iter(self.pending_queue));self.pending_queue.pop(pid)
+                pid=max(self.pending_queue,key=lambda k:self.pending_queue[k].get('priority',2));self.pending_queue.pop(pid)
                 self.pending_reviews[pid].update(state='ERROR',error='La cola está completa; solicita de nuevo esta revisión.',updated=now)
             while len(self.pending_reviews)>64:
                 self.pending_reviews.pop(next(iter(self.pending_reviews)))
@@ -333,7 +336,7 @@ class ContextWorker:
         if self.pending_future is None and self.pending_queue and not PRIORITY.users and not any(name in self.jobs for name in ('local_ai','cloud')):
             # Small batches bound CPU generation time. In-flight ids are never
             # displaced by a harmless source reception timestamp.
-            batch=[self.pending_queue.pop(pid) for pid in list(self.pending_queue)[:2]]
+            batch=[self.pending_queue.pop(pid) for pid in sorted(self.pending_queue,key=lambda k:self.pending_queue[k].get('priority',2))[:2]]
             from pending_verification import identity
             for r in batch:self.pending_reviews[identity(r['plan'])].update(state='RUNNING',started=now)
             self.pending_batch=batch;self.pending_future=self.pool.submit(self._pending_summary,batch,copy.deepcopy(sources))
