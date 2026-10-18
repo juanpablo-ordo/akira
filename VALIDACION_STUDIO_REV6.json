@@ -20,22 +20,6 @@
     "event_loop": true,
     "no_broker_requests": true
   },
-  "offline_previous_pass": {
-    "build": "AKIRA_16_4_1_STUDIO_REV6",
-    "collected": 1249,
-    "tests_run": 1249,
-    "successful": true,
-    "failures": 0,
-    "errors": 0,
-    "skipped": 0,
-    "expected_failures": 0,
-    "unexpected_successes": 0,
-    "failed_tests": [],
-    "failure_details": [],
-    "skipped_tests": [],
-    "seconds": 213.465,
-    "network": "blocked"
-  },
   "owner_acceptance_cases": {
     "interface_and_preferences": 20,
     "media_strategy_and_priority": 6,
@@ -65,5 +49,27 @@
     "report": "VERIFICACION_STUDIO_REV6/CONVERSACION_REAL_CPU.json",
     "facts": "Synthetic Xbox fixture; not a real announcement",
     "scope": "Container, not the owner GPU or Windows performance"
+  },
+  "offline_unittest": {
+    "build": "AKIRA_16_4_1_STUDIO_REV6",
+    "collected": 1250,
+    "tests_run": 1250,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failed_tests": [],
+    "failure_details": [],
+    "skipped_tests": [],
+    "seconds": 151.869,
+    "network": "blocked"
+  },
+  "windows_progress": {
+    "run_id": 39101728210,
+    "source_regressions": "PASSED",
+    "source_sprite_recognition": "PASSED",
+    "build": "IN_PROGRESS"
   }
 }
