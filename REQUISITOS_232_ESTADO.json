@@ -1,7 +1,7 @@
 {
   "source": "AKIRA_Instrucciones_Maestras.docx",
   "scope": "R001-R232 y E01-E16",
-  "release": "AKIRA 16.4.1 Studio Rev6; aceptación de componentes; ver workflow de Windows",
+  "release": "AKIRA 16.4.1 Studio Rev6; instalador e IA instalada aprobados en Windows; aceptación MT5 demo/física pendiente",
   "rows": [
     {
       "id": "R001",
@@ -3156,5 +3156,11 @@
     "extras": 16,
     "partial_local": 128,
     "fully_validated": 0
+  },
+  "windows_component_verification": {
+    "run": "https://github.com/juanpablo-ordo/akira/actions/runs/39103591576",
+    "source_commit": "9b5fa0f0ed3ef41d5d23bd25609f5ef157d9cb23",
+    "status": "PASSED",
+    "scope": "Regressions, native source and frozen UI, real CPU model, full installation. This does not close whole-requirement physical/demo acceptance flags."
   }
 }

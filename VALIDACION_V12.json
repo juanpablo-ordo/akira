@@ -1,10 +1,12 @@
 {
   "build": "AKIRA_16_4_1_STUDIO_REV6",
   "tests": 1254,
-  "status": "REV6_FINAL_NATIVE_BOOTSTRAP_VALIDATION",
+  "status": "SOURCE_AND_WINDOWS_INSTALLER_PASSED",
   "date": "2026-10-18",
   "skipped": 0,
   "scope": "Studio Rev6: preferencias, conversación, medios y ejecución; resultado definitivo en VALIDACION_STUDIO_REV6.json",
-  "post_suite_check": "Exigir regresión, IA real, conversación de producción, ejecutable e instalación Windows Rev6.",
-  "notes_file": "ACEPTACION_REV6.md"
+  "post_suite_check": "Windows run 39103591576 passed the frozen app, real-model conversation and installed AI.",
+  "notes_file": "ACEPTACION_REV6.md",
+  "pytest_tests": 1257,
+  "pytest_subtests": 120
 }

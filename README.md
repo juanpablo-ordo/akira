@@ -2,6 +2,8 @@
 
 Aplicación de Windows con IA local incluida. Esta revisión incorpora las correcciones solicitadas después de probar Studio Rev5: conversación, guardado de ajustes, fuentes, avatar, personalización y gestión del instalador. El código se conserva en GitHub; el instalador aparece únicamente cuando termina correctamente el workflow de Windows.
 
+Instalador verificado: [descargar AKIRA 16.4.1 Studio Rev6 con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39103591576/artifacts/12127717784). La [ejecución de Windows](https://github.com/juanpablo-ordo/akira/actions/runs/39103591576) aprobó 1.257 pruebas, 120 subpruebas, cero omisiones, el ejecutable y la instalación con respuesta real del modelo. La validación local sin red aprobó 1.254 pruebas. Código construido: `9b5fa0f0ed3ef41d5d23bd25609f5ef157d9cb23`.
+
 ## Descargar la versión correcta
 
 En la ejecución aprobada de GitHub Actions, descarga el artefacto **AKIRA-16.4.1-Studio-Rev6-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA**. Extrae y ejecuta **AKIRA_16_4_1_STUDIO_REV6_IA_INCLUIDA.exe**. Incluye Qwen3-4B Q4_K_M, llama.cpp CPU/Vulkan, reconocimiento visual de sprites y los componentes de YouTube. El ZIP de código y el artefacto de binarios sin modelo no son el instalador principal.
