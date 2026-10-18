@@ -7,7 +7,9 @@ from zoneinfo import ZoneInfo
 from PySide6.QtCore import Qt,QTimer,QSize,QUrl,QSettings
 from PySide6.QtGui import QFont,QFontDatabase,QIcon,QDesktopServices,QColor
 from PySide6.QtWidgets import QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,QStackedWidget,QSplitter,QLineEdit,QComboBox,QTextBrowser,QPlainTextEdit,QListWidget,QListWidgetItem,QTabWidget,QScrollArea,QDialog,QDialogButtonBox,QFileDialog,QMessageBox,QInputDialog,QCheckBox,QDoubleSpinBox,QFormLayout,QProgressBar,QMenu
-from studio_widgets import Card,Metric,DataTable,CandleChart,AvatarWidget,label,button,icon,INK,Toggle
+from studio_widgets import Card,Metric,DataTable,CandleChart,AvatarWidget,SignalWave,label,button,icon,INK,Toggle
+from studio_presenter import human,rich_text,set_document,frame_html,budget_summary,plan_summary,report_html,source_abstract,INDICATORS
+from studio_editors import ChoiceBox
 from studio_background import BackgroundSurface
 from studio_translations import Translator
 from studio_controller import StudioController
@@ -36,17 +38,17 @@ def stylesheet(studio):
     from studio_theme import palette_for
     p=palette_for(studio);accent=p['CYAN'];secondary=p['PINK'];scale=max(.6,min(1.6,int(studio.get('font_scale',100))/100))
     family=str(studio.get('font') or 'Rajdhani').replace('"','').replace(';','')
-    alpha=220 if studio.get('wallpaper',{}).get('enabled') else 245
+    alpha=155 if studio.get('wallpaper',{}).get('enabled') else 245
     panel=QColor(p['PANEL']);card=QColor(p['CARD']);glow=max(0,min(100,int(studio.get('glow',65))))/100
     rgba=lambda color,a:f'rgba({color.red()},{color.green()},{color.blue()},{a})'
     border=QColor(p['LINE']);light=QColor(accent);border=QColor(round(border.red()*(1-glow*.4)+light.red()*glow*.4),round(border.green()*(1-glow*.4)+light.green()*glow*.4),round(border.blue()*(1-glow*.4)+light.blue()*glow*.4)).name()
     return f'''
-    QWidget {{ color:#e8f3ff; font-family:"{family}"; font-size:{round(16*scale)}px; background:transparent; }}
+    QWidget {{ color:#e8f3ff; font-family:"{family}"; font-weight:{700 if studio.get("font_bold") else 400}; font-size:{round(16*scale)}px; background:transparent; }}
     QMainWindow,QDialog {{ background:{p['BG']}; }}
     QFrame#sidebar {{ background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {rgba(panel.darker(160),242)},stop:1 {rgba(panel,235)}); border:1px solid {border}; border-radius:6px; }}
     QFrame#card {{ background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {rgba(card.darker(130),alpha)},stop:1 {rgba(panel.darker(150),max(150,alpha-12))}); border:1px solid {border}; border-radius:6px; }}
     QLabel {{ border:0;background:transparent; }} QLabel[role="title"] {{font-size:{round(25*scale)}px;font-weight:600;}}
-    QLabel[role="cardTitle"] {{font-size:{round(18*scale)}px;font-weight:600;}}
+    QLabel[role="cardTitle"] {{color:{secondary};font-size:{round(18*scale)}px;font-weight:600;}}
     QLabel[role="metric"] {{font-size:{round(26*scale)}px;font-weight:600;}}
     QLabel[role="brand"] {{font-size:36px;font-weight:600;color:{accent};letter-spacing:2px;}}
     QLabel[role="muted"],QLabel[role="micro"] {{color:#83adca;font-size:{round(14*scale)}px;}}
@@ -88,7 +90,7 @@ class StudioWindow(QMainWindow):
     def __init__(self,folder,preview=False,start_actor=True,controller=None):
         super().__init__();self.controller=controller or StudioController(folder,preview,start_actor);self.cfg=self.controller.cfg
         self.tr=Translator(folder,self.cfg['studio']['language_ui'],self.cfg['studio'].get('language_pack',''));self.page_index=0;self.private=bool(self.cfg['desktop'].get('privacy',True))
-        self._timers=[];self._ai_due=0;self._render_at=0;self._snapshot_pending=None;self._model_status={};self._translating=False
+        self._review_overrides={};self._stream_text="";self._logs_dirty=False;self._logs_at=0;self._render_interval=.4;self._timers=[];self._ai_due=0;self._render_at=0;self._snapshot_pending=None;self._model_status={};self._translating=False
         self.asset_root=root_assets();self.setWindowIcon(QIcon(str(self.asset_root/'assets/akira.ico')))
         for path in (self.asset_root/'assets/fonts').glob('*.ttf'):QFontDatabase.addApplicationFont(str(path))
         for path in (Path(folder)/'studio/fonts').glob('*'):
@@ -141,7 +143,7 @@ class StudioWindow(QMainWindow):
     def table(self,columns):
         table=DataTable(columns);self.tables.append(table);table.setHorizontalHeaderLabels([self.text(t) for t in columns]);return table
     def avatar(self,parent,height=160):
-        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.setMinimumHeight(height);widget.setMaximumHeight(height+30);self.avatars.append(widget);parent.addWidget(widget);return widget
+        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.setMinimumWidth(140);widget.setMinimumHeight(height);widget.setMaximumHeight(height+30);self.avatars.append(widget);parent.addWidget(widget);return widget
 
     def build_sidebar(self,outer):
         from PySide6.QtWidgets import QFrame
@@ -162,7 +164,7 @@ class StudioWindow(QMainWindow):
         row=QHBoxLayout();row.setSpacing(12);self.page_title=label('','title');row.addWidget(self.page_title)
         self.page_description=label('','muted');row.addWidget(self.page_description,1)
         self.connection=label('● MT5','micro',INK['green']);row.addWidget(self.connection)
-        self.account_badge=button('',self.toggle_privacy);row.addWidget(self.account_badge)
+        self.account_badge=button('',self.toggle_privacy,glyph='eye');row.addWidget(self.account_badge)
         self.notice_button=button('',self.open_notices,glyph='bell');self.notice_button.setMaximumWidth(65);row.addWidget(self.notice_button);layout.addLayout(row)
     def build_metrics(self,layout):
         self.metrics_widget=QWidget();row=QGridLayout(self.metrics_widget);row.setContentsMargins(0,0,0,0);row.setSpacing(9);self.metrics_layout=row;self._metric_columns=6
@@ -174,18 +176,18 @@ class StudioWindow(QMainWindow):
     def build_home(self):
         _,layout=self.page();self.home_split,(left,right)=self.split(layout,(3,2))
         activity=self.card('ACTIVIDAD EN TIEMPO REAL','trading');filters=QHBoxLayout()
-        self.activity_filter=QComboBox();self.activity_filter.addItems(['TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR']);self.activity_filter.currentTextChanged.connect(self.render_logs);filters.addWidget(self.activity_filter);filters.addStretch();activity.body.addLayout(filters)
+        self.activity_filter=ChoiceBox();self.activity_filter.addItems(['TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR']);self.activity_filter.currentTextChanged.connect(self.render_logs);filters.addWidget(self.activity_filter);filters.addStretch();activity.body.addLayout(filters)
         self.activity=self.table(['Hora','Módulo','Estado','Motivo / contexto']);activity.body.addWidget(self.activity,1);left.addWidget(activity,3)
         coverage=self.card('COBERTURA DE MERCADO','analysis');grid=QHBoxLayout();self.home_markets={}
         for symbol,title in [('BTCUSDm','Bitcoin'),('XAUUSDm','Oro')]:
             card=self.card(symbol);price=label('—','metric',INK['cyan']);card.body.addWidget(price);status=label('','muted');status.setWordWrap(True);card.body.addWidget(status);chart=CandleChart();chart.setMinimumHeight(88);card.body.addWidget(chart,1);grid.addWidget(card,1);self.home_markets[symbol]=(price,status,chart)
         coverage.body.addLayout(grid);left.addWidget(coverage,2)
-        system=self.card('ESTADO DEL SISTEMA','shield');inside=QHBoxLayout();self.avatar(inside,140);self.system_text=label('','body');self.system_text.setWordWrap(True);inside.addWidget(self.system_text,2);system.body.addLayout(inside);right.addWidget(system,3)
+        system=self.card('ESTADO DEL SISTEMA','shield');inside=QHBoxLayout();self.avatar(inside,140);self.system_text=label('','body');self.system_text.setWordWrap(True);inside.addWidget(self.system_text,2);system.body.addLayout(inside);system.body.addWidget(SignalWave());right.addWidget(system,3)
         quick=self.card('ACCIONES RÁPIDAS','bolt');grid=QGridLayout()
         for i,(title,callback,glyph) in enumerate([('DESCARGAR INFORME',self.export_report,'report'),('NUEVA REVISIÓN',self.verify_all,'refresh'),('ABRIR REGISTROS',lambda:self.navigate(7),'terminal'),('PAUSAR GESTIÓN',self.pause,'clock')]):grid.addWidget(self.btn(title,callback,'primary' if i==0 else '',glyph),i//2,i%2)
         quick.body.addLayout(grid);right.addWidget(quick,1)
         notices=self.card('ALERTAS Y NOTIFICACIONES','bell');self.home_notices=label('','muted');self.home_notices.setWordWrap(True);notices.body.addWidget(self.home_notices);right.addWidget(notices,2)
-        resource=self.card('ESTADO DEL MOTOR','bolt');self.resource_line=label('','muted');self.resource_line.setWordWrap(True);resource.body.addWidget(self.resource_line);right.addWidget(resource,1)
+        resource=self.card('ESTADO DEL MOTOR','bolt');self.resource_line=label('','muted');self.resource_line.setWordWrap(True);resource.body.addWidget(self.resource_line);resource.body.addWidget(SignalWave());right.addWidget(resource,1)
 
     def build_pending(self):
         _,layout=self.page();top=QHBoxLayout();self.pending_metrics={}
@@ -193,7 +195,12 @@ class StudioWindow(QMainWindow):
             metric=Metric(self.text(title),'pending',color);top.addWidget(metric,1);self.pending_metrics[key]=metric
         layout.addLayout(top);self.pending_split,(left,right)=self.split(layout,(3,2))
         filters=self.card('FILTROS Y BÚSQUEDA','pending');row=QHBoxLayout();self.pending_search=QLineEdit();self.pending_search.setPlaceholderText(self.text('Buscar símbolo, motivo…'));self.pending_search.textChanged.connect(self.render_pending);row.addWidget(self.pending_search,1)
-        self.pending_symbol=QComboBox();self.pending_symbol.addItems(['ALL','BTCUSDm','XAUUSDm']);self.pending_symbol.currentTextChanged.connect(self.render_pending);row.addWidget(self.pending_symbol);row.addWidget(self.btn('NUEVA IDEA MANUAL',self.new_order,glyph='pending'));filters.body.addLayout(row);left.addWidget(filters)
+        self.pending_symbol=ChoiceBox();self.pending_symbol.addItems(['ALL','BTCUSDm','XAUUSDm']);self.pending_symbol.currentTextChanged.connect(self.render_pending);row.addWidget(self.pending_symbol);row.addWidget(self.btn('NUEVA IDEA MANUAL',self.new_order,glyph='pending'));filters.body.addLayout(row);left.addWidget(filters)
+        strategy=self.card('ESTRATEGIA DE LA SESIÓN','analysis');controls=QHBoxLayout();self.strategy_selector=ChoiceBox()
+        from strategy_lab import definitions
+        self.strategy_definitions={row['id']:row for row in definitions()}
+        for row in self.strategy_definitions.values():self.strategy_selector.addItem(row['name']+(' · en prueba' if row.get('spec') else ''),row['id'])
+        self.strategy_selector.setCurrentIndex(max(0,self.strategy_selector.findData((self.cfg.get('strategy_choice') or {}).get('selected','AKIRA_ADAPTATIVA'))));controls.addWidget(self.strategy_selector,1);controls.addWidget(self.btn('APLICAR ESTRATEGIA',self.apply_strategy,'primary'));strategy.body.addLayout(controls);self.strategy_description=QTextBrowser();self.strategy_description.setMinimumHeight(100);strategy.body.addWidget(self.strategy_description);self.strategy_selector.currentIndexChanged.connect(self.describe_strategy);self.describe_strategy();left.addWidget(strategy,2)
         card=self.card('CANDIDATAS Y PENDIENTES','pending');self.pending_table=self.table(['Símbolo','Tipo','Entrada','SL','TP','RR','Estado','Motivo / contexto']);self.pending_table.setColumnWidth(0,100);self.pending_table.setColumnWidth(7,300);self.pending_table.itemSelectionChanged.connect(self.pending_selected);card.body.addWidget(self.pending_table,1);left.addWidget(card,5)
         timeline=self.card('HISTORIAL DE LA IDEA','clock');self.pending_timeline=label('','muted');self.pending_timeline.setWordWrap(True);timeline.body.addWidget(self.pending_timeline);left.addWidget(timeline)
         detail=self.card('DETALLE DE LA IDEA','pending');self.pending_title=label('—','title');detail.body.addWidget(self.pending_title)
@@ -204,9 +211,9 @@ class StudioWindow(QMainWindow):
         self.pending_detail_tabs=QTabWidget();self.pending_text=QTextBrowser();self.pending_chart=CandleChart();self.pending_evidence=QTextBrowser();self.pending_timeframes=QTextBrowser()
         for title,widget in [('TESIS',self.pending_text),('GRÁFICO',self.pending_chart),('TEMPORALIDADES',self.pending_timeframes),('RIESGO Y EVIDENCIA',self.pending_evidence)]:self.pending_detail_tabs.addTab(widget,self.text(title))
         detail.body.addWidget(self.pending_detail_tabs,1);self.pending_state=label('','muted');self.pending_state.setWordWrap(True);detail.body.addWidget(self.pending_state)
-        self.require_ai=QCheckBox(self.text('Exigir revisión IA para esta propuesta'));self.require_ai.toggled.connect(self.require_selected_ai);detail.body.addWidget(self.require_ai)
+        self.require_ai=QCheckBox(self.text('Exigir revisión IA para esta propuesta'));self.require_ai.toggled.connect(self.require_selected_ai);detail.body.addWidget(self.require_ai);note=label('Activada: esta propuesta espera una revisión individual de IA antes de enviarse o modificarse. Desmarcada conserva las comprobaciones de precio, margen, cuenta y riesgo.','muted');note.setWordWrap(True);detail.body.addWidget(note)
         action=QGridLayout()
-        for i,(title,callback,glyph) in enumerate([('REVISAR SELECCIONADA',self.verify_selected,'refresh'),('ENVIAR AL BRÓKER',self.send_selected,'send'),('VERIFICAR EN MT5',lambda:self.navigate(2),'shield'),('RETIRAR PENDIENTE',self.cancel_selected,'pending')]):action.addWidget(self.btn(title,callback,'primary' if i==1 else '',glyph),i//2,i%2)
+        for i,(title,callback,glyph) in enumerate([('REVISAR SELECCIONADA',self.verify_selected,'refresh'),('VERIFICAR EN MT5',lambda:self.navigate(2),'shield'),('RETIRAR PENDIENTE',self.cancel_selected,'pending')]):action.addWidget(self.btn(title,callback,'primary' if i==1 else '',glyph),i//2,i%2)
         detail.body.addLayout(action);right.addWidget(detail,1)
 
     def build_account(self):
@@ -218,7 +225,7 @@ class StudioWindow(QMainWindow):
         security=self.card('SEGURIDAD Y EJECUCIÓN','shield');self.security=QTextBrowser();security.body.addWidget(self.security,1);right.addWidget(security,2)
 
     def build_analysis(self):
-        _,layout=self.page();top=QHBoxLayout();self.timeframe=QComboBox();self.timeframe.addItems(['M1','M5','M15','M30','H1','H4','D1']);self.timeframe.setCurrentText('H1');self.timeframe.currentTextChanged.connect(lambda:self.render_analysis());top.addWidget(self.timeframe);top.addStretch();top.addWidget(self.btn('ESTRATEGIAS',self.show_strategies,glyph='analysis'));top.addWidget(self.btn('ESTUDIO Y COMPARACIÓN',self.show_study,glyph='chart'));top.addWidget(self.btn('ACTUALIZAR',lambda:self.controller.request({'action':'refresh'}),glyph='refresh'));layout.addLayout(top)
+        _,layout=self.page();top=QHBoxLayout();self.timeframe=ChoiceBox();self.timeframe.addItems(['M1','M5','M15','M30','H1','H4','D1']);self.timeframe.setCurrentText('H1');self.timeframe.currentTextChanged.connect(lambda:self.render_analysis());top.addWidget(self.timeframe);top.addStretch();top.addWidget(self.btn('ESTRATEGIAS',self.show_strategies,glyph='analysis'));top.addWidget(self.btn('ESTUDIO Y COMPARACIÓN',self.show_study,glyph='chart'));top.addWidget(self.btn('ACTUALIZAR',lambda:self.controller.request({'action':'refresh'}),glyph='refresh'));layout.addLayout(top)
         self.analysis_split,(left,right)=self.split(layout,(3,2));self.analysis_widgets={}
         for symbol in ('BTCUSDm','XAUUSDm'):
             card=self.card(symbol,'analysis');price=label('—','title');card.heading.addWidget(price)
@@ -244,8 +251,8 @@ class StudioWindow(QMainWindow):
         self.chat_view=QTextBrowser();self.chat_view.setOpenExternalLinks(True);chat.body.addWidget(self.chat_view,1)
         self.chat_progress=label('','muted');self.chat_progress.setWordWrap(True);chat.body.addWidget(self.chat_progress)
         row=QHBoxLayout();self.chat_entry=QLineEdit();self.chat_entry.setPlaceholderText(self.text('Escribe tu mensaje…'));self.chat_entry.returnPressed.connect(self.send_chat);self.chat_entry.textEdited.connect(self.typing);row.addWidget(self.chat_entry,1)
-        self.chat_send=self.btn('ENVIAR',self.send_chat,'primary','send');row.addWidget(self.chat_send);row.addWidget(self.btn('DETENER',self.controller.cancel_chat));chat.body.addLayout(row)
-        row=QHBoxLayout();row.addWidget(self.btn('ADJUNTAR',self.attach_file,'','file'));row.addWidget(self.btn('LLAMAR',self.open_call,'','sources'));self.cloud_choice=QCheckBox('OpenAI opcional');self.cloud_choice.setChecked(False);row.addWidget(self.cloud_choice);row.addStretch();self.repair_button=self.btn('REPARAR ASISTENTE',lambda:self.controller.job('repair_ai',self.controller.assistant.retry_local_preparation,'ai_repair'));row.addWidget(self.repair_button);row.addWidget(self.btn('MOTIVO Y REGISTRO',self.show_model_log));chat.body.addLayout(row);right.addWidget(chat,1)
+        self.chat_send=self.btn('ENVIAR',self.send_chat,'primary','send');row.addWidget(self.chat_send);row.addWidget(self.btn('LLAMAR',self.open_call,'','phone'));row.addWidget(self.btn('DETENER',self.controller.cancel_chat));chat.body.addLayout(row)
+        row=QHBoxLayout();row.addWidget(self.btn('ADJUNTAR',self.attach_file,'','file'));self.cloud_choice=QCheckBox('OpenAI opcional');self.cloud_choice.setChecked(False);row.addWidget(self.cloud_choice);row.addStretch();self.repair_button=self.btn('REPARAR ASISTENTE',lambda:self.controller.repair_ai());row.addWidget(self.repair_button);row.addWidget(self.btn('MOTIVO Y REGISTRO',self.show_model_log));chat.body.addLayout(row);right.addWidget(chat,1)
 
     def build_settings(self):
         _,layout=self.page();from studio_settings_qt import SettingsPanel
@@ -255,7 +262,7 @@ class StudioWindow(QMainWindow):
         _,layout=self.page();self.terminal_split,(left,right)=self.split(layout,(3,2));card=self.card('TERMINAL EN TIEMPO REAL','terminal')
         self.log_search=QLineEdit();self.log_search.setPlaceholderText(self.text('Buscar en registros…'));self.log_search.textChanged.connect(self.render_logs);card.body.addWidget(self.log_search)
         self.terminal_table=self.table(['Hora','Módulo','Estado','Motivo / contexto']);self.terminal_table.setColumnWidth(3,420);card.body.addWidget(self.terminal_table,1);left.addWidget(card,1)
-        report=self.card('GENERACIÓN DE INFORMES','report');row=QHBoxLayout();self.report_format=QComboBox();self.report_format.addItems(['PDF','Excel']);self.report_period=QComboBox()
+        report=self.card('GENERACIÓN DE INFORMES','report');row=QHBoxLayout();self.report_format=ChoiceBox();self.report_format.addItems(['PDF','Excel']);self.report_period=ChoiceBox()
         for hours,name in ((24,'Últimas 24 horas'),(168,'Últimos 7 días'),(720,'Últimos 30 días')):self.report_period.addItem(self.text(name),hours)
         row.addWidget(self.report_format);row.addWidget(self.report_period);report.body.addLayout(row);report.body.addWidget(self.btn('DESCARGAR INFORME',self.export_report,'primary','report'));report.body.addWidget(self.btn('DESCARGAR DIAGNÓSTICO',self.export_diagnostic,glyph='file'));self.report_preview=QTextBrowser();report.body.addWidget(self.report_preview,1);right.addWidget(report,1)
 
@@ -269,14 +276,14 @@ class StudioWindow(QMainWindow):
     def responsive(self):
         narrow=self.width()<1250;self.sidebar.setFixedWidth(160 if narrow else 195)
         self.page_description.setVisible(self.width()>1450)
-        self.metrics_widget.setVisible(not (narrow and self.page_index in (5,6,7)))
+        self.metrics_widget.setVisible(self.page_index in (0,2,3))
         scale=int(getattr(self,'_visual_studio',self.cfg['studio']).get('font_scale',100))/100
         columns=3 if self.width()<1450*scale else 6
         if columns!=self._metric_columns:
             for i,metric in enumerate(self.metrics.values()):self.metrics_layout.removeWidget(metric);self.metrics_layout.addWidget(metric,i//columns,i%columns)
             self._metric_columns=columns
         compact=self.height()<820
-        self.avatars[0].setMinimumHeight(80 if compact else 140);self.avatars[0].setMaximumHeight(105 if compact else 170);self.side_avatar_panel.setMaximumHeight(160 if compact else 250)
+        self.avatars[0].setMinimumHeight(110 if compact else 175);self.avatars[0].setMaximumHeight(130 if compact else 205);self.side_avatar_panel.setMaximumHeight(180 if compact else 260)
         orientation=Qt.Orientation.Vertical if self.width()<1100 else Qt.Orientation.Horizontal
         for name in ('home_split','pending_split','account_split','analysis_split','sources_split','terminal_split'):
             split=getattr(self,name,None)
@@ -299,13 +306,15 @@ class StudioWindow(QMainWindow):
     def monitor_rate(self,*args):
         if self.surface.config.get('enabled'):self.surface._resize.start()
 
-    def apply_visual(self,studio):
+    def apply_visual(self,studio,desktop=None):
         self._visual_studio=copy.deepcopy(studio)
         sheet=stylesheet(studio)
         if sheet!=getattr(self,'_sheet',None):self.setStyleSheet(sheet);self._sheet=sheet
         brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
         QApplication.instance().setApplicationDisplayName(brand)
-        self.setWindowTitle(brand+' · Studio · 16.4.0');self.surface.configure(studio.get('wallpaper') or {},studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
+        self.setWindowTitle(brand+' · Studio · 16.4.1');desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=.9 if profile=='Ahorro de energía' else .2 if profile=='Rendimiento' else .4
+        if profile=='Ahorro de energía':wallpaper.update(fps=min(12,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
+        self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
         locale=studio.get('language_ui','es')
         if self.tr.locale!=locale or self.tr.pack!=studio.get('language_pack',''):
             self.tr.change(locale,studio.get('language_pack',''));self.retranslate()
@@ -338,8 +347,9 @@ class StudioWindow(QMainWindow):
         self.ui_delays.append(delay*1000)
         if len(self.ui_delays)>1000:self.ui_delays=self.ui_delays[-1000:]
         for event in self.controller.poll():self.handle_event(event)
-        if self._snapshot_pending is not None and now-self._render_at>=.25:
+        if self._snapshot_pending is not None and now-self._render_at>=self._render_interval:
             view=self._snapshot_pending;self._snapshot_pending=None;self._render_at=now;self.render(view)
+        if self._logs_dirty and now-self._logs_at>=.3:self.render_logs();self._logs_dirty=False;self._logs_at=now
         if now>=self._ai_due:
             self._ai_due=now+1
             status={'ready':False,'phase':'DISABLED','detail':'Vista previa · sin modelo conectado'} if self.controller.preview else self.controller.assistant.local_ai_status()
@@ -355,18 +365,24 @@ class StudioWindow(QMainWindow):
 
     def handle_event(self,event):
         kind,data=event['kind'],event['data']
-        if kind=='snapshot':self._snapshot_pending=data;self.react_snapshot(data)
-        elif kind=='log':self.render_logs()
-        elif kind=='chat_progress':self.chat_progress.setText(str(data.get('stage',''))+' · '+str(data.get('detail','')))
+        if kind=='snapshot':
+            required=data.get('required_pending_reviews') or []
+            for key,value in list(self._review_overrides.items()):
+                if (key in required)==value:self._review_overrides.pop(key,None)
+            self._snapshot_pending=data;self.react_snapshot(data)
+        elif kind=='log':self._logs_dirty=True
+        elif kind=='chat_progress':
+            if data.get('stage')=='RESPONDIENDO':self._stream_text=str(data.get('detail',''));self.render_chat()
+            else:self.chat_progress.setText(human(data.get('stage',''))+' · '+human(data.get('detail','')))
         elif kind=='chat_reply':
-            self.director.busy(False)
+            self.director.busy(False);self._stream_text=''
             from akira_live2d import expression_for_reply
             self.director.publish(expression_for_reply(data['text']),'respuesta');self.chat_progress.setText('');self.render_chat();self.chat_send.setEnabled(True)
             self._avatar_reaction_until=time.monotonic()+6
             if self.controller.voice and not self.controller.voice.stop_event.is_set():self.controller.speak(data['text'])
             QTimer.singleShot(6000,lambda:self.director.publish('idle') if not self.controller.chat_busy else None)
         elif kind=='settings_saved':
-            self.cfg=self.controller.cfg;self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
+            self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
         elif kind=='wallpaper_imported':self.settings_panel.media_imported(data)
         elif kind=='font_imported':self.settings_panel.font_imported(data)
         elif kind=='sprites_imported':
@@ -376,6 +392,8 @@ class StudioWindow(QMainWindow):
         elif kind=='resources':
             self.resource_line.setText(' · '.join(name+': '+number(value['ram_mb'],0)+' MB' for name,value in data.get('processes',{}).items()))
         elif kind=='command_result':
+            cmd=data.get('command') or {}
+            if cmd.get('action')=='verify_pending' and 'require' in cmd and not data.get('ok'):self._review_overrides.pop(cmd.get('id'),None);self.pending_selected()
             details='\n'.join(str(r.get('symbol',''))+': '+str(r.get('detail','')) for r in data.get('results') or [])
             self.controller.notify('Resultado de solicitud',str(data.get('detail') or data.get('error') or data.get('note') or details or ('Solicitud procesada' if data.get('ok') else data)), 'info' if data.get('ok') else 'warning')
         elif kind=='notice':
@@ -386,16 +404,25 @@ class StudioWindow(QMainWindow):
         elif kind=='error':self.settings_panel.save_button.setEnabled(True);self.show_error(data)
         elif kind=='exported':self.information('Archivo guardado',data['path'])
         elif kind=='report_preview':
-            if data['hours']==(self.report_period.currentData() or 24):self.report_preview.setPlainText(data['text'])
+            if data['hours']==(self.report_period.currentData() or 24):set_document(self.report_preview,data['text'])
         elif kind=='translation':
             if data['locale']==self.tr.locale:
                 self.tr.change(self.tr.locale,self.tr.pack);self.retranslate();self.settings_panel.message.setText(('Traducción aplazada durante el chat. ' if data.get('paused') else '')+str(data['completed'])+'/'+str(data['total']))
         elif kind=='voices':self.populate_voices(data)
         elif kind=='voice':self.voice_event(data)
-        elif kind=='source_check':self.information('Fuentes',str(data))
+        elif kind=='source_check':self.information('Fuentes',self.source_result(data))
+        elif kind=='keys_saved':self.settings_panel.message.setText('Las claves se guardaron y reemplazan a las anteriores.');self.information('API guardadas','Las claves se guardaron en este equipo. Pulsa Comprobar fuentes para revisar el acceso.')
         elif kind=='voice_download':
             if hasattr(self,'voice_state'):self.voice_state.setText(str(data))
-        elif kind=='ai_repair':self.information('IA local',str(data))
+        elif kind=='repair_progress':self.chat_progress.setText(human(data));self.settings_panel.message.setText(human(data))
+        elif kind=='ai_repair':
+            self.chat_progress.setText('');self.settings_panel.message.setText('IA reparada y comprobada.' if data.get('ready') else human(data.get('detail')))
+            if data.get('ready'):
+                self.director.publish('happy','IA reparada',force=True);self._avatar_reaction_until=time.monotonic()+6;dialog,box=self.dialog_text('¡La IA se ha reparado!','Akira generó una respuesta real y ya está lista para conversar.',620)
+                from PySide6.QtGui import QImage,QPixmap
+                from avatar_animation import MotionSprites
+                im=MotionSprites(self.asset_root).image(14,110,110);photo=QImage(im.tobytes(),im.width,im.height,im.width*4,QImage.Format.Format_RGBA8888).copy();sticker=QLabel();sticker.setPixmap(QPixmap.fromImage(photo));sticker.setAlignment(Qt.AlignmentFlag.AlignCenter);dialog.layout().insertWidget(1,sticker)
+            else:self.information('Reparación pendiente',human(data.get('detail') or data.get('error') or 'No se confirmó la reparación. Revisa la conexión y vuelve a intentarlo.'))
         elif kind=='knowledge':self.controller.notify('Biblioteca de conversación',str(data.get('detail') or data.get('stage') or 'Estado actualizado'))
         elif kind=='attachment':
             self._attachment_text=data['text'];self.chat_progress.setText('Adjunto preparado. Escribe qué quieres consultar sobre él.');self.navigate(5)
@@ -467,11 +494,11 @@ class StudioWindow(QMainWindow):
         if not plan:return
         self.pending_title.setText(str(plan['symbol'])+' · '+('BUY' if plan['side']==1 else 'SELL')+' '+str(plan['kind']))
         for key,widget in self.pending_levels.items():widget.setText(number(plan.get(key)))
-        check=plan.get('verification') or {};brief='\n\n'.join(str(plan.get('reason','')).split(';')[:4]);self.pending_text.setPlainText(brief);self.pending_evidence.setPlainText('\n\n'.join(str(s['name'])+' · '+str(s['state'])+'\n'+str(s['detail']) for s in check.get('stages') or [])+'\n\nTesis técnica completa:\n'+str(plan.get('reason','')))
-        info=(self.controller.view.get('symbols') or {}).get(plan['symbol']) or {};frames=info.get('frames') or {};self.pending_timeframes.setPlainText('\n\n'.join(tf+'\n'+json.dumps(row,ensure_ascii=False,indent=2,default=str) for tf,row in frames.items()))
+        check=plan.get('verification') or {};brief='\n\n'.join(str(plan.get('reason','')).split(';')[:4]);set_document(self.pending_text,rich_text(brief));set_document(self.pending_evidence,rich_text('\n\n'.join(str(s['name'])+' · '+str(s['state'])+'\n'+str(s['detail']) for s in check.get('stages') or [])+'\n\nTesis técnica completa:\n'+str(plan.get('reason',''))))
+        info=(self.controller.view.get('symbols') or {}).get(plan['symbol']) or {};frames=info.get('frames') or {};set_document(self.pending_timeframes,frame_html(frames));set_document(self.pending_text,plan_summary(plan,frames))
         self.pending_chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [],{'Entrada':plan.get('entry'),'SL':plan.get('sl'),'TP':plan.get('tp')})
         self.pending_state.setText(plan['display_state']+'\n'+str(check.get('detail') or 'El envío vuelve a verificar permisos, precio, margen y riesgo.'))
-        self.require_ai.blockSignals(True);self.require_ai.setChecked(self.pending_table.selected_key() in (self.controller.view.get('required_pending_reviews') or []));self.require_ai.blockSignals(False)
+        self.require_ai.blockSignals(True);self.require_ai.setChecked(self._review_overrides.get(self.pending_table.selected_key(),self.pending_table.selected_key() in (self.controller.view.get('required_pending_reviews') or [])));self.require_ai.blockSignals(False)
         self.pending_state.setToolTip('Esenciales pendientes: '+', '.join(check.get('critical_missing') or [])+'\nIA: '+str(check.get('ai_gate') or 'opcional'))
         self.pending_timeline.setText('Tesis '+str(plan.get('key') or '')+'\n'+('Ticket MT5 '+str(plan['ticket']) if plan.get('ticket') else 'Sin ticket confirmado; es una propuesta.')+'\n'+str(plan.get('status_label','')))
 
@@ -485,11 +512,10 @@ class StudioWindow(QMainWindow):
                 if name=='positions':values.append('••••••' if self.private else number(order.get('profit',order.get('pnl'))))
                 values.append('AKIRA' if order.get('owned') else 'Usuario / externa');rows.append((str(order.get('ticket')),values,order))
             getattr(self,name).update_rows(rows)
-        portfolio=v.get('portfolio_risk') or {};self.budget_text.setText('••••••' if self.private else json.dumps(portfolio,ensure_ascii=False,indent=2,default=str))
-        used=float(v.get('reserved_risk') or 0);cap=float(v.get('risk_cap') or 0);self.budget_bar.setValue(min(100,round(used/max(cap,.001)*100)))
+        portfolio=v.get('portfolio_risk') or {};text,percent=budget_summary(portfolio,self.private);self.budget_text.setText(text);self.budget_bar.setValue(percent)
         from security_details import security_text
-        try:self.security.setPlainText('Importes ocultos por privacidad. La autorización, SL, margen, riesgo y reconciliación siguen activos. Pulsa el control de la cuenta para mostrar el detalle.' if self.private else security_text(v,self.cfg))
-        except TypeError:self.security.setPlainText(json.dumps(v.get('execution_gate') or {},ensure_ascii=False,indent=2))
+        try:set_document(self.security,rich_text('Importes ocultos por privacidad. La autorización, SL, margen, riesgo y reconciliación siguen activos. Pulsa el control de la cuenta para mostrar el detalle.' if self.private else security_text(v,self.cfg)))
+        except TypeError:set_document(self.security,rich_text((v.get('execution_gate') or {}).get('reason') or 'Cada envío comprueba cuenta autorizada, margen y límite de pérdida.'))
         rows=[]
         for symbol,entries in (v.get('audit') or {}).items():
             for index,row in enumerate(entries[-80:]):rows.append((symbol+str(index),[when(v.get('updated')),symbol,row.get('status'),row.get('reason')],row))
@@ -501,7 +527,7 @@ class StudioWindow(QMainWindow):
         for symbol,(price,table,chart) in self.analysis_widgets.items():
             info=(v.get('symbols') or {}).get(symbol) or {};frames=info.get('frames') or {};values=frames.get(tf) or {};price.setText(number(info.get('bid')))
             keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo'];rows=[]
-            for key in keys:rows.append((key,[key.upper(),number(values.get(key)),tf],{}))
+            for key in keys:rows.append((key,[INDICATORS.get(key,key.upper()),number(values.get(key)),tf],{}))
             table.update_rows(rows);chart.set_data((info.get('bars_by_timeframe') or {}).get(tf) or info.get('bars') or [])
         self.render_sources();self.decision_text.setPlainText('\n\n'.join(symbol+'\n'+str(state.get('detail') or '') for symbol,state in (v.get('status') or {}).items()))
 
@@ -521,23 +547,23 @@ class StudioWindow(QMainWindow):
             for item in research.get(group) or []:
                 if not isinstance(item,dict):continue
                 url=str(item.get('url') or '');title=html.escape(str(item.get('title') or group));link='<a href="'+html.escape(url,quote=True)+'">'+title+'</a>' if url.startswith(('https://','http://')) else title
-                content.append('<p><b>'+link+'</b><br>'+html.escape(str(item.get('author') or item.get('source') or ''))+' · '+html.escape(str(item.get('published') or item.get('date') or 'Fecha no recibida'))+'<br>'+html.escape(str(item.get('status') or item.get('state') or ''))+'<br>'+html.escape(str(item.get('summary') or item.get('text') or item.get('note') or '')[:3000]).replace('\n','<br>')+'</p>')
-        self.source_content.setHtml(''.join(content) or '<p>'+self.text('No hay datos recibidos todavía.')+'</p>')
+                content.append('<p><b>'+link+'</b><br>'+html.escape(str(item.get('author') or item.get('source') or ''))+' · '+html.escape(str(item.get('published') or item.get('date') or 'Fecha no recibida'))+'<br>'+html.escape(str(item.get('status') or item.get('state') or ''))+'<br>'+rich_text(source_abstract(item.get('summary') or item.get('text') or item.get('note') or '')[:3000])+'</p>')
+        set_document(self.source_content,''.join(content) or '<p>'+self.text('No hay datos recibidos todavía.')+'</p>')
         self.research_status.setText('\n\n'.join(symbol+': '+str(state.get('detail') or '') for symbol,state in (v.get('status') or {}).items()))
         if self.source_table.currentRow()<0 and rows:self.source_table.selectRow(0)
         self.source_selected()
     def source_selected(self):
         row=self.source_table.rows.get(self.source_table.selected_key())
         if row:
-            self.source_detail.setPlainText(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'))+'\nÚltimo contenido recibido: '+when(row.get('updated'))+'\nPróximo intento en '+number(row.get('retry_after_seconds'),0)+' s\n\n'+str(row.get('detail') or row.get('error') or 'Sin contenido adicional recibido.'))
-            self.source_detail.setToolTip(json.dumps(row,ensure_ascii=False,indent=2,default=str))
+            set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'))+'\nÚltimo contenido recibido: '+when(row.get('updated'))+'\nPróximo intento en '+number(row.get('retry_after_seconds'),0)+' s\n\n'+str(row.get('detail') or row.get('error') or 'Sin contenido adicional recibido.')))
+            self.source_detail.setToolTip('')
     def render_logs(self,*args):
         if not hasattr(self,'terminal_table'):return
         rows=[];query=self.log_search.text().casefold();kind=self.activity_filter.currentText()
         for i,row in enumerate(self.controller.log_rows):
             state=str(row.get('state') or row.get('operation') or 'SISTEMA');module=str(row.get('symbol') or 'AKIRA');text=str(row.get('detail') or row.get('message') or '')
             if query and query not in (module+state+text).casefold():continue
-            rows.append((str(row.get('utc'))+str(i),[str(row.get('utc',''))[11:19],module,state,text],row))
+            rows.append((str(row.get('utc'))+module+state+text[:80],[str(row.get('utc',''))[11:19],module,state,text],row))
         self.terminal_table.update_rows(rows)
         self.activity.update_rows([r for r in rows if kind=='TODOS' or kind in str(r[1]).upper()][:120])
     def render_notices(self):
@@ -548,18 +574,18 @@ class StudioWindow(QMainWindow):
         if time.monotonic()<getattr(self,'_report_due',0):return
         self._report_due=time.monotonic()+3;hours=self.report_period.currentData() or 24;view=copy.deepcopy(self.controller.view)
         def prepare():
-            from operation_report import build_report,report_text
+            from operation_report import build_report
             from operation_report import redact_snapshot
-            return {'hours':hours,'text':'Vista previa oculta por privacidad. Pulsa el control de la cuenta para mostrar los importes.' if self.private else report_text(build_report(view,hours=hours))}
+            return {'hours':hours,'text':'Vista previa oculta por privacidad. Pulsa el control de la cuenta para mostrar los importes.' if self.private else report_html(build_report(view,hours=hours))}
         self.controller.job('report_preview',prepare,'report_preview')
 
     def render_chat(self,temporary=None):
         a=self.controller.assistant;rows=a.chats.history();chunks=[]
         for row in rows+([{'role':'user','text':temporary}] if temporary else []):
-            who=self.cfg['studio']['brand_name'] if row['role']=='assistant' else 'Tú';body=html.escape(str(row['text'])).replace('\n','<br>')
-            body=re.sub(r'(https?://[^\s<>]+)',r'<a href="\1">\1</a>',body)
+            who=self.cfg['studio']['brand_name'] if row['role']=='assistant' else 'Tú';body=rich_text(row['text'])
             chunks.append('<div style="margin:10px 0;padding:12px;border:1px solid #14506b;background:#041a2c"><b style="color:#00ddff">'+html.escape(who)+'</b><p>'+body+'</p></div>')
-        self.chat_view.setHtml(''.join(chunks));self.chat_view.verticalScrollBar().setValue(self.chat_view.verticalScrollBar().maximum())
+        if self._stream_text:chunks.append('<p><b>'+html.escape(self.cfg['studio']['brand_name'])+'</b><br>'+rich_text(self._stream_text)+'</p>')
+        set_document(self.chat_view,''.join(chunks),follow=True)
         selected=a.chats.active;self.chat_list.blockSignals(True);self.chat_list.clear()
         for row in a.chats.list():
             item=QListWidgetItem(row['title']);item.setData(Qt.ItemDataRole.UserRole,row['id']);self.chat_list.addItem(item)
@@ -627,7 +653,9 @@ class StudioWindow(QMainWindow):
         if plan:self.controller.request({'action':'verify_pending','symbol':plan['symbol'],'id':self.pending_table.selected_key(),'deep':True})
     def require_selected_ai(self,required):
         p=self.selected_plan()
-        if p:self.controller.request({'action':'verify_pending','symbol':p['symbol'],'id':self.pending_table.selected_key(),'deep':True,'require':bool(required)})
+        if p:
+            self._review_overrides[self.pending_table.selected_key()]=bool(required)
+            self.controller.request({'action':'verify_pending','symbol':p['symbol'],'id':self.pending_table.selected_key(),'deep':True,'require':bool(required)})
     def verify_all(self):self.controller.request({'action':'verify_pending','symbol':'ALL','deep':True})
     def send_selected(self):
         p=self.selected_plan()
@@ -643,7 +671,7 @@ class StudioWindow(QMainWindow):
     def new_order(self):
         dialog=QDialog(self);dialog.setWindowTitle('Nueva pendiente');layout=QVBoxLayout(dialog);form=QFormLayout();fields={}
         for name,values in [('symbol',['BTCUSDm','XAUUSDm']),('side',['BUY','SELL']),('kind',['LIMIT','STOP'])]:
-            widget=QComboBox();widget.addItems(values);form.addRow(name,widget);fields[name]=widget
+            widget=ChoiceBox();widget.addItems(values);form.addRow(name,widget);fields[name]=widget
         for name in ('entry','sl','tp'):
             widget=QDoubleSpinBox();widget.setDecimals(5);widget.setRange(.00001,1e9);form.addRow(name.upper(),widget);fields[name]=widget
         layout.addLayout(form);footer=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);footer.accepted.connect(dialog.accept);footer.rejected.connect(dialog.reject);layout.addWidget(footer)
@@ -661,14 +689,22 @@ class StudioWindow(QMainWindow):
 
     def dialog_text(self,title,text,width=850):
         dialog=QDialog(self);dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose);dialog.setWindowTitle(self.text(title));dialog.resize(width,560);layout=QVBoxLayout(dialog)
-        heading=self.lbl(title,'title');layout.addWidget(heading);box=QTextBrowser();box.setOpenExternalLinks(True);box.setPlainText(str(text));layout.addWidget(box,1)
-        row=QHBoxLayout();row.addWidget(self.btn('COPIAR',lambda:QApplication.clipboard().setText(box.toPlainText())));row.addStretch();row.addWidget(self.btn('Cerrar',dialog.accept));layout.addLayout(row);dialog.show();return dialog,box
+        heading=self.lbl(title,'title');layout.addWidget(heading);box=QTextBrowser();box.setOpenExternalLinks(True);box.setHtml(rich_text(text));layout.addWidget(box,1)
+        row=QHBoxLayout();row.addStretch();row.addWidget(self.btn('Cerrar',dialog.accept));layout.addLayout(row);dialog.show();return dialog,box
     def show_error(self,text):
         self.controller.notices.add('Error',str(text),severity='error');self.dialog_text('Error',str(text),700)
     def information(self,title,text):self.dialog_text(title,text,700)
     def confirm(self,title,text):return QMessageBox.question(self,self.text(title),str(text),QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)==QMessageBox.StandardButton.Yes
     def open_notices(self):
-        rows=self.controller.notices.list();self.dialog_text('ALERTAS Y NOTIFICACIONES','\n\n'.join(str(row.get('title'))+'\n'+('Detalle oculto; pulsa el control de privacidad para verlo.' if self.private else str(row.get('body'))) for row in rows));self.controller.notices.mark_read()
+        dialog,box=self.dialog_text('ALERTAS Y NOTIFICACIONES','');choice=ChoiceBox();choice.addItems(['Todos','Trading','Sistema','Requieren atención']);dialog.layout().insertWidget(1,choice);rows=self.controller.notices.list()
+        def render():
+            result=[]
+            for row in rows:
+                title=str(row.get('title') or 'Aviso');category='Trading' if any(w in title.lower() for w in ('orden','pendiente','runner','operación','mt5')) else 'Sistema';wanted=choice.currentText()
+                if wanted not in ('Todos',category) and not (wanted=='Requieren atención' and row.get('severity') in ('warning','error')):continue
+                result.append('<h3>'+html.escape(category+' · '+title)+'</h3><p>'+rich_text('Detalle oculto por privacidad.' if self.private else row.get('body',''))+'</p>')
+            set_document(box,''.join(result) or '<p>No hay avisos en esta categoría.</p>')
+        choice.currentTextChanged.connect(render);render();self.controller.notices.mark_read()
     def show_toast(self,data):
         from PySide6.QtWidgets import QFrame
         old=getattr(self,'_toast',None)
@@ -680,13 +716,14 @@ class StudioWindow(QMainWindow):
     def show_model_log(self):
         from notification_center import safe_text
         path=self.controller.assistant._managed_model.log_path
-        text='Estado:\n'+json.dumps(self._model_status,ensure_ascii=False,indent=2,default=str)+'\n\nParámetros del proceso propio:\n'+json.dumps(self.controller.assistant._managed_model.effective_parameters(),ensure_ascii=False,indent=2)+'\n\n'
-        if path and Path(path).is_file():text+=safe_text(Path(path).read_text(encoding='utf-8',errors='replace')[-18000:])
+        text='Disponible para conversar.' if self._model_status.get('ready') else human(self._model_status.get('detail') or 'Aún no se confirmó una respuesta real.')
+        text+='\n\nReparar asistente comprueba archivos y generación de texto. Si faltan componentes incluidos, intenta recuperarlos con una descarga verificada.'
+        if path and Path(path).is_file():text+='\n\nRegistro técnico disponible en '+str(path)
         self.dialog_text('MOTIVO Y REGISTRO',text)
     def show_strategies(self):
         from strategy_lab import definitions,strategy_text
         rows=definitions();dialog=QDialog(self);dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose);dialog.setWindowTitle(self.text('ESTRATEGIAS'));dialog.resize(1150,700);outer=QVBoxLayout(dialog)
-        tools=QHBoxLayout();tools.addWidget(self.btn('GENERAR Y EVALUAR AHORA',lambda:self.controller.request({'action':'strategy_lab_refresh'})));tools.addWidget(self.btn('VER APRENDIZAJE',self.show_adaptation));tools.addWidget(self.btn('DESCARGAR DIRECTORIO',self.export_strategies));outer.addLayout(tools)
+        tools=QHBoxLayout();tools.addWidget(self.lbl('Selecciona y aplica las reglas desde Pendientes. Las variantes en prueba conservan los límites de cuenta y riesgo.','muted'));tools.addWidget(self.btn('IR A PENDIENTES',lambda:(dialog.accept(),self.navigate(1))));outer.addLayout(tools)
         layout=QHBoxLayout();outer.addLayout(layout,1);table=DataTable([self.text(t) for t in ['Estrategia','Símbolo','Uso','Cierres reales','Evidencia']]);table.setColumnWidth(0,250);layout.addWidget(table,2);box=QTextBrowser();layout.addWidget(box,3)
         current=(self.controller.view.get('research') or {}).get('strategy_lab') or {};measured={r['id']:r for r in current.get('strategies') or []};display=[]
         for definition in rows:
@@ -703,9 +740,28 @@ class StudioWindow(QMainWindow):
                     for values in (row.get('symbols') or {}).values():
                         for key in ('net','expectancy','drawdown'):
                             if key in (values.get('realized') or {}):values['realized'][key]='OCULTO'
-                box.setPlainText(strategy_text(row,symbol))
+                set_document(box,rich_text(strategy_text(row,symbol)))
         table.itemSelectionChanged.connect(selected);dialog.show();self._strategy_dialog=dialog
         if table.rowCount():table.selectRow(0)
+    def describe_strategy(self,*args):
+        row=self.strategy_definitions.get(self.strategy_selector.currentData()) or {};measured=((self.controller.view.get('research') or {}).get('strategy_lab') or {}).get('strategies') or [];match=next((r for r in measured if r.get('id')==row.get('id')),{});count=sum(int((v.get('realized') or {}).get('n') or 0) for v in (match.get('symbols') or {}).values())
+        set_document(self.strategy_description,'<b>'+html.escape(row.get('name',''))+'</b><p>'+rich_text(row.get('rules',''))+'</p><p>Cierres confirmados medidos: '+str(count)+'. Las variantes en prueba no se declaran rentables sin resultados.</p>')
+    def apply_strategy(self):
+        draft=copy.deepcopy(self.controller.cfg);draft['strategy_choice']['selected']=self.strategy_selector.currentData();self.controller.save(draft)
+    @staticmethod
+    def source_result(data):
+        if not isinstance(data,dict):return human(data)
+        if data.get('removed'):return 'La clave seleccionada se eliminó.'
+        rows=[]
+        for name,value in data.items():
+            if isinstance(value,dict):
+                if value.get('error'):detail=human(value['error'])
+                elif 'search_results' in value:detail=str(value['search_results'])+' resultados recibidos. La transcripción se comprueba al analizar el vídeo.'
+                else:detail=human(value.get('detail') or value.get('state') or value.get('status') or ('Acceso comprobado.' if value.get('ok') else 'No se confirmó el acceso. Revisa la clave y los permisos del proveedor.'))
+            else:detail=human(value)
+            rows.append(name+': '+detail)
+        return '\n\n'.join(rows)
+
     def show_adaptation(self):
         from strategy_adaptation import report_text
         summary=((self.controller.view.get('research') or {}).get('strategy_lab') or {}).get('adaptation') or {}
@@ -719,7 +775,7 @@ class StudioWindow(QMainWindow):
     def show_study(self):
         if self.private:self.dialog_text('ESTUDIO Y COMPARACIÓN','Resultados ocultos por privacidad. Pulsa el control de la cuenta para mostrarlos.');return
         fields={key:self.controller.view.get(key) for key in ('quality_study','selection_evidence','selection_configuration','confirmed_strategy_outcomes','position_closures')}
-        self.dialog_text('ESTUDIO Y COMPARACIÓN',json.dumps(fields,ensure_ascii=False,indent=2,default=str))
+        self.dialog_text('ESTUDIO Y COMPARACIÓN','Resultados confirmados: '+str(len(fields.get('confirmed_strategy_outcomes') or []))+'\nCierres recibidos: '+str(len(fields.get('position_closures') or []))+'\n\nAkira compara casos simulados y cierres confirmados. Una muestra pequeña no demuestra que una variante sea mejor. El informe conserva cada cierre y sus costes.')
     def open_memories(self):
         rows=self.controller.assistant.chats.memories();text='\n\n'.join(str(r['id'])+' · '+r['body'] for r in rows)
         dialog,box=self.dialog_text('MEMORIA',text)
@@ -808,13 +864,13 @@ class StudioWindow(QMainWindow):
             existing.show();existing.raise_();self.load_voices(False);return
         dialog=QDialog(self);self.call_dialog=dialog;dialog.setWindowTitle(self.text('VOZ Y LLAMADA'));dialog.resize(750,630);layout=QVBoxLayout(dialog)
         avatar=self.avatar(layout,135);self.voice_state=label('Preparando lista de dispositivos y voces…','muted');self.voice_state.setWordWrap(True);layout.addWidget(self.voice_state)
-        form=QFormLayout();self.voice_input=QComboBox();self.voice_output=QComboBox();self.voice_selector=QComboBox()
+        form=QFormLayout();self.voice_input=ChoiceBox();self.voice_output=ChoiceBox();self.voice_selector=ChoiceBox()
         form.addRow(self.text('Micrófono'),self.voice_input);form.addRow(self.text('Salida de audio'),self.voice_output);form.addRow(self.text('Voz'),self.voice_selector);layout.addLayout(form)
         row=QHBoxLayout();row.addWidget(self.btn('BUSCAR VOCES',lambda:self.load_voices(True)));row.addWidget(self.btn('DESCARGAR VOZ',self.download_voice));row.addWidget(self.btn('DESCARGAR TODAS LAS VOCES',self.download_all_voices));row.addWidget(self.btn('CANCELAR DESCARGA',self.cancel_voice_download));layout.addLayout(row)
-        self.voice_transcript=QLineEdit();self.voice_transcript.setPlaceholderText('Transcripción editable');layout.addWidget(self.voice_transcript)
+        self.voice_transcript=QLineEdit();self.voice_transcript.setReadOnly(True);self.voice_transcript.setPlaceholderText('Aquí aparece lo que escucha Akira');layout.addWidget(self.voice_transcript)
         row=QHBoxLayout()
         for text,callback in [('INICIAR LLAMADA',self.start_call),('SILENCIAR',lambda:self.controller.voice.pause() if self.controller.voice else None),('REANUDAR',lambda:self.controller.voice.resume() if self.controller.voice else None),('INTERRUMPIR',self.controller.cancel_chat),('FINALIZAR LLAMADA',self.stop_call)]:row.addWidget(self.btn(text,callback))
-        layout.addLayout(row);layout.addWidget(self.btn('ENVIAR TRANSCRIPCIÓN',self.send_transcript,'primary'))
+        layout.addLayout(row)
         dialog.finished.connect(lambda _:self.stop_call());dialog.show();self.load_voices(False)
     def load_voices(self,online=False):
         def load():
@@ -822,6 +878,7 @@ class StudioWindow(QMainWindow):
             try:devices=audio_inventory()
             except Exception as error:devices={'inputs':[],'outputs':[],'error':str(error)}
             return {'voices':voice_inventory(self.controller.folder,include_online=online),'devices':devices}
+        if hasattr(self,'voice_state'):self.voice_state.setText('Buscando voces y dispositivos…')
         self.controller.job('voice_inventory',load,'voices')
     def populate_voices(self,data):
         dialog=getattr(self,'call_dialog',None)
@@ -834,7 +891,7 @@ class StudioWindow(QMainWindow):
             if index>=0:widget.setCurrentIndex(index)
         language=self.cfg['studio'].get('language_voice_out','es').split('-')[0]
         for row in data['voices']:
-            if language in ('auto','') or language in str(row.get('language','')).lower():self.voice_selector.addItem(row['name']+(' · instalada' if row['installed'] else ' · descargar'),row)
+            if language in ('auto','') or language in str(row.get('language','')).lower() or language=='es' and any(x in str(row.get('language','')).lower() for x in ('spanish','español')):self.voice_selector.addItem(row['name']+(' · instalada' if row['installed'] else ' · descargar'),row)
         for i in range(self.voice_selector.count()):
             if self.voice_selector.itemData(i)['id']==self.cfg['voice'].get('voice_id'):self.voice_selector.setCurrentIndex(i);break
         self.voice_state.setText(data['devices'].get('error') or str(self.voice_selector.count())+' voces para '+language)
@@ -882,6 +939,7 @@ class StudioWindow(QMainWindow):
         if hasattr(self,'_voice_batch'):self._voice_batch.cancel()
 
     def closeEvent(self,event):
+        if hasattr(self,'settings_panel'):self.settings_panel.persist_visual()
         if hasattr(self,'_layout_file'):
             self._layout_file.setValue('geometry',self.saveGeometry())
             for key in ('home_split','pending_split','account_split','analysis_split','sources_split','terminal_split'):self._layout_file.setValue(key,getattr(self,key).saveState())

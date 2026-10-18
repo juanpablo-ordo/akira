@@ -27,7 +27,7 @@ class StudioController:
         self.commands=queue.Queue(maxsize=128);self.bridge=CommandBridge(self.commands)
         self.events=queue.Queue(maxsize=512);self.stop=threading.Event();self.view={};self._latest=None;self._snapshot_lock=threading.Lock()
         self._settings_lock=threading.RLock();self._save_serial=0;self.log_rows=deque(maxlen=300);self._jobs=set();self._jobs_lock=threading.Lock()
-        self.io=ThreadPoolExecutor(max_workers=3,thread_name_prefix='AkiraStudioIO');self.chat_busy=False;self.closed=False
+        self.settings_io=ThreadPoolExecutor(max_workers=1,thread_name_prefix='AkiraPreference');self.io=ThreadPoolExecutor(max_workers=3,thread_name_prefix='AkiraStudioIO');self.chat_busy=False;self.closed=False
         self.notices=NotificationCenter(self.folder);self.network=None;self.online=None;self.last_evidence=-100
         self.voice=None;self.voice_rows=[];self.resources={};self._usage_due=0;self._usage_loading=False
         self._closure_seen=set();self._pending_signature=None
@@ -87,7 +87,7 @@ class StudioController:
             results.append(row)
         return results
 
-    def job(self,name,function,event=None):
+    def job(self,name,function,event=None,executor=None):
         with self._jobs_lock:
             if self.closed or name in self._jobs or len(self._jobs)>=24:return False
             self._jobs.add(name)
@@ -98,7 +98,7 @@ class StudioController:
             except Exception as error:self.emit('error',safe_text(type(error).__name__+': '+str(error)))
             finally:
                 with self._jobs_lock:self._jobs.discard(name)
-        self.io.submit(run);return True
+        (executor or self.io).submit(run);return True
 
     def request(self,command):
         name='command:'+str(time.monotonic_ns())
@@ -194,7 +194,7 @@ class StudioController:
                 if hasattr(runtime,'reconfigure') and any(p.startswith('desktop.') for p in paths):runtime.reconfigure(self.cfg.get('desktop') or {})
                 if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
                 return {'config':copy.deepcopy(self.cfg),'paths':paths,'submitted':validated,'result':result,'saved':True,'keys_saved':bool(keys)}
-        return self.job('save_settings:'+str(serial),persist,'settings_saved')
+        return self.job('save_settings:'+str(serial),persist,'settings_saved',executor=self.settings_io)
 
     def _save_keys(self,keys):
         from akira_secrets import canonical_values,save_secrets
@@ -202,7 +202,7 @@ class StudioController:
         if updated:save_secrets(updated,merge=True);self.refresh_provider_access()
         return {'saved':True,'changed':len(updated)}
 
-    def save_keys(self,keys):return self.job('save_keys:'+str(time.monotonic_ns()),lambda:self._save_keys(keys),'keys_saved')
+    def save_keys(self,keys):return self.job('save_keys:'+str(time.monotonic_ns()),lambda:self._save_keys(keys),'keys_saved',executor=self.settings_io)
 
     def repair_ai(self):
         if self.chat_busy:self.emit('ai_repair',{'ready':False,'detail':'Termina o detén la conversación antes de reparar la IA.'});return False
@@ -277,5 +277,5 @@ class StudioController:
         if self.voice:self.voice.stop()
         if self.network:self.network.close()
         if hasattr(self,'knowledge'):self.knowledge.close()
-        self.io.shutdown(wait=False,cancel_futures=False)
+        self.settings_io.shutdown(wait=False,cancel_futures=False);self.io.shutdown(wait=False,cancel_futures=False)
         self.assistant._managed_model.shutdown_async()
