@@ -23,11 +23,12 @@ def initialize_tk(window):
             detail=str(error).lower()
             if not (_WINDOWS_BOOTSTRAP and "couldn't read file" in detail and 'no error' in detail and str(script).lower() in detail):raise
             # The native reader sporadically fails although Python can read the
-            # same verified file. Evaluate those exact bytes, never substitute a
-            # loader from another Tcl installation or suppress a Tcl script error.
+            # same verified file. Evaluate its text with the same newline
+            # translation as source, never substitute another library's loader.
             data=script.read_bytes()
             if not 0<len(data)<=2*1024*1024:raise
-            window.tk.eval(data.decode('utf-8'));python_loader=True
+            code=data.decode('utf-8-sig').replace('\r\n','\n').replace('\r','\n')
+            window.tk.eval(code);python_loader=True
     if not window.tk.call('info','commands','::tcl_findLibrary'):
         raise RuntimeError('auto.tcl no definió tcl_findLibrary; no iniciar Tk')
     window.loadtk()

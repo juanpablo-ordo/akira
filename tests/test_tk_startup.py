@@ -54,7 +54,7 @@ class TransientWindowsLibraryRead(unittest.TestCase):
         from unittest.mock import Mock,patch
         import tk_runtime
         with tempfile.TemporaryDirectory() as t:
-            script=Path(t)/'auto.tcl';text='proc tcl_findLibrary {} {}\n';script.write_text(text,encoding='utf-8');window=Mock();ready=False
+            script=Path(t)/'auto.tcl';text='proc tcl_findLibrary {} {}\n';script.write_bytes(text.replace('\n','\r\n').encode('utf-8'));window=Mock();ready=False
             def call(*args):
                 if args==('info','library'):return t
                 if args[:2]==('info','commands'):return ready
