@@ -229,7 +229,13 @@ class AvatarWidget(QWidget):
         self._previous=None;self._current=None;self._fade_value=1.;self._fade=QVariantAnimation(self);self._fade.setStartValue(0.);self._fade.setEndValue(1.);self._fade.setDuration(140);self._fade.valueChanged.connect(self.fade_changed)
         self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
         from avatar_animation import MotionSprites
-        self.states=MotionSprites(self.asset_root);director.subscribe(self)
+        self.states=MotionSprites(self.asset_root);self._stable_dimensions=None
+        self._rescale=QTimer(self);self._rescale.setSingleShot(True);self._rescale.setInterval(120);self._rescale.timeout.connect(self.finish_resize);director.subscribe(self)
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        if hasattr(self,'_rescale') and self._current is not None:self._rescale.start()
+    def finish_resize(self):
+        self._stable_dimensions=None;self.update()
     def winfo_ismapped(self):return self.isVisible()
     def fade_changed(self,value):self._fade_value=float(value);self.update()
     def _receive(self,name,entry,animate=False):
@@ -247,7 +253,11 @@ class AvatarWidget(QWidget):
     def leaveEvent(self,event):self.offset=QPointF();self.update()
     def paintEvent(self,event):
         if not hasattr(self,'selected'):return
-        width=max(1,self.width()-10);height=max(1,self.height()-10);director=self.director
+        available=(max(1,self.width()-10),max(1,self.height()-10))
+        # Dragging a window scales the cached pixmap in Qt. Decode/resample once
+        # after the final resize, rather than running PIL for every resize event.
+        if self._stable_dimensions is None:self._stable_dimensions=available
+        width,height=self._stable_dimensions;director=self.director
         state=None;entry=self.selected
         if hasattr(entry,'path') and director.blink_frame is not None:
             blink=next((item for item in director.catalog.entries if item.state=='blink'),None)
@@ -264,8 +274,9 @@ class AvatarWidget(QWidget):
         self._current=self.cache[key];p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
         if self._previous is not None and self._fade.state()==QVariantAnimation.State.Running:
             p.setOpacity(1-self._fade_value);p.drawPixmap(QPointF(5,5)+self.offset,self._previous);p.setOpacity(self._fade_value)
-        origin=QPointF((self.width()-self._current.width())/2,(self.height()-self._current.height())/2)
-        p.drawPixmap(origin+self.offset,self._current);p.setOpacity(1)
+        ratio=min(available[0]/self._current.width(),available[1]/self._current.height());width=self._current.width()*ratio;height=self._current.height()*ratio
+        target=QRectF((self.width()-width)/2+self.offset.x(),(self.height()-height)/2+self.offset.y(),width,height)
+        p.drawPixmap(target,self._current,QRectF(self._current.rect()));p.setOpacity(1)
 
 
 class SignalWave(QWidget):

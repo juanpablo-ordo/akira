@@ -940,7 +940,7 @@ class AkiraAssistant:
     def _local_llm_reply_impl(self,message,snapshot):
         cfg=self.cfg.get('assistant') or {}
         endpoint=str(cfg.get('local_endpoint') or 'http://127.0.0.1:11434/api/chat')
-        st=ollama_status(endpoint)
+        st=ollama_status(endpoint,force=True) if self._managed_model.enabled() else ollama_status(endpoint)
         available=st.get('models') or []
         if not available:
             raise RuntimeError('El asistente de AKIRA aún no está disponible. Revisa el estado del chat y pulsa REPARAR ASISTENTE para prepararlo o reintentar.')

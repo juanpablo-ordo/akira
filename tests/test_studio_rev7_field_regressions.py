@@ -45,6 +45,18 @@ class ModelDiscoveryTests(unittest.TestCase):
         with patch.object(self.worker,'_local_session',started),patch('akira_local_ai.urlopen',return_value=response),patch.object(research,'ollama_chat',return_value=reply):
             result=self.worker._summary(view,{})
         self.assertIn('BTCUSDm',result);self.assertEqual(result['_meta']['model'],'Qwen3-4B-Q4_K_M.gguf')
+    def test_chat_refreshes_the_same_pre_start_negative_cache(self):
+        from akira_local_ai import _STATUS,_STATUS_LOCK
+        from assistant_akira import AkiraAssistant
+        self.cfg['assistant'].update(auto_research=False,auto_youtube_research=False,self_review=False)
+        bot=AkiraAssistant(self.cfg,Path(self.tmp.name)/'chat',auto_prepare=False);self.addCleanup(bot._managed_model.shutdown)
+        with _STATUS_LOCK:_STATUS.update(when=time.monotonic(),endpoint=self.cfg['assistant']['local_endpoint'],ok=False,models=[])
+        @contextmanager
+        def started(*args,**kwargs):yield
+        response=Mock();response.__enter__=Mock(return_value=response);response.__exit__=Mock(return_value=False);response.read.return_value=b'{"data":[{"id":"Qwen3-4B-Q4_K_M.gguf"}]}'
+        with patch.object(bot._managed_model,'session',started),patch('akira_local_ai.urlopen',return_value=response),patch('assistant_akira.ollama_agent',return_value='Podemos organizar tus ideas en tres pasos.'):
+            answer=bot.local_llm_reply('Ayúdame a organizar mis ideas',{})
+        self.assertIn('organizar tus ideas',answer);self.assertTrue(bot._model_inference_verified)
     def test_unchanged_research_snapshot_is_not_repeatedly_copied_into_evolution(self):
         self.worker.pool=Mock();self.worker.jobs_for=Mock(return_value={});self.worker._evolution_started=True;self.worker.evolution.submit=Mock()
         self.worker.submit({'symbols':{}})
@@ -107,6 +119,17 @@ class QtFieldTests(unittest.TestCase):
     def test_blink_changes_visible_pixels_without_changing_expression(self):
         avatar=self.window.avatars[0];self.window.director.publish('idle',force=True);self.app.processEvents();first=avatar.grab().toImage();selected=avatar.selected.id
         self.window.director.blink_frame=2;avatar.update();self.app.processEvents();second=avatar.grab().toImage();self.assertNotEqual(first,second);self.assertEqual(selected,avatar.selected.id)
+    def test_continuous_resize_reuses_the_sprite_then_resamples_at_the_final_size(self):
+        from studio_widgets import AvatarWidget
+        avatar=AvatarWidget(self.window.director,ROOT);avatar.resize(180,180);avatar.show();self.app.processEvents();avatar.grab()
+        try:
+            with patch.object(avatar.states,'image',wraps=avatar.states.image) as decode:
+                for n in range(30):avatar.resize(180+n*3,180+n*2);self.app.processEvents();avatar.grab()
+                self.assertLessEqual(decode.call_count,2)
+                deadline=time.monotonic()+.18
+                while time.monotonic()<deadline:self.app.processEvents();time.sleep(.003)
+                self.assertEqual(avatar._stable_dimensions,(avatar.width()-10,avatar.height()-10));self.assertEqual(avatar.selected.id,self.window.director.selected.id)
+        finally:avatar.close();avatar.deleteLater();self.app.processEvents()
     def test_energy_saving_stops_decorative_refresh_and_keeps_financial_poll_setting(self):
         before=self.window.cfg['poll_seconds'];self.window.cfg['desktop']['performance_profile']='Ahorro de energía';self.window.apply_visual(self.window.cfg['studio']);self.assertGreaterEqual(self.window._render_interval,1);self.assertEqual(self.window.cfg['poll_seconds'],before)
         self.window.director.loading=False;self.window.director._next_blink=time.monotonic()+3;self.window.animate();self.assertGreaterEqual(self.window.animation_timer.interval(),400)
