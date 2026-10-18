@@ -33,8 +33,15 @@ class StateSprites:
 class MotionSprites:
     """One fixed canvas, with the loading circle drawn into eight frames."""
     def __init__(self,root):
-        self.path=Path(root)/'assets/avatar_states/akira_rev6_motion.png';self.stamp=self.path.stat().st_mtime_ns
+        folder=Path(root)/'assets/avatar_states'
+        data=json.loads((folder/'motion_bounds.json').read_text(encoding='utf-8'))
+        self.path=folder/data['atlas'];self.stamp=self.path.stat().st_mtime_ns;self.bounds=data['bounds']
     def image(self,index,width,height):
         from PIL import Image
-        source=_atlas(str(self.path),self.stamp);sw,sh=source.size;index=int(index)%16;cell=source.crop((round(index%4*sw/4),round(index//4*sh/4),round((index%4+1)*sw/4),round((index//4+1)*sh/4)));cell.thumbnail((416,416),Image.Resampling.LANCZOS);canvas=Image.new('RGBA',(448,448));canvas.alpha_composite(cell,((448-cell.width)//2,448-cell.height-8));ratio=min(max(1,width)/448,max(1,height)/448)
-        return canvas.resize((max(1,round(448*ratio)),max(1,round(448*ratio))),Image.Resampling.LANCZOS)
+        source=_atlas(str(self.path),self.stamp);cell=source.crop(self.bounds[int(index)%16])
+        # Use a consistent foot anchor and actual drawing extent, not grid area.
+        ratio=min(416/cell.width,416/cell.height)
+        cell=cell.convert('RGBa').resize((max(1,round(cell.width*ratio)),max(1,round(cell.height*ratio))),Image.Resampling.LANCZOS).convert('RGBA')
+        canvas=Image.new('RGBA',(448,448));canvas.alpha_composite(cell,((448-cell.width)//2,440-cell.height))
+        ratio=min(max(1,width)/448,max(1,height)/448)
+        return canvas.convert('RGBa').resize((max(1,round(448*ratio)),max(1,round(448*ratio))),Image.Resampling.LANCZOS).convert('RGBA')

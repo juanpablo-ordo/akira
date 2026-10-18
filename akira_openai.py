@@ -9,7 +9,8 @@
 from __future__ import annotations
 import hashlib, json, random, threading, time
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import Request
+from network_tls import urlopen
 
 _LOCK=threading.Lock()
 _BACKGROUND_LOCK=threading.Lock()

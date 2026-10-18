@@ -260,7 +260,7 @@ class ContextWorker:
             'APPROVE expresa compatibilidad técnica con evidencia disponible, no perfección ni permiso de riesgo. Las pendientes evalúan escenarios futuros; distingue sus condiciones de activación de los datos ausentes.\n')
         acfg=self.cfg.get('assistant') or {};endpoint=local_research_endpoint(self.cfg)
         if acfg.get('enabled') is False:raise RuntimeError('El asistente está desactivado en ajustes; no se solicita una revisión de IA.')
-        st=ollama_status(endpoint);available=st.get('models') or [];created=self.clock();started=time.monotonic();verified=False;verifier_error=''
+        st=ollama_status(endpoint,force=bool((self.cfg.get('assistant') or {}).get('local_runtime_enabled')));available=st.get('models') or [];created=self.clock();started=time.monotonic();verified=False;verifier_error=''
         allow_cloud=bool(acfg.get('cloud') and acfg.get('cloud_optional',True) and self.cfg['research'].get('cloud'))
         model='OpenAI' if not available and allow_cloud else ''
         recovery=''
@@ -454,7 +454,7 @@ class ContextWorker:
         else:
             from assistant_startup import AssistantStartup
             acfg=self.cfg.get('assistant') or {};endpoint=local_research_endpoint(self.cfg)
-            st=ollama_status(endpoint);available=st.get('models') or []
+            st=ollama_status(endpoint,force=bool((self.cfg.get('assistant') or {}).get('local_runtime_enabled')));available=st.get('models') or []
             if not available:raise RuntimeError('AKIRA no tiene un asistente de texto disponible; pulsa REPARAR ASISTENTE')
             model_name=AssistantStartup(self.root,self.cfg).preferred_model(available,endpoint) or choose_text_model(available,
                 str(acfg.get('local_model') or self.cfg['research'].get('local_ai_model') or 'qwen3:8b'),

@@ -4,7 +4,7 @@
     3,
     3
   ],
-  "revision": "STUDIO_REV6_108",
+  "revision": "STUDIO_REV7_108",
   "expressions": [
     {
       "id": "AKIRA_001",
@@ -13,7 +13,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        82,
+        14,
+        439,
+        406
+      ]
     },
     {
       "id": "AKIRA_002",
@@ -22,7 +28,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        474,
+        16,
+        831,
+        406
+      ]
     },
     {
       "id": "AKIRA_003",
@@ -31,7 +43,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        869,
+        13,
+        1223,
+        406
+      ]
     },
     {
       "id": "AKIRA_004",
@@ -40,7 +58,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        79,
+        428,
+        439,
+        823
+      ]
     },
     {
       "id": "AKIRA_005",
@@ -49,7 +73,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        473,
+        422,
+        831,
+        823
+      ]
     },
     {
       "id": "AKIRA_006",
@@ -58,7 +88,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        868,
+        425,
+        1224,
+        823
+      ]
     },
     {
       "id": "AKIRA_007",
@@ -67,7 +103,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        80,
+        839,
+        439,
+        1228
+      ]
     },
     {
       "id": "AKIRA_008",
@@ -76,7 +118,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        474,
+        838,
+        832,
+        1228
+      ]
     },
     {
       "id": "AKIRA_009",
@@ -85,7 +133,13 @@
       "group_label": "Amistad",
       "atlas": "akira_00_friendly.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        865,
+        838,
+        1225,
+        1228
+      ]
     },
     {
       "id": "AKIRA_010",
@@ -94,7 +148,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        75,
+        20,
+        435,
+        410
+      ]
     },
     {
       "id": "AKIRA_011",
@@ -103,7 +163,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        468,
+        11,
+        827,
+        410
+      ]
     },
     {
       "id": "AKIRA_012",
@@ -112,7 +178,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        863,
+        19,
+        1221,
+        410
+      ]
     },
     {
       "id": "AKIRA_013",
@@ -121,7 +193,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        71,
+        428,
+        435,
+        819
+      ]
     },
     {
       "id": "AKIRA_014",
@@ -130,7 +208,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        466,
+        422,
+        829,
+        819
+      ]
     },
     {
       "id": "AKIRA_015",
@@ -139,7 +223,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        861,
+        431,
+        1221,
+        819
+      ]
     },
     {
       "id": "AKIRA_016",
@@ -148,7 +238,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        71,
+        833,
+        435,
+        1225
+      ]
     },
     {
       "id": "AKIRA_017",
@@ -157,7 +253,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        469,
+        837,
+        831,
+        1225
+      ]
     },
     {
       "id": "AKIRA_018",
@@ -166,7 +268,13 @@
       "group_label": "Alegría",
       "atlas": "akira_01_joy.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        862,
+        838,
+        1222,
+        1225
+      ]
     },
     {
       "id": "AKIRA_019",
@@ -175,7 +283,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        60,
+        20,
+        406,
+        400
+      ]
     },
     {
       "id": "AKIRA_020",
@@ -184,7 +298,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        485,
+        15,
+        819,
+        401
+      ]
     },
     {
       "id": "AKIRA_021",
@@ -193,7 +313,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        894,
+        23,
+        1228,
+        401
+      ]
     },
     {
       "id": "AKIRA_022",
@@ -202,7 +328,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        79,
+        422,
+        408,
+        814
+      ]
     },
     {
       "id": "AKIRA_023",
@@ -211,7 +343,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        487,
+        430,
+        818,
+        816
+      ]
     },
     {
       "id": "AKIRA_024",
@@ -220,7 +358,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        894,
+        431,
+        1234,
+        817
+      ]
     },
     {
       "id": "AKIRA_025",
@@ -229,7 +373,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        73,
+        844,
+        408,
+        1226
+      ]
     },
     {
       "id": "AKIRA_026",
@@ -238,7 +388,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        485,
+        838,
+        819,
+        1226
+      ]
     },
     {
       "id": "AKIRA_027",
@@ -247,7 +403,13 @@
       "group_label": "Curiosidad",
       "atlas": "akira_02_curious.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        896,
+        846,
+        1233,
+        1225
+      ]
     },
     {
       "id": "AKIRA_028",
@@ -256,7 +418,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        69,
+        21,
+        427,
+        417
+      ]
     },
     {
       "id": "AKIRA_029",
@@ -265,7 +433,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        473,
+        23,
+        830,
+        417
+      ]
     },
     {
       "id": "AKIRA_030",
@@ -274,7 +448,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        871,
+        28,
+        1228,
+        417
+      ]
     },
     {
       "id": "AKIRA_031",
@@ -283,7 +463,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        66,
+        430,
+        427,
+        830
+      ]
     },
     {
       "id": "AKIRA_032",
@@ -292,7 +478,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        473,
+        432,
+        830,
+        830
+      ]
     },
     {
       "id": "AKIRA_033",
@@ -301,7 +493,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        869,
+        430,
+        1227,
+        831
+      ]
     },
     {
       "id": "AKIRA_034",
@@ -310,7 +508,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        68,
+        843,
+        427,
+        1229
+      ]
     },
     {
       "id": "AKIRA_035",
@@ -319,7 +523,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        471,
+        837,
+        830,
+        1229
+      ]
     },
     {
       "id": "AKIRA_036",
@@ -328,7 +538,13 @@
       "group_label": "Pensamiento",
       "atlas": "akira_03_thinking.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        873,
+        840,
+        1228,
+        1229
+      ]
     },
     {
       "id": "AKIRA_037",
@@ -337,7 +553,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        50,
+        17,
+        405,
+        402
+      ]
     },
     {
       "id": "AKIRA_038",
@@ -346,7 +568,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        465,
+        16,
+        810,
+        402
+      ]
     },
     {
       "id": "AKIRA_039",
@@ -355,7 +583,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        889,
+        20,
+        1240,
+        403
+      ]
     },
     {
       "id": "AKIRA_040",
@@ -364,7 +598,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        50,
+        438,
+        405,
+        815
+      ]
     },
     {
       "id": "AKIRA_041",
@@ -373,7 +613,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        467,
+        431,
+        823,
+        815
+      ]
     },
     {
       "id": "AKIRA_042",
@@ -382,7 +628,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        890,
+        427,
+        1241,
+        816
+      ]
     },
     {
       "id": "AKIRA_043",
@@ -391,7 +643,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        54,
+        835,
+        418,
+        1229
+      ]
     },
     {
       "id": "AKIRA_044",
@@ -400,7 +658,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        471,
+        835,
+        828,
+        1229
+      ]
     },
     {
       "id": "AKIRA_045",
@@ -409,7 +673,13 @@
       "group_label": "Escucha",
       "atlas": "akira_04_listening.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        886,
+        841,
+        1240,
+        1231
+      ]
     },
     {
       "id": "AKIRA_046",
@@ -418,7 +688,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        82,
+        21,
+        440,
+        412
+      ]
     },
     {
       "id": "AKIRA_047",
@@ -427,7 +703,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        472,
+        20,
+        829,
+        411
+      ]
     },
     {
       "id": "AKIRA_048",
@@ -436,7 +718,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        865,
+        22,
+        1221,
+        411
+      ]
     },
     {
       "id": "AKIRA_049",
@@ -445,7 +733,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        81,
+        432,
+        440,
+        824
+      ]
     },
     {
       "id": "AKIRA_050",
@@ -454,7 +748,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        472,
+        436,
+        829,
+        824
+      ]
     },
     {
       "id": "AKIRA_051",
@@ -463,7 +763,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        865,
+        426,
+        1223,
+        824
+      ]
     },
     {
       "id": "AKIRA_052",
@@ -472,7 +778,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        81,
+        839,
+        440,
+        1226
+      ]
     },
     {
       "id": "AKIRA_053",
@@ -481,7 +793,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        473,
+        839,
+        833,
+        1226
+      ]
     },
     {
       "id": "AKIRA_054",
@@ -490,7 +808,13 @@
       "group_label": "Conversación",
       "atlas": "akira_05_speaking.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        865,
+        839,
+        1224,
+        1226
+      ]
     },
     {
       "id": "AKIRA_055",
@@ -499,7 +823,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        56,
+        28,
+        430,
+        418
+      ]
     },
     {
       "id": "AKIRA_056",
@@ -508,7 +838,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        464,
+        28,
+        836,
+        418
+      ]
     },
     {
       "id": "AKIRA_057",
@@ -517,7 +853,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        870,
+        28,
+        1242,
+        418
+      ]
     },
     {
       "id": "AKIRA_058",
@@ -526,7 +868,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        56,
+        432,
+        433,
+        824
+      ]
     },
     {
       "id": "AKIRA_059",
@@ -535,7 +883,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        465,
+        433,
+        836,
+        824
+      ]
     },
     {
       "id": "AKIRA_060",
@@ -544,7 +898,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        870,
+        431,
+        1241,
+        824
+      ]
     },
     {
       "id": "AKIRA_061",
@@ -553,7 +913,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        55,
+        835,
+        435,
+        1233
+      ]
     },
     {
       "id": "AKIRA_062",
@@ -562,7 +928,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        463,
+        840,
+        836,
+        1233
+      ]
     },
     {
       "id": "AKIRA_063",
@@ -571,7 +943,13 @@
       "group_label": "Cariño",
       "atlas": "akira_06_affection.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        869,
+        837,
+        1242,
+        1232
+      ]
     },
     {
       "id": "AKIRA_064",
@@ -580,7 +958,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        53,
+        15,
+        410,
+        404
+      ]
     },
     {
       "id": "AKIRA_065",
@@ -589,7 +973,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        460,
+        20,
+        822,
+        403
+      ]
     },
     {
       "id": "AKIRA_066",
@@ -598,7 +988,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        895,
+        22,
+        1249,
+        404
+      ]
     },
     {
       "id": "AKIRA_067",
@@ -607,7 +1003,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        53,
+        425,
+        411,
+        816
+      ]
     },
     {
       "id": "AKIRA_068",
@@ -616,7 +1018,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        462,
+        430,
+        822,
+        816
+      ]
     },
     {
       "id": "AKIRA_069",
@@ -625,7 +1033,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        896,
+        428,
+        1247,
+        816
+      ]
     },
     {
       "id": "AKIRA_070",
@@ -634,7 +1048,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        53,
+        842,
+        410,
+        1224
+      ]
     },
     {
       "id": "AKIRA_071",
@@ -643,7 +1063,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        462,
+        841,
+        822,
+        1224
+      ]
     },
     {
       "id": "AKIRA_072",
@@ -652,7 +1078,13 @@
       "group_label": "Sorpresa",
       "atlas": "akira_07_surprise.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        896,
+        841,
+        1251,
+        1225
+      ]
     },
     {
       "id": "AKIRA_073",
@@ -661,7 +1093,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        65,
+        27,
+        429,
+        415
+      ]
     },
     {
       "id": "AKIRA_074",
@@ -670,7 +1108,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        468,
+        33,
+        830,
+        414
+      ]
     },
     {
       "id": "AKIRA_075",
@@ -679,7 +1123,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        863,
+        32,
+        1225,
+        414
+      ]
     },
     {
       "id": "AKIRA_076",
@@ -688,7 +1138,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        64,
+        433,
+        433,
+        823
+      ]
     },
     {
       "id": "AKIRA_077",
@@ -697,7 +1153,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        466,
+        435,
+        831,
+        824
+      ]
     },
     {
       "id": "AKIRA_078",
@@ -706,7 +1168,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        864,
+        430,
+        1232,
+        823
+      ]
     },
     {
       "id": "AKIRA_079",
@@ -715,7 +1183,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        66,
+        836,
+        431,
+        1221
+      ]
     },
     {
       "id": "AKIRA_080",
@@ -724,7 +1198,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        467,
+        838,
+        829,
+        1221
+      ]
     },
     {
       "id": "AKIRA_081",
@@ -733,7 +1213,13 @@
       "group_label": "Descanso",
       "atlas": "akira_08_sleep.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        868,
+        834,
+        1233,
+        1221
+      ]
     },
     {
       "id": "AKIRA_082",
@@ -742,7 +1228,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        64,
+        31,
+        427,
+        427
+      ]
     },
     {
       "id": "AKIRA_083",
@@ -751,7 +1243,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        469,
+        32,
+        826,
+        427
+      ]
     },
     {
       "id": "AKIRA_084",
@@ -760,7 +1258,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        868,
+        32,
+        1226,
+        427
+      ]
     },
     {
       "id": "AKIRA_085",
@@ -769,7 +1273,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        65,
+        434,
+        428,
+        828
+      ]
     },
     {
       "id": "AKIRA_086",
@@ -778,7 +1288,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        468,
+        437,
+        829,
+        828
+      ]
     },
     {
       "id": "AKIRA_087",
@@ -787,7 +1303,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        869,
+        441,
+        1226,
+        828
+      ]
     },
     {
       "id": "AKIRA_088",
@@ -796,7 +1318,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        62,
+        833,
+        428,
+        1225
+      ]
     },
     {
       "id": "AKIRA_089",
@@ -805,7 +1333,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        467,
+        834,
+        826,
+        1225
+      ]
     },
     {
       "id": "AKIRA_090",
@@ -814,7 +1348,13 @@
       "group_label": "Concentración",
       "atlas": "akira_09_focus.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        867,
+        832,
+        1228,
+        1225
+      ]
     },
     {
       "id": "AKIRA_091",
@@ -823,7 +1363,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        44,
+        13,
+        409,
+        409
+      ]
     },
     {
       "id": "AKIRA_092",
@@ -832,7 +1378,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        462,
+        14,
+        824,
+        409
+      ]
     },
     {
       "id": "AKIRA_093",
@@ -841,7 +1393,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        882,
+        19,
+        1239,
+        408
+      ]
     },
     {
       "id": "AKIRA_094",
@@ -850,7 +1408,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        43,
+        416,
+        405,
+        821
+      ]
     },
     {
       "id": "AKIRA_095",
@@ -859,7 +1423,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        463,
+        418,
+        824,
+        822
+      ]
     },
     {
       "id": "AKIRA_096",
@@ -868,7 +1438,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        882,
+        420,
+        1240,
+        821
+      ]
     },
     {
       "id": "AKIRA_097",
@@ -877,7 +1453,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        49,
+        833,
+        411,
+        1229
+      ]
     },
     {
       "id": "AKIRA_098",
@@ -886,7 +1468,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        464,
+        833,
+        827,
+        1229
+      ]
     },
     {
       "id": "AKIRA_099",
@@ -895,7 +1483,13 @@
       "group_label": "Ánimo",
       "atlas": "akira_10_encourage.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        883,
+        832,
+        1240,
+        1227
+      ]
     },
     {
       "id": "AKIRA_100",
@@ -904,7 +1498,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 0,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        51,
+        36,
+        415,
+        420
+      ]
     },
     {
       "id": "AKIRA_101",
@@ -913,7 +1513,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 1,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        462,
+        36,
+        826,
+        420
+      ]
     },
     {
       "id": "AKIRA_102",
@@ -922,7 +1528,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 2,
-      "row": 0
+      "row": 0,
+      "bounds": [
+        886,
+        38,
+        1249,
+        420
+      ]
     },
     {
       "id": "AKIRA_103",
@@ -931,7 +1543,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 0,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        47,
+        431,
+        414,
+        839
+      ]
     },
     {
       "id": "AKIRA_104",
@@ -940,7 +1558,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 1,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        463,
+        429,
+        829,
+        840
+      ]
     },
     {
       "id": "AKIRA_105",
@@ -949,7 +1573,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 2,
-      "row": 1
+      "row": 1,
+      "bounds": [
+        888,
+        448,
+        1249,
+        839
+      ]
     },
     {
       "id": "AKIRA_106",
@@ -958,7 +1588,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 0,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        49,
+        858,
+        418,
+        1236
+      ]
     },
     {
       "id": "AKIRA_107",
@@ -967,7 +1603,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 1,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        465,
+        860,
+        835,
+        1236
+      ]
     },
     {
       "id": "AKIRA_108",
@@ -976,7 +1618,13 @@
       "group_label": "Cuidado",
       "atlas": "akira_11_concern.png",
       "column": 2,
-      "row": 2
+      "row": 2,
+      "bounds": [
+        885,
+        858,
+        1249,
+        1234
+      ]
     }
   ],
   "canvas_size": 448

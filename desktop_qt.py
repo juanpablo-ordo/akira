@@ -48,7 +48,7 @@ def stylesheet(studio):
     QFrame#sidebar {{ background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {rgba(panel.darker(160),242)},stop:1 {rgba(panel,235)}); border:1px solid {border}; border-radius:6px; }}
     QFrame#card {{ background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {rgba(card.darker(130),alpha)},stop:1 {rgba(panel.darker(150),max(150,alpha-12))}); border:1px solid {border}; border-radius:6px; }}
     QLabel {{ border:0;background:transparent; }} QLabel[role="title"] {{font-size:{round(25*scale)}px;font-weight:600;}}
-    QLabel[role="cardTitle"] {{color:{secondary};font-size:{round(18*scale)}px;font-weight:600;}}
+    QLabel[role="cardTitle"] {{color:#eef5ff;font-size:{round(18*scale)}px;font-weight:600;}}
     QLabel[role="metric"] {{font-size:{round(26*scale)}px;font-weight:600;}}
     QLabel[role="brand"] {{font-size:36px;font-weight:600;color:{accent};letter-spacing:2px;}}
     QLabel[role="muted"],QLabel[role="micro"] {{color:#83adca;font-size:{round(14*scale)}px;}}
@@ -60,7 +60,7 @@ def stylesheet(studio):
     QPushButton[kind="primary"] {{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {p['BLUE']},stop:1 {QColor(p['BLUE']).darker(140).name()});border:1px solid {accent};color:white;}}
     QPushButton[kind="danger"] {{border-color:{secondary};color:{secondary};}}
     QPushButton:disabled {{color:#436276;border-color:#153042;background:rgba(3,19,30,150);}}
-    QPushButton[nav="true"] {{text-align:left;padding:10px 13px;min-height:25px;border-color:transparent;font-size:{round(16*scale)}px;}}
+    QPushButton[nav="true"] {{background:transparent;text-align:left;padding:10px 13px;min-height:25px;border-color:transparent;font-size:{round(16*scale)}px;}}
     QLineEdit,QComboBox,QSpinBox,QDoubleSpinBox,QPlainTextEdit,QTextBrowser,QListWidget {{background:rgba(1,17,31,205);border:1px solid #184d69;border-radius:4px;selection-background-color:#00658b;padding:6px;}}
     QLineEdit:focus,QComboBox:focus,QPlainTextEdit:focus {{border-color:{accent};}}
     QComboBox QAbstractItemView {{background:#041526;color:#e8f3ff;selection-background-color:#00658b;}}
@@ -112,7 +112,7 @@ class StudioWindow(QMainWindow):
         self.tables=[];self.pages=[];self.build_home();self.build_pending();self.build_account();self.build_analysis();self.build_sources();self.build_chat();self.build_settings();self.build_terminal()
         self.statusBar().hide();self.apply_visual(self.cfg['studio']);self.navigate(0);self.render({})
         self.poll_timer=QTimer(self);self.poll_timer.setInterval(80);self.poll_timer.timeout.connect(self.poll);self.poll_timer.start()
-        self.animation_timer=QTimer(self);self.animation_timer.setInterval(33);self.animation_timer.timeout.connect(self.animate);self.animation_timer.start()
+        self.animation_timer=QTimer(self);self.animation_timer.setInterval(80);self.animation_timer.timeout.connect(self.animate);self.animation_timer.start()
         self._last_ui_tick=time.monotonic();self.ui_delays=[];self._last_history=None
         self._layout_file=QSettings(str(Path(folder)/'studio/window.ini'),QSettings.Format.IniFormat)
         saved=self._layout_file.value('geometry')
@@ -143,14 +143,14 @@ class StudioWindow(QMainWindow):
     def table(self,columns):
         table=DataTable(columns);self.tables.append(table);table.setHorizontalHeaderLabels([self.text(t) for t in columns]);return table
     def avatar(self,parent,height=160):
-        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.setMinimumWidth(140);widget.setMinimumHeight(height);widget.setMaximumHeight(height+30);self.avatars.append(widget);parent.addWidget(widget);return widget
+        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.setMinimumWidth(140);widget.setMinimumHeight(height);widget.setMaximumHeight(height+12);self.avatars.append(widget);parent.addWidget(widget);return widget
 
     def build_sidebar(self,outer):
         from PySide6.QtWidgets import QFrame
-        self.sidebar=QFrame();self.sidebar.setObjectName('sidebar');self.sidebar.setFixedWidth(195);box=QVBoxLayout(self.sidebar);box.setContentsMargins(13,14,13,13);box.setSpacing(9)
+        self.sidebar=QFrame();self.sidebar.setObjectName('sidebar');self.sidebar.setFixedWidth(205);box=QVBoxLayout(self.sidebar);box.setContentsMargins(13,14,13,13);box.setSpacing(9)
         self.brand=label('AKIRA','brand');self.brand.setAlignment(Qt.AlignmentFlag.AlignCenter);self.brand.setWordWrap(True);box.addWidget(self.brand)
         box.addWidget(self.lbl('ASISTENTE · MT5','micro'))
-        panel=self.card('','');panel.setMaximumHeight(250);panel.body.setContentsMargins(6,4,6,9);self.avatar(panel.body,140)
+        panel=self.card('','');panel.title.hide();panel.body.removeItem(panel.heading);panel.setMaximumHeight(222);panel.body.setContentsMargins(6,7,6,9);self.avatar(panel.body,154)
         self.ai_label=label('IA · comprobando','body',INK['cyan']);self.ai_label.setAlignment(Qt.AlignmentFlag.AlignCenter);self.ai_label.setWordWrap(True);panel.body.addWidget(self.ai_label);box.addWidget(panel)
         self.nav=[];scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         menu=QWidget();nav_box=QVBoxLayout(menu);nav_box.setContentsMargins(0,0,0,0);nav_box.setSpacing(5);scroll.setWidget(menu)
@@ -174,7 +174,7 @@ class StudioWindow(QMainWindow):
         layout.addWidget(self.metrics_widget)
 
     def build_home(self):
-        _,layout=self.page();self.home_split,(left,right)=self.split(layout,(3,2))
+        _,layout=self.page();self.home_split,(left,right)=self.split(layout,(2,1))
         activity=self.card('ACTIVIDAD EN TIEMPO REAL','trading');filters=QHBoxLayout()
         self.activity_filter=ChoiceBox();self.activity_filter.addItems(['TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR']);self.activity_filter.currentTextChanged.connect(self.render_logs);filters.addWidget(self.activity_filter);filters.addStretch();activity.body.addLayout(filters)
         self.activity=self.table(['Hora','Módulo','Estado','Motivo / contexto']);activity.body.addWidget(self.activity,1);left.addWidget(activity,3)
@@ -274,7 +274,7 @@ class StudioWindow(QMainWindow):
         if self.controller.view:self.render(self.controller.view)
     def open_settings(self,index=0):self.navigate(6);self.settings_panel.tabs.setCurrentIndex(index)
     def responsive(self):
-        narrow=self.width()<1250;self.sidebar.setFixedWidth(160 if narrow else 195)
+        narrow=self.width()<1250;self.sidebar.setFixedWidth(166 if narrow else 205)
         self.page_description.setVisible(self.width()>1450)
         self.metrics_widget.setVisible(self.page_index in (0,2,3))
         scale=int(getattr(self,'_visual_studio',self.cfg['studio']).get('font_scale',100))/100
@@ -312,7 +312,7 @@ class StudioWindow(QMainWindow):
         if sheet!=getattr(self,'_sheet',None):self.setStyleSheet(sheet);self._sheet=sheet
         brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
         QApplication.instance().setApplicationDisplayName(brand)
-        self.setWindowTitle(brand+' · Studio · 16.4.1');desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=.9 if profile=='Ahorro de energía' else .2 if profile=='Rendimiento' else .4
+        self.setWindowTitle(brand+' · Studio · 16.4.1');desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
         if profile=='Ahorro de energía':wallpaper.update(fps=min(12,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
         self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
         locale=studio.get('language_ui','es')
@@ -337,8 +337,11 @@ class StudioWindow(QMainWindow):
         for avatar in self.avatars:avatar.cache.clear();avatar._receive(self.director.expression,self.director.selected)
 
     def animate(self):
-        if self.isMinimized() or not self.isVisible():return
+        if self.isMinimized() or not self.isVisible():
+            self.animation_timer.setInterval(750);return
         self.director.refresh()
+        active=self.director.loading or self.director.playing or self.director.blink_frame is not None
+        self.animation_timer.setInterval(50 if self.director.blink_frame is not None else (250 if self._render_interval>=.9 else 125) if active else max(50,min(500,int((self.director._next_blink-time.monotonic())*1000))))
         if self.director.loading:
             for avatar in self.avatars:
                 if avatar.isVisible():avatar.update()
@@ -347,7 +350,7 @@ class StudioWindow(QMainWindow):
         self.ui_delays.append(delay*1000)
         if len(self.ui_delays)>1000:self.ui_delays=self.ui_delays[-1000:]
         for event in self.controller.poll():self.handle_event(event)
-        if self._snapshot_pending is not None and now-self._render_at>=self._render_interval:
+        if self._snapshot_pending is not None and not self.isMinimized() and now-self._render_at>=self._render_interval:
             view=self._snapshot_pending;self._snapshot_pending=None;self._render_at=now;self.render(view)
         if self._logs_dirty and now-self._logs_at>=.3:self.render_logs();self._logs_dirty=False;self._logs_at=now
         if now>=self._ai_due:
@@ -355,7 +358,8 @@ class StudioWindow(QMainWindow):
             status={'ready':False,'phase':'DISABLED','detail':'Vista previa · sin modelo conectado'} if self.controller.preview else self.controller.assistant.local_ai_status()
             phase={'MISSING':'IA pendiente de instalar','IDLE':'IA en reposo','FAILED':'IA no disponible','CHECKING':'Comprobando IA','DISABLED':'Vista previa','PREPARING':'Preparando IA'}.get(status.get('phase'),'Comprobando IA')
             self._model_status=status;self.ai_label.setText(('● '+self.cfg['studio']['brand_name']+' · IA disponible') if status.get('ready') else '● '+self.text(phase))
-            self.ai_label.setToolTip(str(status.get('last_reply_error') or status.get('detail') or ''))
+            from network_tls import connection_message
+            self.ai_label.setToolTip(connection_message(status['last_reply_error'])[1] if status.get('last_reply_error') else str(status.get('detail') or ''))
             self.repair_button.setVisible(not self.controller.preview and status.get('phase') in ('FAILED','MISSING','ERROR'));self.chat_status.setText('IA local disponible' if status.get('ready') else str(status.get('detail') or ''))
             self.notice_button.setText(str(self.controller.notices.unread()));self.controller.collect_resources(getattr(self.surface.worker,'process',None))
             stats=getattr(self.surface.worker,'status',{}) or self.surface.media_status

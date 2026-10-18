@@ -921,7 +921,8 @@ class Engine:
         # Supervises prolonged silence; reads existing actor facts only.
         # It never sends a trade or alters risk to manufacture activity.
         view['session_activity']=self.session_watchdog.inspect(view,now)
-        self._last_view=copy.deepcopy(view)
+        from snapshot_copy import snapshot_copy
+        self._last_view=snapshot_copy(view)
         snapshot_ms=(time.perf_counter()-view_started)*1000
         if now>=self._pending_auto_due:
             from pending_verification import targets

@@ -16,7 +16,8 @@ import os
 from pathlib import Path
 import threading
 import time
-from urllib.request import Request, urlopen
+from urllib.request import Request
+from network_tls import urlopen
 from urllib.error import HTTPError
 from akira_openai import responses as openai_responses
 from akira_local_ai import chat as ollama_chat, status as ollama_status, choose_text_model

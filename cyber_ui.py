@@ -64,13 +64,12 @@ def source_presentation(name,row):
         elif any(x in low for x in ('timeouterror','timed out','timeout','tiempo de espera')):
             state='TIEMPO AGOTADO';detail='Esta consulta tardó demasiado. Akira mantiene el análisis técnico y reintentará con espera controlada.'
         else:
-            from notification_center import safe_text
-            state='ERROR DE REVISIÓN' if name in ('pending_ai','local_ai') else 'ERROR'
-            detail=('No terminó esta revisión de IA: ' if name in ('pending_ai','local_ai') else 'No terminó la consulta: ')+safe_text(error)[:220]
+            from network_tls import connection_message
+            state,detail=connection_message(error)
     elif row.get('usable') is False:state='SIN RESULTADOS';detail=detail or 'La consulta no devolvió datos utilizables.'
     elif row.get('age_seconds') is not None:state='DESACTUALIZADA';detail=detail or 'La información anterior ya no se usa como confirmación.'
     else:state='ESPERANDO';detail=detail or 'Todavía no terminó una consulta de esta fuente.'
-    if error and row.get('inflight'):detail+=' Último error: '+error
+    if error and row.get('inflight'):detail+=' Nueva consulta en curso.'
     retry=row.get('retry_after_seconds')
     if error and retry:detail+=' Próximo intento en '+str(round(float(retry)))+' s.'
     return title,state,detail

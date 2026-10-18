@@ -2,7 +2,8 @@
 import threading
 import time
 from urllib.error import HTTPError
-from urllib.request import Request,urlopen
+from urllib.request import Request
+from network_tls import urlopen
 
 
 def recently_connected(snapshot,now=None):

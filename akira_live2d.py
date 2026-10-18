@@ -112,7 +112,7 @@ class AvatarDirector:
         self.catalog,self.clock=catalog,clock
         self.listeners=weakref.WeakSet();self.sequence=0;self.expression='idle';self.context=''
         self.selected=catalog.choose('idle');self.next_variation=clock()+18
-        self.playing=False;self.last_level=0
+        self.playing=False;self.last_level=0;self.mouth_level=0
         self.loading=False;self.online=True;self.blink_frame=None
         self._blink_started=None;self._next_blink=clock()+random.uniform(3.0,5.5)
         self._resume_expression='idle';self._wake_until=0
@@ -173,12 +173,13 @@ class AvatarDirector:
             self.publish('waking','Conexión recuperada',force=True);self._wake_until=self.clock()+.55
 
     def playback(self,active):
-        self.playing=bool(active);self.last_level=0
+        self.playing=bool(active);self.last_level=0;self.mouth_level=0
         self.publish('AKIRA_046' if active else 'listening',force=True)
 
     def level(self,value):
         if not self.playing or self.clock()-self.last_level<.16:return
         self.last_level=self.clock()
+        self.mouth_level=float(value)
         self.publish('AKIRA_047' if float(value)>.035 else 'AKIRA_046',force=True)
 
 

@@ -1,7 +1,8 @@
 """Explicit, hash-verified recovery of the bundled AI. Custom files stay intact."""
 from pathlib import Path,PurePosixPath
 import hashlib,os,time,zipfile,tempfile,shutil
-from urllib.request import Request,urlopen
+from urllib.request import Request
+from network_tls import urlopen
 MODEL_NAME='Qwen3-4B-Q4_K_M.gguf'
 MODEL_SHA='7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5'
 MODEL_SIZE=2497280256
