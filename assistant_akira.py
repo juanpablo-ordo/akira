@@ -83,7 +83,7 @@ class AkiraAssistant:
             return
         cb=self.progress_callback
         if cb is None:return
-        try:cb({'stage':str(stage),'detail':str(detail)[:500],'url':str(url)[:1000],'time':time.time()})
+        try:cb({'stage':str(stage),'detail':str(detail)[:12000 if stage=='RESPONDIENDO' else 500],'url':str(url)[:1000],'time':time.time()})
         except Exception:pass
 
     @staticmethod
@@ -927,7 +927,8 @@ class AkiraAssistant:
         if self._managed_model.enabled() and not _direct_local_engine(endpoint):
             raise ValueError('La IA gestionada requiere el endpoint local /v1/chat/completions, no Ollama')
         from local_inference import PRIORITY
-        with PRIORITY.interactive(),self._managed_model.session(endpoint,self.cfg.get('desktop') or {},cancel_event=self._cancel_event):
+        from akira_local_ai import visible_output
+        with visible_output(lambda text:self._progress('RESPONDIENDO',text)),PRIORITY.interactive(),self._managed_model.session(endpoint,self.cfg.get('desktop') or {},cancel_event=self._cancel_event):
             response=self._local_llm_reply_impl(message,snapshot)
             if str(response).strip():
                 self._model_inference_verified=True
@@ -1061,7 +1062,7 @@ class AkiraAssistant:
 
         if source_rows or factual or fresh:self._research_cache[research_query]={'at':time.monotonic(),'rows':list(source_rows)}
 
-        cached=self.memory.search(research_query,limit=4)
+        cached=self.memory.search(research_query,limit=4) if trading or deep else []
         if cached:web_context+='\nMEMORIA CACHEADA, NO VERIFICACIÓN ACTUAL:\n'+json.dumps([{**r,'summary':r.get('summary','')[:1800]} for r in cached],ensure_ascii=False)
         sys=(self._instructions()+"\nMODO SENTINEL/JARVIS: actúa como un agente atento y proactivo, no como un chatbot pasivo. Primero identifica qué quiere realmente el usuario; luego decide qué datos necesitas, investiga cuando corresponda, contrasta, detecta contradicciones y entrega una conclusión concreta. Puedes anticipar la siguiente comprobación útil, pero no inventes actividad ni resultados. "
              "Responde como un asistente de alto nivel: entiende la intención completa antes de contestar, razona con la evidencia, corrige supuestos incorrectos y evita frases genéricas o repetir la pregunta. "
@@ -1101,11 +1102,11 @@ class AkiraAssistant:
         if selected_language!='auto' and re.fullmatch(r'[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*',str(selected_language)):
             sys+='\nIDIOMA DE RESPUESTA ELEGIDO POR EL USUARIO: '+languages.get(selected_language,selected_language)+'. Respóndele en ese idioma. Conserva símbolos, precios, lotes, tickets y negaciones exactamente.'
         context_budget=int(cfg.get('conversation_context_char_budget',28000) if deep else min(10000,cfg.get('fast_chat_context_chars',18000)))
-        messages=prompt_messages(sys,current,self.dialogue.history(self.history),
+        messages=prompt_messages(sys,current,self.dialogue.history(self.history)[-4:] if not deep else self.dialogue.history(self.history),
             state=state if trading else {'mode':'general_chat','current_fact_requires_web':fresh},evidence=web_context,
-            continuity=routing,budget=context_budget)
+            continuity=routing if routing.get('contextual') or routing.get('repair') else {},budget=context_budget)
         tools=self._local_tools() if deep or file_request or (urls and explicit_research) else []
-        timeout=float(cfg.get('local_timeout_seconds',120) if deep else cfg.get('fast_chat_timeout_seconds',25))
+        timeout=float(cfg.get('local_timeout_seconds',120) if deep else max(60,cfg.get('fast_chat_timeout_seconds',75)))
         rounds=min(5,int(cfg.get('local_agent_rounds',4))) if deep else 2 if tools else 1
         inference_deadline=time.monotonic()+timeout
         from resource_optimizer import ollama_limits
@@ -1236,9 +1237,24 @@ class AkiraAssistant:
                     self._status_loading=False
 
     def retry_local_preparation(self):
+        previous_phase=self._status.get('phase')
         def work():
             try:
                 if self._managed_model.enabled():
+                    import sys
+                    from local_inference import PRIORITY
+                    with PRIORITY.interactive():
+                        runtime=self._managed_model
+                        with runtime.lock:
+                            if runtime.active:raise RuntimeError('La IA está respondiendo. Detén la conversación antes de reparar.')
+                            runtime._terminate_own()
+                        paths=runtime._paths();default=not paths or Path(paths[1]).resolve()==(Path(sys.executable).parent/'local_ai/models/Qwen3-4B-Q4_K_M.gguf').resolve()
+                        if sys.platform=='win32' and getattr(sys,'frozen',False) and default:
+                            from local_ai_repair import recover_bundled
+                            def progress(text):
+                                with self._status_lock:self._status['detail']=text
+                            recover_bundled(Path(sys.executable).parent,self._cancel_event,progress,force_cpu=previous_phase in ('FAILED','ERROR'))
+                            if previous_phase in ('FAILED','ERROR'):runtime._force_cpu=True
                     if self._managed_model._paths() is None:
                         result={'accepted':False,'phase':'MISSING',
                                 'detail':'No se encontró el motor llama.cpp o el modelo GGUF instalado.'}

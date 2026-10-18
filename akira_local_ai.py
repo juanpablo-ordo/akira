@@ -17,6 +17,12 @@ _STATUS_LOCK=threading.Lock()
 _CONTEXT=threading.local()
 
 @contextmanager
+def visible_output(callback):
+    previous=getattr(_CONTEXT,'visible',None);_CONTEXT.visible=callback
+    try:yield
+    finally:_CONTEXT.visible=previous
+
+@contextmanager
 def owned_context(tokens):
     """Actual owned server context, scoped to this request's worker thread."""
     previous=getattr(_CONTEXT,'tokens',None);_CONTEXT.tokens=int(tokens)
@@ -74,7 +80,26 @@ def _post_direct_cancellable(url,payload,timeout,cancel_event):
         response=connection.getresponse()
         if response.status>=400:
             raise HTTPError(url,response.status,response.reason,response.headers,io.BytesIO(response.read(2000)))
-        result=json.loads(response.read(8_000_000).decode('utf-8','replace'))
+        if payload.get('stream'):
+            content=[];total=0;last=0;finish=None
+            while True:
+                raw=response.readline()
+                if not raw:break
+                total+=len(raw)
+                if total>8_000_000:raise RuntimeError('Respuesta de IA demasiado grande')
+                if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
+                if not raw.startswith(b'data:'):continue
+                data=raw[5:].strip()
+                if data==b'[DONE]':break
+                choice=(json.loads(data).get('choices') or [{}])[0];delta=choice.get('delta') or {}
+                if delta.get('content'):content.append(str(delta['content']))
+                if choice.get('finish_reason'):finish=choice['finish_reason']
+                callback=getattr(_CONTEXT,'visible',None)
+                if callback and content and time.monotonic()-last>.08:callback(_clean(''.join(content)));last=time.monotonic()
+            callback=getattr(_CONTEXT,'visible',None)
+            if callback and content:callback(_clean(''.join(content)))
+            result={'choices':[{'message':{'role':'assistant','content':''.join(content)},'finish_reason':finish}]}
+        else:result=json.loads(response.read(8_000_000).decode('utf-8','replace'))
         if expired.is_set():raise TimeoutError('AKIRA agotó el tiempo total de inferencia')
         if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         return result
@@ -91,7 +116,7 @@ def _post(url,payload,timeout=90,cancel_event=None,stream_on_cancel=True):
         raise RuntimeError('Análisis detenido por el usuario')
     parts=urlsplit(str(url))
     if cancel_event is not None and parts.scheme=='http' and parts.hostname in ('127.0.0.1','localhost','::1') and parts.path.rstrip('/').endswith('/v1/chat/completions'):
-        return _post_direct_cancellable(url,{**payload,'stream':False},timeout,cancel_event)
+        return _post_direct_cancellable(url,payload,timeout,cancel_event)
     streaming = cancel_event is not None and stream_on_cancel
     payload=dict(payload)
     if streaming:payload['stream']=True
@@ -172,6 +197,7 @@ def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_
              'max_tokens':int(opts.get('num_predict',3000)),
              'chat_template_kwargs':{'enable_thinking':bool(think)}}
     if tools:payload['tools']=tools
+    elif response_format is None and getattr(_CONTEXT,'visible',None) is not None and cancel_event is not None:payload['stream']=True
     if not think and mapped and not any('/no_think' in str(m.get('content','')) for m in mapped):
         # Qwen3 can consume the whole token budget in hidden reasoning otherwise.
         mapped.insert(0,{'role':'system','content':'/no_think\nDa una respuesta visible, concisa y útil.'})

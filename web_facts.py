@@ -41,7 +41,7 @@ _CURRENT_PATTERNS = (
     r"\bpresidente\b", r"\bprimer ministro\b", r"\bministro\b", r"\bceo\b", r"\bgobernador\b",
     r"\bquién es\b", r"\bquien es\b", r"\bprecio\b", r"\bcotiza\b", r"\bnoticias?\b",
     r"\belecciones?\b", r"\b202[5-9]\b", r"\besta semana\b", r"\beste mes\b",
-    r"\b(lanz[oó]|lanzamiento|estren[oó]|taquillera|recaudaci[oó]n)\b",
+    r"\b(lanz[oó]|lanzar|lanzaron|lanzado|lanzamiento|estren[oó]|taquillera|recaudaci[oó]n|acaba|reci[eé]n|reciente|nuev[oa]s?|anunci[oó])\b",
 )
 
 _STOP = {
@@ -211,7 +211,7 @@ def _expanded_queries(query: str):
     if re.search(r'president\w*',low) and 'guatemala' in low:
         out += [f'site:presidencia.gob.gt presidente Guatemala {year}', f'site:agn.gt presidente Guatemala {year}', f'presidente Guatemala {year} Reuters AP']
     elif 'xbox' in low:
-        out += [f'site:news.xbox.com {year} Xbox hardware lanzamientos', f'Xbox {year} lanzamientos Microsoft Xbox Wire']
+        out += [f'site:news.xbox.com {q} {year}', f'site:gearsofwar.com {q} {year}' if 'gears' in low else f'{q} {year} Microsoft Xbox Wire']
     elif re.search(r'pel[ií]cula',low) and re.search(r'(exitosa|taquillera|recaud|box office)',low):
         out += [f'{year} worldwide box office highest grossing The Numbers Box Office Mojo', f'películas más taquilleras {year} Variety Deadline']
     elif re.search(r'(walter white|breaking bad|tuco)',low):
@@ -285,6 +285,7 @@ def _dedupe_diverse(query,rows,limit=8,strict=False):
         rr=dict(r); rr['source_class']=_classify(rr); rr['relevance']=round(_relevance(query,rr),3)
         # A country match alone does not answer who holds a public office.
         body=(title+' '+str(r.get('text') or '')).lower()
+        if re.search(r'\bgears\b',query,re.I) and 'gears' not in body:continue
         if office and not re.search(r'\b(?:president\w*|mandatari\w*|ministro\w*|gobernador\w*|alcalde\w*)\b',body):continue
         if rr['relevance'] < (.35 if office or strict else .18) and len(_terms(query))>=2:continue
         merged.append(rr)

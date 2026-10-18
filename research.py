@@ -442,6 +442,7 @@ class ContextWorker:
                 '"thesis":"máximo 160 caracteres","note":"evidencia, contradicciones, máximo 160 caracteres"}. '
                 'Tipos permitidos: BUY_LIMIT, BUY_STOP, SELL_LIMIT, SELL_STOP. Confianza es peso de opinión, no probabilidad de ganar. '
                 'Prioriza estructura H1/H4/D1, activación M15; fuentes externas solo contexto. Una fuente no disponible no confirma nada.\n')
+        schema={'type':'object','properties':{symbol:{'type':'object','properties':{'bias':{'type':'number','minimum':-1,'maximum':1},'confidence':{'type':'number','minimum':0,'maximum':.35},'preferred':{'type':'array','items':{'type':'string','enum':['BUY_LIMIT','BUY_STOP','SELL_LIMIT','SELL_STOP']},'maxItems':4},'avoid':{'type':'array','items':{'type':'string','enum':['BUY_LIMIT','BUY_STOP','SELL_LIMIT','SELL_STOP']},'maxItems':4},'thesis':{'type':'string','maxLength':160},'note':{'type':'string','maxLength':160}},'required':['bias','confidence','preferred','avoid','thesis','note'],'additionalProperties':False} for symbol in symbols},'required':list(symbols),'additionalProperties':False}
         model_name='cloud';verified=False;verification_error=''
         if cloud:
             response=openai_responses({'model':self.cfg['research']['model'],'input':prompt+payload,'max_output_tokens':700},
@@ -457,7 +458,7 @@ class ContextWorker:
                 str(acfg.get('local_model_lite') or 'qwen3:4b'),prefer_fast=True)
             text=ollama_chat([{'role':'system','content':'Eres AKIRA. Revisa indicadores completos; conserva incertidumbre y nunca inventes niveles.'},
                 {'role':'user','content':prompt+payload}],model=model_name,endpoint=endpoint,timeout=30,
-                options={'num_predict':700,'num_ctx':8192,'temperature':0.10},think=False,response_format='json',
+                options={'num_predict':700,'num_ctx':8192,'temperature':0.10},think=False,response_format=schema,
                 cancel_event=getattr(self._inference,'cancel',None))
         def parse(text):
             if isinstance(text,dict):text=text.get('text',text.get('output_text',''))
@@ -472,7 +473,7 @@ class ContextWorker:
                 second=ollama_chat([{'role':'system','content':'Verifica todos los símbolos y corrige sesgos sin soporte. Conserva el esquema JSON.'},
                     {'role':'user','content':prompt+'BORRADOR: '+json.dumps(first,ensure_ascii=False)+'\nEVIDENCIA: '+payload}],
                     model=model_name,endpoint=endpoint,timeout=min(12,remaining),
-                    options={'num_predict':700,'num_ctx':8192,'temperature':0.05},think=False,response_format='json',
+                    options={'num_predict':700,'num_ctx':8192,'temperature':0.05},think=False,response_format=schema,
                     cancel_event=getattr(self._inference,'cancel',None))
                 first=parse(second);verified=True
             except Exception as exc:verification_error=type(exc).__name__+': '+str(exc)[:200]

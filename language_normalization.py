@@ -14,7 +14,8 @@ _WORDS={
     'noticas':'noticias','noticicas':'noticias','ortografia':'ortografía',
     'funcona':'funciona','funcioan':'funciona','poneindo':'poniendo',
 }
-_PROTECTED=re.compile(r'```[\s\S]*?```|`[^`]*`|https?://\S+|[A-Za-z]:[\\/][^\n]+|\b(?:sk-|AIza)[\w-]+')
+_WORDS.update({'esplicas':'explicas','esplicame':'explícame','diferncia':'diferencia','diferensia':'diferencia','memroia':'memoria','compuadora':'computadora','penditnes':'pendientes','runnners':'runners','ajutes':'ajustes'})
+_PROTECTED=re.compile(r'```[\s\S]*?```|`[^`]*`|https?://\S+|[A-Za-z]:[\\/][^\n]+|\b(?:sk-|AIza)[\w-]+|\b[A-Za-z]+[A-Za-z_]*[0-9_][A-Za-z0-9_]*\b')
 _TOKEN=re.compile(r'[^\W\d_]+',re.UNICODE)
 
 

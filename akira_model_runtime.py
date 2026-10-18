@@ -109,7 +109,14 @@ class ManagedLlamaProcess:
         if exe.parent.name.lower()=='cpu':gpu=0
         return [str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
-                '--threads',str(profile['cpu_threads']),'--parallel','1','--jinja']
+                '--threads',str(2 if desktop.get('performance_profile')=='Ahorro de energía' else min(4,profile['cpu_threads']) if desktop.get('performance_profile')=='Equilibrado' else profile['cpu_threads']),'--parallel','1','--jinja']
+
+    def reconfigure(self,desktop):
+        with self.lock:
+            self._idle_override=int(desktop.get('model_keep_alive_seconds',15))
+            endpoint=self.settings.get('local_endpoint','http://127.0.0.1:18987/v1/chat/completions')
+            self._requested_command=self.command(endpoint,desktop) if self._paths() else None
+            if not self.active and self.proc and self._launch_command!=self._requested_command:self._terminate_own()
 
     def _terminate_own(self):
         proc=self.proc
