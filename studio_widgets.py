@@ -120,6 +120,14 @@ class DataTable(QTableWidget):
 
     def update_rows(self,rows):
         # rows = (stable id, displayed cells, original data). No reset/model rebuild.
+        rows=list(rows)
+        signature=tuple((str(key),tuple(str(v if v is not None else '—') for v in values[:len(self.columns)])) for key,values,_ in rows)
+        # Refresh the underlying facts even if their displayed text is the same.
+        # Toggling updates off/on unconditionally repainted entire transparent
+        # tables on Windows, including tables without any changed cell.
+        if signature==getattr(self,'_display_signature',None):
+            self.rows={str(key):data for key,_,data in rows};return
+        self._display_signature=signature
         selected=self.selected_key();scroll=self.verticalScrollBar().value();top=self.rowAt(0);anchor=self.keys[top] if 0<=top<len(self.keys) else None;offset=self.rowViewportPosition(top) if top>=0 else 0;self.blockSignals(True)
         desired=[str(k) for k,_,_ in rows]
         self.setUpdatesEnabled(False)

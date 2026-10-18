@@ -234,7 +234,7 @@
   "studio_settings_qt.py": "a407ed5c9d150a567581f6b8d544b7962a30c5a82615b3ae9b53b9111b9f1d53",
   "studio_theme.py": "a2656c3306c23d4f26414a520bfeef0c2bfb7fc8ccbf19fe5d7d695baa135d27",
   "studio_translations.py": "5375b8696f1405202e5817a9ae4baefa25cfb9bbed28e1ddf1aa63819343e690",
-  "studio_widgets.py": "19133ea6753ab3c56a32734749083bddd5af62f8898d0e9b274d1e364338dece",
+  "studio_widgets.py": "2babb23299e078ae8f2d602a9b3b915ed1bd7034f444878ae4a68b62823b3f06",
   "tape.py": "943750f4e121bc32013bbc9bc0dcf96ddec5c3ab9061848de8e589b348ae1de1",
   "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "tests/data/recorded_pending_churn.json": "d58633055e3c0c97cd9c61f9858ed1681401b3e7b1c8beb0ed61c1b8404e2206",
