@@ -50,6 +50,34 @@ class TclBootstrapTests(unittest.TestCase):
 
 
 class TransientWindowsLibraryRead(unittest.TestCase):
+    def test_selected_auto_loader_recovers_native_read_failure_using_the_same_bytes(self):
+        from unittest.mock import Mock,patch
+        import tk_runtime
+        with tempfile.TemporaryDirectory() as t:
+            script=Path(t)/'auto.tcl';text='proc tcl_findLibrary {} {}\n';script.write_text(text,encoding='utf-8');window=Mock();ready=False
+            def call(*args):
+                if args==('info','library'):return t
+                if args[:2]==('info','commands'):return ready
+                if args[0]=='source':raise tk.TclError('couldn\'t read file "'+str(script)+'": No error')
+                return '8.6'
+            def evaluate(data):
+                nonlocal ready
+                self.assertEqual(data,text);ready=True
+            window.tk.call.side_effect=call;window.tk.eval.side_effect=evaluate
+            with patch.object(tk_runtime,'_WINDOWS_BOOTSTRAP',True):initialize_tk(window)
+            self.assertTrue(window._akira_tk_bootstrap['loader_via_python']);window.loadtk.assert_called_once()
+    def test_tcl_script_errors_are_not_replaced_with_python_evaluation(self):
+        from unittest.mock import Mock,patch
+        import tk_runtime
+        with tempfile.TemporaryDirectory() as t:
+            script=Path(t)/'auto.tcl';script.write_text('invalid script');window=Mock()
+            def call(*args):
+                if args==('info','library'):return t
+                if args[:2]==('info','commands'):return False
+                raise tk.TclError('syntax error')
+            window.tk.call.side_effect=call
+            with patch.object(tk_runtime,'_WINDOWS_BOOTSTRAP',True),self.assertRaisesRegex(tk.TclError,'syntax error'):initialize_tk(window)
+            window.tk.eval.assert_not_called();window.loadtk.assert_not_called()
     def test_observed_native_read_error_recovers_using_same_readable_library(self):
         from unittest.mock import Mock,patch
         import tk_runtime

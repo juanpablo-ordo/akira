@@ -13,3 +13,7 @@ Esta revisión responde a las fotografías y al vídeo del 18 de octubre de 2026
 | Revisiones y pendientes lentas | La cola obligatoria se atiende antes del planificador auxiliar, incluso durante ahorro | Regresiones de prioridad, evidencias y actor; conserva permisos, margen, precios y riesgo |
 
 Los resultados cuantitativos se publican después de la compilación. La prueba de recursos utiliza datos sintéticos y no genera texto con el modelo. No sustituye medir esta laptop con su cuenta demo, noticias reales y modelo cargado. No certifica rentabilidad ni ejecución real, ni reproduce todos los estados dinámicos de las imágenes de referencia.
+
+En ahorro, la IA recibe un resumen de indicadores en todas las temporalidades y una selección de contexto vigente. El motor técnico conserva sus cálculos completos y la revisión se etiqueta expresamente como resumida. Se conserva el contexto elegido de 2.048 tokens; no se aumenta la memoria del modelo para eludir ese límite. La revisión de lenguaje es auxiliar y no sustituye los controles de riesgo.
+
+La compilación también comprueba la recuperación de la lectura de auto.tcl en Windows: evalúa los mismos bytes de la biblioteca seleccionada sólo ante el error nativo de lectura identificado; otros errores se propagan.

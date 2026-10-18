@@ -16,12 +16,23 @@ def initialize_tk(window):
     # repeatedly creating native interpreters can leave that command absent.
     # Source the selected Python's actual loader before entering Tk_Init.
     present=bool(window.tk.call('info','commands','::tcl_findLibrary'))
-    if not present:window.tk.call('source','-encoding','utf-8',str(script))
+    python_loader=False
+    if not present:
+        try:window.tk.call('source','-encoding','utf-8',str(script))
+        except tk.TclError as error:
+            detail=str(error).lower()
+            if not (_WINDOWS_BOOTSTRAP and "couldn't read file" in detail and 'no error' in detail and str(script).lower() in detail):raise
+            # The native reader sporadically fails although Python can read the
+            # same verified file. Evaluate those exact bytes, never substitute a
+            # loader from another Tcl installation or suppress a Tcl script error.
+            data=script.read_bytes()
+            if not 0<len(data)<=2*1024*1024:raise
+            window.tk.eval(data.decode('utf-8'));python_loader=True
     if not window.tk.call('info','commands','::tcl_findLibrary'):
         raise RuntimeError('auto.tcl no definió tcl_findLibrary; no iniciar Tk')
     window.loadtk()
     window._akira_tk_bootstrap={'library':str(library),'loader':str(script),
-        'already_loaded':present,'tcl':str(window.tk.call('info','patchlevel')),
+        'already_loaded':present,'loader_via_python':python_loader,'tcl':str(window.tk.call('info','patchlevel')),
         'tk':str(window.tk.call('package','provide','Tk'))}
     return window
 

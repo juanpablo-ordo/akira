@@ -51,6 +51,19 @@ class ModelDiscoveryTests(unittest.TestCase):
         for _ in range(8):self.worker.tick()
         self.assertEqual(self.worker.evolution.submit.call_count,1)
         self.worker.submit({'symbols':{'BTCUSDm':{}}});self.worker.tick();self.assertEqual(self.worker.evolution.submit.call_count,2)
+    def test_complete_assets_are_reviewed_separately_without_dropping_indicators(self):
+        view={'symbols':{s:{'frames':{'M15':{'rsi':50,'rare_indicator':1.2345},'H4':{'rsi':40,'rare_indicator':3.4567}}} for s in ('BTCUSDm','XAUUSDm')}};seen=[]
+        def answer(messages,**kwargs):
+            text=messages[-1]['content'];payload=json.loads(text[text.index('{"as_of_utc"'):]);self.assertEqual(len(payload['symbols']),1);self.assertIn('rare_indicator',payload['indicator_columns']);seen.extend(payload['symbols'])
+            return json.dumps({s:{'bias':0,'confidence':0,'preferred':[],'avoid':[],'thesis':'Sin evidencia','note':'Sin confirmación'} for s in payload['symbols']})
+        with patch('research.ollama_status',return_value={'ok':True,'models':['Qwen3-4B-Q4_K_M.gguf']}),patch('research.ollama_chat',side_effect=answer):result=self.worker._summary(view,{})
+        self.assertEqual(seen,['BTCUSDm','XAUUSDm']);self.assertEqual(result['_meta']['active_symbols'],seen)
+    def test_small_context_digest_preserves_timeframes_and_does_not_change_engine_data(self):
+        self.cfg['desktop'].update(model_context_tokens=2048,performance_profile='Ahorro de energía')
+        view={'symbols':{'BTCUSDm':{'frames':{'M1':{'rsi':50,'atr':2,'rare_indicator':3},'H4':{'rsi':40,'atr':8,'rare_indicator':4}}}}};original=copy.deepcopy(view)
+        payload,meta=self.worker._review_input(view,{})
+        data=json.loads(payload);self.assertEqual(set(data['symbols']['BTCUSDm']['frames']),{'M1','H4'});self.assertEqual(view,original)
+        self.assertEqual(self.cfg['desktop']['model_context_tokens'],2048);self.assertEqual(meta['input_scope'],'COMPACT_INDICATORS_COMPLETE_TIMEFRAMES');self.assertEqual(meta['omitted_raw_indicator_values'],2)
     def test_required_queue_is_serviced_even_when_optional_scheduler_is_waiting(self):
         from pending_verification import identity
         plan={'symbol':'BTCUSDm','key':'live','side':1,'kind':'LIMIT','entry':100,'sl':90,'tp':120}
