@@ -1,46 +1,54 @@
 # AKIRA 16.4.2 · Studio Rev7
 
-Revisión de los fallos observados en la laptop: certificados de noticias incluidos, descubrimiento del modelo local después del arranque, recortes individuales de sprites y menos trabajo repetido de interfaz e investigación. El control de MT5 conserva su frecuencia y sus comprobaciones de riesgo.
+[Descargar el instalador de AKIRA 16.4.2 Studio Rev7 con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39152121928/artifacts/12146076612). [Ver las pruebas aprobadas en Windows](https://github.com/juanpablo-ordo/akira/actions/runs/39152121928).
 
-Esta compilación se valida antes de publicar su instalador. Los resultados de Rev6 que aparecen en el historial no certifican Rev7.
+Esta revisión corrige los errores de certificados de noticias, el asistente que seguía figurando como no disponible después de cargar su motor, los recortes que mostraban parte de otra expresión y varias causas de trabajo repetido en la ventana. Ajusta títulos, iconos, actividad, avatar y proporciones a las ocho referencias recuperadas.
 
-Consulta [ACEPTACION_REV7.md](ACEPTACION_REV7.md) para el alcance y las pruebas.
+## Instalar esta versión
 
-## Historial técnico de Rev6
+1. Abre el enlace de descarga con tu sesión de GitHub y descarga el artefacto **AKIRA-16.4.2-Studio-Rev7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA**.
+2. Extrae el ZIP y ejecuta **AKIRA_16_4_2_STUDIO_REV7_IA_INCLUIDA.exe**.
+3. Comprueba **16.4.2 Studio Rev7** en Acerca de. En esta laptop selecciona **Ahorro de energía**.
 
-# AKIRA 16.4.1 Studio Rev6
+El paquete incluye Qwen3-4B Q4_K_M, llama.cpp CPU/Vulkan, reconocimiento visual de sprites y el componente JavaScript de YouTube. El artefacto de binarios sin modelo es un paquete distinto. La descarga del instalador es de aproximadamente 2,87 GB y GitHub la conserva hasta el **25 de octubre de 2026**. El código y estos informes permanecen en la rama verificada.
 
-Aplicación de Windows con IA local incluida. Esta revisión incorpora las correcciones solicitadas después de probar Studio Rev5: conversación, guardado de ajustes, fuentes, avatar, personalización y gestión del instalador. El código se conserva en GitHub; el instalador aparece únicamente cuando termina correctamente el workflow de Windows.
+Las instalaciones nuevas empiezan en observación. La actualización conserva los ajustes existentes. Las API se guardan desde Ajustes > Fuentes; una clave válida de CoinGlass y los permisos de servicios externos siguen siendo necesarios cuando se utiliza ese servicio.
 
-Instalador verificado: [descargar AKIRA 16.4.1 Studio Rev6 con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39103591576/artifacts/12127717784). La [ejecución de Windows](https://github.com/juanpablo-ordo/akira/actions/runs/39103591576) aprobó 1.257 pruebas, 120 subpruebas, cero omisiones, el ejecutable y la instalación con respuesta real del modelo. La validación local sin red aprobó 1.254 pruebas. Código construido: `9b5fa0f0ed3ef41d5d23bd25609f5ef157d9cb23`.
+## Cambios de Rev7
 
-## Descargar la versión correcta
+- HTTPS incorpora las raíces del sistema y Certifi dentro del ejecutable. Conserva la comprobación de certificado y nombre del servidor. Los mensajes distinguen conexión, certificado, clave ausente y permisos del servicio.
+- Chat e investigación consultan el estado actual del motor gestionado después de arrancarlo. Un resultado anterior de «sin modelo» deja de bloquear una sesión que ya funciona.
+- Los 108 recortes y los 16 estados de movimiento usan límites medidos sobre las figuras. Se conserva una escala y un anclaje comunes; al cambiar de expresión se limpia la anterior. Se corrigen parpadeo y amplitud de boca. Las imágenes originales no se han redibujado.
+- La ventana reutiliza datos e imágenes, evita reconstruir tablas iguales y detiene los repintados de páginas minimizadas. El avatar sólo recalcula su resolución al terminar el redimensionado. En ahorro se detiene el movimiento decorativo y se reduce el refresco visual.
+- La cola de revisión individual se atiende antes del trabajo auxiliar. En ahorro, las revisiones generales del modelo tienen un intervalo mínimo de diez minutos y usan un resumen de indicadores en todas las temporalidades; el motor técnico conserva sus cálculos completos. El control financiero conserva su frecuencia y sus controles de precios, permisos, margen y riesgo. **Exigir revisión IA** sigue esperando esa revisión cuando se activa.
+- Actividad con filas de dos líneas y filtros visibles; títulos claros, menú activo iluminado, avatar más grande y paneles ajustables. Se mantienen las funciones de guardado, temas, fuentes, fondos, avatares propios, estrategias y reparación de Rev6.
 
-En la ejecución aprobada de GitHub Actions, descarga el artefacto **AKIRA-16.4.1-Studio-Rev6-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA**. Extrae y ejecuta **AKIRA_16_4_1_STUDIO_REV6_IA_INCLUIDA.exe**. Incluye Qwen3-4B Q4_K_M, llama.cpp CPU/Vulkan, reconocimiento visual de sprites y los componentes de YouTube. El ZIP de código y el artefacto de binarios sin modelo no son el instalador principal.
+## Resultados verificados
 
-Al abrir: comprueba la versión en Acerca de; guarda tus API en Ajustes > Fuentes; comprueba la IA y conecta tu terminal MT5. Una instalación nueva empieza en observación. Las preferencias existentes de modo, cuenta y riesgo se conservan. Para autorizar envíos se confirma la cuenta desde la aplicación.
+| Comprobación | Resultado |
+| --- | --- |
+| Regresiones Windows | 1.279 pruebas y 120 subpruebas; cero fallos, errores u omisiones |
+| Código fuente Linux | 1.279 pruebas y 120 subpruebas; cero omisiones |
+| Comprobación sin Internet | 1.276 pruebas aprobadas |
+| HTTPS dentro del ejecutable | Conexión válida aceptada; nombre incorrecto y raíz desconocida rechazados |
+| Instalación nueva | Modelo y motores presentes; SHA-256 correcto; respuesta de la IA instalada sin descargar reemplazos |
+| Conversación con modelo real | Cinco casos aprobados: escritura, seguimiento, cambio de tema, fuentes sintéticas y JSON |
+| Revisión IA en ahorro | Ambos activos, 14 temporalidades resumidas, CPU de dos hilos, contexto de 2.048 tokens; 72,4 segundos, incluido arranque |
+| Cliente Windows con dos núcleos | Ahorro: 4,0% de CPU, 160,3 MB y demora de interfaz p95 de 14 ms; sin generación de texto |
+| Actor con precios simulados en movimiento | 39 ciclos en ocho segundos, todos con precios vigentes; intervalo configurado de 0,2 segundos |
 
-## Cambios de Rev6
+Los datos financieros del ensayo son sintéticos y no se enviaron órdenes a una cuenta real. La cifra de CPU no incluye generación de texto; la inferencia consume recursos y puede tardar en una laptop pequeña. Un ciclo del actor no equivale al tiempo de ejecución del broker. Estas pruebas no certifican rentabilidad ni el cumplimiento integral de los 248 puntos históricos.
 
-- Guardado en una cola ordenada. Combina cambios de formularios distintos, conserva el último cambio del mismo campo incluso si vuelves al valor original durante un guardado, y evita que Apariencia restaure un riesgo anterior. API con control para mostrarlas y botón propio de guardado; una clave nueva sustituye la anterior.
-- Chat con respuesta visible progresiva, corrección conservadora de faltas, seguimientos y cambios de tema. Las preguntas de actualidad consultan fuentes; Xbox/Gears conserva su tema en las búsquedas. Los enlaces se presentan con el nombre de la fuente. El lector conserva su posición al actualizarse el contenido.
-- Reparación explícita de IA con descarga verificada y reemplazo atómico de componentes oficiales cuando falten o estén dañados. Solo anuncia éxito después de generar texto real. Una ruta de modelo personalizado existente se conserva.
-- Nuevos 108 fotogramas de expresión y atlas adicional con carga, parpadeo, habla, escucha, reparación y sueño. El círculo forma parte de los sprites; no se superpone un aro externo. Un director de estados comparte las reacciones entre pestañas.
-- Informes y paneles con explicaciones, tablas y fuentes con nombre. Presupuesto calculado desde la reserva real, privacidad inicial y ojo para mostrar la cuenta. Avisos filtrables por tipo.
-- Revisión IA individual conservada al navegar y priorizada frente al trabajo opcional. Se eliminan los botones de forzar envíos de los paneles. El actor de ejecución continúa decidiendo, reconciliando, modificando y retirando órdenes según las condiciones vigentes.
-- Estrategias en Pendientes: siete selecciones de reglas existentes y doce variantes acotadas que aplican filtros comprobables a los planes técnicos. Conservan niveles, riesgo e identidad de versión. Los resultados experimentales y los cierres reales se distinguen; una hipótesis sin resultados no se presenta como superior.
-- Idiomas en listas visibles; llamada junto al chat; fuentes TTF/OTF con vista previa; paletas de color y perfiles de tema guardables. Ocho temas, brillo, textura, escala y negrita aplicables.
-- Fondos globales de imagen, vídeo y GIF, bucle, FPS y ajuste al refresco. Edición con ratón para desplazamiento, recorte, giro y zoom. El decodificador pertenece a esta instalación y libera el archivo al cerrarse.
-- Avatares propios por emoción, orden, duración, animación y repetición persistentes. El reconocimiento ofrece sugerencias editables y requiere revisar dibujos ambiguos.
-- Ahorro reduce IA auxiliar, hilos y movimiento, limita el fondo y libera el modelo cuando está inactivo. Los controles financieros mantienen su frecuencia. Los límites del modelo son presupuestos; no se promete un límite duro de toda la GPU.
-- La desinstalación cierra únicamente procesos propios bajo la carpeta de esta instalación. No cierra MT5 ni servidores de otras aplicaciones.
+Falta medir esta laptop con el modelo cargado, una sesión MT5 demo prolongada, audio y monitores físicos. La correspondencia visual exacta de todos los diálogos y la valoración de naturalidad del avatar requieren aceptación del usuario. La traducción completa de los motivos dinámicos y la conversión automática de cualquier estrategia discrecional de vídeo siguen siendo parciales.
 
-## Evidencia y alcance
+## Evidencia y código
 
-`ACEPTACION_REV6.md`, `VALIDACION_STUDIO_REV6.json` y `VERIFICACION_STUDIO_REV6` identifican las comprobaciones de esta revisión. El arranque recupera un fallo transitorio de lectura nativa de Tcl solo cuando el archivo seleccionado existe y puede leerse; limita los intentos y conserva el error si persiste. El workflow exige regresiones sin omisiones, interfaz de origen y congelada, reconocimiento visual, IA real, conversación por el asistente de producción e instalación con respuesta del modelo instalado. Los diagnósticos y las ocho capturas del ejecutable se adjuntan a esa ejecución.
+El instalador se construyó del commit `6070db2184476e325b186d71d8dcbddbc7b5a054`. La rama `akira-studio-rev7-verificado-20261018` añade documentación e informes; no modifica el código de aplicación que pasó Windows.
 
-`REQUISITOS_232_ESTADO.json` y `.csv` conservan los 232 requisitos y 16 adicionales. Los resultados de versiones anteriores son evidencia histórica. Una prueba sintética o un tiempo de ciclo no demuestra rentabilidad ni sustituye una sesión de MT5 demo.
+- [Alcance de la corrección](ACEPTACION_REV7.md)
+- [Validación y artefacto exactos](VALIDACION_STUDIO_REV7.json)
+- [Informes de pruebas](VERIFICACION_STUDIO_REV7/README.md)
+- [Matriz histórica de requisitos](REQUISITOS_232_ESTADO.json)
+- [Evidencia anterior de Rev6](VALIDACION_STUDIO_REV6.json)
 
-Falta comprobar con hardware físico el audio, varios monitores/DPI, el consumo en tu equipo y una sesión demo prolongada. La traducción de todos los motivos dinámicos no está terminada; las voces dependen de los modelos disponibles. La fidelidad visual de todos los modales y la conversión automática de cualquier estrategia discrecional de un vídeo siguen siendo parciales. La matriz indica estas limitaciones; no se declara cumplimiento integral de los 248 puntos.
-
-`PACKAGE_SHA256.json` identifica archivos inmutables. Configuración, claves, chats, diario y demás datos del usuario quedan fuera del manifiesto.
+`PACKAGE_SHA256.json` identifica los archivos inmutables del código y las pruebas. Configuración, claves, chats, diario y demás datos del usuario quedan fuera del manifiesto. El workflow puede volver a ejecutarse manualmente desde Actions seleccionando esta rama si caduca el artefacto.

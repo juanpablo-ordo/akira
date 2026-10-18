@@ -1,0 +1,60 @@
+{
+  "status": "PASSED",
+  "data": "SYNTHETIC",
+  "live_account_used": false,
+  "requested_context_tokens": 2048,
+  "summary": {
+    "BTCUSDm": {
+      "bias": 0.0,
+      "confidence": 0.0,
+      "note": "H1/H4 sin origen SWING/OB/BOS observado; no ejecutar EMA/Fib/zona dinámica como若",
+      "preferred": [
+        "BUY_STOP",
+        "SELL_STOP"
+      ],
+      "avoid": [],
+      "thesis": "TENDENCIA"
+    },
+    "XAUUSDm": {
+      "bias": 0.0,
+      "confidence": 0.0,
+      "note": "H1/H4 sin origen SWING/OB/BOS observado; no ejecutar EMA/Fib/zona dinámica como若",
+      "preferred": [
+        "BUY_STOP",
+        "SELL_STOP"
+      ],
+      "avoid": [],
+      "thesis": "TENDENCIA"
+    },
+    "_meta": {
+      "input_chars": 3363,
+      "active_symbols": [
+        "BTCUSDm",
+        "XAUUSDm"
+      ],
+      "source_count": 2,
+      "reduced_sources": [],
+      "unavailable_sources": [],
+      "input_scope": "COMPACT_INDICATORS_COMPLETE_TIMEFRAMES",
+      "engine_indicators_complete": true,
+      "omitted_raw_indicator_values": 336,
+      "timeframe_count": 14,
+      "sources_omitted_for_budget": [],
+      "model": "D:\\a\\_temp\\Qwen3-4B-Q4_K_M.gguf",
+      "verified_twice": false,
+      "verification_error": "",
+      "created": 1792347163.837636,
+      "review_seconds": 68.859,
+      "mode": "SEQUENTIAL_COMPLETE_ASSET_REVIEW"
+    }
+  },
+  "effective_parameters": {
+    "owned_pid": 9464,
+    "context_tokens": 2048,
+    "gpu_layers": 0,
+    "cpu_threads": 2,
+    "pending_reload": false
+  },
+  "engine_log_tail": "\nINICIO IA 2026-10-18 18:11:32\n0.00.019.607 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.019.954 W srv  llama_server: -----------------\n0.00.019.964 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set\n0.00.019.965 W srv  llama_server: this can be a security risk (cross-origin attacks)\n0.00.019.965 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655\n0.00.019.965 W srv  llama_server: -----------------\n0.00.023.264 I srv    load_model: loading model 'D:\\a\\_temp\\Qwen3-4B-Q4_K_M.gguf'\n0.00.455.072 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.02.436.662 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 2048, kv_unified = 'false'\n0.02.446.517 I srv  llama_server: model loaded\n0.02.446.535 I srv  llama_server: listening on http://127.0.0.1:18996\n0.02.602.663 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1\n0.02.603.031 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n0.37.081.466 I slot print_timing: id  0 | task 0 | prompt eval time =   25955.06 ms /   909 tokens (   28.55 ms per token,    35.02 tokens per second)\n0.37.081.497 I slot print_timing: id  0 | task 0 |        eval time =    8522.20 ms /    76 tokens (  112.13 ms per token,     8.92 tokens per second)\n0.37.081.498 I slot print_timing: id  0 | task 0 |       total time =   34477.25 ms /   985 tokens\n0.37.081.499 I slot print_timing: id  0 | task 0 |    graphs reused =         75\n0.37.081.614 I slot      release: id  0 | task 0 | stop processing: n_tokens = 984, truncated = 0\n0.37.128.517 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 37063673\n0.37.155.174 I slot launch_slot_: id  0 | task 77 | processing task, is_child = 0\n1.11.427.253 I slot print_timing: id  0 | task 77 | prompt eval time =   25775.73 ms /   865 tokens (   29.80 ms per token,    33.56 tokens per second)\n1.11.427.290 I slot print_timing: id  0 | task 77 |        eval time =    8495.51 ms /    77 tokens (  110.33 ms per token,     9.06 tokens per second)\n1.11.427.292 I slot print_timing: id  0 | task 77 |       total time =   34271.24 ms /   942 tokens\n1.11.427.293 I slot print_timing: id  0 | task 77 |    graphs reused =        150\n1.11.427.421 I slot      release: id  0 | task 77 | stop processing: n_tokens = 1002, truncated = 0\n",
+  "seconds": 72.407
+}

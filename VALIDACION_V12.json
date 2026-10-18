@@ -1,11 +1,13 @@
 {
   "build": "AKIRA_16_4_2_STUDIO_REV7",
   "tests": 1276,
-  "status": "VALIDATING",
+  "status": "PASSED",
   "date": "2026-10-18",
   "skipped": 0,
   "scope": "Rev7: certificados, descubrimiento de IA, recortes, ahorro y planificación de interfaz",
   "notes_file": "ACEPTACION_REV7.md",
   "pytest_tests": 1279,
-  "pytest_subtests": 120
+  "pytest_subtests": 120,
+  "source_commit": "6070db2184476e325b186d71d8dcbddbc7b5a054",
+  "windows_run": "https://github.com/juanpablo-ordo/akira/actions/runs/39152121928"
 }
