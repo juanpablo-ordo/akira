@@ -57,6 +57,7 @@ def probe_libraries(info,trials=12):
     import tkinter as tk
     from tkinter import ttk
     from tk_runtime import create_root
+    recoveries=0
     for _ in range(trials):
         root=create_root()
         try:
@@ -71,8 +72,9 @@ def probe_libraries(info,trials=12):
             info['tcl_patchlevel']=str(root.tk.call('info','patchlevel'))
             info['tk_patchlevel']=str(root.tk.call('package','provide','Tk'))
             info['bootstrap']=root._akira_tk_bootstrap
+            recoveries+=max(0,int(root._akira_tk_bootstrap.get('initialization_attempts',1))-1)
         finally:root.destroy()
-    info.update(status='PASSED',native_initializations=trials)
+    info.update(status='PASSED',native_initializations=trials,native_file_read_recoveries=recoveries)
     return info
 
 

@@ -25,7 +25,7 @@ Al abrir: comprueba la versión en Acerca de; guarda tus API en Ajustes > Fuente
 
 ## Evidencia y alcance
 
-`ACEPTACION_REV6.md`, `VALIDACION_STUDIO_REV6.json` y `VERIFICACION_STUDIO_REV6` identifican las comprobaciones de esta revisión. El workflow exige regresiones, interfaz de origen y congelada, reconocimiento visual, IA real, conversación por el asistente de producción e instalación con respuesta del modelo instalado. Los diagnósticos y las ocho capturas del ejecutable se adjuntan a esa ejecución.
+`ACEPTACION_REV6.md`, `VALIDACION_STUDIO_REV6.json` y `VERIFICACION_STUDIO_REV6` identifican las comprobaciones de esta revisión. El arranque recupera un fallo transitorio de lectura nativa de Tcl solo cuando el archivo seleccionado existe y puede leerse; limita los intentos y conserva el error si persiste. El workflow exige regresiones sin omisiones, interfaz de origen y congelada, reconocimiento visual, IA real, conversación por el asistente de producción e instalación con respuesta del modelo instalado. Los diagnósticos y las ocho capturas del ejecutable se adjuntan a esa ejecución.
 
 `REQUISITOS_232_ESTADO.json` y `.csv` conservan los 232 requisitos y 16 adicionales. Los resultados de versiones anteriores son evidencia histórica. Una prueba sintética o un tiempo de ciclo no demuestra rentabilidad ni sustituye una sesión de MT5 demo.
 

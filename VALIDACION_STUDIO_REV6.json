@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_4_1_STUDIO_REV6",
   "date": "2026-10-18",
-  "status": "FINAL_SAVE_REVERSION_FIX_WINDOWS_REBUILD_PENDING",
+  "status": "FINAL_NATIVE_FILE_READ_RECOVERY_WINDOWS_PENDING",
   "native_studio": {
     "version": 1,
     "status": "PASSED",
@@ -77,5 +77,12 @@
     "production_conversation": "IN_PROGRESS"
   },
   "artwork_correction": "Joy and concern atlas assignments corrected after visual inspection. All 108 images remain distinct and unchanged in pixels.",
-  "final_save_fix": "Explicit edited fields survive a return to their original value while an earlier save is awaiting its acknowledgement. Covered by a blocked-ack UI regression."
+  "final_save_fix": "Explicit edited fields survive a return to their original value while an earlier save is awaiting its acknowledgement. Covered by a blocked-ack UI regression.",
+  "native_bootstrap_fix": {
+    "observed_run": 39102392976,
+    "observed_error": "Windows native Tcl init.tcl read: No error; immediately following initialization succeeded",
+    "recovery": "At most three fresh native Tcl initializations, only for that Windows read error when Python can read the selected nonempty library. Missing/incompatible libraries fail. Native Tk and render checks remain required.",
+    "regression_cases": 3,
+    "zero_skips_required": true
+  }
 }
