@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_4_1_STUDIO_REV6",
   "date": "2026-10-18",
-  "status": "WINDOWS_BUILD_PENDING",
+  "status": "SOURCE_VERIFIED_WINDOWS_IN_PROGRESS",
   "native_studio": {
     "version": 1,
     "status": "PASSED",
@@ -43,5 +43,27 @@
     "scope": "Linux, synthetic UI/financial data and real owned FFmpeg files"
   },
   "full_acceptance": "Windows workflow must pass regressions, real model scenarios, frozen UI and installed AI. Physical audio, multiple monitors and prolonged MT5 demo are not certified.",
-  "requirements": "REQUISITOS_232_ESTADO.json"
+  "requirements": "REQUISITOS_232_ESTADO.json",
+  "source_commit": "07c0f19d96cb627e7b5da3fb0ddec6704c9e1462",
+  "windows_run": "https://github.com/juanpablo-ordo/akira/actions/runs/39101728210",
+  "pytest": {
+    "passed": 1253,
+    "subtests_passed": 118,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 187.55,
+    "report": "VERIFICACION_STUDIO_REV6/REGRESIONES_LINUX.xml",
+    "scope": "Linux with Tcl/Tk8.6 and offscreen Qt; synthetic financial data"
+  },
+  "real_model": {
+    "status": "PASSED",
+    "scenarios": 5,
+    "model": "Qwen3-4B-Q4_K_M.gguf",
+    "engine": "llama.cpp b10355 official Linux CPU",
+    "threads": 4,
+    "context": 4096,
+    "report": "VERIFICACION_STUDIO_REV6/CONVERSACION_REAL_CPU.json",
+    "facts": "Synthetic Xbox fixture; not a real announcement",
+    "scope": "Container, not the owner GPU or Windows performance"
+  }
 }
