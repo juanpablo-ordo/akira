@@ -933,7 +933,7 @@ class Engine:
                     candidates=[p for p in plans if p['symbol']==symbol and p.get('side')==side and not p.get('confirmed')]
                     if candidates:automatic.append(max(candidates,key=lambda p:float(p.get('quality_score') or 0)))
             self.queue_pending_verification(automatic,view,deep=True)
-            self._pending_auto_due=now+{'Ahorro de energía':180,'Equilibrado':60,'Rendimiento':20}.get(self.cfg.get('desktop',{}).get('performance_profile'),60)
+            self._pending_auto_due=now+{'Ahorro de energía':600,'Equilibrado':180,'Rendimiento':20}.get(self.cfg.get('desktop',{}).get('performance_profile'),180)
         if self.context and hasattr(self.context,'study') and now>=self._study_due:
             self.context.study.submit({**view,**self.report_history()});self._study_due=now+30
         self.heartbeat(view)

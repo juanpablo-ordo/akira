@@ -268,6 +268,19 @@ class CaptionConnectionTests(unittest.TestCase):
 from tests.fixtures import PendingCase
 
 class ActorAssetHeartbeat(PendingCase,unittest.TestCase):
+    def test_eco_spares_optional_deep_work_while_market_cycles_continue(self):
+        from engine import Engine
+        self.cfg['mode']='observe';self.cfg['desktop']['performance_profile']='Ahorro de energía';poll=self.cfg['poll_seconds']
+        engine=Engine(self.g,self.cfg,self.g.log);self.addCleanup(engine.close)
+        with patch.object(engine,'queue_pending_verification') as optional:
+            engine.step();self.assertEqual(optional.call_count,1)
+            self.clock.advance(180)
+            for symbol in self.cfg['symbols']:self.api.set_quote(symbol,self.api.ticks[symbol].bid,fill=False)
+            engine.step();self.assertEqual(optional.call_count,1)
+            self.clock.advance(421)
+            for symbol in self.cfg['symbols']:self.api.set_quote(symbol,self.api.ticks[symbol].bid,fill=False)
+            engine.step();self.assertEqual(optional.call_count,2)
+        self.assertEqual(engine.cycle,3);self.assertEqual(self.cfg['poll_seconds'],poll)
     def test_both_assets_publish_actual_actor_evaluation_times(self):
         from engine import Engine
         engine=Engine(self.g,self.cfg,self.g.log);self.addCleanup(engine.close)

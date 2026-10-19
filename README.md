@@ -6,7 +6,7 @@ Revisión de los avisos y del seguimiento de Bitcoin y oro mostrados en las capt
 
 - Revisiones de IA independientes por activo. Un fallo de BTC deja a oro elegible y no borra su resultado válido. Cada activo conserva la fecha real de sus datos.
 - Una sola inferencia auxiliar local a la vez, en una cola propia. Las revisiones exigidas o solicitadas por el usuario pueden aplazar el resumen auxiliar. Las pendientes de igual prioridad alternan entre activos.
-- Pausa de las revisiones auxiliares contada desde su finalización: mínimo diez minutos en ahorro y tres en equilibrio. Así una consulta lenta no convierte la frecuencia programada en generación continua. El actor financiero mantiene su frecuencia.
+- Pausa de los resúmenes generales contada desde su finalización: mínimo diez minutos en ahorro y tres en equilibrio. Así una consulta lenta no convierte la frecuencia programada en generación continua. Las revisiones automáticas de ideas también se espacian diez minutos en ahorro y tres en equilibrio. El actor financiero mantiene su frecuencia.
 - Entrada del modelo ajustada al contexto realmente cargado. En el resumen se conservan todos los marcos y se identifican las omisiones; el motor técnico mantiene todos sus indicadores. Oro no recibe derivados o libros BTC como si fueran datos XAU.
 - Evidencia común al principio de la solicitud y precios/horas variables después. El servidor puede reutilizar únicamente el prefijo idéntico; los precios, edades y niveles vigentes siguen viajando en cada solicitud.
 - Revisión individual con plazo coherente con la carga y la inferencia. Se mantienen el control de versión y los niveles exactos: una revisión vencida no aprueba la orden.

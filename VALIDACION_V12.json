@@ -1,11 +1,11 @@
 {
   "build": "AKIRA_16_4_3_STUDIO_REV8",
-  "tests": 1310,
+  "tests": 1311,
   "status": "VALIDATING",
   "date": "2026-10-19",
   "skipped": 0,
   "scope": "Rev8: revisiones independientes de BTC y oro, presupuesto de contexto, prioridad y actividad por activo",
   "notes_file": "ACEPTACION_REV8.md",
-  "pytest_tests": 1313,
+  "pytest_tests": 1314,
   "pytest_subtests": 121
 }
