@@ -6,7 +6,7 @@ from akira_version import BUILD_ID
 
 def validate(root,config=None):
     root=Path(root);cfg=load_config(config or root/'akira_config.json')
-    if BUILD_ID!='AKIRA_16_4_2_STUDIO_REV7':raise ValueError('Build incorrecto')
+    if BUILD_ID!='AKIRA_16_4_3_STUDIO_REV8':raise ValueError('Build incorrecto')
     required=('network_tls.py','snapshot_copy.py','qa_low_resource_rev7.py','assets/avatar_states/motion_bounds.json','studio_editors.py','studio_presenter.py','local_ai_repair.py','assets/avatar_states/akira_rev6_motion.png','tk_runtime.py','Akira.py','desktop_qt.py','studio_controller.py','studio_widgets.py','studio_settings_qt.py','studio_background.py','studio_translations.py','native_studio_check.py','sprite_recognition.py','strategy_choice.py','assets/fonts/Rajdhani-Regular.ttf','assets/fonts/Rajdhani-SemiBold.ttf','akira_studio.py','akira_studio_ui.py','engine.py','planner.py','execution.py','research.py','settings.py','default_config.json','youtube_support.py','strategy_adaptation.py','local_components.py',
               'INSTALL_AKIRA.ps1','migrate_v11_settings.py','offline_test_runner.py','install_checks.py','requirements.txt',
               'install_release.py','assistant_akira.py','assistant_startup.py','web_facts.py','video_vision.py','evolution.py','akira_expressions.py','expression_gallery.py','assets/expressions/catalog.json','akira_live2d.py','command_bridge.py','runner.py',
@@ -24,4 +24,4 @@ def validate(root,config=None):
 
 if __name__=='__main__':
     validate(Path(__file__).parent,sys.argv[1] if len(sys.argv)>1 else None)
-    print('AKIRA · 16.4.2 Studio Rev7 validada · informes PDF/Excel · chats · llamada · pendientes y runners')
+    print('AKIRA · 16.4.3 Studio Rev8 validada · informes PDF/Excel · chats · llamada · pendientes y runners')

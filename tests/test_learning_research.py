@@ -123,7 +123,7 @@ class ResearchTests(unittest.TestCase):
         self.assertTrue(a['source_complete']);self.assertGreater(a['chunks'],1);self.assertGreater(a['bias'],0)
     def test_transcript_is_reused_without_repeated_download(self):
         self.cfg['symbols']={'BTCUSDm':True}
-        self.w.store.put({'url':'https://youtube.com/watch?v=abc','title':'BTC','topic':'BTCUSDm','status':'analyzed','body':'Bitcoin bullish','summary':'{}','published':'20261006'})
+        self.w.store.put({'url':'https://youtube.com/watch?v=abc','title':'BTC','topic':'BTCUSDm','status':'analyzed','body':'Bitcoin bullish. '*40,'complete':True,'summary':'{"source_complete":true}','published':'20261006'})
         with patch('research.youtube_search',return_value=[{'url':'https://youtube.com/watch?v=abc'}]),patch('research.read_youtube') as fetch:self.w._youtube()
         fetch.assert_not_called()
     def test_nonfinite_remote_values_are_rejected(self):

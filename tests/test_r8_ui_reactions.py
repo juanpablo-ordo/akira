@@ -99,7 +99,7 @@ class DesktopBehavior(unittest.TestCase):
         self.app.open_resource_panel();self.root.update()
         self.assertEqual(str(self.app.settings_resources_tab),str(self.app.settings_notebook.select()))
         self.app.open_resource_panel();self.root.update()
-        canvas=self.app.settings_resources_tab._scroll_canvas;canvas._sync_content();self.root.update()
+        canvas=self.app.settings_resources_tab._scroll_canvas;canvas._sync_content();settle_layout(self.root)
         region=tuple(float(v) for v in str(canvas.cget('scrollregion')).split())
         self.assertAlmostEqual(region[-1],max(canvas.winfo_height(),canvas._content.winfo_reqheight()),delta=2)
         for tab in self.app.settings_notebook.tabs():

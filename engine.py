@@ -26,7 +26,7 @@ class Engine:
         self.analysis=ThreadPoolExecutor(max_workers=2,thread_name_prefix='AkiraIndicators')
         for c in self.planner.caches.values():c.analysis_executor=self.analysis
         self.confirmations={};self.candidates={};self.status={};self.lifecycle={};self.paused=False
-        self.initialized=False;self.cycle=0;self.started={};self.last_scan={};self.duration_ms=0.0
+        self.initialized=False;self.cycle=0;self.started={};self.last_scan={};self.last_checked={};self.duration_ms=0.0
         self.dom_subscribed=set();self.dom_retry={};self.first_requests={};self.allocation_reasons={}
         self.quotes={};self._last_research_submit=0.0;self._last_history=0.0
         self.map_cache={};self.allocation_cache={};self._last_heartbeat=0.0
@@ -905,6 +905,7 @@ class Engine:
                 # el cierre diario. Mantener la última propuesta visible.
                 self.status[symbol]={'state':'MERCADO EN PAUSA','detail':str(e)}
             except Blocked as e:self.status[symbol]={'state':'ESPERANDO','detail':str(e)}
+            finally:self.last_checked[symbol]=g.clock()
         # Los primeros intentos BTC+XAU usan M15/H1 antes de consultas profundas.
         # Completar H4/D1 ahora conserva el análisis visible sin bloquear el envío.
         self.complete_warmup()
@@ -1169,6 +1170,7 @@ class Engine:
             bars_by_timeframe={name:[b.to_dict() for b in f.bars[-80:]] for name,f in c.frames.items()}
             symbols[s]={'bid':q.bid if q else None,'ask':q.ask if q else None,'spread':q.spread if q else None,
                         'quote_time':q.time if q else None,
+                        'checked_at':self.last_checked.get(s),'last_analysis_at':self.last_scan.get(s),
                         'frames':frames,'bars':[b.to_dict() for b in c.frames['M1'].bars[-60:]] if 'M1' in c.frames else [],
                         'bars_by_timeframe':bars_by_timeframe,
                         'pending_book':book,'pending_performance':self.learner.metrics(s),'live':self.planner.tapes[s].last_metrics,

@@ -24,12 +24,18 @@ def classify_error(error):
     text = str(error).lower()
     if isinstance(error, YouTubeError):
         return error.state
+    for state in ('CERTIFICATE_ERROR','AUTH_REQUIRED','RATE_LIMITED','MISSING_RUNTIME','ACCESS_DENIED','NETWORK_ERROR'):
+        if state.lower() in text:return state
+    if any(s in text for s in ('certificate_verify_failed','certificate verify failed','local issuer certificate')):
+        return 'CERTIFICATE_ERROR'
     if any(s in text for s in ('sign in', 'not a bot', 'confirm your age', 'login required', 'cookies', 'authentication')):
         return 'AUTH_REQUIRED'
     if any(s in text for s in ('429', 'too many requests', 'rate limit')):
         return 'RATE_LIMITED'
     if any(s in text for s in ('javascript runtime', 'js runtime', 'challenge solver', 'ejs', 'deno')):
         return 'MISSING_RUNTIME'
+    if any(s in text for s in ('403','forbidden')):
+        return 'ACCESS_DENIED'
     if any(s in text for s in ('unavailable', 'private video', 'removed', 'not available')):
         return 'UNAVAILABLE'
     return 'NETWORK_ERROR'
@@ -40,9 +46,11 @@ def explained(error):
     messages = {
         'AUTH_REQUIRED': 'YouTube exige una sesión para esta consulta. Ajustes → FUENTES → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.',
         'RATE_LIMITED': 'YouTube limita las peticiones. Se pausarán los reintentos.',
-        'MISSING_RUNTIME': 'Falta el componente JavaScript de YouTube. Instala el paquete completo R7.',
+        'MISSING_RUNTIME': 'Falta el componente JavaScript de YouTube. Instala el paquete completo de AKIRA.',
         'UNAVAILABLE': 'El video es privado, fue retirado o no está disponible para esta sesión.',
         'NETWORK_ERROR': 'No se pudo consultar YouTube. Revisa la conexión y vuelve a comprobar las fuentes.',
+        'CERTIFICATE_ERROR': 'No se pudo verificar el certificado al leer YouTube. Comprueba la fecha y los certificados de Windows. No se ha leído el video.',
+        'ACCESS_DENIED': 'YouTube denegó el acceso. Puedes probar otro video o importar tu sesión desde Fuentes; no se ha leído este video.',
     }
     return YouTubeError(state, messages[state])
 

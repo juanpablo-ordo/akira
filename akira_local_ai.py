@@ -29,6 +29,10 @@ def owned_context(tokens):
     try:yield
     finally:_CONTEXT.tokens=previous
 
+def owned_context_tokens():
+    """Return the running owned server's context, without probing or loading it."""
+    return getattr(_CONTEXT,'tokens',None)
+
 def fit_owned_request(endpoint,payload,timeout,cancel_event):
     """Count the exact Jinja prompt with the same pinned server, not characters.
 

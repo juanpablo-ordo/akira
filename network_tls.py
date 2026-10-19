@@ -31,6 +31,9 @@ def connection_message(error):
     if any(s in text for s in ('no tiene un asistente','modelo no disponible','motor local','llama.cpp')):
         return ('IA PENDIENTE',
                 'La revisión de IA aún no está disponible. Akira intentará iniciar el modelo instalado. Si falta un componente, usa Reparar IA en Ajustes → IA y voz. No se considera aprobada ninguna revisión pendiente.')
+    if any(s in text for s in ('no caben en el contexto','exceden el contexto','context size','context length')):
+        return ('CONTEXTO INSUFICIENTE',
+                'El límite elegido para la IA no alcanza para esta revisión. Puedes ampliarlo en Ajustes → Aplicación. Los cálculos técnicos continúan y esta revisión no autoriza una orden.')
     if any(s in text for s in ('timeouterror','timed out','timeout','tiempo de espera')):
         return ('REINTENTO PROGRAMADO', 'La fuente tardó demasiado. Akira conserva los datos vigentes y reintentará en segundo plano.')
     if any(s in text for s in ('urlerror','connectionerror','connection refused','getaddrinfo','name resolution')):
@@ -61,5 +64,18 @@ def check_packaged_https():
         else:
             if name!='GOOD':raise AssertionError('Se aceptó un certificado inválido')
             checks['trusted_https']=body==b'AKIRA TLS OK'
+        # Captions and public pages use an opener for cookies and safe redirects.
+        # Exercise that transport too; it must trust the same bundled roots.
+        from knowledge import public_opener
+        try:
+            with public_opener().open(url,timeout=5) as response:body=response.read(100)
+        except Exception as error:
+            if name=='GOOD':raise
+            reason=getattr(error,'reason',error)
+            if not isinstance(reason,ssl.SSLCertVerificationError):raise
+            checks['public_reader_'+name.lower()+'_rejected']=True
+        else:
+            if name!='GOOD':raise AssertionError('El lector público aceptó un certificado inválido')
+            checks['public_reader_trusted_https']=body==b'AKIRA TLS OK'
     if not all(checks.values()) or checks['trusted_roots']<100:raise AssertionError('Configuración HTTPS incompleta')
     return {'status':'PASSED',**checks}

@@ -12,7 +12,7 @@ import socket
 import sqlite3
 import time
 from urllib.parse import urlsplit
-from urllib.request import Request, build_opener, HTTPRedirectHandler
+from urllib.request import Request, build_opener, HTTPRedirectHandler,HTTPSHandler
 
 
 class KnowledgeStore:
@@ -118,14 +118,20 @@ class PublicRedirect(HTTPRedirectHandler):
         return super().redirect_request(req,fp,code,msg,headers,newurl)
 
 
+def public_opener(cookiejar=None):
+    from network_tls import https_context
+    from urllib.request import HTTPCookieProcessor
+    handlers=[PublicRedirect(),HTTPSHandler(context=https_context())]
+    if cookiejar is not None:handlers.append(HTTPCookieProcessor(cookiejar))
+    return build_opener(*handlers)
+
+
 def read_public(url,timeout=10,max_bytes=1500000,headers=None,cookiejar=None):
     url=public_url(url)
     safe_headers={'User-Agent':'AkiraResearch/2.0','Accept':'text/html,application/json,text/plain,text/vtt'}
     safe_headers.update({k:v for k,v in (headers or {}).items() if k.lower() in ('user-agent','accept-language','referer')})
     req=Request(url,headers=safe_headers)
-    from urllib.request import HTTPCookieProcessor
-    handlers=[PublicRedirect()]+([HTTPCookieProcessor(cookiejar)] if cookiejar is not None else [])
-    with build_opener(*handlers).open(req,timeout=timeout) as res:
+    with public_opener(cookiejar).open(req,timeout=timeout) as res:
         kind=str(res.headers.get('Content-Type','')).lower()
         if kind and not any(t in kind for t in ('text/','json','xml')):
             raise ValueError('La fuente no ofrece texto público legible')
@@ -209,9 +215,15 @@ def read_youtube(url,extractor=None):
             row.update(body=body[:160000],status='transcript_partial' if truncated else 'transcript',
                        language=lang,caption_type=name,complete=not truncated,summary='')
             return row
-        except Exception as exc:errors.append(type(exc).__name__)
+        except Exception as exc:
+            from youtube_support import classify_error,explained
+            if classify_error(exc) in ('AUTH_REQUIRED','RATE_LIMITED','CERTIFICATE_ERROR'):raise explained(exc) from exc
+            errors.append(exc)
+    if errors:
+        from youtube_support import explained
+        raise explained(errors[0]) from errors[0]
     row.update(body='',summary='',status='captions_unavailable',complete=False,
-               error='No se pudo leer una transcripción; el título no sustituye al vídeo'+(' ('+', '.join(errors)+')' if errors else ''))
+               error='No hay subtítulos completos utilizables; el título no sustituye al vídeo')
     return row
 
 

@@ -58,6 +58,27 @@ def source_abstract(value):
     if isinstance(value,dict):return '\n'.join(human(k.replace('_',' ').capitalize())+': '+human(v) for k,v in value.items() if not isinstance(v,(dict,list))) or 'Contenido recibido y guardado como contexto. Revisa su fecha y disponibilidad.'
     return human(value)
 
+def market_activity(view,symbol):
+    """Explain one asset using actor facts only; a quote is not an execution."""
+    row=(view.get('symbols') or {}).get(symbol) or {};decision=row.get('decision') or {}
+    status=(view.get('status') or {}).get(symbol) or {};market=(view.get('markets') or {}).get(symbol) or {}
+    title='Oro' if symbol.startswith('XAU') else 'Bitcoin' if symbol.startswith('BTC') else symbol
+    state=human(decision.get('state') or status.get('state') or 'Esperando datos')
+    detail=human(decision.get('reason') or status.get('detail') or 'Esperando condiciones válidas para una pendiente.')
+    if view.get('connected') is False:state='Sin conexión con MT5';detail='Esperando el terminal; no se envían nuevas órdenes.'
+    elif market.get('scheduled_closed'):
+        state='Mercado cerrado';detail=human(status.get('detail') or market.get('state') or 'Esperando la sesión de este instrumento.')
+    checked=row.get('checked_at');now=view.get('as_of_utc') or view.get('updated')
+    try:
+        age=float(now)-float(checked) if checked else None
+        checked_text='Revisado hace '+str(max(0,round(age)))+' s' if age is not None and age>=-5 else 'Hora de evaluación no confirmada' if checked else 'Esperando la primera evaluación'
+    except (TypeError,ValueError):checked_text='Hora de evaluación no confirmada'
+    count=int(decision.get('confirmed_pending_orders') or sum(1 for p in row.get('pending_book') or [] if p.get('confirmed') and p.get('ticket')))
+    evaluated=int(decision.get('evaluated_scenarios') or 0)
+    counts=str(count)+' pendiente(s) confirmada(s) · '+str(evaluated)+' escenarios evaluados'
+    return {'title':title,'state':state,'detail':detail,'checked':checked_text,'counts':counts,
+        'text':title+' · '+state+'\n'+checked_text+' · '+str(count)+' pendiente(s)\n'+detail}
+
 def plan_summary(plan,frames=None):
     def price(key):
         try:return f'{float(plan[key]):,.4f}'.rstrip('0').rstrip('.')

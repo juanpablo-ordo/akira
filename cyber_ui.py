@@ -38,21 +38,26 @@ def source_presentation(name,row):
     title=names.get(name,{'technical':'Análisis web','search':'Noticias web','coinglass':'CoinGlass',
         'derivatives':'Derivados públicos','venue':'Exchange','global_news':'Noticias globales','macro':'Macroeconomía'}.get(prefix,prefix))
     if suffix:title+=' · '+suffix
+    if prefix=='local_ai' and suffix:title='AKIRA · '+('Oro' if suffix.startswith('XAU') else 'Bitcoin' if suffix.startswith('BTC') else suffix)
+    if prefix=='global_news':title=suffix+' · noticias'
     error=public_status(row.get('error') or '');detail=public_status(row.get('detail') or '')
     code=str(row.get('state') or (row.get('data') or {}).get('state') or '').upper()
     if not code:
-        code=next((s for s in ('AUTH_REQUIRED','CONFIG_REQUIRED','UNSUPPORTED','NO_CAPTIONS','RATE_LIMITED','MISSING_RUNTIME','UNAVAILABLE') if s in error.upper()),'')
+        code=next((s for s in ('CERTIFICATE_ERROR','AUTH_REQUIRED','ACCESS_DENIED','CONFIG_REQUIRED','UNSUPPORTED','NO_CAPTIONS','RATE_LIMITED','MISSING_RUNTIME','NETWORK_ERROR','UNAVAILABLE') if s in error.upper()),'')
     messages={'AUTH_REQUIRED':('REQUIERE SESIÓN','Ajustes → FUENTES → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.'),
-        'CONFIG_REQUIRED':('CLAVE OPCIONAL','Configura CoinGlass en Ajustes → FUENTES → ACCESO A FUENTES.'),
-        'UNSUPPORTED':('NO APLICA','No hay derivados XAU confirmados de CoinGlass; no se sustituyen por BTC.'),
-        'NO_CAPTIONS':('SIN SUBTÍTULOS','No se obtuvo una transcripción completa. No se afirma haber aprendido el video.'),
+        'CONFIG_REQUIRED':('CLAVE OPCIONAL','Añade tu clave en Ajustes → Fuentes para utilizar CoinGlass. Su ausencia no detiene los cálculos de MT5.'),
+        'UNSUPPORTED':('NO APLICA','Esta integración no aporta derivados de oro. Esto no desactiva el análisis de XAUUSDm en MT5.'),
+        'NO_CAPTIONS':('SIN TRANSCRIPCIÓN','No se obtuvo una transcripción completa. Prueba otro video o revisa la sesión en Fuentes. El análisis técnico continúa.'),
         'RATE_LIMITED':('ESPERANDO CUOTA','YouTube limita las peticiones. Se reintentará con espera.'),
-        'MISSING_RUNTIME':('FALTA COMPONENTE','Instala el paquete completo R8 que incluye el componente JavaScript.'),
+        'CERTIFICATE_ERROR':('CONEXIÓN SEGURA PENDIENTE','No se pudo verificar el certificado al leer YouTube. Comprueba la fecha y los certificados de Windows. No se ha leído el video.'),
+        'NETWORK_ERROR':('CONEXIÓN PENDIENTE','YouTube no respondió. Se reintentará; el análisis técnico y las demás fuentes continúan.'),
+        'ACCESS_DENIED':('ACCESO DENEGADO','YouTube denegó el acceso. Prueba otro video o importa tu sesión en Fuentes; no se ha leído este video.'),
+        'MISSING_RUNTIME':('FALTA COMPONENTE','Instala el paquete completo de AKIRA, que incluye el componente JavaScript.'),
         'UNAVAILABLE':('NO DISPONIBLE','Video privado, retirado o no disponible para esta sesión.')}
     if row.get('enabled') is not False and code in messages:return title,*messages[code]
     if row.get('enabled') is False:state='DESACTIVADA';detail=detail or 'Desactivada en ajustes; no aporta al análisis.'
+    elif row.get('reference_only') and row.get('usable') and not error:state='REFERENCIA EDUCATIVA';detail=detail or 'Material guardado para estudiar; no es una cotización ni una señal actual.'
     elif row.get('fresh') and row.get('usable',True) and not error:state='DISPONIBLE';detail=detail or 'Datos vigentes utilizados como contexto.'
-    elif row.get('inflight'):state='BUSCANDO';detail=detail or 'Consulta en segundo plano; el mapa técnico sigue activo.'
     elif error:
         low=error.lower()
         if any(x in low for x in ('api_key','api key','sin clave','falta clave')):
@@ -66,7 +71,10 @@ def source_presentation(name,row):
         else:
             from network_tls import connection_message
             state,detail=connection_message(error)
-    elif row.get('usable') is False:state='SIN RESULTADOS';detail=detail or 'La consulta no devolvió datos utilizables.'
+    elif row.get('inflight'):state='BUSCANDO';detail=detail or 'Consulta en segundo plano; el mapa técnico sigue activo.'
+    elif row.get('usable') is False:
+        state='SIN NOVEDADES' if prefix=='global_news' else 'SIN RESULTADOS'
+        detail=detail or ('Este boletín no tiene publicaciones recientes utilizables. Las demás fuentes y MT5 continúan.' if prefix=='global_news' else 'La consulta no devolvió datos utilizables.')
     elif row.get('age_seconds') is not None:state='DESACTUALIZADA';detail=detail or 'La información anterior ya no se usa como confirmación.'
     else:state='ESPERANDO';detail=detail or 'Todavía no terminó una consulta de esta fuente.'
     if error and row.get('inflight'):detail+=' Nueva consulta en curso.'

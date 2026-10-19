@@ -5,7 +5,7 @@ import copy,json,tempfile,time
 
 STUDIO_CHECK_VERSION=1
 REQUIRED=('eight_pages','real_records','privacy','stable_selection','responsive','shared_avatar',
-          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests')
+          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests','per_asset_activity')
 
 def settle(app,seconds=.03):
     until=time.monotonic()+seconds
@@ -42,6 +42,8 @@ def run_studio_check(screenshot_dir=None):
                     output=Path(screenshot_dir);output.mkdir(parents=True,exist_ok=True);window.grab().save(str(output/f'page_{i}.png'))
                 if window.book.currentIndex()!=i or window.grab().isNull():raise RuntimeError('Página Studio '+str(i)+' no dibujada')
             checks['eight_pages']=window.book.count()==8
+            window.navigate(3);settle(app)
+            checks['per_asset_activity']=all(view['symbols'][s].get('checked_at') and 'Revisado hace' in window.asset_activity_labels[s].text() for s in ('BTCUSDm','XAUUSDm'))
             window.navigate(2);settle(app)
             checks['real_records']=window.orders.rowCount()==len(view['orders']) and window.positions.rowCount()==len(view['positions']) and bool(view['orders']) and bool(view['positions'])
             window.private=True;window.render(view);checks['privacy']='••••' in window.metrics['balance'].value.text() and str(view['account']['login']) not in window.account_badge.text()

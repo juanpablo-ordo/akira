@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt,QTimer,QSize,QUrl,QSettings
 from PySide6.QtGui import QFont,QFontDatabase,QIcon,QDesktopServices,QColor
 from PySide6.QtWidgets import QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,QStackedWidget,QSplitter,QLineEdit,QComboBox,QTextBrowser,QPlainTextEdit,QListWidget,QListWidgetItem,QTabWidget,QScrollArea,QDialog,QDialogButtonBox,QFileDialog,QMessageBox,QInputDialog,QCheckBox,QDoubleSpinBox,QFormLayout,QProgressBar,QMenu
 from studio_widgets import Card,Metric,DataTable,ActivityFeed,CandleChart,AvatarWidget,SignalWave,label,button,icon,INK,Toggle
-from studio_presenter import human,rich_text,set_document,frame_html,budget_summary,plan_summary,report_html,source_abstract,INDICATORS
+from studio_presenter import human,rich_text,set_document,frame_html,budget_summary,plan_summary,report_html,source_abstract,market_activity,INDICATORS
 from studio_editors import ChoiceBox
 from studio_background import BackgroundSurface
 from studio_translations import Translator
@@ -233,6 +233,11 @@ class StudioWindow(QMainWindow):
 
     def build_analysis(self):
         _,layout=self.page();top=QHBoxLayout();self.timeframe=ChoiceBox();self.timeframe.addItems(['M1','M5','M15','M30','H1','H4','D1']);self.timeframe.setCurrentText('H1');self.timeframe.currentTextChanged.connect(lambda:self.render_analysis());top.addWidget(self.timeframe);top.addStretch();top.addWidget(self.btn('ESTRATEGIAS',self.show_strategies,glyph='analysis'));top.addWidget(self.btn('ESTUDIO Y COMPARACIÓN',self.show_study,glyph='chart'));top.addWidget(self.btn('ACTUALIZAR',lambda:self.controller.request({'action':'refresh'}),glyph='refresh'));layout.addLayout(top)
+        activity=QHBoxLayout();self.asset_activity_labels={}
+        for symbol in ('BTCUSDm','XAUUSDm'):
+            card=self.card('ORO' if symbol.startswith('XAU') else 'BITCOIN','gold' if symbol.startswith('XAU') else 'bitcoin')
+            text=label('Esperando la primera evaluación','body');text.setWordWrap(True);text.setTextFormat(Qt.TextFormat.PlainText);card.body.addWidget(text);activity.addWidget(card,1);self.asset_activity_labels[symbol]=text
+        layout.addLayout(activity)
         self.analysis_split,(left,right)=self.split(layout,(3,2));self.analysis_widgets={}
         for symbol in ('BTCUSDm','XAUUSDm'):
             card=self.card(symbol,'analysis');price=label('—','title');card.heading.addWidget(price)
@@ -474,7 +479,7 @@ class StudioWindow(QMainWindow):
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
         self.system_text.setText('\n\n'.join(summary))
         for symbol,(price,status,chart) in self.home_markets.items():
-            info=(view.get('symbols') or {}).get(symbol) or {};price.setText(number(info.get('bid')));status.setText(str((view.get('status') or {}).get(symbol,{}).get('state','Esperando datos')));chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [])
+            info=(view.get('symbols') or {}).get(symbol) or {};price.setText(number(info.get('bid')));status.setText(market_activity(view,symbol)['text']);chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [])
         if self.page_index==1:self.render_pending()
         elif self.page_index==2:self.render_account()
         elif self.page_index==3:self.render_analysis()
@@ -544,6 +549,7 @@ class StudioWindow(QMainWindow):
     def render_analysis(self):
         if not hasattr(self,'analysis_widgets'):return
         v=self.controller.view;tf=self.timeframe.currentText()
+        for symbol,widget in self.asset_activity_labels.items():widget.setText(market_activity(v,symbol)['text'])
         for symbol,(price,table,chart) in self.analysis_widgets.items():
             info=(v.get('symbols') or {}).get(symbol) or {};frames=info.get('frames') or {};values=frames.get(tf) or {};price.setText(number(info.get('bid')))
             keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo'];rows=[]
@@ -557,6 +563,7 @@ class StudioWindow(QMainWindow):
         v=self.controller.view;sources=copy.deepcopy((v.get('research') or {}).get('sources') or {});rows=[];analysis=[];query=self.source_search.text().casefold()
         sources['mt5']={'fresh':bool(v.get('connected')),'enabled':True,'detail':'Cotizaciones y especificaciones recibidas del terminal.' if v.get('connected') else 'No hay conexión con el terminal.','age_seconds':0 if v.get('connected') else None}
         for name,row in sorted(sources.items(),key=lambda pair:pair[0]):
+            if row.get('display_hidden'):continue
             title,state,detail=source_presentation(name,row);age=number(row.get('age_seconds'),1)+' s' if row.get('age_seconds') is not None else '—'
             data={**row,'title':title,'presentation_state':state,'presentation_detail':detail}
             if not query or query in (title+state+detail).casefold():rows.append((name,[state,title,when(row.get('last_attempt')),when(row.get('updated')),age,number(row.get('retry_after_seconds'),0),detail],data))
