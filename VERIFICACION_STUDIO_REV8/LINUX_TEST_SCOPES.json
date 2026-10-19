@@ -1,0 +1,29 @@
+{
+  "scope": "Selecciones Linux durante el desarrollo; se solapan y no deben sumarse. La suite completa de Windows certifica el código final.",
+  "reports": [
+    {
+      "report": "REGRESSIONS_SELECTED_LINUX.xml",
+      "tests": 330,
+      "subtests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "report": "PRIORITY_LINUX.xml",
+      "tests": 201,
+      "subtests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "report": "ASSET_METADATA_LINUX.xml",
+      "tests": 80,
+      "subtests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}

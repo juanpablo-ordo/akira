@@ -1,0 +1,13 @@
+{
+  "status": "PASSED",
+  "bundled_ca_present": true,
+  "trusted_roots": 431,
+  "certificate_required": true,
+  "hostname_required": true,
+  "trusted_https": true,
+  "public_reader_trusted_https": true,
+  "bad_host_rejected": true,
+  "public_reader_bad_host_rejected": true,
+  "bad_chain_rejected": true,
+  "public_reader_bad_chain_rejected": true
+}

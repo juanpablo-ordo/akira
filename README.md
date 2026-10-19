@@ -1,5 +1,12 @@
 # AKIRA 16.4.3 · Studio Rev8
 
+[Descargar el instalador Windows con la IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39223750986/artifacts/12174625823) · `AKIRA_16_4_3_STUDIO_REV8_IA_INCLUIDA.exe`.
+
+Extrae el ZIP y ejecuta el instalador. La versión que debe aparecer al abrir es **16.4.3 · Studio Rev8**. El artefacto se conserva hasta el 26 de octubre de 2026.
+
+Comprobado en Windows: **1314 pruebas y 121 subpruebas**, cero fallos y cero omisiones; ejecutable, HTTPS, IA real de ambos activos e instalación completa. Código construido: `0aff824fd306dfb3feb1df2b771ddf34567ef868`. [Evidencia](VALIDACION_STUDIO_REV8.json).
+
+
 Revisión de los avisos y del seguimiento de Bitcoin y oro mostrados en las capturas del 19 de octubre de 2026. El instalador se publica únicamente después de pasar las regresiones, el ejecutable y una instalación completa en Windows.
 
 ## Cambios de esta revisión

@@ -16,10 +16,12 @@ Las revisiones generales resumidas no certifican cada valor omitido. El motor t�
 
 La suite conserva sus comprobaciones de interfaz y ejecución. La prueba antigua de reutilización de subtítulos ahora representa una transcripción completa guardada, y otro caso comprueba que una caché antigua incompleta se vuelve a consultar sin declararla aprendida. La prueba de geometría espera el ajuste asíncrono antes de comprobar el mismo margen de dos píxeles.
 
-Los resultados finales de Windows se incorporan cuando finaliza la instalación. El ensayo del modelo es real; sus datos financieros y noticias son sintéticos. El ensayo de consumo se ejecuta sin generar texto. No se usan credenciales ni cuenta real, y los resultados no sustituyen medir la laptop y la latencia del broker.
+Windows ha completado la suite, el ejecutable y la instalación del código identificado en VALIDACION_STUDIO_REV8.json. El ensayo del modelo es real; sus datos financieros y noticias son sintéticos. El ensayo de consumo se ejecuta sin generar texto. No se usan credenciales ni cuenta real, y los resultados no sustituyen medir la laptop y la latencia del broker.
 
 La prioridad se comprueba con una revisión obligatoria local sin trabajo opcional en el mismo lote, conservando el resto en cola. El backend externo conserva su caso de lote limitado a dos, con la revisión exigida primero.
 
 El plazo de espera de la cola local tiene en cuenta los trabajos de igual o mayor prioridad que van delante, con un máximo de 500 segundos. El plazo de ejecución se cuenta por separado. Una solicitud no vence sólo porque todavía espera su turno; el vencimiento final sigue siendo un error y nunca una aprobación.
 
 Las revisiones automáticas opcionales de ideas se programan cada diez minutos en ahorro y tres en equilibrio. Se prueba que el actor continúa sus ciclos durante la pausa. Las solicitudes exigidas o explícitas conservan su vía prioritaria y no esperan esa programación.
+
+Resultado final: 1314 pruebas y 121 subpruebas en Windows, sin fallos ni omisiones. El instalador publicado incluye el GGUF verificado y pasó la conversación de su IA instalada sin descargar un modelo alternativo.
