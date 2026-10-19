@@ -19,3 +19,5 @@ La suite conserva sus comprobaciones de interfaz y ejecución. La prueba antigua
 Los resultados finales de Windows se incorporan cuando finaliza la instalación. El ensayo del modelo es real; sus datos financieros y noticias son sintéticos. El ensayo de consumo se ejecuta sin generar texto. No se usan credenciales ni cuenta real, y los resultados no sustituyen medir la laptop y la latencia del broker.
 
 La prioridad se comprueba con una revisión obligatoria local sin trabajo opcional en el mismo lote, conservando el resto en cola. El backend externo conserva su caso de lote limitado a dos, con la revisión exigida primero.
+
+El plazo de espera de la cola local tiene en cuenta los trabajos de igual o mayor prioridad que van delante, con un máximo de 500 segundos. El plazo de ejecución se cuenta por separado. Una solicitud no vence sólo porque todavía espera su turno; el vencimiento final sigue siendo un error y nunca una aprobación.

@@ -104,6 +104,17 @@ class AssetReviewTests(unittest.TestCase):
         request=self.worker.pending_batch[0];self.worker.pending_future.set_result({identity(request['plan']):{'data':{'verdict':'ABSTAIN'}}})
         self.now+=1;self.worker._pending_tick(self.now,{})
         self.assertEqual([r['plan']['symbol'] for r in self.worker.pending_batch],['XAUUSDm'])
+    def test_waiting_gold_does_not_expire_before_a_slow_local_peer_gets_its_turn(self):
+        self.worker.pool=ControlledPool();plans=[self.plan('BTCUSDm','b1'),self.plan('XAUUSDm','g1'),self.plan('BTCUSDm','b2')]
+        self.worker.request_pending_reviews(plans,{'symbols':{}});self.worker._pending_tick(self.now,{})
+        self.now+=110
+        self.assertEqual(self.worker.expire_pending_reviews(),[])
+        request=self.worker.pending_batch[0];self.worker.pending_future.set_result({identity(request['plan']):{'data':{'verdict':'ABSTAIN'}}})
+        self.worker._pending_tick(self.now,{})
+        self.assertEqual(self.worker.pending_batch[0]['plan']['symbol'],'XAUUSDm')
+        self.assertEqual(self.worker.pending_reviews[identity(plans[2])]['state'],'QUEUED')
+        self.now+=301;self.worker.expire_pending_reviews()
+        self.assertEqual(self.worker.pending_reviews[identity(plans[2])]['state'],'ERROR')
     def test_required_order_keeps_priority_over_other_asset_automatic_work(self):
         self.worker.pool=ControlledPool();gold=self.plan('XAUUSDm','auto');btc=self.plan('BTCUSDm','required')
         self.worker._pending_turns['BTCUSDm']=99

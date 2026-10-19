@@ -197,7 +197,7 @@ class ContextWorker:
             begun=float(row.get('started') or row.get('requested') or now)
             # Independent queue and running deadlines. The queue deadline is
             # intentionally generous enough for small batches and user chat.
-            limit=90.0 if state=='QUEUED' else float(row.get('run_budget_seconds',65.0))
+            limit=float(row.get('queue_budget_seconds',90.0)) if state=='QUEUED' else float(row.get('run_budget_seconds',65.0))
             if now-begun<=limit:continue
             row.update(state='ERROR',updated=now,
                 error=('Revisión agotó '+str(int(limit))+' s en '+('cola' if state=='QUEUED' else 'IA')+
@@ -227,6 +227,11 @@ class ContextWorker:
                 attempt=self._review_attempt
                 self.pending_queue[pid]={'plan':copy.deepcopy(p),'snapshot':minimal,'fingerprint':fp,'attempt_id':attempt,'priority':priority}
                 self.pending_reviews[pid]={'fingerprint':fp,'levels':levels(p),'symbol':p['symbol'],'state':'QUEUED','updated':now,'requested':now,'attempt_id':attempt}
+                if (self.cfg.get('assistant') or {}).get('local_runtime_enabled'):
+                    ahead=len(self.pending_batch)+sum(1 for key,r in self.pending_queue.items() if key!=pid and r.get('priority',2)<=priority)
+                    # Include the work ahead of this request. Loading/inference
+                    # time is not a queue failure; waiting still has a hard cap.
+                    self.pending_reviews[pid]['queue_budget_seconds']=100+100*min(4,ahead)
                 queued.append(pid)
                 if priority<=1 and self._summary_cancel is not None:self._summary_cancel.set()
             while len(self.pending_queue)>32:
