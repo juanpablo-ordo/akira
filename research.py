@@ -650,10 +650,15 @@ class ContextWorker:
             if not on:continue
             row=self.sources.get('local_ai:'+symbol) or {};value=row.get('data') or {}
             stamp=float(row.get('updated') or 0);valid=bool(stamp and now-stamp<self.cfg['research'].get('external_stale_seconds',600) and not row.get('error') and isinstance(value.get(symbol),dict))
-            reviews[symbol]={'updated':stamp,'error':row.get('error',''),'available':valid}
+            reviews[symbol]={'updated':stamp,'error':row.get('error',''),'available':valid,'meta':value.get('_meta') or {}}
             if isinstance(value.get(symbol),dict):data[symbol]=value[symbol]
             if valid:timestamps.append(stamp);metas.append(value.get('_meta') or {})
+        scopes={m.get('input_scope','UNSPECIFIED') for m in metas}
+        scope='COMPACT_INDICATORS_COMPLETE_TIMEFRAMES' if 'COMPACT_INDICATORS_COMPLETE_TIMEFRAMES' in scopes else next(iter(scopes)) if len(scopes)==1 else 'MIXED_ASSET_SCOPES'
         data['_meta']={**(metas[-1] if metas else {}),'active_symbols':[s for s,r in reviews.items() if r['available']],
+            'input_scope':scope,'verified_twice':bool(metas) and all(m.get('verified_twice',False) for m in metas),
+            'input_chars':sum(m.get('input_chars',0) for m in metas),'timeframe_count':sum(m.get('timeframe_count',0) for m in metas),
+            'omitted_raw_indicator_values':sum(m.get('omitted_raw_indicator_values',0) for m in metas),
             'symbol_reviews':reviews,'mode':'INDEPENDENT_ASSET_REVIEWS','partial':not all(r['available'] for r in reviews.values())}
         self.sources['local_ai']={'data':data,'updated':min(timestamps) if timestamps else 0,'last_attempt':now,'error':''}
 

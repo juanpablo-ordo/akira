@@ -74,6 +74,15 @@ class AssetReviewTests(unittest.TestCase):
         self.assertFalse(state['sources']['local_ai:XAUUSDm']['fresh'])
         self.assertNotIn('XAUUSDm',state['deep_review'])
         self.assertIn('BTCUSDm',state['deep_review'])
+    def test_combined_metadata_cannot_claim_gold_verification_for_bitcoin(self):
+        btc=reply('BTCUSDm');gold=reply('XAUUSDm')
+        btc['_meta'].update(verified_twice=False,timeframe_count=7,input_scope='COMPACT_INDICATORS_COMPLETE_TIMEFRAMES')
+        gold['_meta'].update(verified_twice=True,timeframe_count=7)
+        self.worker.sources.update({'local_ai:BTCUSDm':{'data':btc,'updated':self.now},'local_ai:XAUUSDm':{'data':gold,'updated':self.now}})
+        self.worker._merge_local_ai_sources();meta=self.worker.sources['local_ai']['data']['_meta']
+        self.assertFalse(meta['verified_twice']);self.assertEqual(meta['timeframe_count'],14)
+        self.assertEqual(meta['input_scope'],'COMPACT_INDICATORS_COMPLETE_TIMEFRAMES')
+        self.assertTrue(meta['symbol_reviews']['XAUUSDm']['meta']['verified_twice'])
     def test_required_order_defers_only_the_auxiliary_summary(self):
         event=threading.Event();self.worker._summary_cancel=event
         p=self.plan('XAUUSDm','required');self.worker.request_pending_reviews([p],{'symbols':{},'required_pending_reviews':[identity(p)]})
