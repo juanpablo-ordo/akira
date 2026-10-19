@@ -17,3 +17,5 @@ Las revisiones generales resumidas no certifican cada valor omitido. El motor t�
 La suite conserva sus comprobaciones de interfaz y ejecución. La prueba antigua de reutilización de subtítulos ahora representa una transcripción completa guardada, y otro caso comprueba que una caché antigua incompleta se vuelve a consultar sin declararla aprendida. La prueba de geometría espera el ajuste asíncrono antes de comprobar el mismo margen de dos píxeles.
 
 Los resultados finales de Windows se incorporan cuando finaliza la instalación. El ensayo del modelo es real; sus datos financieros y noticias son sintéticos. El ensayo de consumo se ejecuta sin generar texto. No se usan credenciales ni cuenta real, y los resultados no sustituyen medir la laptop y la latencia del broker.
+
+La prioridad se comprueba con una revisión obligatoria local sin trabajo opcional en el mismo lote, conservando el resto en cola. El backend externo conserva su caso de lote limitado a dos, con la revisión exigida primero.

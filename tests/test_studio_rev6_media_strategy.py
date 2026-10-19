@@ -44,11 +44,22 @@ class RequiredReviewPriority(unittest.TestCase):
         from research import ContextWorker
         self.tmp=tempfile.TemporaryDirectory();self.worker=ContextWorker(load_config(DEFAULT),self.tmp.name,clock=lambda:1000);self.worker.pool=Mock();self.worker.pool.submit.return_value=Future()
     def tearDown(self):self.worker.close();self.tmp.cleanup()
-    def test_required_review_runs_before_optional_batch(self):
+    def test_required_local_review_runs_without_optional_work_in_same_batch(self):
         from pending_verification import identity
         plans=[{'symbol':'BTCUSDm','key':str(i),'side':1,'kind':'LIMIT','entry':100-i,'sl':90-i,'tp':120-i} for i in range(3)]
         snapshot={'symbols':{},'required_pending_reviews':[identity(plans[2])]};self.worker.request_pending_reviews(plans,snapshot);self.worker._pending_tick(1000,{})
-        self.assertEqual(self.worker.pending_batch[0]['plan']['key'],'2');self.assertEqual(len(self.worker.pending_batch),2);self.assertNotEqual(self.worker.pending_reviews[identity(plans[2])]['state'],'COMPLETE')
+        self.assertEqual([r['plan']['key'] for r in self.worker.pending_batch],['2'])
+        self.assertEqual(set(self.worker.pending_queue),{identity(plans[0]),identity(plans[1])})
+        self.assertEqual(self.worker.pending_reviews[identity(plans[2])]['state'],'RUNNING')
+    def test_external_backend_keeps_required_first_in_its_bounded_two_order_batch(self):
+        from pending_verification import identity
+        from tests.fixtures import optional_ollama_fixture
+        optional_ollama_fixture(self.worker.cfg)
+        plans=[{'symbol':'BTCUSDm','key':str(i),'side':1,'kind':'LIMIT','entry':100-i,'sl':90-i,'tp':120-i} for i in range(3)]
+        self.worker.request_pending_reviews(plans,{'symbols':{},'required_pending_reviews':[identity(plans[2])]})
+        self.worker._pending_tick(1000,{})
+        self.assertEqual(self.worker.pending_batch[0]['plan']['key'],'2');self.assertEqual(len(self.worker.pending_batch),2)
+        self.assertEqual(self.worker.pending_reviews[identity(plans[2])]['state'],'RUNNING')
     def test_already_queued_optional_review_is_promoted_without_duplicate_attempt(self):
         from pending_verification import identity
         p={'symbol':'BTCUSDm','key':'a','side':1,'kind':'LIMIT','entry':100,'sl':90,'tp':120};pid=identity(p);snapshot={'symbols':{}}
