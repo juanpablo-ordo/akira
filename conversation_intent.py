@@ -18,7 +18,7 @@ def self_intent(message, brand='AKIRA'):
     for alias in names:
         if text.startswith(alias + ' '):text = text[len(alias)+1:]
         if text.endswith(' ' + alias):text = text[:-len(alias)-1]
-    if re.fullmatch(r'(?:quien eres|quien sos|como te llamas|cual es tu nombre|eres (?:akira|una ia)|tu quien eres|quien eres tu)', text):
+    if re.fullmatch(r'(?:quien eres|quien sos|que eres|que sos|como te llamas|cual es tu nombre|eres (?:akira|una ia)|tu quien eres|quien eres tu)', text):
         return 'identity'
     if re.fullmatch(r'(?:que (?:puedes|sabes) hacer|que haces tu|para que sirves|como funcionas|que puedes hacer por mi|en que me puedes ayudar)', text):
         return 'capabilities'
@@ -40,6 +40,7 @@ def is_personal_conversation(message):
     # itself into the short-entity web-search heuristic.
     return bool(re.match(r'^(?:me siento|estoy (?:triste|feliz|cansad[oa]|aburrid[oa]|nervios[oa])|'
         r'tengo hambre|quiero contarte|te cuento|hoy me (?:paso|siento)|'
+        r'quien te (?:creo|programo|hizo)|de donde (?:eres|vienes)|que (?:te gusta|piensas de ti|opinas de ti)|'
         r'recuerdas (?:lo que|mi |mis |como me llamo|que te dije|de lo que hablamos)|como me llamo|sabes como me llamo|que te dije|que hemos hablado|'
         r'que (?:piensas|opinas) (?:de mi|sobre mi)|te gusta |tu que prefieres|y tu\b)', text))
 

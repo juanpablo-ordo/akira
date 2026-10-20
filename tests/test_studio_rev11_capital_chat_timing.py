@@ -155,7 +155,7 @@ class ConversationRoutingTests(unittest.TestCase):
         self.addCleanup(self.bot._managed_model.shutdown)
 
     def test_common_direct_questions_need_neither_web_nor_a_model_boot(self):
-        questions=['¿Quién eres?','oye Akira, ¿qué puedes hacer?',
+        questions=['¿Quién eres?','¿Qué eres?','oye Akira, ¿qué puedes hacer?',
             '¿Para qué sirbes?','¿Me escuhas?','¿Estás ahí?',
             '¿Cómo funcionas?','Quiero comversar contigo','¿Qué estás haciendo?',
             'Hola Akira, ¿cómo estás?','¿Eres una IA?']
