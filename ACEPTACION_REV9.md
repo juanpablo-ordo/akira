@@ -22,3 +22,11 @@ La regla de impulso es un filtro de ejecución; su efecto sobre ganancias, entra
 La validación de entrega exige la suite completa sin omisiones en Windows, pruebas gráficas del código y del EXE, HTTPS verificado, ensayo de dos núcleos, IA real general e individual BTC/XAU con contexto de 2048 tokens, conversación y una instalación limpia con respuesta de su propio modelo. No se envían órdenes a una cuenta real durante esos ensayos.
 
 La latencia de inferencia y el consumo en una laptop concreta deben medirse por separado del tiempo del actor financiero. No se certifica crecimiento de cuenta, una ganancia diaria fija ni ausencia de futuras pérdidas. Las referencias históricas y los archivos de validación Rev8 conservan su identidad y no certifican Rev9.
+
+## Resultado de Windows
+
+La ejecución [39366924498](https://github.com/juanpablo-ordo/akira/actions/runs/39366924498) del código `20df6cb7374345b20826ea2507a403153fb60599` terminó correctamente. Pasaron 1340 pruebas y 128 subpruebas, sin fallos, errores ni omisiones; incluye 26 casos nuevos de esta revisión. El instalador completo también pasó una instalación limpia y la respuesta de su propio modelo, sin descargar otro modelo para la comprobación.
+
+En el ensayo financiero sintético de dos núcleos se mantuvieron 40 ciclos con cotización actual en cada perfil. No se generaba texto durante ese ensayo. Las revisiones del modelo real se comprobaron aparte: el resumen de ambos activos tardó 145.765 s, y las individuales BTC/XAU 75.219/70.516 s. No se confunde ese tiempo con la frecuencia del actor.
+
+Los JSON y el XML de VERIFICACION_STUDIO_REV9 conservan los valores del artefacto original, normalizados a UTF-8 sin BOM y saltos LF para comprobar sus hashes al clonar. El ZIP original tiene SHA-256 `1cb5badb1c46522047d3abe8e05222b46145f62e35d87a2532414a422b748ab8`.

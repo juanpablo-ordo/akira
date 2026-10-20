@@ -1,0 +1,27 @@
+{
+  "status": "PASSED",
+  "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "platform": "win32",
+  "source": "C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\tcl",
+  "tcl_library": "D:\\a\\_temp\\AKIRA_TCL_TK_VERIFICADO\\tcl8.6",
+  "tk_library": "D:\\a\\_temp\\AKIRA_TCL_TK_VERIFICADO\\tk8.6",
+  "verified_files": 1002,
+  "library_sha256": {
+    "tcl8.6": "c7ab5539ad690841511dc2d304597f5d550659da77db7e98f7e8a19f7ff403d1",
+    "tk8.6": "d198f5c9bb68868d84cf978963c8bc7349d55c256354f186931547505c98b91e"
+  },
+  "tcl_patchlevel": "8.6.12",
+  "tk_patchlevel": "8.6.12",
+  "bootstrap": {
+    "library": "D:\\a\\_temp\\AKIRA_TCL_TK_VERIFICADO\\tcl8.6",
+    "loader": "D:\\a\\_temp\\AKIRA_TCL_TK_VERIFICADO\\tcl8.6\\auto.tcl",
+    "already_loaded": false,
+    "loader_via_python": false,
+    "tcl": "8.6.12",
+    "tk": "8.6.12",
+    "initialization_attempts": 1,
+    "tk_initialization_attempts": 1
+  },
+  "native_initializations": 12,
+  "native_file_read_recoveries": 0
+}

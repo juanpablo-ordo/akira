@@ -1,6 +1,10 @@
 # AKIRA 16.4.4 · Studio Rev9
 
-Revisión de ejecución de pendientes, aprendizaje comparable y espera de IA. El instalador solo se publica tras pasar la suite completa, el ejecutable y una instalación real en Windows. Consulta [ACEPTACION_REV9.md](ACEPTACION_REV9.md).
+[Descargar el instalador Windows con la IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39366924498/artifacts/12240821934) · `AKIRA_16_4_4_STUDIO_REV9_IA_INCLUIDA.exe`.
+
+Cierra Akira, extrae el ZIP y ejecuta el instalador. La versión que debe aparecer al abrir es **16.4.4 · Studio Rev9**. El artefacto se conserva hasta el 27 de octubre de 2026.
+
+Comprobado en Windows: **1340 pruebas y 128 subpruebas**, cero fallos y cero omisiones; ejecutable, HTTPS, IA real de ambos activos e instalación completa. Código construido: `20df6cb7374345b20826ea2507a403153fb60599`. [Evidencia](VALIDACION_STUDIO_REV9.json).
 
 ## Cambios
 
@@ -14,7 +18,7 @@ Revisión de ejecución de pendientes, aprendizaje comparable y espera de IA. El
 
 ## Instalación y alcance
 
-Esta rama prepara Rev9; la evidencia de Rev8 incluida en el repositorio corresponde a su propia compilación. El enlace al instalador Rev9 y sus resultados se incorporan únicamente después de terminar la validación de Windows.
+La rama verificada añade los diagnósticos y esta documentación al código compilado. No cambia sus módulos, pruebas, recursos ni flujo de construcción. Los resultados de Rev8 se conservan como evidencia histórica de su propia compilación.
 
 Una actualización conserva la configuración y los límites explícitos del usuario. Las cuentas nuevas empiezan en Solo análisis; el programa nunca activa una cuenta por su cuenta. La opción de entradas únicamente mediante pendientes sigue gestionando sus posiciones activadas como runners.
 

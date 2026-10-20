@@ -1,9 +1,13 @@
 {
   "build": "AKIRA_16_4_4_STUDIO_REV9",
-  "status": "PENDING_WINDOWS_VERIFICATION",
-  "date": "2026-10-20",
-  "scope": "Pendientes vigentes, historial comparable y cola IA; sin certificación de rentabilidad",
-  "notes_file": "ACEPTACION_REV9.md",
   "tests": 1337,
-  "skipped": 0
+  "status": "PASSED",
+  "date": "2026-10-20",
+  "skipped": 0,
+  "scope": "Rev9: comprobaciones causales de pendientes, aprendizaje comparable y cola de IA. Datos financieros sintéticos; sin certificación de rentabilidad.",
+  "notes_file": "ACEPTACION_REV9.md",
+  "pytest_tests": 1340,
+  "pytest_subtests": 128,
+  "source_commit": "20df6cb7374345b20826ea2507a403153fb60599",
+  "evidence_file": "VALIDACION_STUDIO_REV9.json"
 }
