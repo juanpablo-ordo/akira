@@ -28,6 +28,14 @@ def run(report=None,screenshots=None):
             cfg=window.cfg;cfg['mode']='observe';clock=Clock();clock.now=1792407600 # synthetic Monday market session
             api=FakeMT5(clock);gateway=Gateway(api,cfg,Journal(root/'bench.json'),Reporter(root/'bench-log',console=False),clock)
             worker=ContextWorker(cfg,root,clock);worker.sources={'news':{'updated':clock(),'data':{'items':[{'title':'Synthetic market context '+str(i),'url':'https://example.com/'+str(i),'date':'2026-10-19T10:00:00Z'} for i in range(80)]},'error':''}}
+            # Reproduce an established library, rather than an always empty
+            # installation. Cached summaries must not reopen/parse all evidence
+            # on every technical tick. These are fabricated public references.
+            for i in range(100):
+                worker.strategy_lab.research_ledger.add(url='https://example.com/qa-reference-'+str(i),kind='news_read',
+                    title='Synthetic research reference '+str(i),body='Synthetic educational context. '*200)
+            result['workload']={'research_references':100,'research_chars_each':6000,'news_items':80,
+                'text_inference_running':False,'network_requests_running':False}
             engine=Engine(gateway,cfg,gateway.log,worker);cycles=[];fresh=[];base={s:row.bid for s,row in api.ticks.items()}
             def market_loop():
                 while not stop.is_set():

@@ -139,7 +139,7 @@ class AssetReviewTests(unittest.TestCase):
     def test_managed_individual_review_uses_its_actual_inference_budget(self):
         p=self.plan('XAUUSDm','real-levels');self.worker.request_pending_reviews([p],{'symbols':{'XAUUSDm':{}}})
         batch=[self.worker.pending_queue[identity(p)]]
-        answer={identity(p):{'verdict':'ABSTAIN','strategy':'RANGE','reason':'Falta confirmación de estructura','missing':['estructura']}}
+        answer={'p0':{'verdict':'ABSTAIN','strategy':'RANGE','reason':'Falta confirmación de estructura','missing':['estructura']}}
         with patch('research.ollama_status',return_value={'models':['Qwen3-4B-Q4_K_M.gguf']}),patch('research.ollama_chat',return_value=json.dumps(answer)) as chat:
             self.worker._pending_summary_impl(batch,{})
         self.assertEqual(chat.call_args.kwargs['timeout'],90)

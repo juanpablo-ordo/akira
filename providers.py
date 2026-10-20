@@ -39,8 +39,8 @@ METHODS={
     "structure":"Estructura M1→W1, swings, BOS, barridos, oferta/demanda, OB/FVG y Fibonacci",
     "momentum":"EMA9/21/50/200, MACD, RSI, ADX, ROC, VWAP, Bollinger, MFI, CCI y volumen de ticks",
     "micro":"Vela viva + ticks + DOM del bróker para timing; no crean zonas HTF",
-    "coinglass":"BTC/XAU: intenta OI, funding, liquidaciones, ratios y orderbook cuando la API/plan lo permite",
-    "youtube":"Transcripciones con fecha/fuente, análisis por fragmentos y memoria persistente; sin subtítulos queda marcado como no analizado",
+    "coinglass":"Derivados BTC públicos de OKX, Bybit o Binance; CoinGlass solo al elegirlo expresamente. No equivale a un mapa de liquidaciones agregado.",
+    "youtube":"Referencias educativas para hipótesis y comparación posterior; las opiniones de un video no son señales de entrada",
     "investing":"RSS de mercados/economía/commodities/crypto como contexto de bajo peso",
     "ai":"Modelo local M5/M15/H1 + Akira Local Core contextual; OpenAI opcional",
     "risk":"Invalidación estructural, costes, margen y exposición total"
@@ -335,39 +335,8 @@ def _public_json(url):
 
 
 def public_derivatives_bundle(asset="BTC"):
-    """Fallback GRATUITO/no autenticado para señales de derivados BTC.
-
-    No pretende replicar CoinGlass. Recupera directamente métricas públicas de
-    Binance Futures (OI, funding, ratios y profundidad). Si Binance no está
-    disponible en la red del usuario, falla en segundo plano sin bloquear MT5.
-    """
-    asset=str(asset).upper()
-    if asset!="BTC":
-        return {"asset":asset,"state":"sin mercado de futuros público equivalente configurado"}
-    symbol="BTCUSDT"
-    base="https://fapi.binance.com"
-    result={"asset":asset,"source":"Binance Futures public","errors":{}}
-    endpoints={
-        "open_interest":f"{base}/fapi/v1/openInterest?symbol={symbol}",
-        "premium":f"{base}/fapi/v1/premiumIndex?symbol={symbol}",
-        "global_ls":f"{base}/futures/data/globalLongShortAccountRatio?symbol={symbol}&period=5m&limit=2",
-        "top_position_ls":f"{base}/futures/data/topLongShortPositionRatio?symbol={symbol}&period=5m&limit=2",
-        "depth":f"{base}/fapi/v1/depth?symbol={symbol}&limit=100",
-        "oi_history":f"{base}/futures/data/openInterestHist?symbol={symbol}&period=5m&limit=3",
-        "taker_ratio":f"{base}/futures/data/takerlongshortRatio?symbol={symbol}&period=5m&limit=3",
-    }
-    def one(name,url): return name,_public_json(url)
-    with ThreadPoolExecutor(max_workers=len(endpoints),thread_name_prefix="akira_public_deriv") as pool:
-        jobs={pool.submit(one,n,u):n for n,u in endpoints.items()}
-        for fut in as_completed(jobs):
-            name=jobs[fut]
-            try:
-                k,v=fut.result(); result[k]=v
-            except Exception as exc:
-                result["errors"][name]=str(exc)
-    useful=[k for k,v in result.items() if k not in ("asset","source","errors") and v not in (None,[],{})]
-    result["state"]="OK" if useful else "sin datos públicos utilizables"
-    return result
+    from public_derivatives import bundle
+    return bundle(_public_json,str(asset).upper())
 
 
 def public_derivatives_bias(bundle):
@@ -402,8 +371,8 @@ def public_derivatives_bias(bundle):
         prev=fnum(oih[-2].get("sumOpenInterest")); curr=fnum(oih[-1].get("sumOpenInterest"))
         if prev>0 and curr>0:
             delta=(curr-prev)/prev
-            price_bias=0.0
-            comps.append((math.tanh(delta*35.0),.14)); details.append(f"OIΔ5m {delta*100:+.2f}%")
+            # OI counts BOTH sides. Rising OI by itself is not a bullish vote.
+            details.append(f"OIΔ5m {delta*100:+.2f}% (sin dirección por sí solo)")
     taker=bundle.get("taker_ratio") or []
     if isinstance(taker,list) and taker:
         row=taker[-1]; ratio=fnum(row.get("buySellRatio"),1.0)
@@ -414,7 +383,7 @@ def public_derivatives_bias(bundle):
             imb=clamp((ratio-1.0)/max(ratio+1.0,1e-9)); comps.append((imb,.18)); details.append(f"taker ratio {ratio:.2f}")
     if not comps: return 0.0,0.0,"derivados públicos sin datos"
     w=sum(c for _,c in comps); bias=sum(v*c for v,c in comps)/w
-    return clamp(bias),min(.42,.08+w/4),"Binance público "+", ".join(details[:5])
+    return clamp(bias),min(.42,.08+w/4),str(bundle.get('source') or 'Derivados públicos')+' '+", ".join(details[:5])
 
 def _freshness_weight(raw_date,unknown=.15):
     """Pesa titulares recientes y casi ignora material viejo.

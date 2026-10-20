@@ -1,0 +1,12 @@
+{
+  "build": "AKIRA_16_4_5_STUDIO_REV10",
+  "status": "PENDING_WINDOWS_VERIFICATION",
+  "base_verified_commit": "56cbaa84749073390287b2777b14e5c508eb0cd2",
+  "source_branch": "akira-studio-rev10-20261020",
+  "expected_pytest_cases": 1371,
+  "new_cases": 31,
+  "profitability_verified": false,
+  "live_account_used": false,
+  "private_customer_data_published": false,
+  "notes_file": "ACEPTACION_REV10.md"
+}

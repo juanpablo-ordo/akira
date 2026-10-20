@@ -297,7 +297,9 @@
     "global_markets": true,
     "global_news": true,
     "global_interval_seconds": 60,
-    "news_interval_seconds": 300
+    "news_interval_seconds": 300,
+    "derivatives_provider": "public",
+    "public_derivatives_seconds": 60
   },
   "knowledge": {
     "enabled": true,

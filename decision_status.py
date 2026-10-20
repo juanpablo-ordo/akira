@@ -16,7 +16,8 @@ def decision_status(symbol,plans,audit,scenarios,checks,orders,cycle,status,trad
     affordable=[r for r in checks if valid(r.get('risk_usd')) and r['risk_usd']<=trade_cap+1e-8]
     quality_wait=Counter(str(r['quality_reason']) for r in affordable if r.get('quality_reason'))
     state=str(status.get('state') or 'INICIANDO');reason=str(runtime_block or status.get('detail') or '')
-    if not runtime_block and mode=='trade' and not paused and not confirmed and not eligible:
+    halted=state in ('MERCADO CERRADO','MERCADO EN PAUSA','RECONCILIANDO','CARGANDO','EJECUCIÓN BLOQUEADA','SIN INTERNET')
+    if not runtime_block and mode=='trade' and not paused and not halted and not confirmed and not eligible:
         if affordable and quality_wait:
             state='ESPERANDO CONFIRMACIÓN'
             reason=(str(len(affordable))+' propuestas caben en el presupuesto. '+

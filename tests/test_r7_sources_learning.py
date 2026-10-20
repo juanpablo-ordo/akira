@@ -178,7 +178,7 @@ class ProspectiveLearning(unittest.TestCase):
     def test_missing_or_partial_source_cannot_create_profiles(self):
         self.assertEqual(self.lab.ingest_source({**SOURCE,'complete':False}),[])
         self.assertEqual(self.lab.ingest_source({**SOURCE,'body':'RSI'}),[])
-        self.assertEqual(set(self.profiles),{'H1_ALIGNMENT','VOLUME','RSI'})
+        self.assertEqual(set(self.profiles),{'H1_ALIGNMENT','VOLUME','RSI','CONFLUENCE'})
 
     def test_training_cannot_activate_a_filter_and_late_results_do_not_rewrite_it(self):
         self.insert_closed(self.now-100,40)

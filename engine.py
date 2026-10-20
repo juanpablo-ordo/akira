@@ -929,12 +929,8 @@ class Engine:
         self._last_view=snapshot_copy(view)
         snapshot_ms=(time.perf_counter()-view_started)*1000
         if now>=self._pending_auto_due:
-            from pending_verification import targets
-            plans=targets(view);automatic=[p for p in plans if p.get('confirmed')]
-            for symbol in view['symbols']:
-                for side in (1,-1):
-                    candidates=[p for p in plans if p['symbol']==symbol and p.get('side')==side and not p.get('confirmed')]
-                    if candidates:automatic.append(max(candidates,key=lambda p:float(p.get('quality_score') or 0)))
+            from compact_review import automatic_targets
+            automatic=automatic_targets(view,self.cfg)
             self.queue_pending_verification(automatic,view,deep=True)
             self._pending_auto_due=now+{'Ahorro de energía':600,'Equilibrado':180,'Rendimiento':20}.get(self.cfg.get('desktop',{}).get('performance_profile'),180)
         if self.context and hasattr(self.context,'study') and now>=self._study_due:

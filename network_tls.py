@@ -5,15 +5,33 @@ loading the Windows certificate stores for every RSS request is expensive.
 """
 from functools import lru_cache
 import ssl
+import os
+import sys
 from urllib import request
 
 
 @lru_cache(maxsize=1)
 def https_context():
-    context = ssl.create_default_context()
+    # CryptoAPI retrieves missing intermediates and honours Windows trust
+    # updates. An explicit context leaves unrelated SSL clients unchanged.
+    if sys.platform == 'win32':
+        import truststore
+        context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        cafile=os.environ.get('SSL_CERT_FILE')
+        if cafile:context.load_verify_locations(cafile=cafile)
+    else:
+        context = ssl.create_default_context()
     import certifi
     context.load_verify_locations(cafile=certifi.where())
     return context
+
+
+def trusted_root_count():
+    # Native truststore does not implement cert_store_stats(). Count the bundled
+    # CA certificates explicitly loaded above, in addition to the OS store.
+    import certifi
+    from pathlib import Path
+    return Path(certifi.where()).read_bytes().count(b'-----BEGIN CERTIFICATE-----')
 
 
 def urlopen(url, data=None, timeout=10, **kwargs):
@@ -28,6 +46,10 @@ def connection_message(error):
     if any(s in text for s in ('certificate_verify_failed','certificate verify failed','local issuer certificate')):
         return ('CONEXIÓN SEGURA PENDIENTE',
                 'No se pudo verificar el certificado de esta fuente. Comprueba la fecha de Windows y sus certificados. Akira reintentará automáticamente; las demás fuentes siguen activas.')
+    if any(s in text for s in ('http error 403','forbidden','http error 451')):
+        return ('ACCESO RESTRINGIDO', 'El sitio no permite esta consulta desde esta conexión. Akira mantiene las demás fuentes y espera antes de volver a consultar.')
+    if any(s in text for s in ('http error 429','too many requests')):
+        return ('PAUSA DEL PROVEEDOR', 'El proveedor limitó las consultas. Akira esperará antes de intentarlo de nuevo; las demás fuentes siguen activas.')
     if any(s in text for s in ('no tiene un asistente','modelo no disponible','motor local','llama.cpp')):
         return ('IA PENDIENTE',
                 'La revisión de IA aún no está disponible. Akira intentará iniciar el modelo instalado. Si falta un componente, usa Reparar IA en Ajustes → IA y voz. No se considera aprobada ninguna revisión pendiente.')
@@ -47,7 +69,8 @@ def check_packaged_https():
     from urllib.parse import urlsplit
     context=https_context()
     checks={'bundled_ca_present':Path(certifi.where()).is_file(),
-            'trusted_roots':context.cert_store_stats()['x509_ca'],
+            'trusted_roots':trusted_root_count(),
+            'certificate_backend':'Windows CryptoAPI' if sys.platform=='win32' else 'OpenSSL + system + certifi',
             'certificate_required':context.verify_mode==ssl.CERT_REQUIRED,
             'hostname_required':context.check_hostname}
     for name in ('GOOD','BAD_HOST','BAD_CHAIN'):

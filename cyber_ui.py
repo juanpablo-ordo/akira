@@ -58,6 +58,8 @@ def source_presentation(name,row):
     if row.get('enabled') is False:state='DESACTIVADA';detail=detail or 'Desactivada en ajustes; no aporta al análisis.'
     elif row.get('reference_only') and row.get('usable') and not error:state='REFERENCIA EDUCATIVA';detail=detail or 'Material guardado para estudiar; no es una cotización ni una señal actual.'
     elif row.get('fresh') and row.get('usable',True) and not error:state='DISPONIBLE';detail=detail or 'Datos vigentes utilizados como contexto.'
+    elif error and row.get('automatic_pause'):
+        state='IA EN ESPERA';detail='El modelo no completó varias revisiones. Se redujeron los intentos automáticos para liberar recursos. El motor técnico continúa; una revisión exigida sigue pendiente y puedes solicitarla manualmente.'
     elif error:
         low=error.lower()
         if any(x in low for x in ('api_key','api key','sin clave','falta clave')):

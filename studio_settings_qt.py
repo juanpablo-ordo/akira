@@ -131,7 +131,9 @@ class SettingsPanel(QWidget):
         self.add_button(card,'IMPORTAR SESIÓN YOUTUBE',self.window.import_youtube_session)
         self.add_button(card,'ELIMINAR UNA CLAVE GUARDADA',self.window.delete_key)
         card=self.card(3,'INVESTIGACIÓN Y CONOCIMIENTO','sources')
-        for path,title in [('research.enabled','Investigación de mercado'),('research.youtube','Consultar YouTube'),('research.coinglass','Consultar CoinGlass'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
+        self.field(card,'research.derivatives_provider','Datos de derivados BTC',(('public','Públicos sin plan (recomendado)'),('coinglass','CoinGlass opcional con mi plan')),
+            help='Públicos consulta OKX, Bybit o Binance sin clave. La cobertura se muestra en Fuentes; no incluye un mapa agregado de liquidaciones. El oro usa sus propios datos MT5 y macro.')
+        for path,title in [('research.enabled','Investigación de mercado'),('research.youtube','Estudiar estrategias de YouTube'),('research.coinglass_public_fallback','Derivados públicos BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
         self.field(card,'knowledge.mode','Actualización de conocimiento',(('automatic','Automática'),('request','Solo al solicitarla')))
         self.field(card,'knowledge.interval_hours','Intervalo de biblioteca (horas)',limits=(1,168))
         self.add_button(card,'ACTUALIZAR CONOCIMIENTO',self.window.refresh_knowledge)

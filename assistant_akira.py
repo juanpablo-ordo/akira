@@ -337,7 +337,7 @@ class AkiraAssistant:
                 'strategy_adaptation':{k:(((research.get('strategy_lab') or {}).get('adaptation') or {}).get(k)) for k in ('state','updated','scope','policies')},
                 'errors':research.get('errors',{}),'updated':research.get('updated'),
                 'knowledge':research.get('knowledge',{}),'video_analysis':research.get('video_analysis',[]),
-                'daily_learning':{k:research.get('daily_learning',{}).get(k) for k in ('last_day','reports','account')},
+                'daily_learning':{k:research.get('daily_learning',{}).get(k) for k in ('last_day','reports','account','family_reports','scope','build')},
                 'research_state':research.get('research_state','')},
             'paused':snapshot.get('paused',False),'mode':snapshot.get('mode','')}
 
@@ -848,7 +848,7 @@ class AkiraAssistant:
             research=(snapshot or {}).get('research') or {}
             live['assistant_state']={'connected':bool((snapshot or {}).get('connected')),
                                      'knowledge':research.get('knowledge',{}),'research_state':research.get('research_state',''),
-                                     'daily_learning':{k:research.get('daily_learning',{}).get(k) for k in ('last_day','reports')}}
+                                     'daily_learning':{k:research.get('daily_learning',{}).get(k) for k in ('last_day','reports','family_reports','scope','build')}}
         cached=[{**r,'summary':str(r.get('summary',''))[:2500]} for r in self.memory.search(message,limit=5)]
         context=json.dumps({'conversation':self.dialogue.history(self.history)[-12:],'question':message,'live_state':live,
                             'cached_source_memory_untrusted':cached,'memory_stats':self.memory.stats()},ensure_ascii=False)

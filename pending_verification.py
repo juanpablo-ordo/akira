@@ -21,7 +21,7 @@ def digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False,default=str).encode()).hexdigest()[:24]
 
 def relevant_source(name,symbol):
-    if name in ('local_ai','cloud','pending_ai','worker','strategy_reference'):return False
+    if name.split(':')[0] in ('local_ai','cloud','pending_ai','worker','strategy_reference','youtube'):return False
     if symbol.startswith('XAU') and (':BTC' in name or name.startswith(('venue:','derivatives:'))):return False
     if symbol.startswith('BTC') and (':XAU' in name or ':GOLD' in name.upper()):return False
     return True
@@ -65,6 +65,10 @@ def targets(snapshot,context=None):
             if ticket:
                 current=next((x for x in scenarios if x.get('ticket')==ticket),{})
                 p.update({k:current[k] for k in ('assessment','quality_score','activation_score','scenario_state','block_reason') if k in current})
+            else:
+                current=next((x for x in scenarios if x.get('key')==p.get('key') and
+                    all(x.get(k)==p.get(k) for k in ('side','kind','entry','sl','tp'))),{})
+                p.update({k:current[k] for k in ('sendable','risk_usd','risk_cap_usd','funding','assessment','scenario_state','block_reason') if k in current})
             if p.get('confirmed'):
                 order=live.get(int(ticket or 0))
                 if snapshot.get('orders') is not None and not order:continue
@@ -131,7 +135,7 @@ def assess(snapshot,plan,checks=None,reviews=None,context=None):
     current=review_matches and -5<=now-float(review.get('updated') or now)<=180
     elapsed=max(0,now-float(review.get('started') or review.get('requested') or now))
     running=review_matches and review.get('state') in ('QUEUED','RUNNING')
-    deadline=90 if review.get('state')=='QUEUED' else 65
+    deadline=float(review.get('queue_budget_seconds') or 90) if review.get('state')=='QUEUED' else float(review.get('run_budget_seconds') or 65)
     ai_approved=(review.get('state')=='COMPLETE' and isinstance(data,dict)
                  and verdict=='APPROVE' and isinstance(data.get('reason'),str)
                  and bool(data['reason'].strip()) and isinstance(data.get('missing'),list)

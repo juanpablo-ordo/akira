@@ -49,7 +49,7 @@ class KnowledgeStore:
                 digest,body,str(row.get('summary',''))[:18000],str(row.get('status','read')))
         with self.db() as db:
             db.execute('INSERT OR REPLACE INTO sources VALUES (?,?,?,?,?,?,?,?,?,?)',values)
-            metadata={k:row[k] for k in ('author','complete','caption_type','language','evidence_origin') if k in row}
+            metadata={k:row[k] for k in ('author','complete','caption_type','language','evidence_origin','resolved_url') if k in row}
             db.execute('INSERT OR REPLACE INTO source_metadata VALUES (?,?)',(str(row['url']),json.dumps(metadata,ensure_ascii=False)))
         return digest
 
@@ -115,6 +115,8 @@ def public_url(url):
 class PublicRedirect(HTTPRedirectHandler):
     def redirect_request(self,req,fp,code,msg,headers,newurl):
         public_url(newurl)
+        if urlsplit(req.full_url).scheme=='https' and urlsplit(newurl).scheme!='https':
+            raise ValueError('La fuente intentó abandonar la conexión HTTPS segura')
         return super().redirect_request(req,fp,code,msg,headers,newurl)
 
 

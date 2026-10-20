@@ -1,13 +1,11 @@
 {
-  "build": "AKIRA_16_4_4_STUDIO_REV9",
-  "tests": 1337,
-  "status": "PASSED",
+  "build": "AKIRA_16_4_5_STUDIO_REV10",
+  "tests": 1368,
+  "status": "PENDING_WINDOWS_VERIFICATION",
   "date": "2026-10-20",
   "skipped": 0,
-  "scope": "Rev9: comprobaciones causales de pendientes, aprendizaje comparable y cola de IA. Datos financieros sintéticos; sin certificación de rentabilidad.",
-  "notes_file": "ACEPTACION_REV9.md",
-  "pytest_tests": 1340,
-  "pytest_subtests": 128,
-  "source_commit": "20df6cb7374345b20826ea2507a403153fb60599",
-  "evidence_file": "VALIDACION_STUDIO_REV9.json"
+  "scope": "Rev10: HTTPS nativo, fuentes públicas, trabajo de IA acotado y estrategia combinada en estudio. Sin certificación de rentabilidad.",
+  "notes_file": "ACEPTACION_REV10.md",
+  "pytest_tests": 1371,
+  "evidence_file": "VALIDACION_STUDIO_REV10.json"
 }

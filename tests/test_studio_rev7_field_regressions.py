@@ -15,8 +15,8 @@ class TLSFieldTests(unittest.TestCase):
         result=run()
         self.assertEqual(result['status'],'PASSED');self.assertTrue(result['bad_host_rejected']);self.assertTrue(result['bad_chain_rejected'])
     def test_roots_are_cached_with_chain_and_hostname_validation_enabled(self):
-        from network_tls import https_context
-        context=https_context();self.assertIs(context,https_context());self.assertEqual(context.verify_mode,ssl.CERT_REQUIRED);self.assertTrue(context.check_hostname);self.assertGreater(context.cert_store_stats()['x509_ca'],100)
+        from network_tls import https_context,trusted_root_count
+        context=https_context();self.assertIs(context,https_context());self.assertEqual(context.verify_mode,ssl.CERT_REQUIRED);self.assertTrue(context.check_hostname);self.assertGreater(trusted_root_count(),100)
     def test_news_certificate_failure_is_readable_and_distinct_from_missing_optional_key(self):
         from cyber_ui import source_presentation
         title,state,detail=source_presentation('global_news:BLS',{'error':'URLError: [SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer certificate','retry_after_seconds':90})
@@ -64,6 +64,7 @@ class ModelDiscoveryTests(unittest.TestCase):
         self.assertEqual(self.worker.evolution.submit.call_count,1)
         self.worker.submit({'symbols':{'BTCUSDm':{}}});self.worker.tick();self.assertEqual(self.worker.evolution.submit.call_count,2)
     def test_complete_assets_are_reviewed_separately_without_dropping_indicators(self):
+        self.cfg['desktop']['model_context_tokens']=8192
         view={'symbols':{s:{'frames':{'M15':{'rsi':50,'rare_indicator':1.2345},'H4':{'rsi':40,'rare_indicator':3.4567}}} for s in ('BTCUSDm','XAUUSDm')}};seen=[]
         def answer(messages,**kwargs):
             text=messages[-1]['content'];payload=json.loads(text[text.index('{"as_of_utc"'):]);self.assertEqual(len(payload['symbols']),1);self.assertIn('rare_indicator',payload['indicator_columns']);seen.extend(payload['symbols'])

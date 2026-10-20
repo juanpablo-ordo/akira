@@ -6,7 +6,15 @@ from windows_identity import set_identity,application_root
 
 if __name__=='__main__':
     set_identity()
-    parser=argparse.ArgumentParser();parser.add_argument('--low-resource-check');parser.add_argument('--https-check');parser.add_argument('--prepare-uninstall',action='store_true');parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');parser.add_argument('--local-components-check');parser.add_argument('--sprite-ai-check');parser.add_argument('--legacy-ui',action='store_true',help=argparse.SUPPRESS);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--sources-check');parser.add_argument('--low-resource-check');parser.add_argument('--https-check');parser.add_argument('--prepare-uninstall',action='store_true');parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');parser.add_argument('--local-components-check');parser.add_argument('--sprite-ai-check');parser.add_argument('--legacy-ui',action='store_true',help=argparse.SUPPRESS);args=parser.parse_args()
+    if args.sources_check:
+        import json
+        from qa_sources_rev10 import run
+        try:result=run(args.sources_check)
+        except Exception as error:
+            result={'status':'FAILED','error':type(error).__name__+': '+str(error)}
+            Path(args.sources_check).write_text(json.dumps(result,indent=2),encoding='utf-8')
+        sys.exit(0 if result['status']=='PASSED' else 1)
     if args.low_resource_check:
         import json
         from qa_low_resource_rev7 import run

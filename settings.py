@@ -88,6 +88,8 @@ def load_config(path):
         for k in ('enabled','youtube','investing','coinglass','coinglass_public_fallback','local_model','local_ai_summary'):
             cfg['research'][k]=True
     cfg['schema_version']=1600
+    if cfg['research'].get('derivatives_provider') not in ('public','coinglass'):
+        raise ValueError('Elige datos de derivados públicos o CoinGlass opcional')
     from datetime import datetime
     for closure in cfg.get('market_hours',{}).get('closures',[]):
         if closure.get('symbol') not in cfg['symbols']:raise ValueError('Cierre extraordinario para símbolo desconocido')

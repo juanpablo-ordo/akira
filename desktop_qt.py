@@ -249,7 +249,7 @@ class StudioWindow(QMainWindow):
     def build_sources(self):
         _,layout=self.page();self.sources_split,(left,right)=self.split(layout,(3,2));card=self.card('FUENTES EN TIEMPO REAL','sources')
         self.source_search=QLineEdit();self.source_search.setPlaceholderText(self.text('Buscar fuente, tipo o descripción…'));self.source_search.textChanged.connect(self.render_sources);card.body.addWidget(self.source_search)
-        self.source_table=self.table(['Estado','Fuente','Último intento','Último éxito','Antigüedad','Reintento (s)','APORTE O MOTIVO']);self.source_table.itemSelectionChanged.connect(self.source_selected);card.body.addWidget(self.source_table,1)
+        self.source_table=self.table(['Estado','Fuente','Último intento','Último éxito','Antigüedad','Próxima consulta','APORTE O MOTIVO']);self.source_table.itemSelectionChanged.connect(self.source_selected);card.body.addWidget(self.source_table,1)
         card.body.addWidget(self.btn('ACTUALIZAR AHORA',lambda:self.controller.request({'action':'refresh_sources'}),glyph='refresh'));left.addWidget(card,1)
         state=self.card('QUÉ ESTÁ HACIENDO AKIRA','sources');self.avatar(state.body,150);self.research_status=label('','body');self.research_status.setWordWrap(True);state.body.addWidget(self.research_status);right.addWidget(state)
         context=self.card('CONTEXTO DE INVESTIGACIÓN','analysis');tabs=QTabWidget();self.source_detail=QTextBrowser();self.source_detail.setOpenExternalLinks(True);self.source_content=QTextBrowser();self.source_content.setOpenExternalLinks(True);tabs.addTab(self.source_detail,self.text('Estado'));tabs.addTab(self.source_content,self.text('Contenido y fuentes'));context.body.addWidget(tabs,1);right.addWidget(context,2)
@@ -566,7 +566,8 @@ class StudioWindow(QMainWindow):
             if row.get('display_hidden'):continue
             title,state,detail=source_presentation(name,row);age=number(row.get('age_seconds'),1)+' s' if row.get('age_seconds') is not None else '—'
             data={**row,'title':title,'presentation_state':state,'presentation_detail':detail}
-            if not query or query in (title+state+detail).casefold():rows.append((name,[state,title,when(row.get('last_attempt')),when(row.get('updated')),age,number(row.get('retry_after_seconds'),0),detail],data))
+            from studio_presenter import next_query
+            if not query or query in (title+state+detail).casefold():rows.append((name,[state,title,when(row.get('last_attempt')),when(row.get('updated')),age,next_query(row),detail],data))
             analysis.append((name,[title,state,age,detail],data))
         self.source_table.update_rows(rows);self.analysis_sources.update_rows(analysis)
         research=v.get('research') or {};content=[]
@@ -582,7 +583,8 @@ class StudioWindow(QMainWindow):
     def source_selected(self):
         row=self.source_table.rows.get(self.source_table.selected_key())
         if row:
-            set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'))+'\nÚltimo contenido recibido: '+when(row.get('updated'))+'\nPróximo intento en '+number(row.get('retry_after_seconds'),0)+' s\n\n'+str(row.get('detail') or row.get('error') or 'Sin contenido adicional recibido.')))
+            from studio_presenter import next_query
+            set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'))+'\nÚltimo contenido recibido: '+when(row.get('updated'))+'\nPróxima consulta: '+next_query(row)))
             self.source_detail.setToolTip('')
     def render_logs(self,*args):
         if not hasattr(self,'terminal_table'):return

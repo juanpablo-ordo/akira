@@ -24,6 +24,7 @@ RULES = {
     'H1_ALIGNMENT': {'name': 'Confirmar dirección H1', 'terms': ('h1', 'tendencia', 'trend', 'temporalidad', 'timeframe'), 'rule': 'side * trend H1 >= 0.35'},
     'VOLUME': {'name': 'Confirmar volumen M15', 'terms': ('volumen', 'volume'), 'rule': 'volume_ratio M15 >= 1'},
     'RSI': {'name': 'Evitar extensión RSI M15', 'terms': ('rsi', 'sobrecompra', 'sobreventa'), 'rule': 'LONG: RSI 40–65; SHORT: RSI 35–60'},
+    'CONFLUENCE': {'name': 'Confluencia adaptativa AKIRA', 'terms': (), 'rule': 'Dirección H1 >= 0.35 + volumen M15 >= 1 + RSI de recuperación. Combinación estudiada como hipótesis independiente.'},
 }
 MAX_TRIALS = 100000
 
@@ -37,6 +38,9 @@ def execution_identity(account, build, configuration):
 
 
 def condition(code, plan, frames):
+    if code=='CONFLUENCE':
+        parts=[condition(k,plan,frames) for k in ('H1_ALIGNMENT','VOLUME','RSI')]
+        return None if any(p is None for p in parts) else all(parts)
     side = int(value(plan, 'side', 0))
     if side not in (-1, 1): return None
     frame = frames.get('H1' if code == 'H1_ALIGNMENT' else 'M15') or {}
@@ -185,6 +189,18 @@ class StrategyAdaptation:
                            'sources': sources, 'state': 'HIPÓTESIS · SIN VALIDAR'}
                 db.execute('INSERT OR REPLACE INTO profiles VALUES (?,?)', (code, json.dumps(profile, ensure_ascii=False)))
                 added.append(code)
+            # Fuse dated, complete educational sources into ONE predeclared
+            # hypothesis. It must earn its OWN prospective holdout; success of
+            # individual filters is not evidence that their AND is successful.
+            existing={r[0]:json.loads(r[1]) for r in db.execute('SELECT id,body FROM profiles')}
+            if all(k in existing for k in ('H1_ALIGNMENT','VOLUME','RSI')):
+                sources={s['sha256']:s for code in ('H1_ALIGNMENT','VOLUME','RSI') for s in existing[code]['sources']}
+                profile={'id':'CONFLUENCE','rule_version':RULE_VERSION,'name':RULES['CONFLUENCE']['name'],
+                    'rule':RULES['CONFLUENCE']['rule'],'sources':list(sources.values())[-30:],
+                    'state':'HIPÓTESIS COMBINADA · SIN VALIDAR','components':['H1_ALIGNMENT','VOLUME','RSI'],
+                    'auto_live_activation':False}
+                db.execute('INSERT OR REPLACE INTO profiles VALUES (?,?)',('CONFLUENCE',json.dumps(profile,ensure_ascii=False)))
+                added.append('CONFLUENCE')
         return added
 
     def read(self):

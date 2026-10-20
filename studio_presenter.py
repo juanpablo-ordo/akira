@@ -33,6 +33,15 @@ def set_document(widget,text,follow=False):
     bar=widget.verticalScrollBar();position=bar.value();at_end=position>=bar.maximum()-3;widget._studio_document=text;widget.setHtml(text)
     widget.document().documentLayout().documentSize();bar.setValue(bar.maximum() if follow and at_end else min(position,bar.maximum()))
 
+def next_query(row):
+    if row.get('enabled') is False:return '—'
+    if row.get('waiting_for_worker'):return 'Esperando conexión'
+    if row.get('inflight'):return 'En curso'
+    seconds=max(0,round(float(row.get('retry_after_seconds') or 0)))
+    if seconds>=3600:return 'En '+str((seconds+3599)//3600)+' h'
+    if seconds>=60:return 'En '+str((seconds+59)//60)+' min'
+    return 'En '+str(seconds)+' s' if seconds else 'Al estar lista'
+
 INDICATORS={'ema9':'Tendencia rápida (9 velas)','ema21':'Tendencia corta (21 velas)','ema50':'Tendencia media (50 velas)','ema200':'Tendencia de fondo (200 velas)','rsi':'Fuerza de compras y ventas (RSI)','atr':'Movimiento habitual del precio (ATR)','adx':'Fuerza de la tendencia (ADX)','macd':'Impulso (MACD)','volume_ratio':'Volumen frente a lo habitual','bos':'Ruptura de estructura','sweep':'Barrido de liquidez','range_hi':'Techo del rango','range_lo':'Suelo del rango','vwap':'Precio medio ponderado por volumen'}
 
 def frame_html(frames):
@@ -55,6 +64,9 @@ def source_abstract(value):
     if isinstance(value,str):
         try:value=json.loads(value)
         except ValueError:return human(value)
+    if isinstance(value,dict) and value.get('coverage'):
+        labels={'open_interest':'Interés abierto','premium':'Coste de financiación','depth':'Libro de órdenes','global_ls':'Proporción de compras y ventas','oi_history':'Historial de interés abierto','taker_ratio':'Actividad de compradores y vendedores'}
+        return str(value.get('detail') or '')+'\n\nDatos disponibles: '+', '.join(labels.get(k,k) for k in value['coverage'])
     if isinstance(value,dict):return '\n'.join(human(k.replace('_',' ').capitalize())+': '+human(v) for k,v in value.items() if not isinstance(v,(dict,list))) or 'Contenido recibido y guardado como contexto. Revisa su fecha y disponibilidad.'
     return human(value)
 
