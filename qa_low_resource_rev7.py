@@ -21,42 +21,42 @@ def run(report=None,screenshots=None):
         import resource
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024
     app=QApplication.instance() or QApplication([]);result={'build':BUILD_ID,'data':'SYNTHETIC','broker':'FakeMT5','live_account_used':False,'logical_cores_available':len(selected),'profiles':{}}
-    stop=threading.Event();actor=None;window=None;engine=None;worker=None
+    stop=threading.Event();actor=None;window=None;engine=None;worker=None;_qa_temp=None
     try:
-        with tempfile.TemporaryDirectory(prefix='akira-low-resource-') as tmp:
-            root=Path(tmp);window=StudioWindow(root,preview=True,start_actor=False);window.resize(1366,768);window.show();window.navigate(3)
-            cfg=window.cfg;cfg['mode']='observe';clock=Clock();clock.now=1792407600 # synthetic Monday market session
-            api=FakeMT5(clock);gateway=Gateway(api,cfg,Journal(root/'bench.json'),Reporter(root/'bench-log',console=False),clock)
-            worker=ContextWorker(cfg,root,clock);worker.sources={'news':{'updated':clock(),'data':{'items':[{'title':'Synthetic market context '+str(i),'url':'https://example.com/'+str(i),'date':'2026-10-19T10:00:00Z'} for i in range(80)]},'error':''}}
-            # Reproduce an established library, rather than an always empty
-            # installation. Cached summaries must not reopen/parse all evidence
-            # on every technical tick. These are fabricated public references.
-            for i in range(100):
-                worker.strategy_lab.research_ledger.add(url='https://example.com/qa-reference-'+str(i),kind='news_read',
-                    title='Synthetic research reference '+str(i),body='Synthetic educational context. '*200)
-            result['workload']={'research_references':100,'research_chars_each':6000,'news_items':80,
-                'text_inference_running':False,'network_requests_running':False}
-            engine=Engine(gateway,cfg,gateway.log,worker);cycles=[];fresh=[];base={s:row.bid for s,row in api.ticks.items()}
-            def market_loop():
-                while not stop.is_set():
-                    began=time.monotonic();clock.advance(cfg['poll_seconds'])
-                    for symbol in base:api.set_quote(symbol,base[symbol]+math.sin(clock.now*2)*(5 if symbol.startswith('BTC') else .15),fill=False)
-                    view=engine.step();cycles.append(float(view['cycle_ms']));fresh.append(all(row.get('quote_time') is not None and 0<=clock()-row['quote_time']<1 for row in view['symbols'].values()));window.controller.publish(view);stop.wait(max(.02,cfg['poll_seconds']-(time.monotonic()-began)))
-            actor=threading.Thread(target=market_loop,name='AkiraSyntheticActor',daemon=True);actor.start()
-            def settle(seconds):
-                deadline=time.monotonic()+seconds
-                while time.monotonic()<deadline:app.processEvents();time.sleep(.004)
-            settle(4)
-            for profile,minimized in [('Equilibrado',False),('Ahorro de energía',False),('Ahorro de energía',True)]:
-                cfg['desktop']['performance_profile']=profile;window.apply_visual(cfg['studio'])
-                if minimized:window.showMinimized()
-                else:window.showNormal()
-                settle(.5);window.ui_delays=[];first=len(cycles);started=time.monotonic();cpu=time.process_time();settle(8);elapsed=time.monotonic()-started;cpu=time.process_time()-cpu
-                delays=sorted(window.ui_delays);times=sorted(cycles[first:]);key='minimized' if minimized else profile
-                result['profiles'][key]={'cpu_seconds':round(cpu,3),'wall_seconds':round(elapsed,3),'cpu_percent_of_two_cores':round(cpu/elapsed/max(1,len(selected))*100,2),'ui_delay_p95_ms':round(delays[min(len(delays)-1,int(len(delays)*.95))],2) if delays else None,'engine_cycle_p95_ms':round(times[min(len(times)-1,int(len(times)*.95))],2) if times else None,'engine_cycles':len(times),'fresh_quote_cycles':sum(fresh[first:]),'rss_mb':round(rss_mb(),1),'financial_poll_seconds':cfg['poll_seconds']}
-                if screenshots and not minimized:
-                    Path(screenshots).mkdir(parents=True,exist_ok=True);window.grab().save(str(Path(screenshots)/('low_resource_'+('eco' if profile=='Ahorro de energía' else 'balanced')+'.png')))
-            eco=result['profiles']['Ahorro de energía'];result['status']='PASSED' if eco['cpu_percent_of_two_cores']<15 and eco['ui_delay_p95_ms']<150 and all(r['engine_cycles']>=15 and r['fresh_quote_cycles']==r['engine_cycles'] for r in result['profiles'].values()) else 'FAILED'
+        _qa_temp=tempfile.TemporaryDirectory(prefix='akira-low-resource-');tmp=_qa_temp.name
+        root=Path(tmp);window=StudioWindow(root,preview=True,start_actor=False);window.resize(1366,768);window.show();window.navigate(3)
+        cfg=window.cfg;cfg['mode']='observe';clock=Clock();clock.now=1792407600 # synthetic Monday market session
+        api=FakeMT5(clock);gateway=Gateway(api,cfg,Journal(root/'bench.json'),Reporter(root/'bench-log',console=False),clock)
+        worker=ContextWorker(cfg,root,clock);worker.sources={'news':{'updated':clock(),'data':{'items':[{'title':'Synthetic market context '+str(i),'url':'https://example.com/'+str(i),'date':'2026-10-19T10:00:00Z'} for i in range(80)]},'error':''}}
+        # Reproduce an established library, rather than an always empty
+        # installation. Cached summaries must not reopen/parse all evidence
+        # on every technical tick. These are fabricated public references.
+        for i in range(100):
+            worker.strategy_lab.research_ledger.add(url='https://example.com/qa-reference-'+str(i),kind='news_read',
+                title='Synthetic research reference '+str(i),body='Synthetic educational context. '*200)
+        result['workload']={'research_references':100,'research_chars_each':6000,'news_items':80,
+            'text_inference_running':False,'network_requests_running':False}
+        engine=Engine(gateway,cfg,gateway.log,worker);cycles=[];fresh=[];base={s:row.bid for s,row in api.ticks.items()}
+        def market_loop():
+            while not stop.is_set():
+                began=time.monotonic();clock.advance(cfg['poll_seconds'])
+                for symbol in base:api.set_quote(symbol,base[symbol]+math.sin(clock.now*2)*(5 if symbol.startswith('BTC') else .15),fill=False)
+                view=engine.step();cycles.append(float(view['cycle_ms']));fresh.append(all(row.get('quote_time') is not None and 0<=clock()-row['quote_time']<1 for row in view['symbols'].values()));window.controller.publish(view);stop.wait(max(.02,cfg['poll_seconds']-(time.monotonic()-began)))
+        actor=threading.Thread(target=market_loop,name='AkiraSyntheticActor',daemon=True);actor.start()
+        def settle(seconds):
+            deadline=time.monotonic()+seconds
+            while time.monotonic()<deadline:app.processEvents();time.sleep(.004)
+        settle(4)
+        for profile,minimized in [('Equilibrado',False),('Ahorro de energía',False),('Ahorro de energía',True)]:
+            cfg['desktop']['performance_profile']=profile;window.apply_visual(cfg['studio'])
+            if minimized:window.showMinimized()
+            else:window.showNormal()
+            settle(.5);window.ui_delays=[];first=len(cycles);started=time.monotonic();cpu=time.process_time();settle(8);elapsed=time.monotonic()-started;cpu=time.process_time()-cpu
+            delays=sorted(window.ui_delays);times=sorted(cycles[first:]);key='minimized' if minimized else profile
+            result['profiles'][key]={'cpu_seconds':round(cpu,3),'wall_seconds':round(elapsed,3),'cpu_percent_of_two_cores':round(cpu/elapsed/max(1,len(selected))*100,2),'ui_delay_p95_ms':round(delays[min(len(delays)-1,int(len(delays)*.95))],2) if delays else None,'engine_cycle_p95_ms':round(times[min(len(times)-1,int(len(times)*.95))],2) if times else None,'engine_cycles':len(times),'fresh_quote_cycles':sum(fresh[first:]),'rss_mb':round(rss_mb(),1),'financial_poll_seconds':cfg['poll_seconds']}
+            if screenshots and not minimized:
+                Path(screenshots).mkdir(parents=True,exist_ok=True);window.grab().save(str(Path(screenshots)/('low_resource_'+('eco' if profile=='Ahorro de energía' else 'balanced')+'.png')))
+        eco=result['profiles']['Ahorro de energía'];result['status']='PASSED' if eco['cpu_percent_of_two_cores']<15 and eco['ui_delay_p95_ms']<150 and all(r['engine_cycles']>=15 and r['fresh_quote_cycles']==r['engine_cycles'] for r in result['profiles'].values()) else 'FAILED'
     finally:
         stop.set()
         if actor:actor.join(10)
@@ -64,6 +64,7 @@ def run(report=None,screenshots=None):
         if worker:worker.close()
         if window:window.close();app.processEvents()
         process.cpu_affinity(previous) if process else os.sched_setaffinity(0,previous)
+        if _qa_temp:_qa_temp.cleanup()
     if report:Path(report).write_text(json.dumps(result,indent=2,ensure_ascii=False),encoding='utf-8')
     return result
 

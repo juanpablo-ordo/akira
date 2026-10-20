@@ -185,15 +185,19 @@ class ConversationRoutingTests(unittest.TestCase):
              patch.object(self.bot,'_source_tool',side_effect=AssertionError('unwanted search')):
             self.assertEqual(self.bot._local_llm_reply_impl(message,snapshot),'Te leo. Cuéntame qué pasó hoy.')
 
+    def test_weather_word_ola_is_not_rewritten_as_a_greeting(self):
+        from language_normalization import understood
+        self.assertEqual(understood('Hay una ola de calor'),'Hay una ola de calor')
+
     def test_own_identity_is_not_confused_with_current_factual_questions(self):
-        for message in ('¿Quién es el presidente actual de Guatemala?','¿Qué anunció Xbox hoy?'):
+        for message in ('¿Quién es el presidente actual de Guatemala?','¿Qué anunció Xbox hoy?','Recuerdas quién es el presidente actual de Guatemala?'):
             self.assertIsNone(self_reply(message))
             self.assertFalse(is_personal_conversation(message))
             self.assertTrue(self.bot._should_research_fact(message))
 
     def test_conversation_is_not_reported_as_a_successful_model_if_it_failed(self):
         with patch.object(self.bot,'local_llm_reply',side_effect=TimeoutError('fixture timeout')):
-            answer=self.bot.reply('jajaja',{},False)
+            answer=self.bot.reply('jaja',{},False)
         self.assertNotIn('Te sigo. ',answer)
 
     def test_eco_status_does_not_load_the_model_just_to_check_an_idle_chat(self):

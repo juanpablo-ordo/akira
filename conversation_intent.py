@@ -13,7 +13,7 @@ def self_intent(message, brand='AKIRA'):
     text = folded(message)
     name = folded(brand)
     names = {'akira', name}
-    for prefix in ('hola ', 'hey ', 'buenas ', 'oye '):
+    for prefix in ('hola ', 'ola ', 'hey ', 'buenas ', 'oye '):
         if text.startswith(prefix):text = text[len(prefix):];break
     for alias in names:
         if text.startswith(alias + ' '):text = text[len(alias)+1:]
@@ -40,7 +40,7 @@ def is_personal_conversation(message):
     # itself into the short-entity web-search heuristic.
     return bool(re.match(r'^(?:me siento|estoy (?:triste|feliz|cansad[oa]|aburrid[oa]|nervios[oa])|'
         r'tengo hambre|quiero contarte|te cuento|hoy me (?:paso|siento)|'
-        r'recuerdas\b|como me llamo|sabes como me llamo|que te dije|que hemos hablado|'
+        r'recuerdas (?:lo que|mi |mis |como me llamo|que te dije|de lo que hablamos)|como me llamo|sabes como me llamo|que te dije|que hemos hablado|'
         r'que (?:piensas|opinas) (?:de mi|sobre mi)|te gusta |tu que prefieres|y tu\b)', text))
 
 
