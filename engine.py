@@ -137,6 +137,10 @@ class Engine:
             row.update(state='ESPERANDO NUEVA TESIS',detail='Pausa entre runners del mismo símbolo')
             return False
         own=[o for o in snap.orders if o.symbol==symbol and g.owned_order(o)]
+        protection=g.runner_protection(plan,snap);row['capital_protection']=protection
+        if not protection['allowed']:
+            row.update(state='RUNNER EN PAUSA',detail=protection['reason'])
+            return False
         ignored=tuple(int(o.ticket) for o in own)
         try:
             evaluation={}
@@ -180,6 +184,8 @@ class Engine:
                        detail=f'Solicitaste {"LONG" if required_side==1 else "SHORT"}; falta confirmación de ese lado.')
             return row
         try:
+            protection=g.runner_protection(plan,snap);row['capital_protection']=protection
+            if not protection['allowed']:raise Blocked(protection['reason'])
             own=tuple(int(o.ticket) for o in snap.orders if o.symbol==symbol and g.owned_order(o))
             row['funding']=g.funding_diagnostic(plan,snap,own)
             entries=g.journal.data.get('runner_entries',{})
@@ -901,8 +907,10 @@ class Engine:
                     self.status[symbol]={'state':'SIN INTERNET','detail':'Nuevas entradas en pausa; reconexión automática. Se conservan los niveles confirmados en MT5.'};continue
                 if self.cfg['mode']!='trade':self.status[symbol]={'state':'OBSERVAR','detail':f'Solo análisis: {len(plans)} candidatas evaluadas; no se envían órdenes. Activa la operativa desde el encabezado o Ajustes → Operación.'};continue
                 if symbol in g.journal.data['intents']:self.status[symbol]={'state':'RECONCILIANDO','detail':'Esperando evidencia MT5 de la solicitud anterior'};continue
-                if self.try_runner(symbol,q):continue
+                # Fund valid pending entries first. Runners use remaining capacity
+                # and cannot cancel a confirmed map under the default policy.
                 self.execute_pending_map(symbol,plans,q)
+                if symbol not in g.journal.data['intents']:self.try_runner(symbol,q)
             except MarketPaused as e:
                 # No fabricar nuevas órdenes con el último precio de oro durante
                 # el cierre diario. Mantener la última propuesta visible.
@@ -1394,8 +1402,10 @@ class Engine:
         return row
 
     def report_history(self):
-        keys=('ticket','order','position_id','time','symbol','type','entry','volume','price','profit','commission','swap','fee','magic','reason','comment')
-        return {'position_journal':copy.deepcopy(self.g.journal.data['positions']),
+        keys=('ticket','order','position_id','time','time_msc','symbol','type','entry','volume','price','profit','commission','swap','fee','magic','reason','comment')
+        return {'order_journal':copy.deepcopy(self.g.journal.data['orders']),
+            'runner_entries':copy.deepcopy(self.g.journal.data.get('runner_entries',{})),
+            'position_journal':copy.deepcopy(self.g.journal.data['positions']),
             'history_deals':[{k:getattr(d,k,None) for k in keys} for d in self.g.history],
             'history_state':{'updated':self.g.history_time,'error':self.g.history_error},
             'operational_events':copy.deepcopy(list(getattr(self.log,'recent_events',()))) }

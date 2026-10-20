@@ -385,6 +385,11 @@ def load_config(path):
     if cfg['runner']['max_signal_age_seconds']<=0 or cfg['runner']['entry_cooldown_seconds']<=0:raise ValueError('Ventanas runner deben ser positivas')
     if cfg['runner']['min_stop_atr']<=0 or cfg['runner']['max_stop_atr']<cfg['runner']['min_stop_atr']:raise ValueError('Distancia estructural runner inválida')
     if cfg['runner']['min_rr']<1:raise ValueError('R:R runner debe ser >=1')
+    if not 0 < cfg['runner']['max_trade_budget_pct'] <= 100:raise ValueError('Presupuesto runner debe estar entre 0 y 100% del límite por operación')
+    if not 60 <= cfg['runner']['loss_cooldown_seconds'] <= 86400:raise ValueError('Pausa tras pérdida runner debe ser de 60 a 86400 segundos')
+    if not .25 <= cfg['runner']['loss_budget_trades'] <= 3:raise ValueError('Presupuesto de pérdidas runner debe ser 0.25 a 3 límites por operación')
+    for key in ('preserve_pending_orders','allow_size_boost'):
+        if type(cfg['runner'][key]) is not bool:raise ValueError('runner.'+key+' debe ser booleano')
     if not cfg['symbols'] or not any(cfg['symbols'].values()):raise ValueError('Activa BTC y/o XAU')
     for s,on in cfg['symbols'].items():
         if not isinstance(s,str) or not s.upper().startswith(('BTC','XAU')) or type(on) is not bool:raise ValueError('Solo símbolos BTC/XAU de MT5 y true/false')

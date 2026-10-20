@@ -123,7 +123,7 @@ class ConversationState:
 
 def prompt_messages(instructions,question,history,state=None,evidence='',continuity=None,budget=28000):
     """Reservar espacio a la pregunta y al diálogo antes de agregar fuentes."""
-    budget=max(12000,min(48000,int(budget)))
+    budget=max(3000,min(48000,int(budget)))
     current=str(question)[:min(8000,budget//3)]
     messages=[{'role':'system','content':str(instructions)[:min(8500,budget//3)]}]
     remaining=max(0,budget-len(current)-sum(len(r['content']) for r in messages)-1000)

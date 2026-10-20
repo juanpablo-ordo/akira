@@ -329,7 +329,8 @@ class StudioWindow(QMainWindow):
         if sheet!=getattr(self,'_sheet',None):self.setStyleSheet(sheet);self._sheet=sheet
         brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
         QApplication.instance().setApplicationDisplayName(brand)
-        self.setWindowTitle(brand+' · Studio · 16.4.2');desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
+        from akira_version import BUILD_ID
+        self.setWindowTitle(brand+' · Studio · '+BUILD_ID.removeprefix('AKIRA_').replace('_STUDIO_',' · ').replace('_','.'));desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
         for wave in self.findChildren(SignalWave):wave.set_saving(profile=='Ahorro de energía' or bool(studio.get('reduce_motion')))
         if profile=='Ahorro de energía':wallpaper.update(fps=min(12,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
         self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
@@ -364,7 +365,10 @@ class StudioWindow(QMainWindow):
             for avatar in self.avatars:
                 if avatar.isVisible():avatar.update()
     def poll(self):
-        now=time.monotonic();delay=max(0,now-getattr(self,'_last_ui_tick',now)-.08);self._last_ui_tick=now
+        now=time.monotonic();delay=max(0,now-getattr(self,'_last_ui_tick',now)-self.poll_timer.interval()/1000);self._last_ui_tick=now
+        from resource_optimizer import ui_poll_ms
+        desired=ui_poll_ms(self.controller.cfg,self.isMinimized() or not self.isVisible(),self.controller.chat_busy)
+        if self.poll_timer.interval()!=desired:self.poll_timer.setInterval(desired)
         self.ui_delays.append(delay*1000)
         if len(self.ui_delays)>1000:self.ui_delays=self.ui_delays[-1000:]
         for event in self.controller.poll():self.handle_event(event)
@@ -478,7 +482,7 @@ class StudioWindow(QMainWindow):
         summary.append('● MT5 conectado' if connected else '◷ Esperando conexión con MT5')
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
         self.system_text.setText('\n\n'.join(summary))
-        for symbol,(price,status,chart) in self.home_markets.items():
+        for symbol,(price,status,chart) in (self.home_markets.items() if self.page_index==0 else []):
             info=(view.get('symbols') or {}).get(symbol) or {};price.setText(number(info.get('bid')));status.setText(market_activity(view,symbol)['text']);chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [])
         if self.page_index==1:self.render_pending()
         elif self.page_index==2:self.render_account()

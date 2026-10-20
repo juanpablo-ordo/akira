@@ -37,6 +37,13 @@ def resolve_profile(value):
 def get_intervals(config):
     return dict(resolve_profile((config.get('desktop') or {}).get('performance_profile', 'Equilibrado')))
 
+def ui_poll_ms(config, hidden=False, interactive=False):
+    if interactive:return 80
+    if hidden:return 750
+    return {'Ahorro de energía':250,'Equilibrado':120,'Rendimiento':80}.get(
+        (config.get('desktop') or {}).get('performance_profile'),120)
+
+
 def config_limits(config):
     source = (config.get('desktop') or {}) if isinstance(config, dict) else {}
     limits = dict(DEFAULTS)

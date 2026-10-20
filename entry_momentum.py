@@ -21,7 +21,8 @@ def number(value):
 def adverse_impulse(plan, frames, now, quote=None):
     """Return evidence only; never query MT5, change protection or send orders."""
     side = number(get(plan, 'side'))
-    if side not in (-1, 1) or get(plan, 'kind', '') != 'LIMIT':
+    if side not in (-1, 1) or not (get(plan, 'kind', '') == 'LIMIT' or
+            (get(plan, 'lane', '') == 'RUNNER' and get(plan, 'kind', '') == 'MARKET')):
         return None
     frame = frames.get('M1')
     atr = number(get(frame, 'atr'))
@@ -62,6 +63,6 @@ def adverse_impulse(plan, frames, now, quote=None):
             or abs(close - entry) > reach or ref <= 0 or activation <= 0 or abs(activation - entry) > reach
             or adverse * (ref - close) < -atr * .25):
         return None
-    return {'reason': 'Dos velas M1 cerradas muestran un impulso fuerte contra esta LIMIT cerca de su entrada; esperar una nueva confirmación de rechazo.',
+    return {'reason': 'Dos velas M1 cerradas muestran un impulso fuerte contra esta entrada; esperar una nueva confirmación de rechazo.',
             'timeframe': 'M1', 'closed_bar_time': times[1], 'move_atr': round(move / atr, 3),
             'rule_version': 1, 'scope': 'Filtro de ejecución causal; sin estimación de ganancias.'}

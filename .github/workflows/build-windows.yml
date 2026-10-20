@@ -1,11 +1,11 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.5 Studio Rev10 · HTTPS nativo · derivados públicos · IA acotada · ${{ github.ref_name }}
+run-name: AKIRA 16.4.6 Studio Rev11 · protección runners · chat · equipos modestos · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - akira-studio-rev10-20261020
+      - akira-studio-rev11-20261020
 
 permissions:
   contents: read
@@ -49,7 +49,7 @@ jobs:
           python -m installer.check_tk_runtime --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
           if ($LASTEXITCODE -ne 0) { throw 'La biblioteca gráfica de Python está incompleta o no carga. Revisa TK_RUNTIME.json.' }
 
-      - name: Verificar que se incorporo REV10 antes de construir el instalador
+      - name: Verificar que se incorporo REV11 antes de construir el instalador
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -57,17 +57,17 @@ jobs:
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
                         'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
                         'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
-                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','public_derivatives.py','compact_review.py','qa_sources_rev10.py','qa_review_rev10.py','qa_low_resource_rev7.py','installer/check_https.py')
+                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','public_derivatives.py','compact_review.py','qa_sources_rev10.py','qa_review_rev10.py','qa_low_resource_rev7.py','installer/check_https.py','runner_protection.py','conversation_intent.py','order_timing.py','qa_conversation_rev11.py','tests/test_studio_rev11_capital_chat_timing.py')
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) {
-              throw "Código REV10 incompleto: falta $file. No publicar un instalador antiguo."
+              throw "Código REV11 incompleto: falta $file. No publicar un instalador antiguo."
             }
           }
           $build = python -c "from akira_version import BUILD_ID; print(BUILD_ID)"
-          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_5_STUDIO_REV10') {
+          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_6_STUDIO_REV11') {
             throw "Identidad de compilación inesperada: $build"
           }
-          Write-Host 'Fuente Studio Rev10 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
+          Write-Host 'Fuente Studio Rev11 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar
         shell: pwsh
@@ -183,6 +183,13 @@ jobs:
           python qa_real_conversation_rev6.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CONVERSATION_REV6_WINDOWS.json
           if ($LASTEXITCODE -ne 0) { throw 'La conversación real de Rev6 no pasó; no se publica el instalador.' }
 
+      - name: Conversación real con interfaz y motor BTC-oro simultáneos en dos núcleos
+        shell: pwsh
+        timeout-minutes: 15
+        run: |
+          python qa_conversation_rev11.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_LOW_RESOURCE_REV11.json
+          if ($LASTEXITCODE -ne 0) { throw 'La conversación o el rendimiento durante inferencia real no pasaron; revisar REAL_CHAT_LOW_RESOURCE_REV11.json.' }
+
       - name: Empaquetar ejecutable con motor local (sin el modelo GGUF)
         shell: pwsh
         run: |
@@ -219,7 +226,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.4.5-Studio-Rev10-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.4.6-Studio-Rev11-runners-chat-rendimiento-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

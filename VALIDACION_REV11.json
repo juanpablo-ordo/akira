@@ -1,0 +1,10 @@
+{
+  "build": "AKIRA_16_4_6_STUDIO_REV11",
+  "status": "PENDING_WINDOWS_VALIDATION",
+  "base_commit": "201e839aea9f6aecf85f500cad4e075c9e885750",
+  "live_account_used": false,
+  "user_attachments_reviewed": false,
+  "regression_results": null,
+  "real_model_results": null,
+  "profitability_verified": false
+}

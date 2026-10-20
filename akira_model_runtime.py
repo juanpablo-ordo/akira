@@ -26,16 +26,29 @@ def shared_runtime(settings,log_root,profile=None):
         return runtime
 
 
-def hardware_profile(ram_gb=32, gpu_vram_gb=8, cpu_cores=12):
+def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
     """Starting recommendation, not a promise of fixed RAM/VRAM consumption."""
-    vram=max(0,float(gpu_vram_gb))
+    # Auto mode reads this PC. Unknown GPU memory is zero, not an assumed 8 GB.
+    if ram_gb is None:
+        try:
+            import psutil
+            ram_gb=psutil.virtual_memory().total/1073741824
+        except (ImportError,OSError):ram_gb=4
+    if cpu_cores is None:
+        try:
+            import psutil
+            cpu_cores=len(psutil.Process().cpu_affinity())
+        except (ImportError,OSError,AttributeError):cpu_cores=os.cpu_count() or 2
+    vram=max(0,float(gpu_vram_gb or 0))
     ram=max(1,float(ram_gb))
     # A 4B Q4 model has headroom; large 14B/30B models saturate 8GB cards.
     return {
         'model_class':'4B GGUF Q4_K_M' if ram>=16 else '2B GGUF Q4_K_M',
         'context_tokens':4096 if ram>=16 else 2048,
         'gpu_layers':12 if vram>=8 else 0,
-        'cpu_threads':min(6,max(2,int(cpu_cores)//2)),
+        'cpu_threads':min(6,max(1,int(cpu_cores)//2)),
+        'logical_cores':max(1,int(cpu_cores)),
+        'detected_ram_gb':round(ram,2),
         'parallel_requests':1,
         'idle_unload_seconds':30,
         'target_model_vram_gb':4.5 if vram>=8 else 0.0,
@@ -107,9 +120,16 @@ class ManagedLlamaProcess:
             cpu=exe.parent.parent/'cpu'/'llama-server.exe'
             if cpu.is_file():exe=cpu
         if exe.parent.name.lower()=='cpu':gpu=0
+        mode=desktop.get('performance_profile','Equilibrado')
+        threads=max(1,int(profile['cpu_threads']))
+        if mode=='Ahorro de energía':threads=min(2,threads)
+        elif mode=='Equilibrado':threads=min(4,threads)
+        batch,ubatch=(128,64) if mode=='Ahorro de energía' else (256,128)
         return [str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
-                '--threads',str(2 if desktop.get('performance_profile')=='Ahorro de energía' else min(4,profile['cpu_threads']) if desktop.get('performance_profile')=='Equilibrado' else profile['cpu_threads']),'--parallel','1','--jinja']
+                '--threads',str(threads),'--threads-batch',str(threads),
+                '--batch-size',str(batch),'--ubatch-size',str(ubatch),
+                '--poll','0','--poll-batch','0','--parallel','1','--jinja']
 
     def reconfigure(self,desktop):
         with self.lock:

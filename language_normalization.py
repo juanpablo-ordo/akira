@@ -15,6 +15,9 @@ _WORDS={
     'funcona':'funciona','funcioan':'funciona','poneindo':'poniendo',
 }
 _WORDS.update({'esplicas':'explicas','esplicame':'explícame','diferncia':'diferencia','diferensia':'diferencia','memroia':'memoria','compuadora':'computadora','penditnes':'pendientes','runnners':'runners','ajutes':'ajustes'})
+_WORDS.update({'comversar':'conversar','convezar':'conversar','converssar':'conversar',
+    'comversacion':'conversación','qienes':'quienes','kien':'quien','ola':'hola',
+    'escuhas':'escuchas','escuhcas':'escuchas','sirbes':'sirves','funconas':'funcionas'})
 _PROTECTED=re.compile(r'```[\s\S]*?```|`[^`]*`|https?://\S+|[A-Za-z]:[\\/][^\n]+|\b(?:sk-|AIza)[\w-]+|\b[A-Za-z]+[A-Za-z_]*[0-9_][A-Za-z0-9_]*\b')
 _TOKEN=re.compile(r'[^\W\d_]+',re.UNICODE)
 

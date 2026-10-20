@@ -97,6 +97,12 @@ class SettingsPanel(QWidget):
     def risk(self):
         card=self.card(1,'PRESUPUESTO Y LÍMITES','shield')
         for path,title in [('risk.max_trade_money','Pérdida máxima por operación (USD)'),('risk.max_trade_pct','Máximo por operación (%)'),('risk.portfolio_money_cap','Límite conjunto (USD; 0 usa porcentaje)'),('risk.portfolio_capital_pct','Presupuesto conjunto (%)'),('risk.daily_loss_money','Pérdida diaria autorizada (USD; 0 desactiva)'),('risk.daily_loss_pct','Pérdida diaria autorizada (%)'),('risk.minimum_margin_level_pct','Nivel mínimo de margen (%)')]:self.field(card,path,title,limits=(0,100 if path.endswith('_pct') and 'margin' not in path else 1e8))
+        card=self.card(1,'ENTRADAS DIRECTAS Y PROTECCIÓN DE CAPITAL','shield')
+        self.field(card,'runner.max_trade_budget_pct','Riesgo runner: % del límite por operación',limits=(1,100),help='Con 50%, un límite general de 2 USD deja como máximo 1 USD para una entrada directa. Si el lote mínimo no cabe, se conserva el SL y se espera.')
+        self.field(card,'runner.preserve_pending_orders','Dar prioridad a las pendientes confirmadas',help='Activado: una runner no retira pendientes del mismo activo para entrar a mercado. El mapa de pendientes se evalúa primero.')
+        self.field(card,'runner.loss_cooldown_seconds','Pausa tras pérdida de runner (segundos)',limits=(60,86400),help='Solo tras un cierre propio confirmado por MT5. La pausa afecta nuevas runners del mismo activo; las pendientes y la protección siguen activas.')
+        self.field(card,'runner.loss_budget_trades','Tope de pérdidas runner en 24 h: múltiplo del límite general',limits=(.25,3),help='Con 1 y un límite general de 2 USD, perder 2 USD entre runners de BTC y oro pausa nuevas runners. Las ganancias no borran esas pérdidas del contador.')
+        self.field(card,'runner.allow_size_boost','Permitir aumentar lote de runners por puntuación',help='Desactivado por defecto. Una puntuación técnica alta no demuestra una mayor probabilidad de ganar.')
         card=self.card(1,'GESTIÓN DE RUNNERS','analysis')
         for path,title in [('management.breakeven_at_r','Equilibrio a partir de R'),('management.trail_at_r','Trailing a partir de R'),('management.trail_atr','Distancia de trailing (ATR)'),('management.runner_structure_only','Gestión estructural de runners'),('management.pending_fills_as_runners','Gestionar pendientes activadas como runners')]:self.field(card,path,title)
     def ai_voice(self):
