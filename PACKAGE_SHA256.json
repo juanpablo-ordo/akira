@@ -67,7 +67,7 @@
   "VALIDACION_R8_STUDIO_REV4.json": "54838661dca51fe9fc15baf1211f3459083537565fa502c254c6469ca982b24e",
   "VALIDACION_STUDIO_REV5.json": "9fb10f3e6758c8770831cfd6b6e8f05e4038c0925ad27b06ee86f94d7c91e693",
   "VALIDACION_STUDIO_REV6.json": "9469473b2b16f98a2ef554c97e266c8f252846d254fefbe90cefce3fc2d10a11",
-  "VALIDACION_V12.json": "714c884f726a2b5242e1235d9ba2d9130eb18c2172e3b6349569525abc56865f",
+  "VALIDACION_V12.json": "37823694c48159ced487d535c9fdc9518a4901b37c68a1ea627ce70190a87749",
   "VALIDAR_AKIRA.bat": "5bf8712dc722f89ab58963322462ce31d0bfa892a1a7f115dffd79b646ad2a9b",
   "VERIFICACION_STUDIO_REV6/CONVERSACION_REAL_CPU.json": "3737c3d73d10d2ed8119dd2abee56ce4fc72b6c8423bb85adae0b62b84ff1e8a",
   "VERIFICACION_STUDIO_REV6/NATIVE_STUDIO.json": "413bc0e207dd84f3b6416f19e079623462d7f9b58e558cc350900d2fe49a9278",
@@ -153,7 +153,7 @@
   "default_config.json": "7cf0cf6aebd6accc57bb817958baef71ade29a703b7dd08432cfe2e22b2f6277",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "a5a32f7c6b46a3e5b48dfdea0f99a041ba6a2ef3dd3b67bcfaaa83d92c317c44",
+  "desktop_qt.py": "799ce62e1c9a0da32fb3fd842bbca2ce49e8856ce021b7d4cadd948ce12812ff",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
   "engine.py": "bc1b1a093f6748c3a41afb7c19ef0941ad3d8fa1ea84d1cba3ec83a146b2f7ba",
@@ -381,8 +381,8 @@
   "qa_review_rev8.py": "3fa767b0cb25bf7c8cf8965020410789aaf6813eb74fbdbb620fcb44da3dc0e3",
   "tests/test_studio_rev8_assets.py": "36088750327428ca2a579a93f0b2b93da1a948ffb8f4c2c58809cce73e2ddcfb",
   "VALIDACION_STUDIO_REV8.json": "63cd96bebf4624aedfe8a5824b9d8a0d861c88e9a56d77d54470e90c2a662e37",
-  "entry_momentum.py": "4e508871fe2737ee26963de19911e01b772178044eade02591e5ad2535766be1",
+  "entry_momentum.py": "d1a00192c999fae6a80436cb2f03b435ca868a51494aedfb91be2b2881df29e3",
   "qa_review_rev9.py": "33ec1429ca1ac1e248d0cb247bc3d0cbaddaae7e24594b17bccee4559c15d258",
-  "tests/test_studio_rev9_execution.py": "56a4d0236f97662b216ad44187cf46c96fbd464a63be23ae1f4d438989d0426b",
+  "tests/test_studio_rev9_execution.py": "bbbb42483ea2b75a8d770a476d922639162428ce68dc0d433801e33a52908058",
   "ACEPTACION_REV9.md": "7eedf01fa6d40df3b65ff4b161eca42ae3ee8dc534019ff3af26865287a74691"
 }

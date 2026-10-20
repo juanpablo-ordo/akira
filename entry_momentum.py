@@ -51,12 +51,15 @@ def adverse_impulse(plan, frames, now, quote=None):
     advance = adverse * (close - number(get(first, 'close')))
     h, l = number(get(last, 'high')), number(get(last, 'low'))
     extreme = (close - l) / (h - l) if adverse == 1 else (h - close) / (h - l)
-    ref = number(get(quote, 'ask' if side == 1 else 'bid')) if quote is not None else close
+    # Candle OHLC is BID for both sides. ASK decides BUY activation, but its
+    # spread must not masquerade as a price recovery against a falling BID.
+    ref = number(get(quote, 'bid')) if quote is not None else close
+    activation = number(get(quote, 'ask' if side == 1 else 'bid')) if quote is not None else close
     # Both the observed close and the live quote must be near the same zone.
     # A distant map, a completed rejection, or a single red/green bar is not enough.
     reach = max(atr, risk * .35)
     if (move < max(atr * 1.15, risk * .5) or advance < atr * .25 or extreme < .70
-            or abs(close - entry) > reach or ref <= 0 or abs(ref - entry) > reach
+            or abs(close - entry) > reach or ref <= 0 or activation <= 0 or abs(activation - entry) > reach
             or adverse * (ref - close) < -atr * .25):
         return None
     return {'reason': 'Dos velas M1 cerradas muestran un impulso fuerte contra esta LIMIT cerca de su entrada; esperar una nueva confirmación de rechazo.',

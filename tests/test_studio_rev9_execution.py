@@ -66,6 +66,11 @@ class MomentumReplayTests(unittest.TestCase):
         self.assertIsNone(adverse_impulse(self.plan,self.frames,self.now))
     def test_rejection_already_observed_by_live_quote_clears_the_impulse(self):
         self.assertIsNone(adverse_impulse(self.plan,self.frames,self.now,NS(bid=98,ask=98.1)))
+    def test_buy_spread_is_not_mistaken_for_a_recovery_in_bid_candles(self):
+        self.plan.side=1;self.plan.sl=90;self.plan.tp=120
+        frames=impulse_frames(self.now,side=1)
+        self.assertIsNotNone(adverse_impulse(self.plan,frames,self.now,NS(bid=100.2,ask=100.9)))
+        self.assertIsNone(adverse_impulse(self.plan,frames,self.now,NS(bid=102,ask=102.7)))
     def test_two_losses_require_a_recovery_body_even_with_positive_emas(self):
         self.plan.side=1;self.plan.sl=90;self.plan.tp=120
         self.frames.pop('M1');self.frames['M15'].trend=self.frames['H1'].trend=.5

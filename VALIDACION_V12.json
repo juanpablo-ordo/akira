@@ -3,5 +3,7 @@
   "status": "PENDING_WINDOWS_VERIFICATION",
   "date": "2026-10-20",
   "scope": "Pendientes vigentes, historial comparable y cola IA; sin certificación de rentabilidad",
-  "notes_file": "ACEPTACION_REV9.md"
+  "notes_file": "ACEPTACION_REV9.md",
+  "tests": 1337,
+  "skipped": 0
 }

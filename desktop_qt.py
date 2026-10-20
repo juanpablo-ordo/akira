@@ -861,7 +861,9 @@ class StudioWindow(QMainWindow):
         footer=QDialogButtonBox();choose=footer.addButton(self.text('YA TENGO EL ARCHIVO · SELECCIONAR'),QDialogButtonBox.ButtonRole.AcceptRole)
         footer.addButton(self.text('AHORA NO'),QDialogButtonBox.ButtonRole.RejectRole)
         footer.accepted.connect(instructions.accept);footer.rejected.connect(instructions.reject);layout.addWidget(footer)
-        if instructions.exec()!=QDialog.DialogCode.Accepted:return
+        accepted=instructions.exec()==QDialog.DialogCode.Accepted
+        instructions.deleteLater()
+        if not accepted:return
         path,_=QFileDialog.getOpenFileName(self,'Sesión YouTube','','Netscape cookies (*.txt)')
         if path:
             from youtube_support import import_session
