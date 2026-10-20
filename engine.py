@@ -137,6 +137,10 @@ class Engine:
             row.update(state='ESPERANDO NUEVA TESIS',detail='Pausa entre runners del mismo símbolo')
             return False
         own=[o for o in snap.orders if o.symbol==symbol and g.owned_order(o)]
+        # Preserve the original structural/loss veto in both preview and send.
+        try:self.entry_quality_guard(plan,snap)
+        except Blocked as exc:
+            row.update(state='RUNNER BLOQUEADO',detail=str(exc));return False
         protection=g.runner_protection(plan,snap);row['capital_protection']=protection
         if not protection['allowed']:
             row.update(state='RUNNER EN PAUSA',detail=protection['reason'])
@@ -184,6 +188,7 @@ class Engine:
                        detail=f'Solicitaste {"LONG" if required_side==1 else "SHORT"}; falta confirmación de ese lado.')
             return row
         try:
+            self.entry_quality_guard(plan,snap)
             protection=g.runner_protection(plan,snap);row['capital_protection']=protection
             if not protection['allowed']:raise Blocked(protection['reason'])
             own=tuple(int(o.ticket) for o in snap.orders if o.symbol==symbol and g.owned_order(o))

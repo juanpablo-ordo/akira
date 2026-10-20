@@ -17,7 +17,7 @@ from tests.fixtures import PendingCase
 class SentinelV125EngineTests(PendingCase, unittest.TestCase):
     def test_schema_build_and_safe_risk_override_defaults(self):
         self.assertEqual(self.cfg['schema_version'], 1600)
-        self.assertEqual(BUILD_ID, 'AKIRA_16_4_5_STUDIO_REV10')
+        self.assertEqual(BUILD_ID, 'AKIRA_16_4_6_STUDIO_REV11')
         self.assertTrue(self.cfg['execution']['always_show_dual_scenarios'])
         self.assertFalse(self.cfg['risk']['min_lot_structural_override_enabled'])
         self.assertLessEqual(self.cfg['symbol_profiles']['BTCUSDm']['pending_hard_max_rr'], 4.4)

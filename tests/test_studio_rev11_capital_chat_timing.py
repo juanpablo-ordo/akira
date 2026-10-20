@@ -249,10 +249,9 @@ class TimingExportTests(PendingCase, unittest.TestCase):
 
     def test_all_report_rows_match_their_headers(self):
         model=build_report(self.snapshot)
-        for name,rows in model['tables'].items():
-            for row in rows:
-                with self.subTest(sheet=name):
-                    self.assertEqual(len(row),len(HEADERS[name]))
+        invalid=[(name,index,len(row),len(HEADERS[name])) for name,rows in model['tables'].items()
+                 for index,row in enumerate(rows) if len(row)!=len(HEADERS[name])]
+        self.assertFalse(invalid,invalid[:10])
 
     def test_excel_has_labeled_typed_placement_dates(self):
         model,row,created=self.model_with_times()
