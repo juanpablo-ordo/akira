@@ -1,9 +1,6 @@
 name: AKIRA medir memoria del modelo
 run-name: Rev11 comparar memoria real sin cambiar el programa
 on:
-  push:
-    branches:
-      - akira-rev11-memory-probe-20261020
   workflow_dispatch:
 permissions:
   contents: read
