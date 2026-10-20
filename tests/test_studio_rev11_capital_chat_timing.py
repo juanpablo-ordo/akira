@@ -197,6 +197,7 @@ class ConversationRoutingTests(unittest.TestCase):
 
     def test_conversation_is_not_reported_as_a_successful_model_if_it_failed(self):
         self.assertFalse(self.bot._should_research_fact('¿Tienes amigos?'))
+        self.assertFalse(is_personal_conversation('¿Puedes darme otras fuentes?'))
         self.assertTrue(self.bot._should_research_fact('¿Sabes quién es el presidente actual de Guatemala?'))
         with patch.object(self.bot,'local_llm_reply',side_effect=TimeoutError('fixture timeout')):
             answer=self.bot.reply('jaja',{},False)

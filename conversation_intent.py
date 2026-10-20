@@ -36,6 +36,8 @@ def self_intent(message, brand='AKIRA'):
 def is_personal_conversation(message):
     text = folded(message)
     if self_intent(message):return True
+    if re.search(r'\b(?:fuentes?|busca|investiga|corrobora|consulta)\b',text) or re.search(r'https?://',str(message)):
+        return False
     personal=bool(re.match(r'^(?:me siento|estoy (?:triste|feliz|cansad[oa]|aburrid[oa]|nervios[oa])|'
         r'tengo hambre|quiero contarte|te cuento|hoy me (?:paso|siento)|'
         r'quien te (?:creo|programo|hizo)|de donde (?:eres|vienes)|que (?:te gusta|piensas de ti|opinas de ti)|'
