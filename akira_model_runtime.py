@@ -125,10 +125,13 @@ class ManagedLlamaProcess:
         if mode=='Ahorro de energía':threads=min(2,threads)
         elif mode=='Equilibrado':threads=min(4,threads)
         batch,ubatch=(128,64) if mode=='Ahorro de energía' else (256,128)
+        cache_mb=128 if mode=='Ahorro de energía' else 512 if mode=='Equilibrado' else 1024
+        loading='none' if mode=='Ahorro de energía' and gpu==0 else 'mmap'
         return [str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
                 '--threads',str(threads),'--threads-batch',str(threads),
                 '--batch-size',str(batch),'--ubatch-size',str(ubatch),
+                '--load-mode',loading,'--cache-ram',str(cache_mb),
                 '--poll','0','--poll-batch','0','--parallel','1','--jinja']
 
     def reconfigure(self,desktop):

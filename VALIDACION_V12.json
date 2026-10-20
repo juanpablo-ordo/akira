@@ -1,12 +1,12 @@
 {
   "build": "AKIRA_16_4_6_STUDIO_REV11",
-  "tests": 1404,
+  "tests": 1405,
   "status": "PENDING_WINDOWS_VALIDATION",
   "date": "2026-10-20",
   "skipped": 0,
   "scope": "Rev11: contador esperado de regresiones, no declaración de pruebas completadas. No certifica rentabilidad.",
   "notes_file": "ACEPTACION_REV11.md",
-  "pytest_tests": 1407,
+  "pytest_tests": 1408,
   "evidence_file": "VALIDACION_REV11.json",
   "pytest_subtests": null,
   "source_commit": null

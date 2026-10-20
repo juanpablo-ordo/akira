@@ -6,5 +6,14 @@
   "user_attachments_reviewed": false,
   "regression_results": null,
   "real_model_results": null,
-  "profitability_verified": false
+  "profitability_verified": false,
+  "memory_comparison": {
+    "workflow_run_id": 39494977511,
+    "source_commit": "2083f96fb0d6870d90e9be94ae71e44a04149aa2",
+    "baseline_peak_mb": 4605.6,
+    "direct_loading_cache128_peak_mb": 2934.7,
+    "baseline_seconds": 132.172,
+    "direct_loading_seconds": 133.766,
+    "live_account_used": false
+  }
 }

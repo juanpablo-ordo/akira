@@ -203,6 +203,27 @@ class ConversationRoutingTests(unittest.TestCase):
             answer=self.bot.reply('jaja',{},False)
         self.assertNotIn('Te sigo. ',answer)
 
+    def test_small_context_keeps_complete_source_constraint_and_response_locale(self):
+        question='Xbox acaba de lanzar Nébula Azul: según la ficha, ¿cómo se llama?'
+        fixture={'results':[{'title':'Xbox Wire · Nébula Azul',
+            'url':'https://news.xbox.com/es-es/nebula-azul/',
+            'text':'Ficha de prueba: Nébula Azul está anunciado, NO LANZADO. Nombre: Nébula Azul.'}],'errors':[]}
+        self.cfg['assistant'].update(local_runtime_enabled=True,auto_research=True,self_review=False)
+        self.cfg['studio']['language_chat']='en'
+        def answer(messages,*args,**kwargs):
+            system=messages[0]['content']
+            self.assertIn('No publiques una salida que la evidencia niega.',system)
+            self.assertIn('English',system)
+            return 'Nébula Azul is announced, not released.'
+        with patch('assistant_akira.ollama_status',return_value={'ok':True,'models':['qwen3:8b','qwen3:4b']}), \
+             patch('assistant_akira.lookup_current_fact',return_value=fixture), \
+             patch('assistant_akira.lookup_verified_current_fact',return_value=fixture), \
+             patch.object(self.bot,'_source_tool',return_value=fixture), \
+             patch('akira_local_ai.owned_context_tokens',return_value=1024), \
+             patch('assistant_akira.ollama_agent',side_effect=answer) as model:
+            self.bot._local_llm_reply_impl(question,{})
+        model.assert_called_once()
+
     def test_eco_status_does_not_load_the_model_just_to_check_an_idle_chat(self):
         self.cfg['assistant']['local_runtime_enabled']=True
         self.cfg['desktop']['performance_profile']='Ahorro de energía'
@@ -308,6 +329,8 @@ class LowResourcePolicyTests(unittest.TestCase):
         self.assertEqual(flag('--poll'),'0')
         self.assertEqual(flag('--poll-batch'),'0')
         self.assertEqual(flag('--ubatch-size'),'64')
+        self.assertEqual(flag('--load-mode'),'none')
+        self.assertEqual(flag('--cache-ram'),'128')
         self.assertEqual(flag('--n-gpu-layers'),'0')
 
     def test_visual_timer_slows_while_hidden_but_chat_remains_responsive(self):

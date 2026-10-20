@@ -98,9 +98,17 @@ def run(exe, model, report):
                 for name,question,check in cases:
                     if stop.is_set():raise RuntimeError('QA interrupted')
                     window.controller.chat_busy=True;began=time.monotonic()
-                    answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
+                    events=[];original_progress=bot.progress_callback
+                    def progress(row):
+                        events.append((time.monotonic(),row))
+                        if original_progress:original_progress(row)
+                    bot.progress_callback=progress
+                    try:answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
+                    finally:bot.progress_callback=original_progress
                     window.controller.chat_busy=False
-                    row={'name':name,'question':question,'answer':answer,'seconds':round(time.monotonic()-began,3)}
+                    first=next((at-began for at,event in events if event.get('stage')=='RESPONDIENDO'),None)
+                    row={'name':name,'question':question,'answer':answer,'seconds':round(time.monotonic()-began,3),
+                         'first_visible_seconds':round(first,3) if first is not None else None}
                     result['scenarios'].append(row)
                     print(name+' '+str(row['seconds'])+'s '+answer[:180],flush=True)
                     if not check(answer.casefold()):raise AssertionError('Irrelevant answer: '+name)
@@ -109,7 +117,7 @@ def run(exe, model, report):
                 result['model_effective_parameters']=bot._managed_model.effective_parameters()
                 command=bot._managed_model._launch_command or []
                 result['model_command_limits']={key:command[command.index(key)+1] for key in
-                    ('--threads','--threads-batch','--poll','--poll-batch','--ctx-size','--n-gpu-layers') if key in command}
+                    ('--threads','--threads-batch','--poll','--poll-batch','--ctx-size','--n-gpu-layers','--load-mode','--cache-ram') if key in command}
             except Exception:
                 result['conversation_error']=traceback.format_exc()
             finally:
@@ -126,14 +134,14 @@ def run(exe, model, report):
         cpu_seconds=sum(max(0,end-begin) for begin,end in cpu.values())
         result.update(wall_seconds=round(elapsed,3),cpu_seconds_app_and_owned_model=round(cpu_seconds,3),
             cpu_percent_of_available_cpus=round(cpu_seconds/max(.01,elapsed)/max(1,len(selected))*100,2),
-            peak_app_and_model_mb=round(peak_mb,1),
+            peak_app_and_model_mb=round(peak_mb,1),memory_peak_limit_mb=3200,
             ui_delay_p95_ms=round(delays[min(len(delays)-1,int(len(delays)*.95))],2) if delays else None,
             engine_cycle_p95_ms=round(ordered[min(len(ordered)-1,int(len(ordered)*.95))],2) if ordered else None,
             engine_cycles=len(cycles),fresh_quote_cycles=sum(fresh),actor_errors=actor_errors)
         result['status']='PASSED' if (done.is_set() and not actor_errors and not result.get('conversation_error')
             and len(result['scenarios'])==6 and result['cpu_percent_of_available_cpus']<80
             and result['ui_delay_p95_ms'] is not None and result['ui_delay_p95_ms']<200
-            and len(cycles)>=20 and all(fresh)) else 'FAILED'
+            and peak_mb<=3200 and len(cycles)>=20 and all(fresh)) else 'FAILED'
     except Exception:
         result['error']=traceback.format_exc()
     finally:

@@ -35,9 +35,8 @@ def release_constraint(question,rows):
             relevant.append(str(row.get('url') or ''))
     if not relevant:return None
     return {'kind':'release_not_confirmed','sources':relevant,
-        'instruction':'La evidencia describe un anuncio y dice explícitamente que aún no está lanzado. '
-            'La premisa de que ya salió está contradicha. Corrígela y luego responde los nombres o detalles pedidos. '
-            'No repitas esa premisa como si fuera un hecho.'}
+        'instruction':'La fuente dice: anunciado, NO lanzado. Corrige la premisa de salida y responde los nombres o detalles pedidos. '
+            'No publiques una salida que la evidencia niega.'}
 
 
 def neutral_question(question,constraint):

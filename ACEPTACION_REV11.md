@@ -28,6 +28,8 @@ PDF, Excel y JSON separan solicitud/colocación de apertura de posición. Priori
 - Detección de RAM y CPUs disponibles; ninguna GPU de 8 GB se presume sin evidencia.
 - En un equipo de dos CPUs lógicas, ahorro utiliza un hilo de inferencia y uno de procesamiento de contexto.
 - Se limita lote de procesamiento y se desactiva espera activa del motor.
+- Ahorro en CPU carga directamente el modelo y limita la caché de contextos a 128 MiB. Comparación Windows con el mismo equipo, preguntas y modelo: pico conjunto 4605.6 → 2934.7 MiB; duración 132.172 → 133.766 s. [Prueba comparativa](https://github.com/juanpablo-ordo/akira/actions/runs/39494977511). La compilación final debe repetir el ensayo y quedar debajo de 3200 MiB.
+- Las instrucciones del chat general se acortan para conservar la verificación de fuentes en contextos pequeños y reducir el procesamiento repetido.
 - Comprobar el estado en ahorro no despierta el modelo. El sondeo visual se espacia al minimizar y no se reconstruyen gráficos de la página oculta.
 - El ciclo financiero conserva su intervalo y sus validaciones.
 - Además del benchmark sin inferencia, se mide conversación real, interfaz Qt y BTC/oro sintéticos simultáneos, incluidos CPU y RAM del modelo propio.
