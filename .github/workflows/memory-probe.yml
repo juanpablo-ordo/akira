@@ -1,0 +1,53 @@
+name: AKIRA medir memoria del modelo
+run-name: Rev11 comparar memoria real sin cambiar el programa
+on:
+  push:
+    branches:
+      - akira-rev11-memory-probe-20261020
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+  PYTHONIOENCODING: utf-8
+jobs:
+  measure:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+          cache: pip
+      - name: Preparar dependencias
+        shell: pwsh
+        run: |
+          python -m pip install -r requirements.txt pytest
+          if ($LASTEXITCODE -ne 0) { throw 'Dependencias incompletas' }
+      - name: Motor y modelo originales con SHA256 verificado
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'llama-cpu.zip'
+          curl.exe -fL --retry 4 --retry-all-errors -o $archive 'https://github.com/ggml-org/llama.cpp/releases/download/b10355/llama-b10355-bin-win-cpu-x64.zip'
+          if ($LASTEXITCODE -ne 0) { throw 'Motor no descargado' }
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne '5488e6232c6114d81302adc616d6c7470a8c06e24140e1baf1d0a85e3b731adc') { throw 'SHA256 del motor incorrecto' }
+          Expand-Archive -LiteralPath $archive -DestinationPath native/AKIRA/local_ai/cpu -Force
+          $cpu = Get-ChildItem native/AKIRA/local_ai/cpu -Recurse -Filter llama-server.exe | Select-Object -First 1
+          if ($null -eq $cpu) { throw 'Falta motor CPU' }
+          "AKIRA_PROBE_EXE=$($cpu.FullName)" >> $env:GITHUB_ENV
+          "AKIRA_PROBE_MODEL=$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" >> $env:GITHUB_ENV
+          python -c "import os;from pathlib import Path;from installer.smoke_local_ai import get_model;get_model(Path(os.environ['RUNNER_TEMP'])/'Qwen3-4B-Q4_K_M.gguf')"
+          if ($LASTEXITCODE -ne 0) { throw 'Modelo no verificado' }
+      - name: Mismo chat real, interfaz y BTC-oro en dos CPUs con tres cargas
+        shell: pwsh
+        run: |
+          python qa_model_memory_probe.py --exe "$env:AKIRA_PROBE_EXE" --model "$env:AKIRA_PROBE_MODEL" --reports diagnostics/memory
+          if ($LASTEXITCODE -ne 0) { throw 'No hay mejora de RAM demostrada conservando conversación y velocidad' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AKIRA-Rev11-memory-diagnostics
+          path: diagnostics/memory
+          retention-days: 7
