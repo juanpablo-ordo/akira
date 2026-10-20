@@ -323,6 +323,15 @@ class LowResourcePolicyTests(unittest.TestCase):
         self.assertIsInstance(cfg['risk']['max_trade_money'],float)
         self.assertIsInstance(cfg['runner']['loss_budget_trades'],float)
 
+    def test_ci_verifier_imports_from_an_unrelated_working_directory(self):
+        import subprocess,sys
+        root=Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory(prefix='AKIRA verifier cwd ') as temporary:
+            result=subprocess.run([sys.executable,str(root/'installer/summarize_revision.py'),'--manifest-only'],
+                cwd=temporary,capture_output=True,text=True,encoding='utf-8',timeout=30)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('SHA256 verified files:',result.stdout)
+
     def test_runner_policy_configuration_is_validated(self):
         for field,value in [('max_trade_budget_pct',0),('max_trade_budget_pct',101),
                             ('loss_cooldown_seconds',0),('loss_budget_trades',4),

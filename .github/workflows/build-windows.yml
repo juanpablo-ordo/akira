@@ -73,7 +73,7 @@ jobs:
           }
           python -m py_compile runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
           if ($LASTEXITCODE -ne 0) { throw 'Un archivo nuevo contiene errores de sintaxis.' }
-          python installer/summarize_revision.py --manifest-only
+          python -m installer.summarize_revision --manifest-only
           if ($LASTEXITCODE -ne 0) { throw 'Los archivos no coinciden con el manifiesto SHA256.' }
           Write-Host 'Fuente Studio Rev11 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
@@ -241,7 +241,7 @@ jobs:
       - name: Resumir comprobaciones reales y verificar integridad de Rev11
         shell: pwsh
         run: |
-          python installer/summarize_revision.py --diagnostics diagnostics
+          python -m installer.summarize_revision --diagnostics diagnostics
           if ($LASTEXITCODE -ne 0) { throw 'La evidencia está incompleta; no publicar el instalador.' }
 
       - name: Publicar instalador de AKIRA con IA incluida y verificada

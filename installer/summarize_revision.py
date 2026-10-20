@@ -3,8 +3,13 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 from xml.etree import ElementTree as ET
+
+PROJECT_ROOT=Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:sys.path.insert(0,str(PROJECT_ROOT))
+from akira_version import BUILD_ID
 
 
 def verify_manifest(root):
@@ -34,7 +39,6 @@ def summarize(root, folder):
         path=folder/(name+'.json');raw=path.read_bytes();data=json.loads(raw)
         if data.get('status')!='PASSED':raise RuntimeError('Unverified report: '+name)
         reports[name]={'status':data['status'],'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw)}
-    from akira_version import BUILD_ID
     result={'status':'PASSED','build':BUILD_ID,'source_commit':os.environ.get('GITHUB_SHA'),
         'workflow_run_id':os.environ.get('GITHUB_RUN_ID'),'manifest_entries_verified':count,
         'regressions':{'xml_testcases':len(cases),'failures':0,'errors':0,'skipped':0},
