@@ -316,6 +316,11 @@ class LowResourcePolicyTests(unittest.TestCase):
         self.assertEqual(ui_poll_ms(cfg,interactive=True),80)
         self.assertEqual(cfg['poll_seconds'],.2)
 
+    def test_money_and_fraction_defaults_keep_decimal_precision_for_settings(self):
+        cfg=load_config(DEFAULT)
+        self.assertIsInstance(cfg['risk']['max_trade_money'],float)
+        self.assertIsInstance(cfg['runner']['loss_budget_trades'],float)
+
     def test_runner_policy_configuration_is_validated(self):
         for field,value in [('max_trade_budget_pct',0),('max_trade_budget_pct',101),
                             ('loss_cooldown_seconds',0),('loss_budget_trades',4),

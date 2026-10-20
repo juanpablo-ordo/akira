@@ -65,9 +65,11 @@ class SettingsPanel(QWidget):
         elif path=='expected_login':
             widget=QLineEdit(str(value or 0));read=lambda w=widget:int(w.text().strip() or 0)
         elif isinstance(value,(int,float)) and not isinstance(value,bool):
-            widget=QSpinBox() if type(value) is int else QDoubleSpinBox()
+            decimal=path.startswith('risk.') or path in ('runner.max_trade_budget_pct','runner.loss_budget_trades','runner.loss_cooldown_seconds')
+            integer=type(value) is int and not decimal
+            widget=QSpinBox() if integer else QDoubleSpinBox()
             lo,hi=limits or (-1e9,1e9)
-            if type(value) is int:widget.setRange(int(lo),int(hi))
+            if integer:widget.setRange(int(lo),int(hi))
             else:widget.setRange(float(lo),float(hi));widget.setDecimals(4)
             widget.setValue(value);read=widget.value
         else:
