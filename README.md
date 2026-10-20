@@ -1,15 +1,27 @@
 # AKIRA 16.4.5 · Studio Rev10
 
-Revisión en comprobación: HTTPS nativo de Windows, derivados públicos sin plan, menos trabajo de IA en equipos modestos y estados de consulta finitos. El instalador se publicará al superar Windows, modelo real e instalación limpia. Los resultados históricos Rev9 no certifican esta revisión.
+[Descargar el instalador Windows con la IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39397248037/artifacts/12253483233) · `AKIRA_16_4_5_STUDIO_REV10_IA_INCLUIDA.exe`.
+
+Cierra Akira, extrae el ZIP y ejecuta el instalador. Al abrir debe aparecer **16.4.5 · Studio Rev10**. El artefacto se conserva hasta el 27 de octubre de 2026.
+
+Verificado en Windows: **1371 pruebas y 134 subpruebas**, sin fallos ni omisiones; incluye 31 casos nuevos. También pasaron el EXE, HTTPS, lecturas públicas reales, modelo real BTC/XAU e instalación limpia con respuesta de su propia IA. [Resultados y hashes](VALIDACION_STUDIO_REV10.json) · [Flujo completado](https://github.com/juanpablo-ordo/akira/actions/runs/39397248037).
 
 ## Cambios
 
-- Conexiones seguras con CryptoAPI y certificados empaquetados. Biblioteca con caché de redirecciones, tiempo de espera finito y motivos legibles.
-- Derivados públicos BTC de OKX, Bybit o Binance. CoinGlass opcional. Cobertura explícita, sin simular mapas de liquidación ni derivados del oro.
-- IA con resumen y respuesta pequeños. Ahorro conserva análisis técnico y revisión general; reserva la revisión individual para solicitudes o exigencias del usuario. Pausas crecientes tras fallos por activo.
-- YouTube aporta educación para estudios. Sus opiniones no se convierten directamente en votos de entrada. Confluencia H1, volumen y RSI como hipótesis con validación independiente.
-- Menos lecturas de disco en el ciclo técnico. Próxima consulta en minutos/horas; motivos de ejecución que conservan su prioridad.
+- HTTPS con el verificador nativo de Windows y certificados empaquetados. Biblioteca con caché correcta tras redirecciones, plazo finito y motivos legibles. Las referencias guardadas conservan su fecha.
+- Derivados públicos BTC de OKX, Bybit o Binance como opción predeterminada; CoinGlass opcional. La prueba del EXE obtuvo financiación, interés abierto, libro y proporción de cuentas compradoras/vendedoras desde OKX, sin clave. Se indica la cobertura: no se simulan liquidaciones agregadas ni sus mapas, ni derivados del oro.
+- Resumen y respuesta de IA más pequeños. En ahorro se mantienen análisis técnico y revisión general; las individuales se reservan para solicitudes o exigencias del usuario. Fallos repetidos generan pausas crecientes por activo y un estado finito.
+- Opiniones de YouTube como material educativo para estudios. Nueva hipótesis de confluencia H1, volumen M15 y RSI con evaluación independiente; no se activa como combinación no validada.
+- Menos lecturas de disco en el ciclo técnico. Próxima consulta en minutos/horas. Mercado cerrado, cotización en pausa y reconciliación conservan prioridad sobre propuestas antiguas.
 
-La actualización conserva límites y decisiones de ejecución. Una cuenta nueva empieza en Solo análisis. No se sube el riesgo para forzar entradas ni se promete rentabilidad. Si ninguna zona de oro cabe con su lote mínimo y protección estructural, se explica y se sigue analizando.
+## Mediciones y alcance
 
-[Criterios de aceptación](ACEPTACION_REV10.md). La evidencia y el enlace al instalador se añadirán después sin modificar el programa construido.
+Con el modelo real, CPU de dos hilos y contexto de 2048 tokens, el resumen de BTC/oro tardó **53,812 s** y las revisiones individuales **32,016/29,625 s**. No son tiempos de colocación de órdenes: la generación de texto se ejecuta fuera del actor financiero.
+
+En el ensayo financiero sintético del EXE, con dos núcleos, 100 referencias y 80 noticias, ahorro registró **4,88 % de CPU**, **24,1 ms de ciclo p95** y 40 ciclos con cotización actual. No se generaba texto durante ese ensayo. El resultado depende del equipo; no se presenta como medición de la laptop del usuario ni como consumo máximo durante inferencia.
+
+Una actualización conserva límites y decisiones de ejecución. Las cuentas nuevas empiezan en Solo análisis. Runners según configuración del usuario. Si el lote mínimo de una zona de oro supera su límite con la protección estructural, se espera otra zona compatible; no se aumenta el riesgo para fabricar actividad.
+
+Las pruebas financieras utilizan datos sintéticos y FakeMT5, sin órdenes a una cuenta real. No certifican crecimiento, rentabilidad, ausencia de pérdidas ni disponibilidad perpetua de proveedores. Una hipótesis de estrategia debe superar sus propias observaciones prospectivas con costes antes de intervenir en la selección de operaciones.
+
+[Criterios de aceptación](ACEPTACION_REV10.md). Código compilado: `513adb97af05071fe2050f9327c0e5fd7ac0a2d9`. Esta rama verificada añade solo documentación y evidencia al programa probado. Las capturas y los archivos privados del usuario no se publican. La evidencia histórica Rev9 conserva su identidad.

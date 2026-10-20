@@ -1,12 +1,152 @@
 {
   "build": "AKIRA_16_4_5_STUDIO_REV10",
-  "status": "PENDING_WINDOWS_VERIFICATION",
-  "base_verified_commit": "56cbaa84749073390287b2777b14e5c508eb0cd2",
+  "date": "2026-10-20",
+  "status": "WINDOWS_INSTALLER_AND_INSTALLED_AI_VERIFIED",
+  "evidence_text_format": "UTF-8 without BOM, LF line endings; values unchanged. Original bytes remain in the linked diagnostic ZIP.",
+  "source_commit": "513adb97af05071fe2050f9327c0e5fd7ac0a2d9",
   "source_branch": "akira-studio-rev10-20261020",
-  "expected_pytest_cases": 1371,
-  "new_cases": 31,
-  "profitability_verified": false,
-  "live_account_used": false,
-  "private_customer_data_published": false,
-  "notes_file": "ACEPTACION_REV10.md"
+  "windows": {
+    "status": "PASSED",
+    "run_id": 39397248037,
+    "job_id": 118542913646,
+    "run_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39397248037",
+    "conclusion": "success",
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "tests": 1371,
+    "subtests": 134,
+    "seconds": 507.1,
+    "new_field_regression_cases": 31,
+    "report": "VERIFICACION_STUDIO_REV10/REGRESSIONS_WINDOWS.xml",
+    "installer_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39397248037/artifacts/12253483233",
+    "installer_filename": "AKIRA_16_4_5_STUDIO_REV10_IA_INCLUIDA.exe",
+    "artifact": {
+      "id": 12253483233,
+      "name": "AKIRA-16.4.5-Studio-Rev10-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA",
+      "size_in_bytes": 2865802362,
+      "url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12253483233",
+      "archive_download_url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12253483233/zip",
+      "expired": false,
+      "created_at": "2026-10-20T09:22:55Z",
+      "expires_at": "2026-10-27T09:22:36Z",
+      "updated_at": "2026-10-20T09:22:55Z",
+      "digest": "sha256:70ec9217a149125e09e90eea1e92726d6acaf0b18ec71f58a4b1ae1d73e1eeb5",
+      "workflow_run": {
+        "id": 39397248037,
+        "repository_id": 1419886118,
+        "head_repository_id": 1419886118,
+        "head_branch": "akira-studio-rev10-20261020",
+        "head_sha": "513adb97af05071fe2050f9327c0e5fd7ac0a2d9"
+      }
+    },
+    "diagnostics_artifact": {
+      "id": 12253833037,
+      "name": "AKIRA-Windows-diagnosticos",
+      "size_in_bytes": 87275962,
+      "url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12253833037",
+      "archive_download_url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12253833037/zip",
+      "expired": false,
+      "created_at": "2026-10-20T09:23:15Z",
+      "expires_at": "2026-10-27T09:23:11Z",
+      "updated_at": "2026-10-20T09:23:15Z",
+      "digest": "sha256:7832f5322f2e44d2c2dbe753041aaae2255080ebf43bafd56460e4080cb9d65c",
+      "workflow_run": {
+        "id": 39397248037,
+        "repository_id": 1419886118,
+        "head_repository_id": 1419886118,
+        "head_branch": "akira-studio-rev10-20261020",
+        "head_sha": "513adb97af05071fe2050f9327c0e5fd7ac0a2d9"
+      }
+    },
+    "diagnostics_zip_sha256": "7832f5322f2e44d2c2dbe753041aaae2255080ebf43bafd56460e4080cb9d65c"
+  },
+  "public_sources": {
+    "status": "PASSED",
+    "source_report": "VERIFICACION_STUDIO_REV10/PUBLIC_SOURCES_SOURCE_WINDOWS.json",
+    "frozen_report": "VERIFICACION_STUDIO_REV10/PUBLIC_SOURCES_FROZEN_WINDOWS.json",
+    "coverage": [
+      "open_interest",
+      "premium",
+      "depth",
+      "global_ls"
+    ],
+    "provider": "OKX public"
+  },
+  "real_model": {
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "live_account_used": false,
+    "context_tokens": 2048,
+    "gpu_layers": 0,
+    "summary_seconds": 53.812,
+    "individual_seconds": {
+      "BTCUSDm": 32.016,
+      "XAUUSDm": 29.625
+    },
+    "broker_requests": 0,
+    "report": "VERIFICACION_STUDIO_REV10/MODEL_REVIEWS_WINDOWS.json"
+  },
+  "two_core_workload": {
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "generating_text_during_workload": false,
+    "profiles": {
+      "Equilibrado": {
+        "cpu_seconds": 0.875,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 5.47,
+        "ui_delay_p95_ms": 14.0,
+        "engine_cycle_p95_ms": 20.4,
+        "engine_cycles": 40,
+        "fresh_quote_cycles": 40,
+        "rss_mb": 162.8,
+        "financial_poll_seconds": 0.2
+      },
+      "Ahorro de energía": {
+        "cpu_seconds": 0.781,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 4.88,
+        "ui_delay_p95_ms": 29.0,
+        "engine_cycle_p95_ms": 24.1,
+        "engine_cycles": 40,
+        "fresh_quote_cycles": 40,
+        "rss_mb": 162.8,
+        "financial_poll_seconds": 0.2
+      },
+      "minimized": {
+        "cpu_seconds": 0.859,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 5.37,
+        "ui_delay_p95_ms": 30.0,
+        "engine_cycle_p95_ms": 26.8,
+        "engine_cycles": 39,
+        "fresh_quote_cycles": 39,
+        "rss_mb": 162.9,
+        "financial_poll_seconds": 0.2
+      }
+    },
+    "workload": {
+      "research_references": 100,
+      "research_chars_each": 6000,
+      "news_items": 80,
+      "text_inference_running": false,
+      "network_requests_running": false
+    },
+    "report": "VERIFICACION_STUDIO_REV10/LOW_RESOURCE_WINDOWS.json"
+  },
+  "installation": {
+    "status": "PASSED",
+    "report": "VERIFICACION_STUDIO_REV10/INSTALLED_AI_WINDOWS.json",
+    "model_bundled": true,
+    "installed_model_replied": true,
+    "model_downloaded_by_check": false
+  },
+  "scope": {
+    "financial_tests": "Synthetic causal execution replays and FakeMT5; no real broker orders.",
+    "profitability_verified": false,
+    "customer_laptop_measured": false,
+    "customer_private_data_published": false,
+    "notes_file": "ACEPTACION_REV10.md"
+  }
 }

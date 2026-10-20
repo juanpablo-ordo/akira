@@ -24,3 +24,14 @@ La confluencia requiere comparación prospectiva con costes: 40 cierres de entre
 La aceptación final exige regresiones Windows sin omisiones, autocontroles gráficos del código y EXE, HTTPS y rechazo de certificados inválidos, lecturas públicas reales de biblioteca/derivados, IA real general e individual BTC/XAU con 2048 tokens, conversación e instalación limpia con respuesta del modelo incluido. No se usa una cuenta real. Disponibilidad externa refleja el equipo de prueba, no acceso perpetuo ni universal.
 
 Capturas, archivos de cuenta, claves y sesiones privadas no se publican. La evidencia histórica conserva sus versiones. El resultado nuevo se registra en VALIDACION_STUDIO_REV10.json al finalizar. Crecimiento, rentabilidad, velocidad en la laptop del usuario y ausencia de pérdidas no se certifican mediante la suite técnica.
+
+
+## Resultado de Windows
+
+El flujo [39397248037](https://github.com/juanpablo-ordo/akira/actions/runs/39397248037), código `513adb97af05071fe2050f9327c0e5fd7ac0a2d9`, finalizó correctamente. Pasaron 1371 casos y 134 subpruebas, cero fallos/errores/omisiones, en 507,10 s; 31 casos pertenecen a esta revisión.
+
+Las tres referencias públicas se leyeron tanto en origen como dentro del EXE. Derivados BTC: OKX público entregó interés abierto, financiación, libro y ratio. El modelo real completó el resumen de ambos activos en 53,812 s y las individuales BTC/XAU en 32,016/29,625 s, contexto de 2048 tokens y CPU de dos hilos. El instalador incluyó su GGUF completo, pasó instalación limpia y respondió con el modelo instalado sin descargar otro para el chequeo.
+
+El ensayo del EXE con 100 referencias y 80 noticias registró en ahorro 4,88 % de CPU de dos núcleos, ciclo p95 de 24,1 ms y 40/40 ciclos con cotización actual. Equilibrado conservó 40/40 y minimizado 39/39. No se generaba texto en ese ensayo; inferencia y operativa se midieron por separado.
+
+Los informes conservan los valores del ZIP original, normalizados a UTF-8 sin BOM y saltos LF. SHA-256 del ZIP de diagnósticos: `7832f5322f2e44d2c2dbe753041aaae2255080ebf43bafd56460e4080cb9d65c`. Estos resultados no demuestran ganancias ni comportamiento de un broker o equipo distintos.

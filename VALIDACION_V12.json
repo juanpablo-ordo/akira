@@ -1,11 +1,13 @@
 {
   "build": "AKIRA_16_4_5_STUDIO_REV10",
   "tests": 1368,
-  "status": "PENDING_WINDOWS_VERIFICATION",
+  "status": "PASSED",
   "date": "2026-10-20",
   "skipped": 0,
   "scope": "Rev10: HTTPS nativo, fuentes públicas, trabajo de IA acotado y estrategia combinada en estudio. Sin certificación de rentabilidad.",
   "notes_file": "ACEPTACION_REV10.md",
   "pytest_tests": 1371,
-  "evidence_file": "VALIDACION_STUDIO_REV10.json"
+  "evidence_file": "VALIDACION_STUDIO_REV10.json",
+  "pytest_subtests": 134,
+  "source_commit": "513adb97af05071fe2050f9327c0e5fd7ac0a2d9"
 }

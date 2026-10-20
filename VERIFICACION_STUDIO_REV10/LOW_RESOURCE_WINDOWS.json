@@ -1,0 +1,50 @@
+{
+  "build": "AKIRA_16_4_5_STUDIO_REV10",
+  "data": "SYNTHETIC",
+  "broker": "FakeMT5",
+  "live_account_used": false,
+  "logical_cores_available": 2,
+  "profiles": {
+    "Equilibrado": {
+      "cpu_seconds": 0.875,
+      "wall_seconds": 8.0,
+      "cpu_percent_of_two_cores": 5.47,
+      "ui_delay_p95_ms": 14.0,
+      "engine_cycle_p95_ms": 20.4,
+      "engine_cycles": 40,
+      "fresh_quote_cycles": 40,
+      "rss_mb": 162.8,
+      "financial_poll_seconds": 0.2
+    },
+    "Ahorro de energía": {
+      "cpu_seconds": 0.781,
+      "wall_seconds": 8.0,
+      "cpu_percent_of_two_cores": 4.88,
+      "ui_delay_p95_ms": 29.0,
+      "engine_cycle_p95_ms": 24.1,
+      "engine_cycles": 40,
+      "fresh_quote_cycles": 40,
+      "rss_mb": 162.8,
+      "financial_poll_seconds": 0.2
+    },
+    "minimized": {
+      "cpu_seconds": 0.859,
+      "wall_seconds": 8.0,
+      "cpu_percent_of_two_cores": 5.37,
+      "ui_delay_p95_ms": 30.0,
+      "engine_cycle_p95_ms": 26.8,
+      "engine_cycles": 39,
+      "fresh_quote_cycles": 39,
+      "rss_mb": 162.9,
+      "financial_poll_seconds": 0.2
+    }
+  },
+  "workload": {
+    "research_references": 100,
+    "research_chars_each": 6000,
+    "news_items": 80,
+    "text_inference_running": false,
+    "network_requests_running": false
+  },
+  "status": "PASSED"
+}

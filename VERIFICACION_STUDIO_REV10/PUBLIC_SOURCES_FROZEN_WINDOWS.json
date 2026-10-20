@@ -1,0 +1,72 @@
+{
+  "build": "AKIRA_16_4_5_STUDIO_REV10",
+  "status": "PASSED",
+  "live_account_used": false,
+  "broker_requests": 0,
+  "public_network_data": true,
+  "references": [
+    {
+      "name": "Programación Python",
+      "url": "https://docs.python.org/3/",
+      "resolved_url": "https://docs.python.org/3/",
+      "read": true,
+      "characters": 2655
+    },
+    {
+      "name": "Astronomía",
+      "url": "https://science.nasa.gov/",
+      "resolved_url": "https://science.nasa.gov/",
+      "read": true,
+      "characters": 10524
+    },
+    {
+      "name": "Economía y series",
+      "url": "https://fred.stlouisfed.org/",
+      "resolved_url": "https://fred.stlouisfed.org/",
+      "read": true,
+      "characters": 2660
+    }
+  ],
+  "derivatives": {
+    "state": "OK",
+    "source": "OKX public",
+    "coverage": [
+      "open_interest",
+      "premium",
+      "depth",
+      "global_ls"
+    ],
+    "missing": [
+      "oi_history",
+      "taker_ratio",
+      "aggregated_liquidations",
+      "liquidation_heatmap"
+    ],
+    "errors": {
+      "OKX": {}
+    },
+    "detail": "Derivados BTC de OKX public, sin clave ni plan. Cobertura: open_interest, premium, depth, global_ls. No incluye liquidaciones agregadas ni mapas de liquidación de pago.",
+    "metric_timestamps": {
+      "premium": {
+        "at": 1792487536.118,
+        "provider_timestamp": true
+      },
+      "global_ls": {
+        "at": 1792487400.0,
+        "provider_timestamp": true
+      },
+      "open_interest": {
+        "at": 1792487554.21,
+        "provider_timestamp": true
+      },
+      "depth": {
+        "at": 1792487554.254,
+        "provider_timestamp": true
+      }
+    },
+    "retrieved_at": 1792487554.3596554
+  },
+  "reference_successes": 3,
+  "scope": "Lecturas públicas reales desde el equipo de prueba; disponibilidad regional variable. Datos de derivados BTC, sin simular cobertura del oro ni un mapa de liquidaciones.",
+  "seconds": 0.766
+}
