@@ -340,3 +340,40 @@ class LowResourcePolicyTests(unittest.TestCase):
             cfg['runner'][field]=value
             with self.subTest(field=field,value=value),self.assertRaises(ValueError):
                 load_config(cfg)
+
+
+class ReleaseGroundingTests(unittest.TestCase):
+    def setUp(self):
+        self.question='Estudio Aurora acaba de lanzar Nébula Azul: ¿cómo se llama y quiénes participan?'
+        self.rows=[{'title':'Estudio Aurora · Nébula Azul','url':'https://example.org/nebula',
+                    'text':'Nébula Azul es un título anunciado; todavía no se ha lanzado. Participan Cleo y Ari.'}]
+
+    def test_wrong_release_premise_is_neutralized_without_losing_the_question(self):
+        from answer_grounding import release_constraint,neutral_question
+        constraint=release_constraint(self.question,self.rows)
+        self.assertIsNotNone(constraint)
+        question=neutral_question(self.question,constraint)
+        self.assertNotIn('acaba de lanzar',question)
+        self.assertIn('quiénes participan',question)
+
+    def test_host_removes_contradicted_release_claim_and_preserves_independent_names(self):
+        from answer_grounding import release_constraint,enforce_release_constraint
+        constraint=release_constraint(self.question,self.rows)
+        answer=enforce_release_constraint('Estudio Aurora acaba de lanzar Nébula Azul: se llama Nébula Azul y participan Cleo y Ari.',constraint)
+        self.assertNotIn('acaba de lanzar',answer)
+        self.assertIn('no se ha lanzado',answer)
+        self.assertTrue(all(name in answer for name in ('Nébula Azul','Cleo','Ari')))
+
+    def test_correct_negative_answer_is_kept_and_positive_evidence_is_not_overridden(self):
+        from answer_grounding import release_constraint,enforce_release_constraint
+        constraint=release_constraint(self.question,self.rows)
+        correct='Nébula Azul todavía no se ha lanzado. Participan Cleo y Ari.'
+        self.assertEqual(enforce_release_constraint(correct,constraint),correct)
+        self.rows[0]['text']='Nébula Azul fue anunciado y ya está disponible.'
+        self.assertIsNone(release_constraint(self.question,self.rows))
+
+    def test_an_unrelated_unreleased_title_cannot_change_this_answer(self):
+        from answer_grounding import release_constraint
+        other=[{'title':'Luna Roja de Editorial Lago','text':'Luna Roja está anunciado, no lanzado.',
+                'url':'https://example.org/other'}]
+        self.assertIsNone(release_constraint(self.question,other))

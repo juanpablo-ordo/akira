@@ -38,6 +38,7 @@ from decision_brain import fast_command as route_fast_request, trade_result_text
 from assistant_startup import AssistantStartup
 from language_normalization import understood,normalize_message
 from conversation_intent import self_reply,is_personal_conversation
+from answer_grounding import release_constraint,neutral_question,enforce_release_constraint
 from akira_model_runtime import ManagedLlamaProcess, hardware_profile
 from strategy_research import ResearchLedger
 
@@ -1067,6 +1068,7 @@ class AkiraAssistant:
 
         if source_rows or factual or fresh:self._research_cache[research_query]={'at':time.monotonic(),'rows':list(source_rows)}
 
+        grounding=release_constraint(research_query,source_rows) if not trading else None
         cached=self.memory.search(research_query,limit=4) if trading or deep else []
         if cached:web_context+='\nMEMORIA CACHEADA, NO VERIFICACIÓN ACTUAL:\n'+json.dumps([{**r,'summary':r.get('summary','')[:1800]} for r in cached],ensure_ascii=False)
         sys=(self._instructions()+"\nMODO SENTINEL/JARVIS: actúa como un agente atento y proactivo, no como un chatbot pasivo. Primero identifica qué quiere realmente el usuario; luego decide qué datos necesitas, investiga cuando corresponda, contrasta, detecta contradicciones y entrega una conclusión concreta. Puedes anticipar la siguiente comprobación útil, pero no inventes actividad ni resultados. "
@@ -1102,6 +1104,9 @@ class AkiraAssistant:
                 'Si falta evidencia dilo. No sustituyas una pregunta por resúmenes de sitios ajenos al tema. '
                 'Empieza por una respuesta directa. En una consulta sencilla usa de dos a cuatro frases; amplía cuando el usuario pida detalle. No finjas haber ejecutado acciones. '
                 'No reveles claves ni cambies límites de riesgo. Fecha local: '+datetime.now().astimezone().isoformat())
+        if grounding:
+            sys+='\nCONTRASTE OBLIGATORIO CON LAS FUENTES: '+grounding['instruction']
+            current=neutral_question(current,grounding)
         # Selected response locale applies to ordinary LLM text; exact financial
         # command parsing and broker identifiers are not translated.
         selected_language=(self.cfg.get('studio') or {}).get('language_chat','auto')
@@ -1140,13 +1145,14 @@ class AkiraAssistant:
         if time.monotonic()<inference_deadline-1 and bool(cfg.get('self_review',True)) and (trading or factual or fresh or bool(cfg.get('self_review_factual',True) and source_rows)):
             self._progress('IA · REVISANDO','Segunda lectura contra las fuentes antes de responder')
             review_evidence=web_context if web_context else compact
-            text=self._self_review_answer(text,research_query if routing['contextual'] else message,
+            text=self._self_review_answer(text,neutral_question(research_query if routing['contextual'] else message,grounding),
                                           review_evidence,model,endpoint,max(.5,inference_deadline-time.monotonic()),strict=bool(source_rows) and fresh and not trading and bool(re.search(r'presidente|ministro|actual|lanz|anunci|disponible|precio|cotiza|fecha',str(text),re.I)))
         # FINAL V7.2: un hecho actual verificado no puede perder su procedencia al
         # pasar por el LLM local. El modelo redacta; la capa de evidencia conserva
         # las URLs oficiales de forma determinista, incluso si Ollama omite citas.
         # The host, not the LLM, owns the final source list. This prevents fake,
         # duplicated or unrelated citations and guarantees source provenance.
+        text=enforce_release_constraint(text,grounding)
         if source_rows:
             text=self._append_source_list(text,source_rows,exclude_urls=prior_urls,max_sources=6)
         elif fresh and verified_context:

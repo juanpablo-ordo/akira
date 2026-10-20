@@ -1,6 +1,6 @@
 {
   ".gitattributes": "4c51e4f7ad01965964bcbc681943db08c7b82af8256bf63b0d45b14c9024d564",
-  ".github/workflows/build-windows.yml": "98461fd83b6d715c8b42d0920447462b0a1d4991637ebe1e5108f964009d3bc9",
+  ".github/workflows/build-windows.yml": "2dc9d55855d62191bfb2d61d1bff6043c5164071218cadf6bc653014ca2534ec",
   ".gitignore": "8e9a2da7b06f023142ca46e39e97dd0c180af159cdeb1eb9811eef17e96b6282",
   "ACEPTACION_REV10.md": "20bcf59595e8af1ba1e93a24488ca26ec08e9d60036bf2e8a0ac4a6c5b245a40",
   "ACEPTACION_REV11.md": "c13cfd5df6f655196ebc388a32af6bc10a0eb2277cd1a5a0337a7bc0cfb658ca",
@@ -76,7 +76,7 @@
   "VALIDACION_STUDIO_REV7.json": "f5e1d07f12993f2179b163c7380e5b9735533d4d9b55035ff2d2ded8b1eec8af",
   "VALIDACION_STUDIO_REV8.json": "63cd96bebf4624aedfe8a5824b9d8a0d861c88e9a56d77d54470e90c2a662e37",
   "VALIDACION_STUDIO_REV9.json": "ddf377525cff9448ea60f88f05b7e5a8e68015b57f2836e7cb3a8eb8beb42597",
-  "VALIDACION_V12.json": "2b36098ab0289021eafae61f79afc8ad4de7daa2b08b1e603f893eda156821ae",
+  "VALIDACION_V12.json": "d77f2ed095e9e37e877c3771205a8f2dd806aa8e0a7a14f587a1c228ff8f07b6",
   "VALIDAR_AKIRA.bat": "5bf8712dc722f89ab58963322462ce31d0bfa892a1a7f115dffd79b646ad2a9b",
   "VERIFICACION_STUDIO_REV10/CONVERSATION_WINDOWS.json": "974b096d309895ed1167e809cad4e6e7b79e9b0c9caa8825406c5659636b5cbd",
   "VERIFICACION_STUDIO_REV10/EVIDENCE_SHA256.json": "b86afcb7323005bb9d2bf7587c9721da9ac89d14e6df773cd8dbba3187f2d3ce",
@@ -177,7 +177,7 @@
   "assets/vtuber/akira_pixel_sleeping.png": "d3dea3d84e5cbeba9205f3e53baca05a3bce057caa6c7a92c10b146df2f72afc",
   "assets/vtuber/akira_pixel_talking.png": "87e864e38ef96d61f3ccc04f664bc50bf63d734b84206692b6853e6e18fc9d86",
   "assets/vtuber/akira_pixel_thinking.png": "ef871cd8ca000e2ef6795558194be4a2c724846a66bd9afa5a528f01e43c589a",
-  "assistant_akira.py": "607270e9b4c4a05f221460b82ff81da3a56166f491861136ad2903c2a55dd5d8",
+  "assistant_akira.py": "5aa193ad2f72d4e79b98e18da864ff5b077754087e9c56bd26a9545415135b7f",
   "assistant_startup.py": "cc60e911437bb460cdc63c86cab405ef16cb4ccb63ca0b5113b13869924dba74",
   "auditar_versiones.py": "30d92cb9220f825c8a1122b5d45727026594d5e418527160fd715af729071328",
   "avatar_animation.py": "11b2d95e99ed4146a77d868eb26f0a0bf214980452891f8daa917f3ceca07cb3",
@@ -207,7 +207,7 @@
   "evolution.py": "fee094557e4630fa837c2f5e6b1466693fe49e3fcc6cac3cfa5cc12e6ad9d5b6",
   "execution.py": "cb60a31b0f9aa6d69ef77bdbf66c57193b9c0d92da05adda763a3b9644812d57",
   "expression_gallery.py": "77c6d59df58d661222ab470d14c2886ae411e79ff612631a5bcaade45ac2248c",
-  "frozen_ui_contract.py": "07fad848e4b748cdd9994d4c685b6432b48af2496c78844c328e214fcb7fe3a2",
+  "frozen_ui_contract.py": "fff328c338b76b730c26dc1100854d3ce8de09ce6102765cbbb622fdad695951",
   "global_sources.py": "b03b919703421d53ffc2e13dac79f6e1f1a6c551d7755546d6deae2603aa509c",
   "indicators.py": "b2e786a8efe34e146faf4c888aca8f081812bf2395b5262d36d65e4e7fd80072",
   "install_checks.py": "8284d9fb539b910a99fa24f9ca96b7886dcd733b1995a43ce7fd507bc58aabb2",
@@ -332,7 +332,7 @@
   "tests/test_r9_quality_features.py": "d8b2142fe5cdf9a78c9be7fe3fa530d046782b1d315b9bee37dd934d348a14c8",
   "tests/test_restored_akira.py": "4f106137e9810233ebf271f08d9de5583693c41573ce0173dd76d5cd7973d9ce",
   "tests/test_studio_rev10_sources_speed.py": "7abb41346a287e58d1dab8474d2a8389940f7786897fd751f5279ff7213d2a32",
-  "tests/test_studio_rev11_capital_chat_timing.py": "13cad4b910244ecfe1250c655cc98350683e33cc9c18605346c42925b892236a",
+  "tests/test_studio_rev11_capital_chat_timing.py": "5f80efe92287abfc147cceccb806da7b74ae8d2ba534053f630bb104495ba989",
   "tests/test_studio_rev5.py": "e7e448edb777836a7948f8d292629209e5e060f8ff24ecc7f67d9f570b07ef9c",
   "tests/test_studio_rev6_acceptance.py": "c97df0f4801e6872a02862f7fd8787aa150136896f3cc613589d0adf29de69ec",
   "tests/test_studio_rev6_media_strategy.py": "941e6d72ff0bd771bf400e17cad0921af4214a24156e859f68eccdf705baf3d4",
@@ -418,5 +418,6 @@
   "web_facts.py": "e51a0285ae8869d501ab88cbbd8d85d9f396d9108c27c40add69339d4f164aa3",
   "windows_identity.py": "5a312bc562001e17c7096f9ec8c9370f191f8bfd6f440a28936398125035287d",
   "windows_version.txt": "58984d9bfdfb13f1ef34838e56df87479234c09b3d34f4c7c9519d6a72cc1b9d",
-  "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8"
+  "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8",
+  "answer_grounding.py": "d8e5d3075398594f144dfaec4b2f2a9d14bea3c70d4843da8d691918601b1f6e"
 }

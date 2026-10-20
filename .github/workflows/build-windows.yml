@@ -61,7 +61,7 @@ jobs:
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
                         'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
                         'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
-                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','public_derivatives.py','compact_review.py','qa_sources_rev10.py','qa_review_rev10.py','qa_low_resource_rev7.py','installer/check_https.py','runner_protection.py','conversation_intent.py','order_timing.py','qa_conversation_rev11.py','tests/test_studio_rev11_capital_chat_timing.py')
+                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','public_derivatives.py','compact_review.py','qa_sources_rev10.py','qa_review_rev10.py','qa_low_resource_rev7.py','installer/check_https.py','answer_grounding.py','runner_protection.py','conversation_intent.py','order_timing.py','qa_conversation_rev11.py','tests/test_studio_rev11_capital_chat_timing.py')
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) {
               throw "Código REV11 incompleto: falta $file. No publicar un instalador antiguo."
@@ -71,7 +71,7 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_6_STUDIO_REV11') {
             throw "Identidad de compilación inesperada: $build"
           }
-          python -m py_compile runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
+          python -m py_compile answer_grounding.py runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
           if ($LASTEXITCODE -ne 0) { throw 'Un archivo nuevo contiene errores de sintaxis.' }
           python -m installer.summarize_revision --manifest-only
           if ($LASTEXITCODE -ne 0) { throw 'Los archivos no coinciden con el manifiesto SHA256.' }
