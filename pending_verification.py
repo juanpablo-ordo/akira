@@ -95,7 +95,9 @@ def assess(snapshot,plan,checks=None,reviews=None,context=None):
     trend=number((frames.get('H1') or {}).get('trend')) or 0
     strategy='Ruptura y continuación' if plan.get('kind')=='STOP' else 'Retroceso con tendencia' if side in (-1,1) and side*trend>0 else 'Reversión o rango: requiere confirmación'
     reason=str(plan.get('reason') or '')[:600]
-    entry_check=(snapshot.get('entry_quality_checks') or {}).get(plan.get('key')) or {}
+    entry_checks=snapshot.get('entry_quality_checks') or {}
+    entry_check=entry_checks.get(str(plan.get('symbol'))+':'+str(plan.get('key'))) or entry_checks.get(plan.get('key')) or {}
+    if entry_check.get('symbol') not in (None,plan.get('symbol')):entry_check={}
     match=entry_check.get('levels')=={k:plan.get(k) for k in ('symbol','side','kind','entry','sl','tp')} and -5<=now-float(entry_check.get('time') or 0)<=30
     rejected=match and not entry_check.get('allowed')
     add('Estrategia y tesis','BLOQUEADO' if rejected else 'CALCULADO' if reason else 'SIN TESIS',

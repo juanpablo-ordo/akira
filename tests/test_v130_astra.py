@@ -16,7 +16,7 @@ class V130AstraTests(unittest.TestCase):
         self.cfg=load_config(ROOT/'default_config.json')
 
     def test_build_schema_and_fast_human_defaults(self):
-        self.assertEqual(BUILD_ID,'AKIRA_16_4_3_STUDIO_REV8')
+        self.assertEqual(BUILD_ID,'AKIRA_16_4_4_STUDIO_REV9')
         self.assertEqual(self.cfg['schema_version'],1600)
         self.assertTrue(self.cfg['desktop']['friendly_ui'])
         self.assertTrue(self.cfg['desktop']['chat_research_animation'])

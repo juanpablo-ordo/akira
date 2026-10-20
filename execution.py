@@ -652,6 +652,9 @@ class Gateway:
             if found is None:return False
             if not (self.owned_order(found) if order_op else self.owned(found)):raise Blocked('Ticket externo')
             if self.fingerprint(found,'order' if order_op else 'position')!=meta.get('before'):raise Blocked('Ticket cambió antes de order_send')
+            if operation=='modify_order' and plan is not None:
+                guard=getattr(self,'entry_quality_guard',None)
+                if guard:guard(plan,snap)
             expected={'cancel':REMOVE,'modify_order':MODIFY,'protect':SLTP,'close':DEAL}
             if expected.get(operation)!=action:raise Blocked('Operación no autorizada por el motor de pendientes')
             if operation=='modify_order':

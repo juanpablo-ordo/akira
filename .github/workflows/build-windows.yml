@@ -1,11 +1,11 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.3 Studio Rev8 · BTC y oro · revisiones independientes · ${{ github.ref_name }}
+run-name: AKIRA 16.4.4 Studio Rev9 · pendientes vigentes · historial comparable · cola de IA · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - akira-studio-rev8-20261019
+      - akira-studio-rev9-20261020
 
 permissions:
   contents: read
@@ -49,7 +49,7 @@ jobs:
           python -m installer.check_tk_runtime --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
           if ($LASTEXITCODE -ne 0) { throw 'La biblioteca gráfica de Python está incompleta o no carga. Revisa TK_RUNTIME.json.' }
 
-      - name: Verificar que se incorporo REV8 antes de construir el instalador
+      - name: Verificar que se incorporo REV9 antes de construir el instalador
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -57,17 +57,17 @@ jobs:
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
                         'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
                         'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
-                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','network_tls.py','qa_review_rev8.py','qa_low_resource_rev7.py','installer/check_https.py')
+                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','qa_review_rev9.py','qa_low_resource_rev7.py','installer/check_https.py')
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) {
-              throw "Código REV8 incompleto: falta $file. No publicar un instalador antiguo."
+              throw "Código REV9 incompleto: falta $file. No publicar un instalador antiguo."
             }
           }
           $build = python -c "from akira_version import BUILD_ID; print(BUILD_ID)"
-          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_3_STUDIO_REV8') {
+          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_4_STUDIO_REV9') {
             throw "Identidad de compilación inesperada: $build"
           }
-          Write-Host 'Fuente Studio Rev8 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
+          Write-Host 'Fuente Studio Rev9 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
       - name: Pruebas de regresion principales
         timeout-minutes: 15
@@ -106,11 +106,11 @@ jobs:
       - name: Comprobar certificados HTTPS y rendimiento con dos núcleos en el ejecutable
         shell: pwsh
         run: |
-          python installer/check_https.py --report diagnostics/HTTPS_SOURCE_REV8.json
+          python installer/check_https.py --report diagnostics/HTTPS_SOURCE_REV9.json
           if ($LASTEXITCODE -ne 0) { throw 'La conexión HTTPS de origen no pasó.' }
-          python installer/check_https.py --exe native/AKIRA/AKIRA.exe --report diagnostics/HTTPS_FROZEN_REV8.json
+          python installer/check_https.py --exe native/AKIRA/AKIRA.exe --report diagnostics/HTTPS_FROZEN_REV9.json
           if ($LASTEXITCODE -ne 0) { throw 'El ejecutable no valida correctamente los certificados HTTPS.' }
-          $perf = Start-Process -FilePath './native/AKIRA/AKIRA.exe' -ArgumentList @('--low-resource-check', 'diagnostics/LOW_RESOURCE_FROZEN_REV8.json') -Wait -PassThru
+          $perf = Start-Process -FilePath './native/AKIRA/AKIRA.exe' -ArgumentList @('--low-resource-check', 'diagnostics/LOW_RESOURCE_FROZEN_REV9.json') -Wait -PassThru
           if ($perf.ExitCode -ne 0) { throw 'El perfil de ahorro o el ciclo financiero no pasaron la prueba de dos núcleos.' }
 
       - name: Incorporar llama.cpp oficial para Windows (CPU y Vulkan)
@@ -162,7 +162,7 @@ jobs:
       - name: Probar IA real de BTC y oro, general e individual, con contexto pequeño
         shell: pwsh
         run: |
-          python qa_review_rev8.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_REVIEW_REV8.json
+          python qa_review_rev9.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_REVIEW_REV9.json
           if ($LASTEXITCODE -ne 0) { throw 'La revisión de ambos activos en ahorro no pasó con el modelo real.' }
 
       - name: Probar conversación con faltas, seguimiento y cambio de tema
@@ -207,7 +207,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.4.3-Studio-Rev8-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.4.4-Studio-Rev9-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

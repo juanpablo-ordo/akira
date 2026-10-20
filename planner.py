@@ -29,6 +29,9 @@ class PendingPlanner:
     def recent_pending_performance(self,symbol,now=None):
         return self.learner.metrics(symbol)
 
+    def comparable_performance(self,symbol,plan):
+        return self.learner.metrics(symbol,plan)
+
     def v203_regime(self,symbol):
         cache=self.caches[symbol]
         live=(self.flow.get(symbol,{}) or {}).get("live") or (self.tapes[symbol].last_metrics or {})
@@ -41,7 +44,7 @@ class PendingPlanner:
         rr=reward/risk
         q=float(getattr(plan,'quality_score',0) or plan.score or 0)/100.0
         a=float(getattr(plan,'activation_score',0) or 0)/100.0
-        hist=self.recent_pending_performance(symbol)
+        hist=self.comparable_performance(symbol,plan)
         hist=regularize_metrics(hist,self.cfg.get('learning',{}).get('min_samples_pending',12))
         empirical=float(hist.get('regularized_expectancy',hist.get('expectancy',0)) or 0)
         # proxy in R-units: quality/activation only rank; history is shrunk when sample is small.
@@ -100,12 +103,12 @@ class PendingPlanner:
         review_avoid={str(x).upper() for x in (deep_review.get('avoid') or [])}
         review_bonus_cap=float(self.cfg.get('final_architecture',{}).get('deep_review_scenario_bonus',5.0))
         review_penalty_cap=float(self.cfg.get('final_architecture',{}).get('deep_review_scenario_penalty',6.5))
-        pending_perf=regularize_metrics(self.recent_pending_performance(symbol),self.cfg.get('learning',{}).get('min_samples_pending',12))
         pending_regime=self.v203_regime(symbol)
         out=[]
         for p in plans:
             if p.lane!="PENDING":
                 out.append(p); continue
+            pending_perf=regularize_metrics(self.comparable_performance(symbol,p),self.cfg.get('learning',{}).get('min_samples_pending',12))
             structural=('MAPA STRUCTURAL' in str(p.reason).upper() or ':H1:' in p.key.upper() or ':H4:' in p.key.upper())
             source='STRUCTURAL' if structural else 'TACTICAL'
             source_adjust=p.side*bias*confidence*ext_weight + p.side*imbalance*dom_weight
@@ -180,9 +183,14 @@ class PendingPlanner:
                                       source_adjust+cloud_adjust+review_adjust+geometry_adjust+empirical_adjust))
             # Solo un modelo de pendientes promovido sobre resultados fuera de muestra.
             daily=self.research_context.get('daily_learning') or {}
-            champion=(daily.get('champions') or {}).get(symbol,{})
+            from trade_quality_gate import family as strategy_family
+            from akira_version import BUILD_ID
+            from strategy_choice import selected as selected_strategy,STRATEGY_VERSION,SELECTOR_VERSION
+            champion=((daily.get('family_champions') or {}).get(symbol) or {}).get(strategy_family(p),{})
             learned_adjust=0.0
-            if (daily.get('account')==list(self.g.identity or ()) and champion.get('promoted') is True and
+            if (daily.get('account')==list(self.g.identity or ()) and daily.get('execution_build')==BUILD_ID and
+                    daily.get('strategy_version')==STRATEGY_VERSION and daily.get('selector_version')==SELECTOR_VERSION and
+                    daily.get('selector_id')==selected_strategy(self.cfg) and champion.get('promoted') is True and
                     champion.get('feature_version')==FEATURE_VERSION and champion.get('test_samples',0)>=20):
                 values=entry_features(p.side,p,{},self.caches[symbol].frames,None,0)
                 prob=probability(champion.get('weights',[]),values)
@@ -362,6 +370,7 @@ class PendingPlanner:
         for setup in setups:
             if setup.lane!="PENDING" or setup.kind not in ("LIMIT","STOP"):
                 continue
+            pending_perf=self.comparable_performance(symbol,setup)
             diag["raw_pending"]+=1
             tf=str(getattr(setup,"timeframe","") or "")
             presence_reserve=(str(setup.key).startswith('SWING:PRESENCE:') or str(setup.key).startswith('SWING:FAST:') or str(setup.key).startswith('SWING:SNAP:'))
@@ -397,6 +406,9 @@ class PendingPlanner:
                   'potential_reward_usd':None,'expected_value_usd':None,
                   'status':'DETECTED','reject_code':'','reason':''}
             audit.append(item)
+            historical=self.recent_pending_performance(symbol)
+            if max((historical.get('side_samples') or {}).values(),default=0)>=20 and pending_perf.get('samples',0)<20:
+                item['historical_warning']='Hay historial agregado conservado para auditoría y controles tras pérdidas; no calibra esta familia y versión.'
             # QUALITY-FIRST: un timeframe H1/H4 no convierte una EMA o una
             # proyección matemática en estructura observada. Solo el motor SWING
             # dedicado puede originar una orden: swing HTF, OB no mitigado o
@@ -820,7 +832,7 @@ class PendingPlanner:
                 conservative_p=wilson_lower(side_wr*side_n,side_n)
                 candidate_ev=conservative_p*reward_money-(1-conservative_p)*risk_money
                 item['expected_value_usd']=round(candidate_ev,3)
-                reason+=f'; EV estimado con historial de pendientes {symbol} {"BUY" if side==1 else "SELL"}: {candidate_ev:+.2f} USD / {side_n} cierres; sin calibración por familia'
+                reason+=f'; Historial comparable de familia, selector, versión y build {symbol} {"BUY" if side==1 else "SELL"}: {candidate_ev:+.2f} USD / {side_n} cierres; no es una predicción validada'
                 if candidate_ev<=0:
                     # El bucket símbolo/lado mezcla familias, geometrías y builds.
                     # Sirve como prior acotado en fuse_pending_context; no es una

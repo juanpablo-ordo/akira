@@ -1,13 +1,7 @@
 {
-  "build": "AKIRA_16_4_3_STUDIO_REV8",
-  "tests": 1311,
-  "status": "PASSED",
-  "date": "2026-10-19",
-  "skipped": 0,
-  "scope": "Rev8: revisiones independientes de BTC y oro, presupuesto de contexto, prioridad y actividad por activo",
-  "notes_file": "ACEPTACION_REV8.md",
-  "pytest_tests": 1314,
-  "pytest_subtests": 121,
-  "source_commit": "0aff824fd306dfb3feb1df2b771ddf34567ef868",
-  "evidence_file": "VALIDACION_STUDIO_REV8.json"
+  "build": "AKIRA_16_4_4_STUDIO_REV9",
+  "status": "PENDING_WINDOWS_VERIFICATION",
+  "date": "2026-10-20",
+  "scope": "Pendientes vigentes, historial comparable y cola IA; sin certificación de rentabilidad",
+  "notes_file": "ACEPTACION_REV9.md"
 }

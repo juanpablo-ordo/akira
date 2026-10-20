@@ -64,7 +64,7 @@ def create_shortcut(path,executable,root):
   link=pythoncom.CoCreateInstance(shell.CLSID_ShellLink,None,pythoncom.CLSCTX_INPROC_SERVER,shell.IID_IShellLink)
   executable=Path(executable).resolve();root=Path(root).resolve()
   link.SetPath(str(executable));link.SetArguments('--app-root "'+str(root)+'"')
-  link.SetWorkingDirectory(str(root));link.SetDescription('AKIRA · 16.4.3')
+  link.SetWorkingDirectory(str(root));link.SetDescription('AKIRA · 16.4.4')
   link.SetIconLocation(str(asset_path('akira.ico',root)),0)
   properties=link.QueryInterface(propsys.IID_IPropertyStore)
   properties.SetValue(pscon.PKEY_AppUserModel_ID,propsys.PROPVARIANTType(APP_ID))

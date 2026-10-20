@@ -117,3 +117,14 @@ def diagnostic(check_runtime=False):
         result['version'] = match.group(0) if match else ''
         result['runtime_verified'] = bool(run.returncode == 0 and match and tuple(map(int, match.groups())) >= (2, 3, 0))
     return result
+SESSION_GUIDE_HTML='''<h2>¿Para qué sirve?</h2>
+<p>Es opcional. Algunos vídeos piden iniciar sesión. Akira puede usar un archivo de sesión que tú prepares; no necesita tu contraseña.</p>
+<h3>1. Prepara el archivo en tu navegador</h3>
+<p>Abre YouTube e inicia sesión. Una herramienta de exportación de cookies del navegador puede guardar la sesión como un archivo <b>.txt en formato Netscape</b>. Exporta únicamente <b>youtube.com</b>. Este paso se hace fuera de Akira.</p>
+<p>Si no conoces estas herramientas, puedes omitir este paso y seguir usando los vídeos públicos y las demás fuentes. No hace falta crear una cuenta nueva ni enviar tu usuario a nadie.</p>
+<h3>2. Selecciónalo aquí</h3>
+<p>Pulsa <b>Ya tengo el archivo</b> y elige el .txt. Un enlace a YouTube, una captura o un archivo JSON no son archivos de sesión válidos. Akira comprueba el formato y la fecha antes de guardarlo en tu perfil de Windows.</p>
+<h3>3. Qué ocurre después</h3>
+<p>La siguiente consulta usará la sesión guardada. Si ha vencido, tendrás que exportarla de nuevo. Una sesión no elimina los límites de YouTube ni crea subtítulos donde no los hay. Akira solo indica que ha leído un vídeo cuando obtiene su transcripción completa.</p>
+<p>El archivo permite acceder a tu sesión: guárdalo como un dato privado y no lo compartas en chats, GitHub ni con otras personas.</p>'''
+

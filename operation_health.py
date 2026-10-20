@@ -53,6 +53,7 @@ def verification_job(job, reports, checks, reviews, now, ai_available, timeout_s
     """
     record=deepcopy(job);requested=float(job.get('requested') or 0)
     age=max(0., float(now)-requested)
+    deadline=float(timeout_seconds)
     details=[];missing=[];changed=[];completed=0;failures=[]
     deep=bool(job.get('deep',False))
     for pid in job.get('targets',[]):
@@ -78,6 +79,12 @@ def verification_job(job, reports, checks, reviews, now, ai_available, timeout_s
             review=reviews.get(pid) or {}
             match=review.get('fingerprint')==expected and float(review.get('updated') or 0)>=requested
             state=str(review.get('state') or '') if match else ''
+            if match and state in ('QUEUED','RUNNING'):
+                # The UI job must not time out while its identified local work
+                # is still within the bounded loading/inference queue budget.
+                queue=max(0,min(900,float(review.get('queue_budget_seconds') or 0)))
+                running=max(0,min(190,float(review.get('run_budget_seconds') or 190)))
+                deadline=max(deadline,min(1100,queue+running+5))
             if state in ('COMPLETE','ERROR'):
                 completed+=1
                 ai_data=review.get('data')
@@ -103,11 +110,12 @@ def verification_job(job, reports, checks, reviews, now, ai_available, timeout_s
     elif not ai_available and deep:phase='SIN SERVICIO DE IA'
     elif failures:phase='REVISIÓN RECHAZADA O FALLIDA'
     elif completed>=total:phase='REVISIÓN TERMINADA'
-    elif age>=timeout_seconds:phase='TIEMPO AGOTADO'
+    elif age>=deadline:phase='TIEMPO AGOTADO'
     else:phase='REVISANDO'
     record.update(completed=completed,total=total,phase=phase,
                   changed=changed,missing=sorted(set(missing)),ai_available=bool(ai_available),
                   elapsed_seconds=round(age,1),details=details,
+                  timeout_seconds=deadline,
                   terminal=phase!='REVISANDO',
                   # Explicitly never treat 'COMPLETED' as trade authorization.
                   authorizes_orders=False)

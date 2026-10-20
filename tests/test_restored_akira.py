@@ -177,12 +177,20 @@ class PendingChatIntegrationTests(PendingCase,unittest.TestCase):
     def test_promoted_model_only_affects_matching_account_and_feature_schema(self):
         self.e.warmup();p=self.plan();self.g.snapshot();base=self.e.planner.fuse_pending_context(p.symbol,[p])[0]
         champion={'promoted':True,'feature_version':FEATURE_VERSION,'test_samples':40,'weights':[3]+[0]*10,'base_rate':.5}
-        self.e.planner.research_context={'daily_learning':{'account':list(self.g.identity),'champions':{p.symbol:champion}}}
+        from akira_version import BUILD_ID
+        from strategy_choice import selected,STRATEGY_VERSION,SELECTOR_VERSION
+        from trade_quality_gate import family
+        self.e.planner.research_context={'daily_learning':{'account':list(self.g.identity),
+            'execution_build':BUILD_ID,'strategy_version':STRATEGY_VERSION,'selector_version':SELECTOR_VERSION,
+            'selector_id':selected(self.cfg),'family_champions':{p.symbol:{family(p):champion}}}}
         learned=self.e.planner.fuse_pending_context(p.symbol,[p])[0];self.assertGreater(learned.quality_score,base.quality_score)
         self.e.planner.research_context['daily_learning']['account']=[999,'OTHER']
         other=self.e.planner.fuse_pending_context(p.symbol,[p])[0];self.assertEqual(other.quality_score,base.quality_score)
         self.e.planner.research_context['daily_learning']['account']=list(self.g.identity);champion['feature_version']=1
         old=self.e.planner.fuse_pending_context(p.symbol,[p])[0];self.assertEqual(old.quality_score,base.quality_score)
+        champion['feature_version']=FEATURE_VERSION
+        self.e.planner.research_context['daily_learning']['execution_build']='ARCHIVED_BUILD'
+        archived=self.e.planner.fuse_pending_context(p.symbol,[p])[0];self.assertEqual(archived.quality_score,base.quality_score)
 
 class EvolutionRestorationTests(unittest.TestCase):
     def setUp(self):

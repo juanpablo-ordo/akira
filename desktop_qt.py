@@ -853,8 +853,15 @@ class StudioWindow(QMainWindow):
         if hasattr(self.controller,'knowledge'):self.controller.knowledge.refresh()
         else:self.information('Conocimiento','La actualización de Internet está desactivada en vista previa.')
     def import_youtube_session(self):
-        instructions,_=self.dialog_text('Preparar sesión de YouTube','1. Abre YouTube en tu navegador e inicia sesión.\n2. Exporta únicamente las cookies de youtube.com en formato Netscape, con una herramienta de exportación de cookies de tu navegador. Guarda un archivo .txt.\n3. Selecciona ese archivo aquí. No sirven una captura, un enlace ni un archivo JSON.\n\nLa sesión permite consultar contenido al que tu cuenta tiene acceso; no garantiza que el vídeo tenga subtítulos. Si no tienes el archivo, puedes cancelar y seguir usando las demás fuentes.')
-        instructions.exec()
+        instructions=QDialog(self);instructions.setWindowTitle(self.text('Conectar una sesión de YouTube'));instructions.resize(680,510)
+        layout=QVBoxLayout(instructions);layout.addWidget(self.lbl('SESIÓN DE YOUTUBE','title'))
+        guide=QTextBrowser();guide.setOpenExternalLinks(True)
+        from youtube_support import SESSION_GUIDE_HTML
+        guide.setHtml(SESSION_GUIDE_HTML);layout.addWidget(guide,1)
+        footer=QDialogButtonBox();choose=footer.addButton(self.text('YA TENGO EL ARCHIVO · SELECCIONAR'),QDialogButtonBox.ButtonRole.AcceptRole)
+        footer.addButton(self.text('AHORA NO'),QDialogButtonBox.ButtonRole.RejectRole)
+        footer.accepted.connect(instructions.accept);footer.rejected.connect(instructions.reject);layout.addWidget(footer)
+        if instructions.exec()!=QDialog.DialogCode.Accepted:return
         path,_=QFileDialog.getOpenFileName(self,'Sesión YouTube','','Netscape cookies (*.txt)')
         if path:
             from youtube_support import import_session

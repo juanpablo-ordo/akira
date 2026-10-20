@@ -13,7 +13,7 @@ from tests.fixtures import PendingCase
 class HunterV126Tests(PendingCase, unittest.TestCase):
     def test_schema_build_and_hunter_defaults(self):
         self.assertEqual(self.cfg['schema_version'], 1600)
-        self.assertEqual(BUILD_ID, 'AKIRA_16_4_3_STUDIO_REV8')
+        self.assertEqual(BUILD_ID, 'AKIRA_16_4_4_STUDIO_REV9')
         self.assertTrue(self.cfg['execution']['allow_m15_m30_pending_origin'])
         self.assertTrue(self.cfg['execution']['allow_m5_pending_origin'])
         self.assertTrue(self.cfg['strategy']['intraday_structural_map'])

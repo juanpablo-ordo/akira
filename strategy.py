@@ -106,6 +106,7 @@ class Plan:
     strategy_version: int = 1
     selector_id: str = ''
     selector_version: int = 0
+    execution_build: str = ''
 
     @property
     def rr(self):

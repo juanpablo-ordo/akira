@@ -6,6 +6,8 @@ from trade_quality_gate import family
 
 ADAPTIVE='AKIRA_ADAPTATIVA'
 FAMILIES=('PENDIENTE_RETROCESO','PENDIENTE_RUPTURA','RUNNER_CONTINUACION_M15','RUNNER_RETEST_M5','REVERSION_CONFIRMADA','RANGO_RECHAZO')
+STRATEGY_VERSION=2
+SELECTOR_VERSION=2
 
 def selected(cfg):return (cfg.get('strategy_choice') or {}).get('selected',ADAPTIVE)
 
@@ -23,7 +25,9 @@ def allows(plan,cfg):
     return target==ADAPTIVE or family(plan)==target
 
 def tag(plan,cfg):
-    return replace(plan,strategy_id=family(plan),strategy_version=1,selector_id=selected(cfg),selector_version=1)
+    from akira_version import BUILD_ID
+    return replace(plan,strategy_id=family(plan),strategy_version=STRATEGY_VERSION,
+                   selector_id=selected(cfg),selector_version=SELECTOR_VERSION,execution_build=BUILD_ID)
 
 
 def variant_decision(plan,cfg,frames):

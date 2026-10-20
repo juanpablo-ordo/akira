@@ -63,7 +63,11 @@ def evaluate(plan,frames,outcomes,now,strict=True):
             streak+=1
         if streak>=2:
             aligned=m15 and h1 and side*num(value(m15,'trend'))>.12 and side*num(value(h1,'trend'))>.18
-            check('Reentrada después de pérdidas consecutivas',aligned,'Dos o más pérdidas del mismo lado requieren una nueva estructura M15/H1 alineada; no recuperar pérdidas repitiendo el mismo escenario.')
+            recovery=side*(num(value(last_bar,'close'))-num(value(last_bar,'open')))>=num(value(m15,'atr'))*.2>0
+            check('Reentrada después de pérdidas consecutivas',aligned and recovery,'Dos o más pérdidas del mismo lado requieren una nueva estructura M15/H1 alineada y una vela M15 de recuperación con cuerpo de al menos 0,20 ATR. Una media rezagada no confirma el giro.')
+    from entry_momentum import adverse_impulse
+    impulse=adverse_impulse(plan,frames,now)
+    if impulse:check('Impulso contrario cerca de la entrada',False,impulse['reason'])
     if strict and m15 and h1:
         atr=num(value(m15,'atr'));horizon=num(value(plan,'horizon_atr')) or num(value(plan,'signal_atr')) or atr
         risk=side*(num(value(plan,'entry'))-num(value(plan,'sl')))

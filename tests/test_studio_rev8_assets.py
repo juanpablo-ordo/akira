@@ -113,7 +113,7 @@ class AssetReviewTests(unittest.TestCase):
         self.worker._pending_tick(self.now,{})
         self.assertEqual(self.worker.pending_batch[0]['plan']['symbol'],'XAUUSDm')
         self.assertEqual(self.worker.pending_reviews[identity(plans[2])]['state'],'QUEUED')
-        self.now+=301;self.worker.expire_pending_reviews()
+        self.now=1000+self.worker.pending_reviews[identity(plans[2])]['queue_budget_seconds']+1;self.worker.expire_pending_reviews()
         self.assertEqual(self.worker.pending_reviews[identity(plans[2])]['state'],'ERROR')
     def test_required_order_keeps_priority_over_other_asset_automatic_work(self):
         self.worker.pool=ControlledPool();gold=self.plan('XAUUSDm','auto');btc=self.plan('BTCUSDm','required')

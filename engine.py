@@ -220,6 +220,9 @@ class Engine:
         # LIMIT through its original invalidation cannot be a valid future thesis.
         if old.kind=='LIMIT' and side*(ref-old.sl)<=0:return 'Precio cruzó invalidación de la zona LIMIT'
         frames=self.planner.caches[symbol].frames
+        from entry_momentum import adverse_impulse
+        impulse=adverse_impulse(old,frames,self.g.clock(),q)
+        if impulse:return impulse['reason']
         for name in ('M15','H1'):
             f=frames.get(name)
             if f and f.bars[-1].time>old.bar_time and side*(f.bars[-1].close-old.sl)<-f.atr*.04:
@@ -1259,7 +1262,7 @@ class Engine:
             if meta.get('symbol')==plan.symbol and meta.get('closed_observed_at') and not meta.get('closure') and 0<=self.g.clock()-float(meta['closed_observed_at'])<=900:
                 reason='Cierre propio aún sin confirmar en MT5; esperar su resultado antes de reabrir '+plan.symbol
                 evidence.update(allowed=False,reason=reason);evidence['checks'].append({'name':'Cierre confirmado','passed':False,'reason':reason});break
-        self.entry_checks[plan.key]={'symbol':plan.symbol,'time':self.g.clock(),
+        self.entry_checks[plan.symbol+':'+plan.key]={'symbol':plan.symbol,'time':self.g.clock(),
             'levels':{k:getattr(plan,k) for k in ('symbol','side','kind','entry','sl','tp')},**evidence}
         while len(self.entry_checks)>64:self.entry_checks.pop(next(iter(self.entry_checks)))
         return evidence

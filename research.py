@@ -137,6 +137,7 @@ class ContextWorker:
         self.pending_queue={};self.pending_reviews={};self.pending_future=None;self.pending_batch=[];self._review_fast_model='';self._review_attempt=0
         self._inference=threading.local()
         self._summary_cancel=None;self._pending_cancel=None;self._pending_turns={};self._pending_turn=0
+        self._job_started={}
         # Old combined caches keep their original timestamps when split. A new
         # BTC result must never make an old gold review appear current.
         legacy=self.sources.get('local_ai') or {};data=legacy.get('data') or {}
@@ -194,7 +195,7 @@ class ContextWorker:
         for pid,row in list(self.pending_reviews.items()):
             state=row.get('state')
             if state not in ('QUEUED','RUNNING'):continue
-            begun=float(row.get('started') or row.get('requested') or now)
+            begun=float((row.get('requested') if state=='QUEUED' else row.get('started')) or now)
             # Independent queue and running deadlines. The queue deadline is
             # intentionally generous enough for small batches and user chat.
             limit=float(row.get('queue_budget_seconds',90.0)) if state=='QUEUED' else float(row.get('run_budget_seconds',65.0))
@@ -229,9 +230,11 @@ class ContextWorker:
                 self.pending_reviews[pid]={'fingerprint':fp,'levels':levels(p),'symbol':p['symbol'],'state':'QUEUED','updated':now,'requested':now,'attempt_id':attempt}
                 if (self.cfg.get('assistant') or {}).get('local_runtime_enabled'):
                     ahead=len(self.pending_batch)+sum(1 for key,r in self.pending_queue.items() if key!=pid and r.get('priority',2)<=priority)
-                    # Include the work ahead of this request. Loading/inference
-                    # time is not a queue failure; waiting still has a hard cap.
-                    self.pending_reviews[pid]['queue_budget_seconds']=100+100*min(4,ahead)
+                    # A summary may already own the single local inference slot.
+                    # Account for loading plus inference, not just pending peers.
+                    summary_wait=max((max(0,300-(now-self._job_started.get(name,now)))
+                        for name in self.jobs if name.split(':')[0] in ('local_ai','cloud')),default=0)
+                    self.pending_reviews[pid]['queue_budget_seconds']=min(900,100+300*ahead+summary_wait)
                 queued.append(pid)
                 if priority<=1 and self._summary_cancel is not None:self._summary_cancel.set()
             while len(self.pending_queue)>32:
@@ -428,6 +431,26 @@ class ContextWorker:
                 self._pending_turn+=1;self._pending_turns[symbol]=self._pending_turn
             batch=[self.pending_queue.pop(pid) for pid in ids[:2]]
             from pending_verification import identity
+            # Waiting does not make captured indicators current. Refresh a
+            # compatible request before inference; changed evidence requires a
+            # new fingerprint and can never approve the superseded request.
+            from pending_verification import fingerprint
+            for request in batch:
+                latest=self.snapshot
+                symbol=request['plan']['symbol']
+                if symbol not in (latest.get('symbols') or {}):continue
+                pid=identity(request['plan']);row=self.pending_reviews[pid]
+                market=(latest.get('markets') or {}).get(symbol) or {}
+                quote_time=latest['symbols'][symbol].get('quote_time')
+                if market.get('scheduled_closed') or isinstance(quote_time,(int,float)) and not -5<=now-quote_time<=90:
+                    row.update(state='ERROR',updated=now,error='La sesión está cerrada o la cotización ya no está vigente; solicita una revisión con datos actuales.')
+                    continue
+                request['snapshot']={k:copy.deepcopy(latest.get(k)) for k in ('updated','as_of_utc','markets','research','selection_configuration','required_pending_reviews')}
+                request['snapshot']['symbols']={symbol:{k:copy.deepcopy(latest['symbols'][symbol].get(k)) for k in ('bid','ask','spread','quote_time','frames')}}
+                request['fingerprint']=fingerprint(request['snapshot'],request['plan'])
+                row.update(fingerprint=request['fingerprint'],input_updated=latest.get('as_of_utc') or latest.get('updated'))
+            batch=[r for r in batch if self.pending_reviews[identity(r['plan'])]['state']=='QUEUED']
+            if not batch:return
             for r in batch:
                 row=self.pending_reviews[identity(r['plan'])];row.update(state='RUNNING',started=now)
                 if managed:row.update(run_budget_seconds=190,phase='STARTING_MODEL')
@@ -673,7 +696,7 @@ class ContextWorker:
         with self.lock:
             for name,future in list(self.jobs.items()):
                 if not future.done():continue
-                self.jobs.pop(name);old=self.sources.get(name,{});deferred=False
+                self.jobs.pop(name);self._job_started.pop(name,None);old=self.sources.get(name,{});deferred=False
                 try:
                     data=future.result()
                     if isinstance(data,dict) and data.get('state') in ('CONFIG_REQUIRED','UNSUPPORTED','NO_CAPTIONS'):
@@ -739,6 +762,7 @@ class ContextWorker:
                     # asset becomes eligible even when the first one failed.
                     if kind=='local_ai' and any(k.split(':')[0]=='local_ai' for k in self.jobs):continue
                     self.due[name]=now+max(5,float(interval));pool=(self.ai_pool or self.pool) if kind=='local_ai' else self.pool
+                    self._job_started[name]=now
                     self.jobs[name]=pool.submit(fn)
 
     def _save(self):
@@ -820,6 +844,7 @@ class ContextWorker:
             r=sources.get(name,{})
             data=r.get('data');usable=bool(data)
             if name.startswith('local_ai:') and isinstance(data,dict):usable=bool(data.get(name.partition(':')[2]))
+            if name=='local_ai' and isinstance(data,dict):usable=bool((data.get('_meta') or {}).get('active_symbols'))
             if isinstance(data,dict):
                 for key in ('items','rows'):
                     if key in data:usable=bool(data[key]);break
@@ -836,6 +861,9 @@ class ContextWorker:
             meta=data.get('_meta') if isinstance(data,dict) else None
             if isinstance(meta,dict) and name in statuses and not statuses[name].get('error'):
                 covered=', '.join(meta.get('active_symbols') or [])
+                if not covered:
+                    statuses[name]['detail']='Aún no hay una revisión de IA vigente. El análisis técnico conserva su estado independiente.'
+                    continue
                 statuses[name]['detail']=('Revisión IA resumida por recursos: '+covered+'. El motor técnico conserva el análisis completo.' if meta.get('input_scope')=='COMPACT_INDICATORS_COMPLETE_TIMEFRAMES' else 'Indicadores revisados: '+covered+'; '+('doble revisión completada' if meta.get('verified_twice') else 'una revisión completada'))
                 if meta.get('verification_error'):statuses[name]['detail']+='; verificador: '+meta['verification_error']
         completed=[r for r in pending_reviews.values() if r.get('state')=='COMPLETE' and now-float(r.get('updated') or 0)<180]
