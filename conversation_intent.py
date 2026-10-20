@@ -36,13 +36,18 @@ def self_intent(message, brand='AKIRA'):
 def is_personal_conversation(message):
     text = folded(message)
     if self_intent(message):return True
-    # Do not send feelings, a personal account or a question to the assistant
-    # itself into the short-entity web-search heuristic.
-    return bool(re.match(r'^(?:me siento|estoy (?:triste|feliz|cansad[oa]|aburrid[oa]|nervios[oa])|'
+    personal=bool(re.match(r'^(?:me siento|estoy (?:triste|feliz|cansad[oa]|aburrid[oa]|nervios[oa])|'
         r'tengo hambre|quiero contarte|te cuento|hoy me (?:paso|siento)|'
         r'quien te (?:creo|programo|hizo)|de donde (?:eres|vienes)|que (?:te gusta|piensas de ti|opinas de ti)|'
         r'recuerdas (?:lo que|mi |mis |como me llamo|que te dije|de lo que hablamos)|como me llamo|sabes como me llamo|que te dije|que hemos hablado|'
         r'que (?:piensas|opinas) (?:de mi|sobre mi)|te gusta |tu que prefieres|y tu\b)', text))
+    if personal:return True
+    # Embedded factual requests still need evidence: "sabes quién es el
+    # presidente" is about an external fact, not the assistant's personality.
+    external=re.search(r'\b(?:president\w*|ministr\w*|noticias?|actual\w*|ultimo\w*|ayer|hoy|precio\w*|cotiza\w*|lanz\w*)\b|'
+        r'\b(?:quien es|que es|donde esta|cuando salio)\b',text)
+    if external:return False
+    return bool(re.match(r'^(?:(?:y|pero) )?(?:tu )?(?:eres|estas|tienes|sientes|piensas|prefieres|puedes|sabes)\b',text))
 
 
 def self_reply(message, brand='AKIRA'):

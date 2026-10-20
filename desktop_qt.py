@@ -332,7 +332,7 @@ class StudioWindow(QMainWindow):
         from akira_version import BUILD_ID
         self.setWindowTitle(brand+' · Studio · '+BUILD_ID.removeprefix('AKIRA_').replace('_STUDIO_',' · ').replace('_','.'));desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
         for wave in self.findChildren(SignalWave):wave.set_saving(profile=='Ahorro de energía' or bool(studio.get('reduce_motion')))
-        if profile=='Ahorro de energía':wallpaper.update(fps=min(12,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
+        if profile=='Ahorro de energía':wallpaper.update(fps=min(3,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
         self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
         locale=studio.get('language_ui','es')
         if self.tr.locale!=locale or self.tr.pack!=studio.get('language_pack',''):
