@@ -37,6 +37,7 @@ def measured(rows,key='pnl'):
 
 def definitions():
  out=[{'id':k,'name':v[0],'rules':v[1],'origin':'Motor operativo existente','mode':'OPERATIVA','version':1} for k,v in FAMILIES.items()]
+ out.insert(0,{'id':'AKIRA_ADAPTATIVA','name':'Akira Adaptativa','rules':'Selector principal de las familias estructurales implementadas. Usa las reglas técnicas, contexto vigente, costes, autorización y riesgo existentes; conserva familia y versión por propuesta. Su posición en el catálogo no demuestra superioridad estadística.','origin':'Estrategia principal del producto','mode':'OPERATIVA','version':1})
  # Finite neighbors, fixed BEFORE seeing outcomes. Hypotheses, not a claim of
  # discovering a profitable strategy. No unrestricted model-generated code.
  for template,(name,indicators,base) in TEMPLATES.items():
@@ -258,7 +259,8 @@ class StrategyLab:
    for definition in defs:
     row=copy.deepcopy(definition);per={}
     for symbol in snap['symbols']:
-     actual=[r for r in outcomes if r.get('symbol')==symbol and r.get('strategy_id')==row['id']]
+     actual=[r for r in outcomes if r.get('symbol')==symbol and
+      ((r.get('selector_id') or (r.get('plan') or {}).get('selector_id'))==row['id'] if row['id']=='AKIRA_ADAPTATIVA' or row['id'].startswith('LAB_') else r.get('strategy_id')==row['id'])]
      paper=sorted([c for c in cases.values() if c.get('cohort')==cohort and c['symbol']==symbol and c['strategy_id']==row['id']],key=lambda c:c['created'])
      history=[{'created':c[0],'exit_at':c[1],'state':c[2],'net_r':c[3]} for c in db.execute(
       'SELECT created,exit_at,state,net_r FROM results WHERE cohort=? AND strategy_id=? AND symbol=? AND exit_at<=? ORDER BY created',(cohort,row['id'],symbol,now))]

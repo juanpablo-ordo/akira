@@ -1,0 +1,11 @@
+AKIRA 16.3.5 R8 — verificación local Linux
+
+Pytest: 1126 pruebas y 87 subpruebas; 0 fallos, 0 errores, 0 omisiones.
+JUnit: PRUEBAS_COMPLETAS.xml; duración 49.384 segundos.
+Unittest con red bloqueada: 1123 pruebas; 0 fallos, 0 errores, 0 omisiones.
+Autocontrol nativo v8: 27 comprobaciones obligatorias aprobadas.
+24 combinaciones de página/tamaño/escala aprobadas; ocho categorías de ajustes y panel de recursos comprobados en cada escala.
+Comprobación posterior de versiones e instalación: 59 pruebas aprobadas.
+
+Pendiente: compilación, modelo real CPU, instalador e IA instalada R8 en Windows.
+Sin operaciones en una cuenta real. Estos resultados no son métricas de rentabilidad.

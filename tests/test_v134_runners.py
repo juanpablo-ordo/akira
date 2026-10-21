@@ -71,6 +71,7 @@ class RunnerV134Tests(PendingCase, unittest.TestCase):
         self.assertEqual(meta['plan']['lane'],'RUNNER');self.assertGreater(meta['initial_sl'],0)
 
     def test_strong_signal_increases_lot_within_unchanged_risk_cap(self):
+        self.cfg['runner']['allow_size_boost']=True  # explicit opt-in for this sizing contract
         before=copy.deepcopy(self.cfg['risk']);p=self.runner();self.g.send_runner(p)
         request=self.api.sent[-1]
         self.assertGreater(request['volume'],.01)
@@ -152,17 +153,20 @@ class RunnerV134Tests(PendingCase, unittest.TestCase):
         self.assertFalse(self.api.sent)
 
     def test_cancel_confirmation_precedes_market_entry(self):
+        self.cfg['runner']['preserve_pending_orders']=False  # explicit legacy replacement policy
         self.e.warmup();p=self.runner();self.api.add_pending(self.plan(side=-1))
         with patch('engine.runner_plan',return_value=(p,'confirmed')):
             self.assertTrue(self.e.try_runner(p.symbol,self.g.quote(p.symbol)))
         self.assertEqual([r['action'] for r in self.api.sent],[REMOVE,DEAL]);self.assertFalse(self.api.orders)
 
     def test_fill_during_cancel_prevents_extra_runner(self):
+        self.cfg['runner']['preserve_pending_orders']=False  # explicit legacy replacement policy
         self.e.warmup();p=self.runner();self.api.add_pending(self.plan(side=-1));self.api.fill_on_cancel=True
         with patch('engine.runner_plan',return_value=(p,'confirmed')):self.e.try_runner(p.symbol,self.g.quote(p.symbol))
         self.assertFalse(any(r['action']==DEAL for r in self.api.sent));self.assertEqual(len(self.api.positions),1)
 
     def test_rejected_cancel_prevents_market_entry(self):
+        self.cfg['runner']['preserve_pending_orders']=False  # explicit legacy replacement policy
         self.e.warmup();p=self.runner();self.api.add_pending(self.plan(side=-1));self.api.send_retcode=10006
         with patch('engine.runner_plan',return_value=(p,'confirmed')):self.e.try_runner(p.symbol,self.g.quote(p.symbol))
         self.assertFalse(any(r['action']==DEAL for r in self.api.sent))
@@ -217,7 +221,8 @@ class RunnerV134Tests(PendingCase, unittest.TestCase):
                 cache.frames[tf]=replace(f,bars=bars,atr=f.atr*scale,name=tf,highs=(),lows=())
             for tf in cache.PERIODS:cache.due[tf]=self.clock()+60
             self.api.set_quote(symbol,price(103.5),spread=spread,fill=False)
-        view=self.e.step()
+        # Exercise a real runner when there is no qualifying pending map.
+        with patch.object(self.e,'scan_plans',return_value=[]):view=self.e.step()
         self.assertEqual({r['symbol'] for r in self.api.sent if r['action']==DEAL},{'BTCUSDm','XAUUSDm'})
         self.assertEqual(len(self.api.positions),2)
         self.assertTrue(all(r['runner']['state']=='RUNNER CONFIRMADO' for r in view['symbols'].values()))

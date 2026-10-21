@@ -1,0 +1,14 @@
+{
+  "source": "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib",
+  "tcl_library": "/tmp/akira_tk_fixture_4xp534l9/verified/tcl9.0",
+  "tk_library": "/tmp/akira_tk_fixture_4xp534l9/verified/tk9.0",
+  "verified_files": 178,
+  "library_sha256": {
+    "tcl9.0": "d9eb615d62947cb100b04ff0768096cbffc866d921354f860d6bc225915e61c1",
+    "tk9.0": "c5ce9cb44a92c7880020e563c999ad9c73daa4a5e6e0ef486a5f5af87444dbd8"
+  },
+  "tcl_patchlevel": "9.0.4",
+  "tk_patchlevel": "9.0.4",
+  "status": "PASSED",
+  "native_initializations": 3
+}

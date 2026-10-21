@@ -27,6 +27,7 @@ class HardwareAndRuntimeTests(unittest.TestCase):
             self.assertEqual(cmd[cmd.index('--n-gpu-layers')+1],'0')
             self.assertEqual(cmd[cmd.index('--ctx-size')+1],'3072')
             self.assertEqual(cmd[cmd.index('--host')+1],'127.0.0.1')
+            self.assertIn('--jinja',cmd)
     def test_stop_does_not_terminate_unowned_process(self):
         mgr=ManagedLlamaProcess({'local_runtime_enabled':False})
         with patch('subprocess.Popen') as started:

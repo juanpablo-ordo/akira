@@ -10,7 +10,7 @@ from execution import Gateway
 
 class Astra131Tests(unittest.TestCase):
     def test_version_and_optimized_intervals(self):
-        self.assertIn('16_3',BUILD_ID)
+        self.assertIn('16_4',BUILD_ID)
         c=load_config(DEFAULT)
         self.assertGreaterEqual(c['execution']['rapid_parameter_map_refresh_seconds'],.15)
         self.assertGreaterEqual(c['poll_seconds'],.15)
@@ -32,7 +32,7 @@ class Astra131Tests(unittest.TestCase):
             with self.assertRaises(RuntimeError):listen_once()
     def test_live_risk_gate_stays_in_execution_path(self):
         src=(Path(__file__).resolve().parents[1]/'execution.py').read_text(encoding='utf-8')
-        self.assertIn('risk>self.trade_cap(snap)',src)
+        self.assertIn('risk>self.entry_cap(plan,snap)',src)
         self.assertIn('total>self.total_cap(snap)',src)
     def test_voice_not_continuous(self):
         text=(Path(__file__).resolve().parents[1]/'desktop.py').read_text(encoding='utf-8')

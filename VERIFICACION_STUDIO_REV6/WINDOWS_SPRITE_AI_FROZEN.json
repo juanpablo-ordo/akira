@@ -1,0 +1,28 @@
+{
+  "status": "PASSED",
+  "provider": "CPUExecutionProvider",
+  "fixture": "bundled sleeping sprite",
+  "prediction": {
+    "state": "sleeping",
+    "score": 0.2837,
+    "margin": 0.0243,
+    "requires_review": true,
+    "alternatives": [
+      {
+        "state": "sleeping",
+        "score": 0.2837
+      },
+      {
+        "state": "idle",
+        "score": 0.2594
+      },
+      {
+        "state": "happy",
+        "score": 0.259
+      }
+    ],
+    "method": "CLIP CPU zero-shot; similarity is not a probability"
+  },
+  "network_used": false,
+  "universal_recognition_verified": false
+}

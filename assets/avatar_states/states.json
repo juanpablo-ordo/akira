@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "atlas": "akira_r8_states.png",
+  "grid": [
+    4,
+    2
+  ],
+  "frames": [
+    "idle",
+    "blink_half",
+    "blink_closed",
+    "idle_return",
+    "waiting",
+    "offline",
+    "wake",
+    "listening"
+  ],
+  "blink_seconds": [
+    0.06,
+    0.08,
+    0.06
+  ],
+  "spinner_frames": 12,
+  "spinner_frame_ms": 80
+}

@@ -179,7 +179,7 @@ class LabTests(unittest.TestCase):
   p=propose(next(d for d in definitions() if d.get('spec')),'BTCUSDm',self.snap['symbols']['BTCUSDm'],self.now)
   self.assertIsNotNone(p);self.assertLess(p['sl'],p['entry']);self.assertGreater(p['tp'],p['entry']);self.assertTrue(p['research_only'])
  def test_generation_creates_real_case_charts_from_supplied_closed_bars(self):
-  r=self.tick();self.assertEqual(r['generated_hypotheses'],12);self.assertEqual(len(r['strategies']),18)
+  r=self.tick();self.assertEqual(r['generated_hypotheses'],12);self.assertEqual(len(r['strategies']),19);self.assertEqual(r['strategies'][0]['id'],'AKIRA_ADAPTATIVA')
   with self.lab.db() as db:self.assertGreater(db.execute('SELECT COUNT(*) FROM cases').fetchone()[0],0)
   from PIL import Image
   path=next((self.root/'state/strategy_images').glob('*.png'))
@@ -205,7 +205,11 @@ class LabTests(unittest.TestCase):
   self.assertNotEqual(before,new['strategies'][0]['symbols']['BTCUSDm']['cohort'])
  def test_realized_result_contains_actual_net_cost_not_a_technical_score(self):
   self.snap['confirmed_strategy_outcomes']=[{'symbol':'BTCUSDm','strategy_id':'PENDIENTE_RETROCESO','pnl':-.2,'closed_at':self.now-1}]
-  r=self.tick();m=r['strategies'][0]['symbols']['BTCUSDm']['realized'];self.assertEqual(m['n'],1);self.assertAlmostEqual(m['net'],-.2);self.assertEqual(m['win_rate'],0)
+  r=self.tick();m=next(row for row in r['strategies'] if row['id']=='PENDIENTE_RETROCESO')['symbols']['BTCUSDm']['realized'];self.assertEqual(m['n'],1);self.assertAlmostEqual(m['net'],-.2);self.assertEqual(m['win_rate'],0)
+  self.assertEqual(r['strategies'][0]['symbols']['BTCUSDm']['realized']['n'],0)
+ def test_own_selector_results_require_explicit_selector_provenance(self):
+  self.snap['confirmed_strategy_outcomes']=[{'symbol':'BTCUSDm','strategy_id':'PENDIENTE_RETROCESO','selector_id':'AKIRA_ADAPTATIVA','pnl':-.2,'closed_at':self.now-1}]
+  r=self.tick();m=r['strategies'][0]['symbols']['BTCUSDm']['realized'];self.assertEqual(m['n'],1);self.assertAlmostEqual(m['net'],-.2)
  def test_direct_video_reference_is_not_falsely_claimed_as_verified(self):
   self.assertEqual(self.tick()['reference']['state'],'CONTENIDO NO VERIFICADO')
  def test_export_is_readable_and_keeps_case_images(self):
@@ -273,7 +277,7 @@ class DirectoryUITests(unittest.TestCase):
  def test_directory_has_ordered_btc_and_gold_rows_without_a_fake_percentage(self):
   self.app.view={'symbols':{'BTCUSDm':{},'XAUUSDm':{}},'research':{}}
   with patch.object(self.app,'service_dialog',return_value=Widget()),patch.object(Widget,'winfo_exists',return_value=True,create=True),patch('strategy_directory.tk.PanedWindow',Widget),patch('strategy_directory.ttk.Treeview',Widget):self.app.open_strategy_directory()
-  self.assertEqual(len(self.app.strategy_tree.items),36);self.assertIn('Sin muestra',self.app.strategy_details.text)
+  self.assertEqual(len(self.app.strategy_tree.items),38);self.assertIn('Sin muestra',self.app.strategy_details.text)
  def test_strategy_export_result_never_releases_an_active_conversation(self):
   self.app.chat_busy=True;self.app.strategy_export_button=Widget()
   self.app.replies.put({'strategy_export_result':{'ok':True,'path':'example.html'}});self.app.poll()

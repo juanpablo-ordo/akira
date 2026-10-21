@@ -1,0 +1,39 @@
+{
+  "build": "AKIRA_16_4_0_STUDIO_REV5",
+  "revision": "WINDOWS_REGRESSION_FIX_1",
+  "reported_ci_run": "https://github.com/juanpablo-ordo/akira/actions/runs/38986471480",
+  "reported_commit": "7097b5bdf57b1b63e39a0d08ba6f25c206e4e6c6",
+  "reported_input_sha256": "2adc2213644b98cef1cb2b4bdbcf68bdde7b601c7d50f27fe2f97b849af7c50b",
+  "fixes": [
+    {
+      "test": "tests.test_akira_studio.StudioTests.test_avatar_files_survive_release_migration",
+      "cause": "Rutas 8.3 y largas equivalentes comparadas como texto",
+      "change": "Comprobar samefile y contención en el destino de migración"
+    },
+    {
+      "test": "tests.test_r9_quality_features.LanguagePackTests.test_migration_rebases_custom_language_pack",
+      "cause": "startsWith no reconoce los alias 8.3 de Windows",
+      "change": "Comprobar archivo exacto migrado y directorio canónico de destino"
+    },
+    {
+      "test": "tests.test_r6_expressions_layout.TkRegressions.test_compact_controls_accept_small_fonts_and_reject_clipping",
+      "cause": "El cálculo font+padding no representa la geometría de los botones Win32",
+      "change": "Medir una instancia nativa no mostrada; mantener rechazo de recorte horizontal y vertical"
+    },
+    {
+      "test": "tests.test_r11_pending_ui.CandidateCockpit.test_stale_scenario_ticket_does_not_claim_order_still_at_broker",
+      "cause": "Tk falló al cargar ttk/progress.tcl en el runner; origen intermitente no confirmado en Windows",
+      "change": "Comprobar todos los scripts requeridos, copiar y verificar bibliotecas propias por SHA-256 y probar tres inicializaciones antes de pytest; cerrar Desktop completo entre pruebas"
+    }
+  ],
+  "pytest_passed": 1202,
+  "subtests_passed": 102,
+  "offline_tests_passed": 1199,
+  "skipped": 0,
+  "windows_verified": false,
+  "correction_pushed_to_github": false,
+  "source_write_error": "403",
+  "publisher": "PUBLICAR_A_GITHUB_REV5.cmd",
+  "branch": "akira-studio-rev5-20261016",
+  "workflow_run_title": "AKIRA 16.4.0 Studio Rev5 · corrección Windows 1"
+}

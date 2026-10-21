@@ -1,0 +1,15 @@
+{
+  "tcl_library": "/workspace/scratch/76f348340c16/status_fix3_tk86/root/usr/share/tcltk/tcl8.6",
+  "tk_library": "/workspace/scratch/76f348340c16/status_fix3_tk86/root/usr/share/tcltk/tk8.6",
+  "tcl_patchlevel": "8.6.14",
+  "tk_patchlevel": "8.6.14",
+  "bootstrap": {
+    "library": "/workspace/scratch/76f348340c16/status_fix3_tk86/root/usr/share/tcltk/tcl8.6",
+    "loader": "/workspace/scratch/76f348340c16/status_fix3_tk86/root/usr/share/tcltk/tcl8.6/auto.tcl",
+    "already_loaded": false,
+    "tcl": "8.6.14",
+    "tk": "8.6.14"
+  },
+  "status": "PASSED",
+  "native_initializations": 12
+}

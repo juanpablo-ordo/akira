@@ -12,18 +12,37 @@ import json
 import re
 import urllib.parse
 import urllib.request
+from network_tls import https_context
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+from language_normalization import understood
 
 UA = "Akira/7.3 (+local research; multi-source factual verification)"
+_WEB_POOL=ThreadPoolExecutor(max_workers=8,thread_name_prefix='AkiraFactSearch')
+
+
+def _collect_searches(jobs,timeout,direct_fast=False):
+    futures={_WEB_POOL.submit(fn,query,timeout):name for name,fn,query in jobs}
+    rows=[];errors=[]
+    try:
+        for future in as_completed(futures,timeout=max(.05,min(10,float(timeout)+.3))):
+            try:
+                received=future.result();rows.extend(received)
+                if direct_fast and any(row.get('engine')=='official-direct' and row.get('text') for row in received):break
+            except Exception as error:errors.append(futures[future]+':'+type(error).__name__)
+    except TimeoutError:errors.append('search:total_time_budget')
+    finally:
+        for future in futures:
+            if not future.done():future.cancel()
+    return rows,errors
 
 _CURRENT_PATTERNS = (
     r"\bactual(?:es|mente)?\b", r"\bhoy\b", r"\bahora\b", r"\búltim[oa]s?\b", r"\bultimo?s?\b",
     r"\bpresidente\b", r"\bprimer ministro\b", r"\bministro\b", r"\bceo\b", r"\bgobernador\b",
     r"\bquién es\b", r"\bquien es\b", r"\bprecio\b", r"\bcotiza\b", r"\bnoticias?\b",
     r"\belecciones?\b", r"\b202[5-9]\b", r"\besta semana\b", r"\beste mes\b",
-    r"\b(lanz[oó]|lanzamiento|estren[oó]|taquillera|recaudaci[oó]n)\b",
+    r"\b(lanz[oó]|lanzar|lanzaron|lanzado|lanzamiento|estren[oó]|taquillera|recaudaci[oó]n|acaba|reci[eé]n|reciente|nuev[oa]s?|anunci[oó])\b",
 )
 
 _STOP = {
@@ -38,6 +57,7 @@ _OFFICIAL_SUFFIXES = (
     ".europa.eu", ".un.org", ".who.int", ".worldbank.org", ".imf.org"
 )
 _OFFICIAL_HOSTS = {
+    "agn.gt",
     "hbo.com", "max.com", "press.wbd.com", "wbd.com", "warnerbros.com", "dc.com", "dcstudios.com",
     "netflix.com", "about.netflix.com", "thewaltdisneycompany.com", "marvel.com", "news.xbox.com",
     "playstation.com", "blog.playstation.com", "apple.com", "google.com", "blog.google", "openai.com",
@@ -52,13 +72,13 @@ _REPUTABLE_HOSTS = {
 
 
 def needs_web_verification(message: str) -> bool:
-    m = str(message or "").lower()
+    m = understood(message).lower()
     return any(re.search(p, m, flags=re.I) for p in _CURRENT_PATTERNS)
 
 
 def _get_json(url: str, timeout: float = 7.0):
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout, context=https_context()) as r:
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
@@ -85,7 +105,7 @@ def _terms(query: str):
 
 def _relevance(query: str, row: dict) -> float:
     text=(str(row.get("title") or "")+" "+str(row.get("text") or "")).lower()
-    ts=_terms(query)
+    ts=_terms(understood(query))
     if not ts:return 0.5
     hit=sum(1 for t in set(ts) if t in text)
     return hit/max(1,len(set(ts)))
@@ -134,7 +154,7 @@ def _duck_html(query: str, timeout: float = 7.0):
     """DuckDuckGo HTML result snippets."""
     url = "https://html.duckduckgo.com/html/?" + urllib.parse.urlencode({"q": query})
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout, context=https_context()) as r:
         raw = r.read(1_200_000).decode("utf-8", "replace")
     links = re.findall(r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', raw, flags=re.I|re.S)
     snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</(?:a|div)>', raw, flags=re.I|re.S)
@@ -155,7 +175,7 @@ def _bing_rss(query: str, timeout: float = 7.0):
     """Public Bing RSS endpoint; no key required.  Used as a second index."""
     url="https://www.bing.com/search?"+urllib.parse.urlencode({"q":query,"format":"rss","setlang":"es"})
     req=urllib.request.Request(url,headers={"User-Agent":UA,"Accept":"application/rss+xml,application/xml,text/xml"})
-    with urllib.request.urlopen(req,timeout=timeout) as r:
+    with urllib.request.urlopen(req,timeout=timeout, context=https_context()) as r:
         raw=r.read(1_200_000)
     root=ET.fromstring(raw)
     rows=[]
@@ -174,7 +194,7 @@ def _google_news_rss(query: str, timeout: float = 7.0):
     params={"q":query,"hl":"es-419","gl":"US","ceid":"US:es-419"}
     url="https://news.google.com/rss/search?"+urllib.parse.urlencode(params)
     req=urllib.request.Request(url,headers={"User-Agent":UA,"Accept":"application/rss+xml,application/xml,text/xml"})
-    with urllib.request.urlopen(req,timeout=timeout) as r:
+    with urllib.request.urlopen(req,timeout=timeout, context=https_context()) as r:
         raw=r.read(1_200_000)
     root=ET.fromstring(raw);rows=[]
     for item in root.findall('.//item')[:12]:
@@ -187,12 +207,12 @@ def _google_news_rss(query: str, timeout: float = 7.0):
 
 
 def _expanded_queries(query: str):
-    q=' '.join(str(query).split()).strip(); low=q.lower(); out=[q]
+    q=' '.join(understood(query).split()).strip(); low=q.lower(); out=[q]
     year=str(datetime.now(timezone.utc).year)
     if re.search(r'president\w*',low) and 'guatemala' in low:
         out += [f'site:presidencia.gob.gt presidente Guatemala {year}', f'site:agn.gt presidente Guatemala {year}', f'presidente Guatemala {year} Reuters AP']
     elif 'xbox' in low:
-        out += [f'site:news.xbox.com {year} Xbox hardware lanzamientos', f'Xbox {year} lanzamientos Microsoft Xbox Wire']
+        out += [f'site:news.xbox.com {q} {year}', f'site:gearsofwar.com {q} {year}' if 'gears' in low else f'{q} {year} Microsoft Xbox Wire']
     elif re.search(r'pel[ií]cula',low) and re.search(r'(exitosa|taquillera|recaud|box office)',low):
         out += [f'{year} worldwide box office highest grossing The Numbers Box Office Mojo', f'películas más taquilleras {year} Variety Deadline']
     elif re.search(r'(walter white|breaking bad|tuco)',low):
@@ -207,6 +227,29 @@ def _expanded_queries(query: str):
     for x in out:
         if x and x not in clean:clean.append(x)
     return clean[:5]
+
+
+def _official_presidency(query,timeout):
+    """Read the stable government root; the current holder is never hardcoded."""
+    question=understood(query).lower()
+    if 'guatemala' not in question or not re.search(r'\bpresidente\b',question):return []
+    url='https://presidencia.gob.gt/'
+    request=urllib.request.Request(url,headers={'User-Agent':UA,'Accept':'text/html'})
+    with urllib.request.urlopen(request,timeout=timeout, context=https_context()) as response:
+        final=response.geturl();host=_host(final)
+        if host!='presidencia.gob.gt' and not host.endswith('.presidencia.gob.gt'):
+            raise ValueError('La Presidencia redirigió fuera de su dominio oficial')
+        raw=response.read(1_200_000).decode('utf-8','replace')
+    raw=re.sub(r'<(?:script|style)\b[^>]*>[\s\S]*?</(?:script|style)>',' ',raw,flags=re.I)
+    clean=lambda text:' '.join(re.sub(r'<[^>]*>',' ',html.unescape(text)).split())
+    title=re.search(r'<title[^>]*>(.*?)</title>',raw,re.I|re.S)
+    title=clean(title.group(1))[:220] if title else 'Presidencia de Guatemala'
+    paragraphs=[clean(text) for text in re.findall(r'<(?:p|h[1-3])\b[^>]*>(.*?)</(?:p|h[1-3])>',raw,re.I|re.S)]
+    paragraphs=[text for text in paragraphs if re.search(r'\b(?:presidente|presidencia|mandatario)\b',text,re.I)]
+    text='\n'.join(paragraphs)[:4500]
+    if not text or not re.search(r'\bpresidente\b',text,re.I):return []
+    return [{'title':title,'url':final,'text':text,'engine':'official-direct',
+             'source_class':'official','read_status':'official_page_excerpt','retrieved_at':datetime.now(timezone.utc).isoformat()}]
 
 
 def _classify(row):
@@ -231,6 +274,8 @@ def _rank(query,row,strict=False):
 
 
 def _dedupe_diverse(query,rows,limit=8,strict=False):
+    query=understood(query)
+    office=bool(re.search(r'\b(?:presidente|ministro|gobernador|alcalde|primer ministro)\b',query,re.I))
     merged=[]; seen=set(); per_host={}
     for r in rows:
         url=str(r.get('url') or '').strip(); title=str(r.get('title') or '').strip()
@@ -239,8 +284,11 @@ def _dedupe_diverse(query,rows,limit=8,strict=False):
         if key in seen:continue
         seen.add(key)
         rr=dict(r); rr['source_class']=_classify(rr); rr['relevance']=round(_relevance(query,rr),3)
-        # Throw away obviously unrelated search noise unless it is the only evidence.
-        if rr['relevance'] < 0.12 and len(_terms(query))>=2 and not (strict and rr['source_class']=='official'):continue
+        # A country match alone does not answer who holds a public office.
+        body=(title+' '+str(r.get('text') or '')).lower()
+        if re.search(r'\bgears\b',query,re.I) and 'gears' not in body:continue
+        if office and not re.search(r'\b(?:president\w*|mandatari\w*|ministro\w*|gobernador\w*|alcalde\w*)\b',body):continue
+        if rr['relevance'] < (.35 if office or strict else .18) and len(_terms(query))>=2:continue
         merged.append(rr)
     merged.sort(key=lambda r:_rank(query,r,strict),reverse=True)
     out=[]
@@ -258,20 +306,12 @@ def _dedupe_diverse(query,rows,limit=8,strict=False):
 
 def lookup_current_fact(query: str, timeout: float = 7.0, limit: int = 6):
     """Multi-index public search. Fresh questions never fall back to stale Wikipedia alone."""
-    rows=[]; errors=[];queries=_expanded_queries(query)
+    query=understood(query);queries=_expanded_queries(query)
     jobs=[]
-    with ThreadPoolExecutor(max_workers=min(10,max(3,len(queries)*2)),thread_name_prefix='akira_web') as pool:
-        for q in queries:
-            jobs.append(('duckhtml',pool.submit(_duck_html,q,timeout)))
-            jobs.append(('bing',pool.submit(_bing_rss,q,timeout)))
-            jobs.append(('gnews',pool.submit(_google_news_rss,q,timeout)))
-        names={future:name for name,future in jobs}
-        for fut in as_completed(names):
-            name=names[fut]
-            try: rows.extend(fut.result())
-            except Exception as exc: errors.append(f'{name}:{type(exc).__name__}')
-    try: rows.extend(_duck(query,timeout))
-    except Exception as exc: errors.append(f'duckduckgo:{type(exc).__name__}')
+    for q in queries:
+        jobs.extend((('duckhtml',_duck_html,q),('bing',_bing_rss,q),('gnews',_google_news_rss,q)))
+    jobs.append(('duckduckgo',_duck,query))
+    rows,errors=_collect_searches(jobs,timeout)
     nonwiki=_dedupe_diverse(query,rows,max(limit,4),strict=False)
     # A question asking for the latest/current fact must fail closed rather than
     # confidently answering from an old encyclopedia page.
@@ -292,14 +332,10 @@ def lookup_verified_current_fact(query: str, timeout: float = 6.5, limit: int = 
     rather than falsely claiming the fact is unverifiable. Wikipedia is excluded.
     """
     year=str(datetime.now(timezone.utc).year)
-    rows=[]; errors=[]
+    query=understood(query);jobs=[('official-direct',_official_presidency,query)]
     for q in _expanded_queries(query):
-        # Keep this call first for historical regression tests that patch _duck_html.
-        try:rows.extend(_duck_html(q if year in q else q+' '+year,timeout))
-        except Exception as exc:errors.append(f'duckhtml:{type(exc).__name__}')
-        try:rows.extend(_bing_rss(q,timeout))
-        except Exception as exc:errors.append(f'bing:{type(exc).__name__}')
-        if len(rows)>=12:break
+        jobs.extend((('duckhtml',_duck_html,q if year in q else q+' '+year),('bing',_bing_rss,q)))
+    rows,errors=_collect_searches(jobs,timeout,direct_fast=True)
     ranked=_dedupe_diverse(query,[r for r in rows if not _is_wikipedia(r.get('url',''))],max(10,limit*2),strict=True)
     official=[r for r in ranked if r.get('source_class')=='official']
     fresh_official=[r for r in official if year in (str(r.get('title',''))+' '+str(r.get('text',''))+' '+str(r.get('published','')))]

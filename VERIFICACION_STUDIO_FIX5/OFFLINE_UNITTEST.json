@@ -1,0 +1,16 @@
+{
+  "build": "AKIRA_16_4_0_STUDIO_REV5",
+  "collected": 1214,
+  "tests_run": 1214,
+  "successful": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "expected_failures": 0,
+  "unexpected_successes": 0,
+  "failed_tests": [],
+  "failure_details": [],
+  "skipped_tests": [],
+  "seconds": 78.515,
+  "network": "blocked"
+}

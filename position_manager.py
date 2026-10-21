@@ -51,7 +51,7 @@ class PositionManager:
                 f=frames.get('M15') if structural_runner else frames.get('M15') or frames.get('M5')
                 if structural_runner and not f:
                     row['protection_state']='Runner conserva SL: esperando estructura M15 confirmada'
-                if not f:continue
+                if not f and not structural_runner:continue
                 q=g.quote(p.symbol);exit=q.bid if side==1 else q.ask
                 risk=side*(float(p.price_open)-initial)
                 if risk<=0:continue
@@ -64,7 +64,7 @@ class PositionManager:
                 if now-self.last_stats_save>=10:g.journal.save();self.last_stats_save=now
                 if now-float(row.get('time',getattr(p,'time',now)))<g.cfg['management']['minimum_hold_seconds']:continue
                 if now-float(row.get('last_modify',0))<g.cfg['management']['modify_seconds']:continue
-                if structural_runner:
+                if structural_runner and f:
                     entry_time=float(row.get('time',getattr(p,'time',now)))
                     reason=runner_exit(plan,frames,side,rr,g.cfg,entry_time=entry_time,now=now)
                     row['exit_review']={'time':now,'entry_time':entry_time,
@@ -73,7 +73,7 @@ class PositionManager:
                     if reason:
                         if g.close_runner(p,reason):g.reconcile(g.snapshot())
                         continue
-                if structural_runner and g.cfg['management'].get('extend_targets',False) and rr>=g.cfg['management'].get('extension_min_r',1.8):
+                if structural_runner and f and g.cfg['management'].get('extend_targets',False) and rr>=g.cfg['management'].get('extension_min_r',1.8):
                     h1=frames.get('H1')
                     strong=h1 and side*h1.trend>.18 and side*f.trend>.25 and f.extra.get('adx',0)>=22
                     if strong and row.get('last_extension_bar')!=f.bars[-1].time:
@@ -86,23 +86,33 @@ class PositionManager:
                                 row['last_extension_bar']=f.bars[-1].time;row['last_modify']=now;g.journal.save();continue
                 if rr<g.cfg['management']['breakeven_at_r']:continue
                 # Cover spread/estimated fee; no profit closure at a cent target.
-                fee=g.cfg['risk']['round_turn_commission_per_lot']*float(p.volume)
+                fee=max(g.cfg['risk']['round_turn_commission_per_lot'],float(row.get('entry_fees_per_lot',0) or 0))*float(p.volume)
                 unit=abs(g.profit(p.symbol,side,float(p.volume),float(p.price_open),float(p.price_open)+side))
                 noise=max(q.spread*1.5,fee/max(unit,1e-9))
                 target=float(p.price_open)+side*noise
-                if (plan.get('lane')=='RUNNER' or (plan.get('lane')=='PENDING' and g.cfg['management'].get('pending_fills_as_runners',False))) and g.cfg['management'].get('runner_structure_only',True):
+                if structural_runner:
                     entry_time=float(row.get('time',getattr(p,'time',now)))
-                    # Pivote CONFIRMADO posterior a la entrada; conservar espacio
-                    # M15 en lugar de mover automáticamente al precio de apertura.
-                    swings=[v for v,t in (f.lows if side==1 else f.highs)[-10:]
+                    # A structural pivot can improve protection, but must not veto
+                    # the configured progress floor after the current quote reaches R.
+                    # This uses no historical peak to force an unexecutable stop.
+                    progress=g.cfg['management'].get('protect_progress',True)
+                    swings=[v for v,t in ((f.lows if side==1 else f.highs)[-10:] if f else ())
                         if t>=entry_time and t>int(plan.get('bar_time',0))
                         and side*(exit-v)>max(f.atr*.3,noise)]
                     if not swings:
-                        row['protection_state']='Runner conserva SL: falta pivote M15 posterior confirmado';continue
-                    swing=max(swings) if side==1 else min(swings)
-                    target=swing-side*max(f.atr*g.cfg['management']['trail_atr'],noise)
-                    row['protection_state']='Runner: protección por pivote M15 confirmado con margen ATR'
-                    reason='runner: pivote M15 posterior confirmado; conservar margen ATR'
+                        if not progress:
+                            row['protection_state']='Runner conserva SL: falta pivote M15 posterior confirmado';continue
+                        reason='avance hasta umbral R: cubrir costes estimados sin esperar pivote M15'
+                        row['protection_state']='Candidato de protección de avance; aún sin pivote M15 posterior'
+                    else:
+                        swing=max(swings) if side==1 else min(swings)
+                        structural=swing-side*max(f.atr*g.cfg['management']['trail_atr'],noise)
+                        if not progress or side*(structural-target)>0:
+                            target=structural
+                            reason='runner: pivote M15 posterior confirmado; conservar margen ATR'
+                        else:
+                            reason='avance hasta umbral R: cubrir costes estimados; pivote M15 no mejora protección'
+                        row['protection_state']='Candidato de protección: avance y pivote M15 revisados'
                 else:
                     reason='pendiente activada: breakeven/trailing de estructura'
                 if not structural_runner:
@@ -114,5 +124,9 @@ class PositionManager:
                         if side*(structural-target)>0:target=structural
                 if side*(target-float(p.sl))>float(g.api.symbol_info(p.symbol).trade_tick_size or .01)*2:
                     if g.update_stop(p,target,reason=reason):
-                        row['last_modify']=now;g.journal.save()
+                        row['last_modify']=now
+                        row['protection_state']='Protección solicitada; esperando confirmación MT5'
+                        g.journal.save()
+                else:
+                    row['protection_state']='SL vigente en MT5; sin mejora de protección disponible'
             except Blocked as e:g.log.report(p.symbol,'PROTECCIÓN',str(e))

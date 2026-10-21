@@ -1,0 +1,77 @@
+{
+  "build": "AKIRA_16_3_5_R8",
+  "date": "2026-10-16",
+  "status": "LOCAL_PASSED_WINDOWS_PENDING",
+  "source_base": "109d8b2bbb18da02c86dcc69342ac1732c72caf5",
+  "source_base_windows_run": {
+    "number": 13,
+    "id": 38810169527,
+    "status": "success",
+    "revision": "R7"
+  },
+  "pytest": {
+    "passed": 1126,
+    "subtests_passed": 87,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "offline": {
+    "passed": 1123,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "network": "blocked"
+  },
+  "post_suite_versions_and_protocol": {
+    "passed": 59,
+    "failures": 0
+  },
+  "native_ui": {
+    "status": "PASSED",
+    "version": 8,
+    "mandatory_checks": 27
+  },
+  "screen_combinations": 24,
+  "artwork": {
+    "original_distinct_expressions": 108,
+    "new_state_frames": 8,
+    "canvas_spinner_phases": 12
+  },
+  "video_evidence": [
+    "OBSERVE mode visible",
+    "Unrelated Google/bank results for current president question",
+    "Public expression controls",
+    "Source table reordering and generic review error"
+  ],
+  "windows_r8_build_verified": false,
+  "windows_r8_real_model_verified": false,
+  "windows_r8_installer_verified": false,
+  "live_account_used": false,
+  "github_published": false,
+  "limits": [
+    "Linux synthetic UI checks do not measure Windows driver/hardware latency.",
+    "Order tests use FakeMT5 and do not demonstrate profitability.",
+    "The exact recorded pending-review exception is unavailable; the schema protocol defect is independently reproduced.",
+    "The real-model typo/JSON/cancellation scenarios must pass in Windows CI before installer publication."
+  ],
+  "extracted_source_package": {
+    "status": "PASSED",
+    "scope": "Freshly extracted R8 source ZIP and Linux install_checks child process; not the Windows executable installer.",
+    "build": "AKIRA_16_3_5_R8",
+    "collected": 1123,
+    "tests_run": 1123,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit_code": 0,
+    "child_exit_code": 0,
+    "network": "blocked",
+    "configuration_mode": "observe",
+    "live_account_used": false,
+    "windows_r8_installer_verified": false,
+    "qa_environment": "Inherited authenticated virtual display before launching validation child.",
+    "immutable_manifest_verified": true,
+    "immutable_manifest_files": 238
+  }
+}

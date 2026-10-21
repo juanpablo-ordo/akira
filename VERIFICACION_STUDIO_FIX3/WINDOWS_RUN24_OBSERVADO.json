@@ -1,0 +1,185 @@
+{
+  "run": 38996354887,
+  "commit": "6e6556422940343017746801a1181460a90a2c20",
+  "attempt": 2,
+  "observed_utc": "2026-10-17T04:36:35Z",
+  "jobs": [
+    {
+      "id": 117296911447,
+      "status": "in_progress",
+      "started_at": "2026-10-17T03:25:35Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-17T03:25:36Z",
+          "completed_at": "2026-10-17T03:25:36Z"
+        },
+        {
+          "name": "Obtener código de AKIRA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-17T03:25:36Z",
+          "completed_at": "2026-10-17T03:25:42Z"
+        },
+        {
+          "name": "Preparar Python de 64 bits",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-17T03:25:42Z",
+          "completed_at": "2026-10-17T03:25:51Z"
+        },
+        {
+          "name": "Instalar dependencias",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-17T03:25:51Z",
+          "completed_at": "2026-10-17T03:26:39Z"
+        },
+        {
+          "name": "Comprobar y aislar Tcl-Tk de Python antes de las regresiones",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-17T03:26:39Z",
+          "completed_at": "2026-10-17T03:26:43Z"
+        },
+        {
+          "name": "Verificar que se incorporo REV5 antes de construir el instalador",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-17T03:26:43Z",
+          "completed_at": "2026-10-17T03:26:44Z"
+        },
+        {
+          "name": "Pruebas de regresion principales",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 7,
+          "started_at": "2026-10-17T03:26:44Z",
+          "completed_at": null
+        },
+        {
+          "name": "Incorporar reconocimiento visual local de sprites",
+          "status": "pending",
+          "conclusion": null,
+          "number": 8,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Compilar y autocontrolar AKIRA.exe Studio en Windows",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Incorporar llama.cpp oficial para Windows (CPU y Vulkan)",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Incorporar componente JavaScript de YouTube verificado",
+          "status": "pending",
+          "conclusion": null,
+          "number": 11,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Comprobar IA real en Windows sin Ollama",
+          "status": "pending",
+          "conclusion": null,
+          "number": 12,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Empaquetar ejecutable con motor local (sin el modelo GGUF)",
+          "status": "pending",
+          "conclusion": null,
+          "number": 13,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Compilar instalador Windows con logo, Instalar y Cancelar",
+          "status": "pending",
+          "conclusion": null,
+          "number": 14,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Probar instalador completo y respuesta de la IA instalada",
+          "status": "pending",
+          "conclusion": null,
+          "number": 15,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Publicar instalador de AKIRA con IA incluida y verificada",
+          "status": "pending",
+          "conclusion": null,
+          "number": 16,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Descargar binario construido",
+          "status": "pending",
+          "conclusion": null,
+          "number": 17,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Descargar diagnosticos incluso si falla",
+          "status": "pending",
+          "conclusion": null,
+          "number": 18,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Preparar Python de 64 bits",
+          "status": "pending",
+          "conclusion": null,
+          "number": 35,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Obtener código de AKIRA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 36,
+          "started_at": null,
+          "completed_at": null
+        }
+      ]
+    }
+  ],
+  "observed_completed_tests": 91,
+  "next_collected_test": "tests/test_frozen_chart_layout.py::ChartViewportTests::test_high_dpi_short_dashboard_keeps_both_real_charts_drawn_and_scrollable",
+  "first_attempt": {
+    "status": "cancelled",
+    "regressions_started": "2026-10-17T02:50:02Z",
+    "regressions_ended": "2026-10-17T03:25:07Z",
+    "completed_tests": 91
+  },
+  "cause_confirmed": false,
+  "scope": "El orden y número de pruebas sitúan el bloqueo en la prueba de alto DPI. No hay traza Windows del punto interno todavía."
+}

@@ -23,7 +23,10 @@ class InstalledAITests(unittest.TestCase):
         digest=hashlib.sha256(self.model.read_bytes()).hexdigest()
         pinned=patch.object(check,'SHA',digest);pinned.start();self.addCleanup(pinned.stop)
         def components(command,**kwargs):
-            Path(command[2]).write_text(json.dumps({'status':'PASSED','model':str(self.model.resolve())}),encoding='utf-8')
+            from native_studio_check import REQUIRED,STUDIO_CHECK_VERSION
+            data={'status':'PASSED','model':str(self.model.resolve())}
+            if '--self-check' in command:data['studio_check']={'status':'PASSED','version':STUDIO_CHECK_VERSION,**dict.fromkeys(REQUIRED,True)}
+            Path(command[2]).write_text(json.dumps(data),encoding='utf-8')
             return Mock(returncode=0,stderr='')
         self.components=patch.object(check.subprocess,'run',side_effect=components)
         self.components.start();self.addCleanup(self.components.stop)

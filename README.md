@@ -1,28 +1,33 @@
-# AKIRA 16.3.4 R7
+# AKIRA 16.4.6 · Studio Rev11
 
-Corrección de las seis regresiones de la ejecución Windows 12: instrucciones en `LEEME_FIX_R7_WINDOWS.md`. La verificación de este parche está en `VERIFICACION_R7_WINDOWS_FIX`; la nueva ejecución Windows queda pendiente.
+[Descargar el instalador Windows con la IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39534974903/artifacts/12318093364)
 
-Código completo de la corrección de IA local, fuentes y expresiones. El código ha superado la verificación local R7. Todavía no se ha compilado ni probado el instalador R7 en Windows.
+1. Cierra Akira y extrae el ZIP descargado.
+2. Ejecuta `AKIRA_16_4_6_STUDIO_REV11_IA_INCLUIDA.exe`.
+3. Comprueba que la ventana indique **16.4.6 · Studio Rev11**. Para equipos modestos, elige **Ajustes → Rendimiento → Ahorro de energía**.
 
-Para crear el instalador, copia **todo el contenido** de este ZIP en la raíz de tu repositorio `akira`, incluyendo `.github`, `assets`, `installer`, `tests` y `third_party`. Conserva los datos de usuario fuera del repositorio. En GitHub Desktop haz Commit y Push. Después abre Actions → AKIRA Windows - verificar y compilar → Run workflow.
+El artefacto está disponible hasta el **27/10/2026 21:17 · Guatemala (UTC-6)**. La descarga de instalación es la que termina en **IA-INCLUIDA**; el artefacto «build-no-es-instalador» no es el instalador completo.
 
-Cuando termine correctamente, descarga el artefacto `AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA`. Ejecuta `AKIRA_16_3_4_R7_IA_INCLUIDA.exe` y comprueba que la ventana muestra 16.3.4 R7. El ZIP de código no instala ni actualiza por sí solo la aplicación.
+## Cambios de esta entrega
 
-La compilación anterior #11, de R6, verificó instalación y una respuesta visible de la IA en Windows. Eso corrige el modelo eliminado por el instalador anterior; no prueba los cambios R7. La compilación R7 debe pasar de nuevo la instalación completa y la respuesta de su propio modelo instalado antes de publicar el EXE.
+- **Entradas y capital:** las runners directas usan, por defecto, hasta el 50 % del límite general por operación. Las pendientes se evalúan primero y una runner no retira su mapa confirmado. Hay una pausa por activo tras una pérdida confirmada y un presupuesto conjunto de pérdidas de runners en 24 horas; las ganancias y reinicios no borran el contador.
+- **Protección de avance:** runners directas y pendientes activadas con gestión estructural pueden solicitar un SL que cubra costes estimados al alcanzar el umbral R configurado, aunque aún no haya un pivote M15 nuevo. Conservan el TP, la espera mínima y las restricciones del bróker. Un pivote solo mejora la protección y nunca se amplía el SL. Ajustable en **Ajustes → Riesgo**.
+- **Conversación:** preguntas habituales sobre Akira, incluida «¿sabes de ciencia?», tienen respuesta directa. El chat general conserva contexto y recuerdos, tolera faltas y mantiene la investigación de hechos actuales. Un fallo en una charla personal ya no se sustituye por noticias de otro tema.
+- **Informes:** PDF, Excel y JSON distinguen solicitud, colocación de la pendiente y apertura de la posición, con prioridad a la hora MT5. Los datos antiguos ausentes se identifican como sin registro.
+- **Recursos:** detección real de RAM/CPUs, menos trabajo de interfaz y caché del modelo limitada en Ahorro. En una comparación controlada con el mismo equipo y modelo, el pico conjunto pasó de 2998.4 a 2798.4 MiB, una reducción del 6.7 %.
 
-Cambios de esta entrega:
+Los límites, el modo y los datos guardados se conservan al actualizar. Si el lote mínimo no cabe en el presupuesto, no se fuerza una entrada ni se acerca su SL para ocultar el riesgo.
 
-- IA incluida en el instalador con SHA-256 verificado. Chat e investigación comparten un único supervisor; las revisiones de pendientes despiertan el modelo cuando se libera de memoria y recuperan la ruta del motor incluido en lugar del antiguo puerto de Ollama. Se conserva el modelo instalado y el motor CPU de respaldo. Se recuperan rutas antiguas o vacías desde la ubicación real de AKIRA.exe. El registro `IA_LOCAL.log` conserva la salida del proceso. Reparar solo confirma disponibilidad después de una respuesta visible real.
-- Ajustes → IA / INTERNET → ACCESO A FUENTES contiene campos enmascarados para CoinGlass y YouTube Data API. Los campos vacíos conservan claves anteriores. Windows protege las claves con DPAPI. CoinGlass directo es opcional; para oro no se presentan derivados BTC como datos XAU.
-- YouTube incluye Deno oficial verificado y los componentes EJS compatibles con yt-dlp. Se puede importar una sesión mediante un archivo Netscape seleccionado por el usuario. Akira no lee perfiles de navegadores. YouTube puede exigir sesión, limitar consultas o no ofrecer subtítulos; esos estados no se cuentan como videos aprendidos. Una clave Data API permite búsquedas, pero no garantiza acceso a subtítulos.
-- La IA textual incluida puede analizar subtítulos completos sin descargar imágenes para un modelo visual que no está instalado. La interfaz distingue análisis textual, parcial y visual muestreado. No afirma haber visto cada fotograma.
-- Se conservan las 108 ilustraciones originales basadas en las referencias del usuario. Barra lateral, operaciones, chat y llamada comparten la misma cara. Hay transiciones breves; la variación durante el habla usa el nivel del audio reproducido. No es sincronización fonética. Se retira el botón superior duplicado de chat.
-- Las transcripciones completas alimentan hipótesis finitas y citadas: dirección H1, volumen M15 y extensión RSI. Cada filtro observa las mismas candidatas válidas que la estrategia base, con bid/ask, comisiones estimadas y rechazo de huecos de datos. Requiere 40 cierres de entrenamiento y al menos 100 posteriores en 20 días distintos, comparación conservadora por días, suficientes entradas aceptadas/rechazadas y resultado neto positivo. Sin evidencia suficiente se conserva la selección base. Solo se aplica un filtro por familia, símbolo y dirección. Los cambios de cuenta, configuración, versión o costes separan los estudios. Los filtros no cambian lotes, Entry, SL, TP ni gestión, y por sí solos no cancelan pendientes vigentes.
+## Comprobaciones
 
-El Directorio de estrategias → VER APRENDIZAJE muestra fuentes, reglas, tamaños de muestra, comparación y filtros aplicables. Las variantes geométricas anteriores del laboratorio siguen siendo experimentos sin activación automática. Aprender una fuente no demuestra rentabilidad ni garantiza mejores operaciones.
+[Windows: 1420 pruebas y 169 subpruebas, sin fallos ni omisiones](https://github.com/juanpablo-ordo/akira/actions/runs/39534974903). Pasaron también el ejecutable y primer inicio, HTTPS, fuentes públicas, reconocimiento de sprites, revisión real BTC/oro, conversación con faltas y continuidad, y una instalación limpia que respondió usando su IA incluida.
 
-La comprobación local no equivale a probar el PC del usuario, ejecutar órdenes reales ni demostrar beneficios. Los informes R6 se conservan como antecedentes; los resultados de esta revisión se guardan en VERIFICACION_R7.
+En el ensayo de dos CPU lógicas, la conversación utilizó el GGUF real mientras la interfaz de Análisis y el actor de mercado sintético seguían activos: 747 ciclos frescos, retraso de interfaz del percentil 95 de 30 ms y pico conjunto de 2751.3 MiB. **La IA local todavía puede tardar decenas de segundos en CPU y necesita cerca de 3 GB al responder.** Estas cifras no son una medición del portátil del usuario ni una prueba de rentabilidad.
 
-El código base R7 está en el commit c67f322e9a540afd64dc9f377667d98d8e6a4bb3. Para aplicar este parche se necesita un nuevo Commit y Push, seguido de Run workflow. En Actions, una ejecución nueva de este código mostrará el nombre «AKIRA 16.3.4 R7 · IA incluida». Repetir una ejecución antigua usa el código de su commit antiguo.
+[Detalles y límites](ACEPTACION_REV11.md) · [Evidencia reproducible](VALIDACION_REV11.json) · [Solicitud de integración](https://github.com/juanpablo-ordo/akira/pull/1)
 
-Verificación inicial R7: 1.094 pruebas pytest y 83 subpruebas; 1.091 pruebas unittest con la red bloqueada; autocontrol nativo v7; 108 celdas distintas; 24 combinaciones de pantalla. También se comprobó conservación de pendientes con una muestra de cotizaciones aportadas por el usuario. Verificación local del parche Windows: 1.096 pruebas pytest y 83 subpruebas, y 1.093 pruebas unittest sin red, sin fallos, errores ni omisiones. Las cifras no son métricas de acierto ni de rentabilidad.
+## Código y reconstrucción
+
+Fuente de aplicación compilada: `37e6975ccdfd6d276e80341f893068fe555a9a78`. Los archivos de la aplicación coinciden con esa compilación; solo se añadieron documentación y metadatos de verificación. Para reconstruir en Actions, elige **akira-studio-rev11-20261020**, o **main** cuando incluya esta revisión, en **Run workflow**. La solicitud enlazada indica su estado de integración; el instalador enlazado arriba ya corresponde a Rev11.
+
+No se garantiza recuperar un saldo concreto ni evitar toda pérdida. La protección necesita confirmación del bróker; saltos de precio, costes y deslizamiento siguen siendo posibles.

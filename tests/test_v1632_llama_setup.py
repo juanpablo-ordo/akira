@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from urllib.parse import urlsplit
-from akira_model_runtime import ManagedLlamaProcess
+from akira_model_runtime import ManagedLlamaProcess,hardware_profile
 from akira_local_ai import _direct_local_engine
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -27,7 +27,7 @@ class LlamaSetupTests(unittest.TestCase):
             cpu=folder/'cpu'/'llama-server.exe';cpu.parent.mkdir();cpu.write_bytes(b'MZ')
             model=folder/'models'/'model.gguf';model.parent.mkdir();model.write_bytes(b'GGUF')
             managed=ManagedLlamaProcess({'local_runtime_enabled':True,'local_runtime_exe':str(exe),
-                                         'local_runtime_model':str(model)})
+                                         'local_runtime_model':str(model)},profile=hardware_profile(32,8,12))
             endpoint='http://127.0.0.1:18987/v1/chat/completions'
             args=managed.command(endpoint,{'model_use_gpu':True})
             self.assertIn('127.0.0.1',args)
@@ -59,9 +59,14 @@ class LlamaSetupTests(unittest.TestCase):
     def test_ci_generates_actual_installer_artifact(self):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
-        self.assertIn('AKIRA-16.3.4-R7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA',workflow)
+        self.assertIn('AKIRA-16.4.6-Studio-Rev11-runners-chat-rendimiento-instalador-Windows-IA-INCLUIDA',workflow)
         self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
-        self.assertIn('python -m pytest -q tests\n',workflow)
+        import shlex
+        command=next(line.strip() for line in workflow.splitlines() if '-m pytest ' in line and '--junitxml=diagnostics/REGRESSION_TESTS.xml' in line)
+        args=shlex.split(command)
+        self.assertEqual(args[args.index('-m')+1],'pytest')
+        self.assertIn('tests',args)
+        self.assertIn('--junitxml=diagnostics/REGRESSION_TESTS.xml',args)
 
 if __name__=='__main__':unittest.main()

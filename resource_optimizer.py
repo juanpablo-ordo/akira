@@ -20,7 +20,7 @@ PROFILE_BUDGETS = {
                     'model_keep_alive_seconds': 60, 'model_use_gpu': True},
     'Equilibrado': {'memory_budget_mb': 3072, 'model_context_tokens': 4096,
                    'model_keep_alive_seconds': 15, 'model_use_gpu': True},
-    'Ahorro de energía': {'memory_budget_mb': 1024, 'model_context_tokens': 1024,
+    'Ahorro de energía': {'memory_budget_mb': 3072, 'model_context_tokens': 2048,
                          'model_keep_alive_seconds': 0, 'model_use_gpu': False},
 }
 
@@ -36,6 +36,13 @@ def resolve_profile(value):
 
 def get_intervals(config):
     return dict(resolve_profile((config.get('desktop') or {}).get('performance_profile', 'Equilibrado')))
+
+def ui_poll_ms(config, hidden=False, interactive=False):
+    if interactive:return 80
+    if hidden:return 750
+    return {'Ahorro de energía':250,'Equilibrado':120,'Rendimiento':80}.get(
+        (config.get('desktop') or {}).get('performance_profile'),120)
+
 
 def config_limits(config):
     source = (config.get('desktop') or {}) if isinstance(config, dict) else {}
@@ -67,13 +74,15 @@ def process_usage():
         me = psutil.Process(os.getpid())
         local = round(me.memory_info().rss/1048576)
         providers={'ollama':0,'llama_server':0}
-        for proc in psutil.process_iter(['name','memory_info']):
+        for proc in psutil.process_iter(['name']):
             name = str(proc.info.get('name') or '').lower()
             # This is observation only. NEVER terminate another app's model process.
             kind = 'llama_server' if ('llama-server' in name or 'llama_server' in name) else 'ollama' if 'ollama' in name else None
             if kind:
-                try:providers[kind] += proc.info['memory_info'].rss
-                except (KeyError, AttributeError, TypeError):pass
+                try:
+                    memory=proc.info.get('memory_info') or proc.memory_info()
+                    providers[kind] += memory.rss
+                except Exception:pass
         return {'akira_mb': local, 'ollama_mb': round(providers['ollama']/1048576),
                 'llama_server_mb':round(providers['llama_server']/1048576),
                 'system_ram_pct': round(psutil.virtual_memory().percent),

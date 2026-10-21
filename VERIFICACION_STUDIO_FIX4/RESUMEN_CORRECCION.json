@@ -1,0 +1,48 @@
+{
+  "revision": 4,
+  "base_zip_sha256": "8899df39a8238d6988ea7a903e8072830b9ff7417fcf41f9811f298851243d71",
+  "pytest": {
+    "passed": 1211,
+    "subtests_passed": 102,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 80.592,
+    "report": "VERIFICACION_STUDIO_FIX4/REGRESIONES_FINALES.xml",
+    "platform": "Linux Tcl/Tk 8.6.14, pantalla 1024x768"
+  },
+  "offline": {
+    "build": "AKIRA_16_4_0_STUDIO_REV5",
+    "collected": 1208,
+    "tests_run": 1208,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failed_tests": [],
+    "failure_details": [],
+    "skipped_tests": [],
+    "seconds": 71.466,
+    "network": "blocked"
+  },
+  "native_legacy_gates": 27,
+  "native_studio_gates": 12,
+  "native_tk_initializations": 12,
+  "unchanged_financial_files": [
+    "engine.py",
+    "planner.py",
+    "execution.py",
+    "runner.py",
+    "settings.py",
+    "default_config.json",
+    "akira_config.json",
+    "chart_render.py"
+  ],
+  "native_win32_verified": false,
+  "exe_built": false,
+  "installer_verified": false,
+  "github_write": "403",
+  "publisher": "PUBLICAR_A_GITHUB_REV5.cmd"
+}

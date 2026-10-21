@@ -9,6 +9,29 @@ import json,tempfile,time
 
 from frozen_ui_contract import UI_CHECK_VERSION,require_render_check
 
+class NativeRenderError(RuntimeError):
+    def __init__(self,message,diagnostics):
+        super().__init__(message)
+        self.render_diagnostics=diagnostics
+
+def chart_layout(app):
+    """Record the actual canvas state, including blank but data-filled charts."""
+    return {symbol:{'width':chart.winfo_width(),'height':chart.winfo_height(),
+                    'requested_height':chart.winfo_reqheight(),
+                    'mapped':bool(chart.winfo_ismapped()),
+                    'bars':len(chart.data.get('bars') or []),'items':len(chart.find_all()),
+                    'market_closed':bool(chart.data.get('market_closed')),
+                    'timeframe':chart.data.get('timeframe')}
+            for symbol,(chart,*_) in app.charts.items()}
+
+def layout_diagnostics(app,checks=None):
+    window=app.root
+    return {'checks':checks or {},'charts':chart_layout(app),
+            'window':{'width':window.winfo_width(),'height':window.winfo_height(),
+                      'screen_width':window.winfo_screenwidth(),'screen_height':window.winfo_screenheight(),
+                      'tk_scaling':float(window.tk.call('tk','scaling'))},
+            'render_health':getattr(app,'_render_health',{})}
+
 def settle_layout(window):
     """Let the 75/170 ms resize and divider callbacks finish before measuring."""
     deadline=time.monotonic()+.25
@@ -18,11 +41,11 @@ def settle_layout(window):
     window.update_idletasks()
 
 def control_geometry(window,widget,check_text=False):
-    """Check actual bounds and font metrics, independent of OS font widths."""
+    """Check bounds and the native widget's natural text size on this platform."""
     width,height=widget.winfo_width(),widget.winfo_height()
     x=widget.winfo_rootx()-window.winfo_rootx()
     y=widget.winfo_rooty()-window.winfo_rooty()
-    inside=bool(widget.winfo_ismapped() and width>30 and height>0 and x>=-2 and y>=-2
+    inside=bool(widget.winfo_ismapped() and width>0 and height>0 and x>=-2 and y>=-2
         and x+width<=window.winfo_width()+2 and y+height<=window.winfo_height()+2)
     result={'x':x,'y':y,'width':width,'height':height,'inside':inside}
     if check_text:
@@ -34,7 +57,26 @@ def control_geometry(window,widget,check_text=False):
         usable=width-2*(border+pixels('padx'))
         parts=text.split() if pixels('wraplength')>0 else text.splitlines()
         needed=max((face.measure(part) for part in parts),default=0)
-        readable=usable+2>=needed and height+2>=face.metrics('linespace')+2*(border+pixels('pady'))
+        # Win32 buttons use dialog units and native insets; adding padx/pady
+        # to font metrics does not describe their actual requested geometry.
+        # An unmapped probe measures the same native control with its explicit
+        # width/height removed. It never changes or invokes the real widget.
+        import tkinter as tk
+        native={'Button':tk.Button,'Label':tk.Label}.get(widget.winfo_class())
+        if native is not None:
+            keys=widget.keys()
+            options={name:widget.cget(name) for name in (
+                'text','font','padx','pady','borderwidth','highlightthickness',
+                'wraplength','justify','compound','default','anchor','relief',
+                'underline','state') if name in keys}
+            probe=native(widget.master,**options,width=0,height=0)
+            try:
+                natural_width,natural_height=probe.winfo_reqwidth(),probe.winfo_reqheight()
+            finally:probe.destroy()
+            readable=width+2>=natural_width and height+2>=natural_height
+            result.update(native_text_width=natural_width,native_text_height=natural_height)
+        else:
+            readable=usable+2>=needed and height+2>=face.metrics('linespace')+2*(border+pixels('pady'))
         result.update(text_width=needed,available_text_width=usable,readable=bool(readable))
     result['passed']=bool(inside and result.get('readable',True))
     return result
@@ -76,11 +118,24 @@ def run_ui_check(window):
             window.geometry('1600x900-20000-20000');window.deiconify();window.update_idletasks();window.update()
             app.render(snapshot)
             window.update_idletasks()
-            if not app._render_health.get('complete'):raise RuntimeError('Paneles incompletos: '+', '.join(app._render_health.get('errors') or []))
+            # Native chart widgets repaint 175ms after the last resize; wait
+            # for real geometry before asserting the new split dashboard.
+            settle_layout(window)
+            # A split-pane resize may settle one or more animation frames later
+            # depending on OS DPI and widget scheduling. Wait up to 1.5 s for
+            # the actual canvas drawing, rather than falsely failing pre-paint.
+            chart_deadline=time.monotonic()+1.5
+            while time.monotonic()<chart_deadline:
+                window.update()
+                if all(c.data.get('bars') and len(c.find_all())>20 for c,_,_,_ in app.charts.values()):
+                    break
+                time.sleep(.03)
+            if not app._render_health.get('complete'):raise NativeRenderError('Paneles incompletos: '+', '.join(app._render_health.get('errors') or []),layout_diagnostics(app))
+            painted_charts=chart_layout(app)
             checks={
                 'orders':len(app.orders.get_children())==len(snapshot['orders'])>0,
                 'positions':len(app.positions.get_children())==len(snapshot['positions'])>0,
-                'charts':all(chart.data.get('bars') and len(chart.find_all())>20 for chart,title,state,tf in app.charts.values()),
+                'charts':bool(painted_charts) and all(state['bars'] and state['items']>20 for state in painted_charts.values()),
                 'analysis':bool(app.frames.get_children()) and 'BITCOIN' in app.analysis_summary.get('1.0','end'),
                 'sources':app.source_status['mt5'].cget('text')=='ACTIVO' and bool(app.analysis_sources.get_children()),
                 'context':'BITCOIN' in app.sources_summary.get('1.0','end') and 'BTCUSDm' in app.brain_status.get('1.0','end')}
@@ -103,7 +158,7 @@ def run_ui_check(window):
             notices=app.notice_center.list('operación cerrada')
             checks['closure_notifications']=len(notices)==1 and '-0.10 USD' in notices[0]['body'] and 'Stop Loss' in notices[0]['body']
             for index in range(8):app.navigate(index);window.update_idletasks()
-            app.navigate(6);app.settings_notebook.select(app.settings_interface_tab);window.update_idletasks();window.update()
+            app.navigate(6);app.settings_notebook.select(app.settings_maintenance_tab);window.update_idletasks();window.update()
             checks['uninstall_control']=bool(app.uninstall_button.winfo_ismapped() and
                 app.uninstall_button.winfo_width()>30 and app.uninstall_button.cget('command'))
             from akira_expressions import get_catalog,MIN_EXPRESSIONS
@@ -115,6 +170,15 @@ def run_ui_check(window):
             checks['avatar_sync']=len({a.selected.id for a in app.avatars})==1 and len({id(a.director) for a in app.avatars})==1
             app.settings_notebook.select(app.settings_sources_tab);window.update_idletasks()
             checks['source_access_controls']=set(app.source_key_entries)=={'COINGLASS_API_KEY','YOUTUBE_API_KEY'} and all(e.cget('show') for e in app.source_key_entries.values()) and bool(app.source_save_button.cget('command'))
+            from desktop_layout import _descendants
+            captions=[str(w.cget('text')).lower() for w in _descendants(window) if 'text' in w.keys()]
+            checks['private_avatar_controls']=not any('108 caras' in text or 'ver las 108' in text for text in captions)
+            checks['operation_mode_visible']=bool(app.mode_button.winfo_ismapped() and 'NO ENVÍA ÓRDENES' in app.connection.cget('text'))
+            checks['settings_navigation']=len(app.settings_notebook.tabs())>=11 and {'IDIOMA Y VOZ','PERSONALIZACIÓN','AVATAR STUDIO'}.issubset(set(app.settings_notebook.tab(i,'text') for i in app.settings_notebook.tabs())) and bool(app.settings_section.get())
+            avatar=app.avatars[0];app.chat_busy=True;app.chat_started=time.monotonic();avatar.director.busy(True);settle_layout(window)
+            start=avatar.canvas.itemcget(avatar._spinner,'start');settle_layout(window)
+            checks['state_animation']=bool(avatar.canvas.itemcget(avatar._spinner,'state')=='normal' and avatar.canvas.itemcget(avatar._spinner,'start')!=start)
+            app.chat_busy=False;avatar.director.busy(False)
             window.geometry('1024x640+0+0');window.update_idletasks();app._apply_responsive_shell();window.update_idletasks()
             app.navigate(5);settle_layout(window)
             controls=dict(zip(('reset','report','pause'),app._toolbar_buttons))
@@ -140,13 +204,16 @@ def run_ui_check(window):
                 detail='No se completó el dibujado de '+', '.join(k for k,v in checks.items() if not v)
                 failed={name:row for name,row in compact_layout.items() if not row['passed']}
                 if failed:detail+='; controles: '+json.dumps(failed,ensure_ascii=False)
-                raise RuntimeError(detail)
+                diagnostics=layout_diagnostics(app,checks)
+                diagnostics['initial_charts']=painted_charts
+                diagnostics['compact_layout']=compact_layout
+                raise NativeRenderError(detail,diagnostics)
             if (root/'logs/INTERFAZ_ERRORES.log').exists():raise RuntimeError('La autocomprobación detectó errores de interfaz; no se activa el ejecutable.')
             report={'version':UI_CHECK_VERSION,'status':'PASSED','data':'SYNTHETIC','broker':'FakeMT5',
                 'network_used':False,'live_account_used':False,'order_rows':len(snapshot['orders']),
                 'position_rows':len(snapshot['positions']),'frame_rows':len(app.frames.get_children()),
                 'expression_count':artwork['count'],'distinct_expression_cells':artwork['distinct_cells'],
-                'compact_layout':compact_layout,**checks}
+                'compact_layout':compact_layout,'chart_layout':painted_charts,**checks}
             # Exercise the exact installer gate here as well, before reporting success.
             require_render_check({'render_check':report})
             return report

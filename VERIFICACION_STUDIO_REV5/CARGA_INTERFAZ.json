@@ -1,0 +1,38 @@
+{
+  "status": "MEASURED",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "logical_cpus": 9,
+  "seconds": 12.34,
+  "ui_samples": 154,
+  "ui_delay_p50_ms": 0.0,
+  "ui_delay_p95_ms": 22.45,
+  "ui_delay_max_ms": 73.75,
+  "engine_cycle_ms": 16.1,
+  "engine_cycle": 62,
+  "frame_updates": 70,
+  "wallpaper": {
+    "state": "PLAYING",
+    "frames_buffered": 1,
+    "gpu_decode": false,
+    "pid": 148,
+    "cpu_hard_limit": false,
+    "decoder_memory_hard_limit": false,
+    "scope": "owned wallpaper decoder",
+    "frame_size": [
+      956,
+      536
+    ],
+    "frame_bytes": 1537248,
+    "last_frame": 5509.979014648,
+    "effective_fps": 30.0
+  },
+  "broker": "FakeMT5",
+  "chat_inference": "MOCKED",
+  "voice_physical": false,
+  "live_account_used": false,
+  "user_hardware_verified": false,
+  "windows_verified": false,
+  "scope": "12-second Linux rendering stress, not Windows/GPU/model latency or profitability",
+  "resource_meter_validation": "NOT VALIDATED: container process counters are not representative of Qt memory; Windows PID/RAM measurements pending"
+}

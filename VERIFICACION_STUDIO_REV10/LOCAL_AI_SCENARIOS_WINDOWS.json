@@ -1,0 +1,13 @@
+{
+  "status": "PASSED",
+  "visible_characters": 5,
+  "typo_question": true,
+  "fixture_based_answer": "Bernardo Arévalo es el actual presidente de Guatemala.",
+  "structured_review": true,
+  "cancel_before_headers": true,
+  "cancel_seconds": 0.812,
+  "reply_after_cancel": true,
+  "live_account_used": false,
+  "fact_scope": "Recorded synthetic test context, not live web verification",
+  "server_log": "D:\\a\\akira\\akira\\diagnostics\\LOCAL_AI_SCENARIOS.llama.log"
+}

@@ -255,7 +255,7 @@
     "fast_warmup_m15_h1_first": true,
     "pending_attempts_per_cycle": 8,
     "pending_rejection_retry_seconds": 15.0,
-    "pending_only": true
+    "pending_only": false
   },
   "learning": {
     "min_samples_pending": 20,
@@ -302,7 +302,9 @@
     "global_markets": true,
     "global_news": true,
     "global_interval_seconds": 60,
-    "news_interval_seconds": 300
+    "news_interval_seconds": 300,
+    "derivatives_provider": "public",
+    "public_derivatives_seconds": 60
   },
   "knowledge": {
     "enabled": true,
@@ -331,6 +333,7 @@
     "trail_atr": 0.7,
     "modify_seconds": 5.0,
     "runner_structure_only": true,
+    "protect_progress": true,
     "pending_fills_as_runners": true,
     "extend_targets": false,
     "extension_min_r": 1.8
@@ -389,7 +392,7 @@
     "conversation_context_char_budget": 28000,
     "fast_decision_cards": true,
     "fast_chat_model": "Qwen3-4B-Q4_K_M.gguf",
-    "fast_chat_timeout_seconds": 25.0,
+    "fast_chat_timeout_seconds": 75,
     "fast_chat_max_tokens": 1200,
     "fast_chat_context_chars": 18000,
     "fast_research_variants": 2,
@@ -421,7 +424,7 @@
     "chat_stop_button": true,
     "notification_sound": true,
     "notification_popup": true,
-    "privacy": false,
+    "privacy": true,
     "visibility_preference_saved": true,
     "performance_profile": "Equilibrado",
     "memory_budget_mb": 3072,
@@ -466,7 +469,12 @@
     "allow_continuation": true,
     "allow_m5_retest": true,
     "m5_signal_max_age_seconds": 300.0,
-    "m5_min_body_fraction": 0.55
+    "m5_min_body_fraction": 0.55,
+    "max_trade_budget_pct": 50.0,
+    "preserve_pending_orders": true,
+    "allow_size_boost": false,
+    "loss_cooldown_seconds": 3600.0,
+    "loss_budget_trades": 1.0
   },
   "sizing": {
     "enabled": true,
@@ -493,5 +501,51 @@
   },
   "charts": {
     "indicator": "Medias y Bollinger"
+  },
+  "studio": {
+    "brand_name": "AKIRA",
+    "language_ui": "es",
+    "language_chat": "auto",
+    "language_voice_in": "auto",
+    "language_voice_out": "es",
+    "translate_input": false,
+    "translate_output": false,
+    "theme": "AKIRA Original",
+    "accent": "#00ddff",
+    "secondary": "#ff2585",
+    "font": "Rajdhani",
+    "font_scale": 100,
+    "glow": 65,
+    "panel_texture": "Neon grid",
+    "wallpaper": {
+      "kind": "default",
+      "file": "",
+      "fit": "cover",
+      "rotation": 0,
+      "opacity": 30,
+      "fps": 12,
+      "quality": 70,
+      "max_memory_mb": 128,
+      "max_cpu_percent": 10,
+      "enabled": false,
+      "offset_x": 0,
+      "offset_y": 0,
+      "crop_left": 0,
+      "crop_right": 0,
+      "crop_top": 0,
+      "crop_bottom": 0
+    },
+    "avatar": {
+      "active": false,
+      "entries": [],
+      "sequences": {},
+      "profile": "default"
+    },
+    "language_pack": "",
+    "reduce_motion": false
+  },
+  "strategy_choice": {
+    "selected": "AKIRA_ADAPTATIVA",
+    "version": 1
   }
 }

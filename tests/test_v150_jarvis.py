@@ -236,6 +236,7 @@ class Jarvis150Tests(PendingCase,unittest.TestCase):
         self.e.handle_command({'action':'assistant_best_runner','symbol':'ALL'});self.assertFalse(self.api.sent)
 
     def test_runner_button_fill_during_cancel_does_not_double_entry(self):
+        self.cfg['runner']['preserve_pending_orders']=False  # explicit replacement policy for the race fixture
         self.install_frames(self.signal_frames());self.api.add_pending(self.plan());self.api.fill_on_cancel=True
         self.e.handle_command({'action':'assistant_best_runner','symbol':'BTCUSDm'})
         self.assertFalse(any(r['action']==DEAL for r in self.api.sent));self.assertEqual(len(self.api.positions),1)
@@ -313,7 +314,7 @@ class Language150Tests(PendingCase,unittest.TestCase):
             answer=bot.reply('Ayúdame a organizar mis ideas para mañana',{},use_cloud=False)
         self.assertIn('Podemos',answer);self.assertEqual(call.call_args.kwargs['model'],'qwen3:8b')
         self.assertEqual(call.call_args.kwargs['max_rounds'],1);self.assertFalse(call.call_args.kwargs['reasoning'])
-        self.assertFalse(call.call_args.args[1]);self.assertEqual(call.call_args.kwargs['timeout'],25)
+        self.assertFalse(call.call_args.args[1]);self.assertEqual(call.call_args.kwargs['timeout'],75)
 
     def test_fast_model_selection_keeps_strong_model_for_research(self):
         models=['qwen3:8b','qwen3:14b']

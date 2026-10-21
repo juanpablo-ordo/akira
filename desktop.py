@@ -1,6 +1,6 @@
 """Akira completa: paneles ajustables, memoria, chat, pendientes y runners."""
 from pathlib import Path
-import copy,json,os,queue,re,threading,time,tkinter as tk,webbrowser
+import copy,json,os,queue,re,sys,threading,time,tkinter as tk,webbrowser
 from urllib.parse import urlparse
 from voice_akira import listen_once, microphone_devices, speak_async
 from tkinter import ttk,messagebox,filedialog,simpledialog
@@ -56,7 +56,7 @@ def path_set(data,path,value):
 
 def replace_text(widget,value,preserve_scroll=True):
     value=str(value)
-    if getattr(widget,'_akira_text',None)==value:return
+    if getattr(widget,'_akira_text',None)==value:return False
     try:top=widget.yview()[0]
     except Exception:top=0.0
     try:at_end=widget.yview()[1]>.985
@@ -70,6 +70,7 @@ def replace_text(widget,value,preserve_scroll=True):
         elif at_end:
             widget.see('end')
     except Exception:pass
+    return True
 
 def link_urls(widget):
     # Los enlaces requieren un clic; jamás se abren por contenido externo o por la IA.
@@ -261,6 +262,14 @@ class Desktop(DesktopServices,StrategyDirectory):
     def __init__(self,root,folder,preview=False,start_actor=True):
         if not start_actor and not preview:raise ValueError('El modo sin actor solo se permite en la autocomprobación con datos sintéticos.')
         self.root,self.folder,self.preview=root,Path(folder),preview;self.cfg=load_config(self.folder/'akira_config.json')
+        from akira_studio import UserCatalog
+        from akira_expressions import get_catalog
+        from akira_live2d import _root as _asset_root
+        from studio_theme import apply_theme
+        apply_theme(self.cfg['studio'],root)
+        avatar_cfg=self.cfg['studio']['avatar']
+        if avatar_cfg.get('active') and avatar_cfg.get('entries'):
+            self.root._akira_user_catalog=UserCatalog(get_catalog(_asset_root()),avatar_cfg)
         self.stop=threading.Event();self.commands=queue.Queue();self.messages=queue.Queue(maxsize=2);self.events=queue.Queue(maxsize=1000);self.replies=queue.Queue();self.chat_progress=queue.Queue(maxsize=250)
         self.paused=False;self.view={};self.chat_busy=False;self.display_due=0.0;self.panels={};self.charts={};self.avatars=[];self.chat_started=0.0;self.chat_stage='LISTO';self.chat_stage_detail='';self.chat_source_names=[];self._chat_anim_phase=0
         self._last_deep_stamp=0.0;self._last_pending_signature=None;self._toast_windows=[]
@@ -272,7 +281,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self._ui_error_times={};self._assistant_display_due=0.0;self._performance=get_intervals(self.cfg)
         from collections import deque
         self._terminal_pending=deque(maxlen=500)
-        set_identity();root.title('AKIRA · 16.3.4 · R7');root.configure(bg=BG)
+        set_identity();root.title('AKIRA · 16.3.5 · R8 Studio');root.title(self.cfg['studio']['brand_name']+' · 16.3.5 · R8 Studio Rev4');root.configure(bg=BG)
         width,height,min_width,min_height=fitted_geometry(self.cfg['desktop']['width'],self.cfg['desktop']['height'],root.winfo_screenwidth(),root.winfo_screenheight())
         root.geometry(f'{width}x{height}');root.minsize(min_width,min_height)
         self.layout=PanelLayout(root,self.folder/'state'/'desktop_layout.json')
@@ -287,6 +296,10 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.build_account(self.pages[TAB_NAMES[2]]);self.build_analysis(self.pages[TAB_NAMES[3]])
         self.build_sources(self.pages[TAB_NAMES[4]]);self.build_chat(self.pages[TAB_NAMES[5]])
         self.build_settings(self.pages[TAB_NAMES[6]]);self.build_terminal(self.pages[TAB_NAMES[7]])
+        from akira_studio import apply_language_pack
+        if self.cfg['studio'].get('language_pack'):
+            self.root.after_idle(lambda:apply_language_pack(self.root,
+                self.cfg['studio'].get('language_pack',''),self.cfg['studio']['language_ui']))
         from desktop_layout import add_table_scrollbars
         add_table_scrollbars(self.root)
         self.root.after_idle(self._apply_responsive_shell)
@@ -314,26 +327,29 @@ class Desktop(DesktopServices,StrategyDirectory):
 
     def build_shell(self):
         shell=tk.Frame(self.root,bg=BG);shell.pack(fill='both',expand=True)
-        self.sidebar=tk.Frame(shell,bg='#061225',width=208,padx=12,pady=12)
+        self.sidebar=tk.Frame(shell,bg=BG,width=208,padx=12,pady=12)
         self.sidebar.pack(side='left',fill='y');self.sidebar.pack_propagate(False)
         tk.Frame(shell,bg=LINE,width=1).pack(side='left',fill='y')
         self.main=tk.Frame(shell,bg=BG);self.main.pack(side='left',fill='both',expand=True)
-        self.brand_title=label(self.sidebar,'AKIRA',CYAN,24,True,anchor='w');self.brand_title.pack(fill='x',padx=6)
+        self.brand_title=label(self.sidebar,self.cfg['studio']['brand_name'],CYAN,24,True,anchor='w');self.brand_title.pack(fill='x',padx=6)
         label(self.sidebar,'ASISTENTE · MT5',MUTED,8,anchor='w',wraplength=135,justify='left').pack(fill='x',padx=7,pady=(0,10))
         tk.Frame(self.sidebar,bg=LINE,height=1).pack(fill='x',pady=(0,10))
         outer,inner=neon_card(self.sidebar,'',CYAN,padx=4,pady=4)
         self.sidebar_avatar=outer;outer.pack(fill='x',pady=(0,10))
         self.sidebar_avatar_image=self.avatar(inner,170,115);self.sidebar_avatar_image.pack(fill='x')
         self.sidebar_status=label(inner,'AKIRA · preparando',MUTED,8,anchor='center',wraplength=145);self.sidebar_status.pack(fill='x',pady=(2,4))
-        self.side_footer=tk.Frame(self.sidebar,bg='#061225');self.side_footer.pack(side='bottom',fill='x',pady=(8,0))
+        self.side_footer=tk.Frame(self.sidebar,bg=BG);self.side_footer.pack(side='bottom',fill='x',pady=(8,0))
         tk.Frame(self.side_footer,bg=LINE,height=1).pack(fill='x',pady=(0,9))
         self.side_connection=label(self.side_footer,'MT5 · conectando',MUTED,8,anchor='w');self.side_connection.pack(fill='x')
-        label(self.side_footer,'R7 · 108 caras\n16.3.4',CYAN,8,anchor='w').pack(fill='x',pady=(4,0))
+        label(self.side_footer,'AKIRA · 16.3.5',CYAN,8,anchor='w').pack(fill='x',pady=(4,0))
         label(self.sidebar,'MÓDULOS',MUTED,8,anchor='w').pack(fill='x',padx=4,pady=(0,5))
-        nav_shell,nav_content=scroll_frame(self.sidebar,'#061225');nav_shell.pack(fill='both',expand=True)
+        nav_shell,nav_content=scroll_frame(self.sidebar,BG);nav_shell.pack(fill='both',expand=True)
         self.nav_buttons=[]
         for i,(glyph,title) in enumerate(zip(('□','≡','▥','⌁','◎','◇','⚙','▤'),TAB_TITLES)):
-            nav=button(nav_content,'CHAT' if i==5 else title,lambda index=i:self.navigate(index),MUTED)
+            from akira_studio import UI_LABELS
+            locale=self.cfg['studio']['language_ui']
+            shown=UI_LABELS.get(locale,UI_LABELS['es'])[i]
+            nav=button(nav_content,shown,lambda index=i:self.navigate(index),MUTED)
             nav.configure(anchor='w',padx=14,pady=9);nav.pack(fill='x',pady=3);self.nav_buttons.append(nav)
         self.root.bind('<Configure>',self._responsive_shell,add='+')
 
@@ -346,16 +362,32 @@ class Desktop(DesktopServices,StrategyDirectory):
             try:index=next(i for i,key in enumerate(TAB_NAMES) if str(self.pages[key])==str(self.book.select()))
             except (TypeError,StopIteration):return
         self.current_page_index=index
+        ambient=getattr(self,'_ambient_wallpaper',None)
+        if ambient is not None:
+            if index!=0:ambient.stop()
+            elif not ambient.running:self.root.after(180,ambient.start)
         self.display_due=0.0  # Draw newly selected page on next poll, not every hidden page
         for i,nav in enumerate(self.nav_buttons):
-            nav.configure(bg='#103750' if i==index else '#061225',fg=TEXT if i==index else MUTED,
-                highlightbackground=CYAN if i==index else '#061225')
+            nav.configure(bg=CARD if i==index else BG,fg=TEXT if i==index else MUTED,
+                highlightbackground=CYAN if i==index else BG)
         self.page_crumb.configure(text='AKIRA / '+TAB_TITLES[index])
-        self.page_title.configure(text=PAGE_TITLES[index]);self.page_detail.configure(text=PAGE_DETAILS[index])
+        from akira_studio import UI_LABELS
+        from localized_navigation import heading,subtitle
+        locale=self.cfg['studio']['language_ui']
+        self.page_title.configure(text=heading(locale,index,PAGE_TITLES))
+        self.page_detail.configure(text=subtitle(locale,index,PAGE_DETAILS))
         self.page_index.configure(text='AKIRA // COMMAND SYSTEM · '+f'{index+1:02d}')
+        metrics=index in (0,1,2,3)
+        if metrics!=getattr(self,'_metrics_visible',True):
+            self._metrics_visible=metrics
+            if metrics:self.metric_strip.pack(fill='x',padx=15,pady=(0,4),before=self._page_heading)
+            else:self.metric_strip.pack_forget()
 
     def _responsive_shell(self,event):
         if event.widget is not self.root:return
+        size=(event.width,event.height)
+        if getattr(self,'_last_shell_event_size',None)==size:return
+        self._last_shell_event_size=size
         if getattr(self,'_responsive_job',None) is not None:
             self.root.after_cancel(self._responsive_job)
         self._responsive_job=self.root.after(75,self._apply_responsive_shell)
@@ -413,11 +445,15 @@ class Desktop(DesktopServices,StrategyDirectory):
         else:self.account_label.grid(row=0,column=3,columnspan=1,sticky='e',padx=(10,0))
 
     def _fit_metrics(self):
+        if not getattr(self,'_metrics_visible',True):return
         try:
             from tkinter import font
             if not hasattr(self,'_metric_font'):self._metric_font=font.Font(self.root,family=FONT,size=16,weight='bold')
             for metric in self.metrics.values():
                 width=max(70,metric.winfo_width()-3);text=str(metric.cget('text'))
+                signature=(text,width)
+                if getattr(metric,'_fit_signature',None)==signature:continue
+                metric._fit_signature=signature
                 for size in range(16,9,-1):
                     self._metric_font.configure(size=size)
                     if self._metric_font.measure(text)<=width:break
@@ -437,7 +473,10 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.toggle=button(toolbar,'PAUSAR CONTROL',self.pause,AMBER)
         report=button(toolbar,'DESCARGAR INFORME',self.open_report_dialog,BLUE)
         self._toolbar_buttons=(self.reset_layout_button,report,self.toggle)
-        self.connection=label(self.main,'AUTO-MAPA · preparando conexión y niveles de MT5',MUTED,8,anchor='w',justify='left');self.connection.pack(fill='x',padx=20,pady=(0,3))
+        statebar=tk.Frame(self.main,bg=BG);statebar.pack(fill='x',padx=14,pady=(0,3))
+        self.mode_button=button(statebar,'ACTIVAR OPERATIVA',self.toggle_execution_mode,AMBER)
+        self.mode_button.configure(font=(FONT,8,'bold'),padx=7,pady=4);self.mode_button.pack(side='right',padx=(8,0))
+        self.connection=label(statebar,'Preparando conexión y niveles de MT5',MUTED,8,anchor='w',justify='left',wraplength=700);self.connection.pack(side='left',fill='x',expand=True)
         self.map_result_label=label(self.main,'Akira revisa pendientes y runners en segundo plano.',MUTED,8,anchor='w',justify='left')
         self.map_result_label.pack(side='bottom',fill='x',padx=20,pady=(0,4))
         self.metrics={};self.metric_cards=[];self.metric_strip=tk.Frame(self.main,bg=BG);self.metric_strip.pack(fill='x',padx=15,pady=(0,4))
@@ -446,62 +485,188 @@ class Desktop(DesktopServices,StrategyDirectory):
             outer,inner=neon_card(self.metric_strip,'',accent,padx=11,pady=6);outer.grid(row=0,column=i,sticky='nsew',padx=4,pady=3);self.metric_cards.append(outer)
             label(inner,title,MUTED,8,True,anchor='w').pack(fill='x',pady=(0,4))
             value=label(inner,'—',accent,16,True,anchor='w');value.pack(fill='x');self.metrics[key]=value
-        heading=tk.Frame(self.main,bg=BG);heading.pack(fill='x',padx=12,pady=(2,3))
+        heading=tk.Frame(self.main,bg=BG);self._page_heading=heading;heading.pack(fill='x',padx=12,pady=(2,3))
         self.page_index=label(heading,'AKIRA // COMMAND SYSTEM · 02',CYAN,8,True,anchor='w');self.page_index.pack(fill='x')
         self.page_title=label(heading,'PENDIENTES AUTOMÁTICAS',TEXT,21,True,anchor='w');self.page_title.pack(fill='x',pady=(2,0))
         self.page_detail=label(heading,PAGE_DETAILS[1],MUTED,9,anchor='w',justify='left');self.page_detail.pack(fill='x',pady=(2,0))
     def avatar(self,parent,width=270,height=250):
         frame=AkiraLive2D(parent,width=width,height=height,bg=PANEL,director=getattr(self,'avatar_director',None));self.avatar_director=frame.director;self.avatars.append(frame);return frame
     def build_dashboard(self,page):
-        split=self.layout.pane(page,'dashboard_vertical',tk.VERTICAL,(.76,));split.pack(fill='both',expand=True,pady=5)
-        columns=self.layout.pane(split,'dashboard_columns',tk.HORIZONTAL,(.23,.55));split.add(columns,minsize=150,stretch='always')
-        # LEFT · live sources/controller
-        outer,left=neon_card(columns,'SISTEMA / FUENTES',BLUE);columns.add(outer,minsize=170,stretch='always')
-        shell,content=scroll_frame(left,PANEL);shell.pack(fill='both',expand=True);left=content
+        """Neon control center: real activity, avatar/alerts and BTC/XAU charts.
+
+        A native Tk layout, not a fake screenshot or duplicate trade executor.
+        All actions route through the existing application methods and broker.
+        """
+        split=self.layout.pane(page,'dashboard_vertical',tk.VERTICAL,(.58,))
+        split.pack(fill='both',expand=True,pady=4)
+        top=self.layout.pane(split,'dashboard_columns',tk.HORIZONTAL,(.69,))
+        split.add(top,minsize=235,stretch='always')
+        outer,activity=neon_card(top,'ACTIVIDAD EN TIEMPO REAL',CYAN,padx=10,pady=7)
+        top.add(outer,minsize=360,stretch='always')
+        tools=tk.Frame(activity,bg=PANEL);tools.pack(fill='x',pady=(0,6))
+        label(tools,'Eventos del motor, revisiones y decisiones confirmadas',MUTED,8,anchor='w').pack(side='left',fill='x',expand=True)
+        button(tools,'ABRIR REGISTROS',lambda:self.navigate(7),CYAN).pack(side='right',padx=3)
+        events_body=tk.Frame(activity,bg=PANEL);events_body.pack(fill='both',expand=True)
+        columns=('time','level','module','symbol','message')
+        self.dashboard_activity=ttk.Treeview(events_body,columns=columns,show='headings',height=6,selectmode='browse')
+        for key,title,width in zip(columns,('HORA','NIVEL','MÓDULO','SÍMBOLO','ACTIVIDAD'),(75,95,100,95,420)):
+            self.dashboard_activity.heading(key,text=title)
+            self.dashboard_activity.column(key,width=width,minwidth=55,stretch=key=='message',anchor='w')
+        self.dashboard_activity.pack(side='left',fill='both',expand=True)
+        scroll=ttk.Scrollbar(events_body,orient='vertical',command=self.dashboard_activity.yview)
+        scroll.pack(side='right',fill='y');self.dashboard_activity.configure(yscrollcommand=scroll.set)
+        self.dashboard_activity.tag_configure('warning',foreground=AMBER)
+        self.dashboard_activity.tag_configure('blocked',foreground=RED)
+        self.dashboard_activity.tag_configure('normal',foreground=TEXT)
+        summary=tk.Frame(activity,bg=PANEL);summary.pack(fill='x',pady=(5,0))
+        label(summary,'RESUMEN DE AKIRA',CYAN,9,True,anchor='w').pack(fill='x')
+        self.brain_status=text_box(summary,3);self.brain_status.configure(font=(FONT,9),pady=5,padx=8)
+        self.brain_status.pack(fill='x',pady=(3,0))
+
+        # Right status and actions; avatar only animates in the visible page.
+        right=self.layout.pane(top,'dashboard_neon_right',tk.VERTICAL,(.58,))
+        top.add(right,minsize=190,stretch='always')
+        outer,state=neon_card(right,'AKIRA · ESTADO DEL SISTEMA',GREEN,padx=9,pady=6)
+        right.add(outer,minsize=145,stretch='always')
+        self.dashboard_avatar=self.avatar(state,240,120);self.dashboard_avatar.pack(fill='x',pady=(0,4))
+        self.brain_label=label(state,'AKIRA · Preparando respuesta...',CYAN,9,True,
+            justify='left',wraplength=370,anchor='w');self.brain_label.pack(fill='x',pady=3)
+        self.dashboard_stats=label(state,'Esperando conexión',MUTED,8,anchor='w',justify='left',wraplength=360)
+        self.dashboard_stats.pack(fill='x',pady=(1,4))
+        source_board=tk.Frame(state,bg=PANEL);source_board.pack(fill='x',pady=(0,2))
         self.source_status={}
-        for key,title in (('mt5','MT5 / BROKER'),('local','AKIRA'),('web','WEB / NOTICIAS'),('youtube','YOUTUBE'),('coinglass','COINGLASS'),('investing','INVESTING')):
-            row=tk.Frame(left,bg=CARD,padx=8,pady=5);row.pack(fill='x',pady=2)
-            label(row,title,MUTED,8,True,anchor='w').pack(side='left');val=label(row,'...',AMBER,8,True,anchor='e');val.pack(side='right');self.source_status[key]=val
-        ctrl=tk.Frame(left,bg=CARD,padx=9,pady=9);ctrl.pack(fill='x',pady=(10,6))
-        label(ctrl,'CONTROL AUTOMÁTICO',GREEN,9,True,anchor='w').pack(fill='x')
-        label(ctrl,'✓ mantiene el mejor mapa pendiente\n✓ revisa validez continuamente\n✓ modifica si aparece una zona mejor\n✓ retira tesis caducadas/invalidadas',TEXT,9,justify='left',anchor='w').pack(fill='x',pady=5)
-        button(left,'FUENTES / MEMORIA',lambda:self.book.select(self.pages[TAB_NAMES[4]]),AMBER).pack(fill='x',pady=(8,3))
-        button(left,'ABRIR CHAT',self.open_chat,CYAN).pack(fill='x',pady=3)
-        # CENTER · Akira core
-        outer,center=neon_card(columns,'AKIRA',PINK);columns.add(outer,minsize=190,stretch='always')
-        core=self.layout.pane(center,'dashboard_core',tk.VERTICAL,(.5,));core.pack(fill='both',expand=True)
-        self.dashboard_avatar=self.avatar(core,260,220);core.add(self.dashboard_avatar,minsize=80,stretch='always')
-        brain=tk.Frame(core,bg=PANEL);core.add(brain,minsize=70,stretch='always');center=brain
-        self.brain_label=label(center,'AKIRA · Preparando respuesta...',AMBER,10,True,justify='left',wraplength=360,anchor='w');self.brain_label.pack(fill='x',pady=5)
-        self.brain_status=text_box(center,12);self.brain_status.pack(fill='both',expand=True,pady=(4,0))
-        # RIGHT · live charts
-        outer,right=neon_card(columns,'MAPA BTC + ORO EN VIVO',CYAN);columns.add(outer,minsize=230,stretch='always')
-        self.dashboard_stats=label(right,color=TEXT,size=11,bold=True,justify='left',anchor='w');self.dashboard_stats.pack(fill='x',pady=(0,5))
-        chart_shell,chart_host=scroll_frame(right,PANEL);chart_shell.pack(fill='both',expand=True)
-        charts=self.layout.pane(chart_host,'dashboard_charts',tk.VERTICAL,(.5,));charts.pack(fill='both',expand=True)
-        for symbol,on in self.cfg['symbols'].items():
-            if not on:continue
-            card=tk.Frame(charts,bg=CARD,highlightthickness=1,highlightbackground=LINE,padx=8,pady=6);charts.add(card,minsize=260,stretch='always')
-            title_row=tk.Frame(card,bg=CARD);title_row.pack(fill='x')
-            title=label(title_row,symbol,CYAN,12,True,anchor='w');title.pack(side='left',fill='x',expand=True)
-            tf_var=tk.StringVar(value='M1');combo=ttk.Combobox(title_row,textvariable=tf_var,values=('M1','M5','M15','M30','H1','H4','D1'),state='readonly',width=6,style='Akira.TCombobox');combo.pack(side='right')
-            chart=CandleChart(card,height=155);chart.pack(fill='both',expand=True,pady=4)
-            state=label(card,color=MUTED,size=9,justify='left',anchor='w',wraplength=650);state.pack(fill='x');self.charts[symbol]=(chart,title,state,tf_var)
-            card.bind('<Configure>',lambda event,w=state:w.configure(wraplength=max(150,event.width-24)))
-        # BOTTOM · one concise pending map, no duplicate action buttons
-        outer,bottom=neon_card(split,'PENDIENTES QUE AKIRA CONTROLA',GREEN,padx=8,pady=6);split.add(outer,minsize=80,stretch='always')
-        cols=('symbol','side','kind','entry','sl','tp','quality','activation','state')
-        self.dashboard_pending=ttk.Treeview(bottom,columns=cols,show='headings',height=4)
-        for key,cap,w in zip(cols,('SÍMBOLO','LADO','TIPO','ENTRADA','SL','TP','CALIDAD','ACTIVACIÓN','ESTADO'),(100,70,85,110,110,110,80,90,230)):
-            self.dashboard_pending.heading(key,text=cap);self.dashboard_pending.column(key,width=w,anchor='center',stretch=True)
+        for i,(key,title) in enumerate((('mt5','MT5'),('local','IA'),('web','NOTICIAS'),('youtube','VIDEO'),('coinglass','DATOS'),('investing','INVESTING'))):
+            tile=tk.Frame(source_board,bg=CARD,padx=4,pady=3);tile.grid(row=i//3,column=i%3,sticky='ew',padx=2,pady=2)
+            source_board.columnconfigure(i%3,weight=1,uniform='sources')
+            label(tile,title,MUTED,7,True,anchor='w').pack(fill='x')
+            self.source_status[key]=label(tile,'...',AMBER,8,True,anchor='w');self.source_status[key].pack(fill='x')
+        outer,actions=neon_card(right,'ACCIONES RÁPIDAS / AVISOS',BLUE,padx=7,pady=6)
+        right.add(outer,minsize=120,stretch='always')
+        quick=tk.Frame(actions,bg=PANEL);quick.pack(fill='x')
+        for i,(title,func) in enumerate((('INFORMES · PDF / EXCEL',self.open_report_dialog),('NUEVA REVISIÓN',lambda:self.request_map('ALL')),
+            ('CHAT',self.open_chat),('PAUSAR GESTIÓN',self.pause))):
+            quick.columnconfigure(i%2,weight=1)
+            button(quick,title,func,CYAN if i%2==0 else MUTED).grid(row=i//2,column=i%2,sticky='ew',padx=3,pady=3)
+        self.dashboard_alerts=label(actions,'Comprobando avisos...',MUTED,8,
+            justify='left',anchor='w',wraplength=360)
+        self.dashboard_alerts.pack(fill='x',pady=(6,0))
+
+        lower=self.layout.pane(split,'dashboard_neon_lower',tk.VERTICAL,(.87,))
+        split.add(lower,minsize=170,stretch='always')
+        outer,market=neon_card(lower,'COBERTURA DE MERCADO · BTC + ORO',CYAN,padx=7,pady=5)
+        lower.add(outer,minsize=115,stretch='always')
+        # Native font metrics can make the price/state labels taller on Windows
+        # or high DPI. Keep the chart's natural height and scroll the content
+        # instead of squeezing the canvas below its drawable 70-pixel viewport.
+        market_shell,market_content=scroll_frame(market,PANEL)
+        market_shell.pack(fill='both',expand=True)
+        self.dashboard_market_scroll=market_shell._scroll_canvas
+        charts=tk.Frame(market_content,bg=PANEL);charts.pack(fill='both',expand=True)
+        self.charts={}
+        enabled=[symbol for symbol,on in self.cfg['symbols'].items() if on]
+        for i,symbol in enumerate(enabled):
+            charts.columnconfigure(i,weight=1,uniform='markets')
+            card=tk.Frame(charts,bg=CARD,highlightthickness=1,highlightbackground=LINE,padx=5,pady=3)
+            card.grid(row=0,column=i,sticky='nsew',padx=3,pady=1)
+            charts.rowconfigure(0,weight=1)
+            head=tk.Frame(card,bg=CARD);head.pack(fill='x')
+            title=label(head,symbol,CYAN,10,True,anchor='w');title.pack(side='left',fill='x',expand=True)
+            tf_var=tk.StringVar(value='M5')
+            combo=ttk.Combobox(head,textvariable=tf_var,values=('M1','M5','M15','M30','H1','H4','D1'),
+                state='readonly',width=5,style='Akira.TCombobox');combo.pack(side='right')
+            chart=CandleChart(card,height=105);chart.pack(fill='both',expand=True,pady=2)
+            info=label(card,'Esperando precio vigente',MUTED,8,anchor='w',wraplength=450)
+            info.pack(fill='x');self.charts[symbol]=(chart,title,info,tf_var)
+            # label() already fits its text to the label's granted width.
+            # A second card-width handler fights it and oscillates the height.
+
+        outer,bottom=neon_card(lower,'PENDIENTES CONFIRMADAS Y CANDIDATAS · CONSULTA',GREEN,padx=6,pady=3)
+        lower.add(outer,minsize=55,stretch='always')
+        columns=('symbol','side','kind','entry','sl','tp','quality','activation','state')
+        self.dashboard_pending=ttk.Treeview(bottom,columns=columns,show='headings',height=2)
+        for key,cap,w in zip(columns,('SÍMBOLO','LADO','TIPO','ENTRADA','SL','TP','CALIDAD','ACTIVACIÓN','ESTADO'),
+            (85,55,75,100,100,100,70,80,230)):
+            self.dashboard_pending.heading(key,text=cap)
+            self.dashboard_pending.column(key,width=w,minwidth=50,anchor='center',stretch=True)
         self.dashboard_pending.pack(fill='both',expand=True)
+        self._ambient_wallpaper=None
+        # The user wallpaper is rendered inside a dedicated background preview
+        # on the personalisation page. Tk does not support native translucent
+        # child panels; never claim it composites behind every window.
+
+    def render_dashboard_activity(self,row):
+        """Presentation of actual actor states. No invented completed trades."""
+        tree=getattr(self,'dashboard_activity',None)
+        if tree is None:return
+        statuses=row.get('status') or {}
+        stamp=time.strftime('%H:%M:%S',time.localtime(float(row.get('updated') or time.time())))
+        records=[]
+        gate=row.get('execution_gate') or {}
+        if gate and gate.get('code')!='TRADE_ENABLED':
+            reason=str(gate.get('reason') or '')+' '+str(gate.get('next_action') or '')
+            records.append(('SISTEMA','MODO '+str(gate['code']),reason,'warning'))
+        watch=row.get('session_activity') or {}
+        if watch.get('state') in ('ATTENTION','SIX_HOURS'):
+            records.append(('SESION','SIN CONFIRMACIONES',
+                str(round(float(watch.get('seconds_since_confirmed_ticket') or 0)/60))+' min · '+'; '.join(watch.get('reasons') or [])[:220],'warning'))
+        for jid,job in (row.get('pending_verification_requests') or {}).items():
+            if job.get('phase') in ('TIEMPO AGOTADO','REVISIÓN RECHAZADA O FALLIDA','DATOS O NIVELES CAMBIADOS','SIN SERVICIO DE IA'):
+                records.append(('VERIFICACIÓN','REVISIÓN '+str(job['phase']),
+                    str(job.get('completed',0))+'/'+str(job.get('total',0))+' · '+', '.join(job.get('missing',[])[:2]),'warning'))
+        for symbol,state in statuses.items():
+            if not isinstance(state,dict):continue
+            status=str(state.get('state') or 'ESPERANDO')
+            reason=str(state.get('detail') or '')
+            risk_error=any(k in status.upper() for k in ('BLOQUE','ERROR','RECHAZ'))
+            warn=risk_error or any(k in status.upper() for k in ('PAUSA','ESPERA','OBSERV'))
+            records.append((symbol,status,reason,'blocked' if risk_error else 'warning' if warn else 'normal'))
+        for symbol,info in row.get('symbols',{}).items():
+            decision=info.get('decision') or {}
+            if isinstance(decision,dict):
+                msg=str(decision.get('reason') or decision.get('detail') or '')
+                if msg:records.append((symbol,'DECISIÓN',msg,'normal'))
+        signature=tuple(records)
+        if getattr(self,'_dashboard_event_signature',None)==signature:return
+        self._dashboard_event_signature=signature
+        selected=tree.selection()
+        tree.delete(*tree.get_children())
+        for i,(symbol,status,reason,tag) in enumerate(records[:50]):
+            tree.insert('','end',iid=str(i),values=(stamp,status,'MERCADO',symbol,reason[:250]),tags=(tag,))
+        if selected and selected[0] in tree.get_children():tree.selection_set(selected[0])
+        alerts=[]
+        for sym,status,reason,tag in records:
+            if tag!='normal':alerts.append(f'{sym}: {status} · {reason[:110]}')
+        self.dashboard_alerts.configure(text='\n'.join(alerts[:3]) if alerts else
+            'Sin bloqueos destacados. Las operaciones requieren confirmación real de MT5.')
+
     def build_pending(self,page):
-        page.columnconfigure(0,weight=1);page.rowconfigure(0,weight=1)
-        panes=self.layout.pane(page,'pending_symbols',tk.HORIZONTAL,(.5,));panes.grid(row=0,column=0,sticky='nsew',pady=(2,8))
+        page.columnconfigure(0,weight=1);page.rowconfigure(1,weight=1)
+        # Candidate list is read-only and represents broker confirmations
+        # separately; selecting a row never submits an MT5 request.
+        board,holder=neon_card(page,'IDEAS Y ÓRDENES PENDIENTES · ESTADO REAL',CYAN,padx=7,pady=5)
+        board.grid(row=0,column=0,sticky='ew',pady=(2,4))
+        self.pending_overview_summary=label(holder,'Esperando candidatos técnicos...',MUTED,9,anchor='w')
+        self.pending_overview_summary.pack(fill='x',pady=(0,4))
+        inside=tk.Frame(holder,bg=PANEL);inside.pack(fill='x')
+        cols=('symbol','type','entry','sl','tp','quality','activation','state')
+        self.pending_overview=ttk.Treeview(inside,columns=cols,show='headings',height=3,selectmode='browse')
+        for key,heading,width in zip(cols,('SÍMBOLO','TIPO','ENTRADA','SL','TP','CALIDAD','ACTIVACIÓN','ESTADO'),
+                                     (96,85,108,108,108,83,90,210)):
+            self.pending_overview.heading(key,text=heading)
+            self.pending_overview.column(key,width=width,minwidth=57,anchor='center',stretch=True)
+        self.pending_overview.pack(side='left',fill='x',expand=True)
+        scrolling=ttk.Scrollbar(inside,orient='vertical',command=self.pending_overview.yview)
+        scrolling.pack(side='right',fill='y');self.pending_overview.configure(yscrollcommand=scrolling.set)
+        self.pending_overview.bind('<<TreeviewSelect>>',self._show_pending_overview_detail)
+        self.pending_overview_detail=label(holder,'Selecciona una tesis para ver sus niveles, restricciones y confirmación real.',
+                                           MUTED,8,anchor='w',justify='left',wraplength=1250)
+        self.pending_overview_detail.pack(fill='x',pady=(4,0))
+        self._pending_overview_descriptions={}
+        panes=self.layout.pane(page,'pending_symbols',tk.HORIZONTAL,(.5,));panes.grid(row=1,column=0,sticky='nsew',pady=(2,5))
         for symbol,on in self.cfg['symbols'].items():
             if not on:continue
             panel=SymbolPanel(panes,self,symbol);panes.add(panel,minsize=280,stretch='always');self.panels[symbol]=panel
-        outer,controls=neon_card(page,'RIESGO CONJUNTO RESERVADO',AMBER,padx=12,pady=6);outer.grid(row=1,column=0,sticky='ew')
+        outer,controls=neon_card(page,'RIESGO CONJUNTO RESERVADO',AMBER,padx=12,pady=6);outer.grid(row=2,column=0,sticky='ew')
         risk_header=tk.Frame(controls,bg=PANEL);risk_header.pack(fill='x',pady=(0,5))
         self.pending_risk_help=label(risk_header,'Calculando presupuesto y reservas del libro MT5...',MUTED,8,wraplength=850,anchor='w',justify='left');self.pending_risk_help.pack(side='left',fill='x',expand=True)
         self.verify_all_pending_button=button(risk_header,'VERIFICAR PENDIENTES',self.open_verification,CYAN)
@@ -510,6 +675,59 @@ class Desktop(DesktopServices,StrategyDirectory):
         button(actions,'COLOCAR PENDIENTES · BTC + ORO',lambda:self.request_map('ALL'),GREEN).pack(side='left',fill='x',expand=True,padx=(0,5))
         button(actions,'ABRIR RUNNERS CONFIRMADOS',lambda:self.request_runners('ALL'),CYAN).pack(side='left',fill='x',expand=True,padx=5)
         button(actions,'AJUSTAR RIESGO',self.set_trade_risk_cap,AMBER).pack(side='left',padx=(5,0))
+
+    def _show_pending_overview_detail(self,event=None):
+        tree=getattr(self,'pending_overview',None)
+        if tree is None:return
+        selected=tree.selection()
+        if not selected:return
+        detail=self._pending_overview_descriptions.get(selected[0],
+            'Propuesta sin confirmación. Selecciona Verificar para comprobar sus niveles.')
+        self.pending_overview_detail.configure(text=detail)
+
+    def render_pending_overview(self,row):
+        tree=getattr(self,'pending_overview',None)
+        if tree is None:return
+        from ui_updates import sync_table
+        from pending_verification import identity
+        records=[];details={};confirmed=0;sendable=0;proposed=0
+        # A scenario-book flag is not evidence of an active broker order.
+        # Reconcile with the current MT5 orders snapshot before labeling it.
+        broker_orders={(str(o.get('ticket')),str(o.get('symbol'))):o
+            for o in (row.get('orders') or []) if isinstance(o,dict) and o.get('ticket')}
+        for symbol,info in (row.get('symbols') or {}).items():
+            book=(info.get('scenario_book') or info.get('pending_book') or [])
+            for i,p in enumerate(book[:24]):
+                if not isinstance(p,dict):continue
+                pid=identity({**p,'symbol':symbol})
+                had_ticket=bool(p.get('confirmed') and p.get('ticket'))
+                is_confirmed=had_ticket and (str(p['ticket']),str(symbol)) in broker_orders
+                if is_confirmed:state='CONFIRMADA MT5 #'+str(p['ticket']);confirmed+=1
+                elif had_ticket:state='RECONCILIAR CON MT5';proposed+=1
+                elif p.get('sendable'):state='CANDIDATA VIABLE';sendable+=1
+                else:state=str(p.get('scenario_state') or 'NO EJECUTABLE');proposed+=1
+                category='BUY' if p.get('side')==1 else 'SELL'
+                kind=str(p.get('kind') or 'LIMIT').upper()
+                rid=symbol+':'+str(p.get('key') or p.get('ticket') or i)+':'+str(i)
+                records.append((rid,(symbol,category+' '+kind,number(p.get('entry'),3),
+                    number(p.get('sl'),3),number(p.get('tp'),3),
+                    number(p.get('quality_score'),0),number(p.get('activation_score'),0),state),()))
+                review=(row.get('pending_verifications') or {}).get(pid) or {}
+                details[rid]=(symbol+' · '+category+' '+kind+' · '+state+' · '+
+                    str(p.get('reason') or 'Motivo técnico no disponible.')[:220]+' · '+
+                    'Comprobación: '+str(review.get('state') or p.get('block_reason') or 'pendiente')[:160]+
+                    (' · MT5 #'+str(p['ticket']) if is_confirmed else ' · NO CONFIRMADA EN EL LIBRO ACTUAL DE MT5'))
+        summary=f'{len(records)} IDEAS MOSTRADAS   ·   {confirmed} CONFIRMADAS EN MT5   ·   {sendable} CANDIDATAS VIABLES   ·   {proposed} EN ESPERA/RECONCILIACIÓN'
+        self.pending_overview_summary.configure(text=summary)
+        self._pending_overview_descriptions=details
+        selection=tree.selection()
+        sync_table(tree,records)
+        if selection and selection[0] in details:
+            try:tree.selection_set(selection[0]);self._show_pending_overview_detail()
+            except tk.TclError:pass
+        elif records:
+            try:tree.selection_set(records[0][0]);self._show_pending_overview_detail()
+            except tk.TclError:pass
 
     def build_account(self,page):
         columns=self.layout.pane(page,'account_columns',tk.HORIZONTAL,(.71,));columns.pack(fill='both',expand=True,pady=3)
@@ -701,7 +919,6 @@ class Desktop(DesktopServices,StrategyDirectory):
             textcol=tk.Frame(row,bg=CARD);textcol.pack(side='left',fill='x',expand=True)
             label(textcol,title,TEXT,10,True,anchor='w').pack(fill='x')
             description=label(textcol,desc,MUTED,8,anchor='w',justify='left',wraplength=460);description.pack(fill='x')
-            textcol.bind('<Configure>',lambda e,w=description:w.configure(wraplength=max(120,e.width-6)))
             state=label(row,'Esperando',MUTED,9,True,anchor='e');state.pack(side='right',padx=(8,0))
             self.friendly_source_cards[key]=(dot,state)
 
@@ -776,6 +993,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         label(self.chat_composer,'ESCRIBE A AKIRA · Enter para enviar · Ctrl+L abre el chat',MUTED,9,anchor='w').grid(row=0,column=0,columnspan=2,sticky='w',pady=(0,4))
         self.chat_input=tk.StringVar();self.chat_entry=tk.Entry(self.chat_composer,textvariable=self.chat_input,bg=CARD,fg=TEXT,insertbackground=CYAN,font=(FONT,12),relief='flat')
         self.chat_entry.grid(row=1,column=0,sticky='ew',ipady=8);self.chat_entry.bind('<Return>',lambda e:self.ask())
+        if hasattr(self.chat_input,'trace_add'):self.chat_input.trace_add('write',lambda *_:self.avatar_typing())
         self.call_icon=button(self.chat_composer,'☎',self.start_voice,CYAN);self.call_icon.configure(padx=10,pady=6);self.call_icon.grid(row=1,column=2,sticky='ns',padx=(6,0))
         self.chat_send_button=button(self.chat_composer,'ENVIAR',self.ask,CYAN);self.chat_send_button.grid(row=1,column=1,sticky='ns',padx=(8,0))
         pane.bind('<Configure>',lambda e:self.chat_status.configure(wraplength=max(150,e.width-220)))
@@ -802,8 +1020,22 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.assistant.cancel_current_reply();self.chat_stage='DETENIENDO';self.chat_stage_detail='Cerrando ahora la conexión con el modelo...'
         self.chat_status.configure(text='Interrumpiendo respuesta...',fg=AMBER);self.stop_thinking_btn.configure(state='disabled')
 
+    def avatar_typing(self):
+        if not self.chat_input.get().strip() or self.chat_busy or not self.avatars:return
+        self.avatars[0].director.publish('listening','Escribiendo al chat')
+        self._avatar_reaction_until=time.monotonic()+1.5
+        old=getattr(self,'_typing_avatar_job',None)
+        if old is not None:
+            try:self.root.after_cancel(old)
+            except tk.TclError:pass
+        def done():
+            self._typing_avatar_job=None
+            if not self.chat_busy:self.reset_avatar()
+        self._typing_avatar_job=self.root.after(1600,done)
+
     def _render_chat_progress(self):
         if not hasattr(self,'chat_status'):return
+        if self.avatars:self.avatars[0].director.busy(self.chat_busy)
         if self.chat_busy:
             elapsed=max(0.0,time.monotonic()-self.chat_started);self.chat_elapsed.configure(text=f'{elapsed:.0f} s')
             glyphs=('● ○ ○','○ ● ○','○ ○ ●','○ ● ○');self._chat_anim_phase=(self._chat_anim_phase+1)%len(glyphs);self.chat_spinner.configure(text=glyphs[self._chat_anim_phase],fg=CYAN)
@@ -915,12 +1147,16 @@ class Desktop(DesktopServices,StrategyDirectory):
     def build_settings(self,page):
         label(page,'Ajusta tus preferencias y pulsa GUARDAR para aplicarlas en vivo.',MUTED,10,anchor='w').pack(fill='x',padx=12,pady=(8,6))
         self.setting_vars={};self.setting_types={};self.settings_cards={}
+        self.settings_titles=[];self.settings_pages=[]
         button(page,'GUARDAR AJUSTES',self.save_settings,GREEN).pack(side='bottom',anchor='e',padx=20,pady=(4,14))
-        book=ttk.Notebook(page);self.settings_notebook=book;book.pack(fill='both',expand=True,padx=12,pady=6)
+        book=ttk.Notebook(page,style='Cyber.TNotebook');self.settings_notebook=book;book.pack(fill='both',expand=True,padx=12,pady=6)
         def tab(title):
             shell,frame=scroll_frame(book,BG);book.add(shell,text=title)
+            self.settings_titles.append(title);self.settings_pages.append(shell)
             if title=='INTERFAZ':self.settings_interface_tab=shell
-            if title=='IA / INTERNET':self.settings_sources_tab=shell
+            if title=='FUENTES':self.settings_sources_tab=shell
+            if title=='RENDIMIENTO':self.settings_resources_tab=shell
+            if title=='MANTENIMIENTO':self.settings_maintenance_tab=shell
             self.settings_cards[frame]=[]
             def arrange(event,parent=frame,section=title):
                 density=max(1,float(self.root.tk.call('tk','scaling'))/1.333)
@@ -936,7 +1172,6 @@ class Desktop(DesktopServices,StrategyDirectory):
             row=tk.Frame(parent,bg=PANEL);row.pack(fill='x',pady=5)
             left=tk.Frame(row,bg=PANEL);left.pack(side='left',fill='x',expand=True)
             caption=label(left,title,TEXT,10,True,anchor='w',justify='left',wraplength=600);caption.pack(fill='x')
-            left.bind('<Configure>',lambda e,w=caption:w.configure(wraplength=max(150,e.width-4)))
             if hint:label(left,hint,MUTED,8,anchor='w',wraplength=620,justify='left').pack(fill='x')
             var=tk.StringVar(value=str(path_get(self.cfg,path,'')));self.setting_vars[path]=var;self.setting_types[path]=kind
             ent=tk.Entry(row,textvariable=var,bg=CARD,fg=TEXT,insertbackground=CYAN,relief='flat',font=(FONT,10),width=16,justify='center');ent.pack(side='right',ipady=6,padx=(10,0));__import__('cyber_ui').attach_tooltip(ent,hint or title)
@@ -945,8 +1180,12 @@ class Desktop(DesktopServices,StrategyDirectory):
             var=tk.BooleanVar(value=bool(path_get(self.cfg,path,False)));self.setting_vars[path]=var;self.setting_types[path]='bool'
             toggle(row,var,title,hint)
         # Pendientes
-        t=tab('PENDIENTES')
+        t=tab('OPERACIÓN')
         c=card(t,'MODO AUTOMÁTICO',GREEN)
+        label(c,'Solo análisis prepara candidatas sin enviar órdenes. Operativa automática permite enviarlas tras las comprobaciones de MT5 y riesgo.',MUTED,9,wraplength=620,justify='left',anchor='w').pack(fill='x',pady=6)
+        mode_var=tk.StringVar(value='Operativa automática' if self.cfg['mode']=='trade' else 'Solo análisis')
+        self.setting_vars['mode']=mode_var;self.setting_types['mode']='str'
+        ttk.Combobox(c,textvariable=mode_var,values=('Solo análisis','Operativa automática'),state='readonly',style='Akira.TCombobox').pack(fill='x',pady=6)
         check(c,'execution.pending_only','Entradas únicamente mediante pendientes','Marcado: gestiona las posiciones activadas como runners. Desmarcado: también permite runners directos a mercado con confirmación M15/M5 y H1. Se conservan los límites de riesgo y las comprobaciones del broker.')
         check(c,'execution.always_keep_pending_map','Mantener siempre el mejor mapa pendiente disponible','Genera parámetros técnicos inmediatos y luego los mejora con H4/D1, fuentes e IA; riesgo y broker siguen mandando.')
         check(c,'execution.allow_m15_m30_pending_origin','Permitir pendientes rápidas desde estructura M15/M30','H1/H4 siguen teniendo prioridad. Las zonas M5 observadas solo compiten con confirmación M15/H1 y sus propios filtros.')
@@ -987,7 +1226,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         field(c,'risk.min_lot_structural_override_money_cap','Cap USD absoluto del override','float')
         self.risk_override_help=label(c,'',MUTED,8,anchor='w',wraplength=760,justify='left');self.risk_override_help.pack(fill='x',pady=(6,0))
         # Calidad
-        t=tab('CALIDAD / MAPA')
+        t=tab('ESTRATEGIAS')
         for sym in ('BTCUSDm','XAUUSDm'):
             if sym not in self.cfg.get('symbol_profiles',{}):continue
             c=card(t,sym,PINK if sym.startswith('XAU') else BLUE)
@@ -1001,9 +1240,10 @@ class Desktop(DesktopServices,StrategyDirectory):
         label(c,'Si una pendiente válida no mejora materialmente, Akira la mantiene. Las invalidaciones reales por precio/vela siguen protegidas por el motor y MT5.',
               MUTED,9,anchor='w',justify='left',wraplength=650).pack(fill='x',pady=(4,8))
         # IA/Fuentes
-        t=tab('IA / INTERNET')
+        t=tab('FUENTES')
         self.settings_sources_body=t
         self.build_source_access(t,card)
+        t=tab('ASISTENTE')
         c=card(t,'CONOCIMIENTO ACTUALIZADO',CYAN)
         check(c,'knowledge.enabled','Mantener fuentes de conocimiento actualizadas')
         mode_row=tk.Frame(c,bg=PANEL);mode_row.pack(fill='x',pady=8);label(mode_row,'Actualización del conocimiento',TEXT,10,True).pack(side='left');mode=tk.StringVar(value='Automática' if self.cfg['knowledge']['mode']=='automatic' else 'Bajo solicitud');self.setting_vars['knowledge.mode']=mode;self.setting_types['knowledge.mode']='str';ttk.Combobox(mode_row,textvariable=mode,values=('Automática','Bajo solicitud'),state='readonly',style='Akira.TCombobox',width=18).pack(side='right')
@@ -1035,10 +1275,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         field(c,'research.local_ai_summary_seconds','Repetir síntesis profunda cada (segundos)','float','El mapa técnico no espera este ciclo; cuando termina, puede mejorar/reemplazar pendientes.')
         label(c,'AKIRA selecciona automáticamente la capacidad disponible.',MUTED,9,anchor='w').pack(fill='x',pady=8)
         # Interfaz
-        t=tab('INTERFAZ')
-        c=card(t,'APLICACIÓN',RED)
-        self.uninstall_button=button(c,'DESINSTALAR AKIRA',self.open_uninstaller,RED);self.uninstall_button.pack(fill='x',pady=6)
-        label(c,'Retira el programa y conserva tus datos. También disponible desde el paquete aunque AKIRA no abra.',MUTED,9,anchor='w',justify='left',wraplength=650).pack(fill='x',pady=6)
+        t=tab('RENDIMIENTO')
         c=card(t,'OPTIMIZADOR DE RECURSOS',CYAN)
         button(c,'MOSTRAR / OCULTAR LIMITADOR DE RECURSOS  ◈',self.open_resource_panel,CYAN).pack(fill='x',pady=(0,8))
         self._resource_host=tk.Frame(c,bg=PANEL);self._resource_host.pack(fill='x',pady=(0,4))
@@ -1062,9 +1299,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         label(c,'GPU y consumo de energía también dependen del sistema gráfico, el modelo de IA y otros procesos. '
               'Este ajuste no promete limitar el consumo total de la GPU.',MUTED,8,anchor='w',
               wraplength=600,justify='left').pack(fill='x',pady=6)
-        c=card(t,'AKIRA · NUEVAS EXPRESIONES',CYAN)
-        button(c,'VER LAS 108 EXPRESIONES',self.open_expression_gallery,CYAN).pack(fill='x',pady=5)
-        label(c,'R7 · ilustraciones nuevas basadas en tus referencias. La galería permite revisar y elegir cada cara.',MUTED,9,wraplength=620,justify='left',anchor='w').pack(fill='x',pady=6)
+        t=tab('INTERFAZ')
         c=card(t,'VENTANA',PINK)
         field(c,'desktop.width','Ancho','int');field(c,'desktop.height','Alto','int')
         button(c,'BORRAR CACHÉ',self.open_cache_cleaner,CYAN).pack(fill='x',pady=8)
@@ -1078,6 +1313,21 @@ class Desktop(DesktopServices,StrategyDirectory):
         check(c,'desktop.notify_pending_change','Avisar cuando Akira coloca, modifica o retira pendientes')
         field(c,'desktop.toast_seconds','Duración de la notificación (segundos)','float')
         label(c,'Las notificaciones no cambian órdenes; solo muestran el resultado del análisis/control.',MUTED,9,anchor='w').pack(fill='x',pady=6)
+        from akira_studio_ui import StudioControls
+        self.studio_controls=StudioControls(self,tab,card,field,check)
+        t=tab('MANTENIMIENTO')
+        c=card(t,'APLICACIÓN',RED)
+        self.uninstall_button=button(c,'DESINSTALAR AKIRA',self.open_uninstaller,RED);self.uninstall_button.pack(fill='x',pady=6)
+        label(c,'Retira el programa y permite conservar tus datos desde el desinstalador de Windows.',MUTED,9,anchor='w',justify='left',wraplength=620).pack(fill='x',pady=6)
+        # Every section remains reachable even when high DPI clips notebook tabs.
+        chooser=tk.Frame(page,bg=BG);chooser.pack(fill='x',padx=18,pady=(0,4),before=book)
+        label(chooser,'SECCIÓN',MUTED,9,True).pack(side='left',padx=(0,10))
+        titles=list(self.settings_titles)
+        section=tk.StringVar(value=titles[0]);self.settings_section=section
+        selector=ttk.Combobox(chooser,textvariable=section,values=titles,state='readonly',style='Akira.TCombobox')
+        selector.pack(side='left',fill='x',expand=True)
+        selector.bind('<<ComboboxSelected>>',lambda e:book.select(self.settings_pages[titles.index(section.get())]))
+        book.bind('<<NotebookTabChanged>>',lambda e:section.set(book.tab(book.select(),'text')),add='+')
     def build_terminal(self,page):
         columns=self.layout.pane(page,'terminal_columns',tk.HORIZONTAL,(.68,));columns.pack(fill='both',expand=True,pady=3)
         outer,body=neon_card(columns,'REGISTROS EN TIEMPO REAL',CYAN);columns.add(outer,minsize=320,stretch='always')
@@ -1292,9 +1542,12 @@ class Desktop(DesktopServices,StrategyDirectory):
         if not message:return
         self._last_user_question=message
         snapshot=copy.deepcopy(self.view)
+        if getattr(self,'_network_status',{}).get('online') is False:snapshot['network_available']=False
         casual=self.assistant._instant_general_reply(message,snapshot)
         if casual and not self.chat_busy:
-            self.chat_input.set('');self.append_chat('TÚ',message);self.assistant._remember_turn(message,casual);self.append_chat('AKIRA',casual);self.refresh_chat_list();return
+            self.chat_input.set('');self.append_chat('TÚ',message);self.assistant._remember_turn(message,casual);self.append_chat('AKIRA',casual);self.refresh_chat_list()
+            if self.avatars:self.avatars[0].director.publish('happy','Saludo del usuario')
+            self._avatar_reaction_until=time.monotonic()+4;self.root.after(4200,self.reset_avatar);return
         exact=AkiraAssistant._named_pending(message,snapshot)
         if exact is not None:
             self.chat_input.set('');self.async_request({'action':'assistant_plan',**exact},message);return
@@ -1419,7 +1672,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         if require_installed and not voice['installed']:raise ValueError('Instala primero la voz seleccionada y escucha su demostración')
         rate=int(float(self.voice_rate.get()));volume=float(self.voice_volume.get())
         if not 80<=rate<=300 or not 0<=volume<=1:raise ValueError('Velocidad: 80–300. Volumen: 0–1.')
-        options={'voice_id':voice['id'],'rate':rate,'volume':volume,'model':self.cfg['assistant'].get('voice_model','tiny'),'language':self.cfg['assistant'].get('voice_language','es')}
+        options={'voice_id':voice['id'],'rate':rate,'volume':volume,'model':self.cfg['assistant'].get('voice_model','tiny'),'language':self.cfg.get('studio',{}).get('language_voice_in','auto') if self.cfg.get('studio',{}).get('language_voice_in','auto')!='auto' else self.cfg['assistant'].get('voice_language','es')}
         for key in ('input','output'):
             raw=self.voice_vars[key].get();options[key+'_device']=None if raw=='Predeterminado' else int(raw.split(' · ')[0])
         return voice,options
@@ -1626,8 +1879,11 @@ class Desktop(DesktopServices,StrategyDirectory):
         local=self.assistant.local_ai_status();text=brand_status(local)
         self._assistant_display_status=local
         color=GREEN if local.get('ready') else RED if local.get('phase') in ('FAILED','STALLED') else AMBER
+        if getattr(self,'_network_status',{}).get('online') is False:text='AKIRA · SIN INTERNET';color=AMBER
         for widget in (self.sidebar_status,self.brain_label,self.chat_model):widget.configure(text=text,fg=color)
         detail=public_status(local.get('detail') or 'Comprobando el asistente...')
+        if local.get('last_reply_error'):
+            detail='El último mensaje no terminó: '+public_status(local['last_reply_error'])+'. Puedes reintentar; la disponibilidad del motor no equivale a una respuesta completada.'
         self.assistant_detail.configure(text=detail,fg=color if not local.get('ready') else MUTED)
         short='ACTIVO' if local.get('ready') else text.partition(' · ')[2].upper()
         self.source_status['local'].configure(text=short,fg=color)
@@ -1669,6 +1925,8 @@ class Desktop(DesktopServices,StrategyDirectory):
         except queue.Empty:pass
         if latest:
             self.view=latest;self.bridge.connected=bool(latest.get('connected'))
+            from connectivity import recently_connected
+            if recently_connected(latest):self._network_evidence_at=time.monotonic()
             self._last_snapshot_received=time.monotonic()
             if self.bridge.connected:self.bridge.starting=False
         if time.monotonic()>=self.display_due:
@@ -1772,14 +2030,21 @@ class Desktop(DesktopServices,StrategyDirectory):
                 pass  # El resultado ya quedó en continuidad fuera de Tk/modelo.
             elif reply.get('conversation'):
                 self.chat_busy=False;self.stop_thinking_btn.configure(state='disabled');self.chat_stage='LISTO';self.chat_stage_detail='';self._render_chat_progress()
-            for avatar in self.avatars:avatar.set_expression(expression_for_dialogue(getattr(self,'_last_user_question',''),reply.get('answer','')),context=str(reply.get('answer','')))
+            reaction=expression_for_dialogue(getattr(self,'_last_user_question',''),reply.get('answer',''))
+            if reaction=='talking' and not self.voice_call_active:reaction='idle'
+            for avatar in self.avatars:avatar.set_expression(reaction,context=str(reply.get('answer','')))
+            self._avatar_reaction_until=time.monotonic()+8
             if not getattr(self,'voice_call_active',False):self.root.after(8000,self.reset_avatar)
     def remember_command(self,message,answer):
         with self.assistant.lock:self.assistant._remember_turn(message,answer)
     def reset_avatar(self):
         if not self.stop.is_set():
+            self._avatar_reaction_until=0
             for avatar in self.avatars:avatar.set_expression('thinking' if self.chat_busy else 'analyzing' if self.view.get('connected') else 'waiting')
     def render(self,row):
+        if not self.chat_busy and time.monotonic()>=getattr(self,'_avatar_reaction_until',0) and self.avatars:
+            activity='analyzing' if row.get('connected') else 'connecting'
+            self.avatars[0].director.publish(activity)
         received=getattr(self,'_last_snapshot_received',None)
         if received is not None:row={**row,'ui_age_seconds':max(0,time.monotonic()-received)}
         self._render_generation=getattr(self,'_render_generation',0)+1
@@ -1808,7 +2073,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self._last_rendered_privacy=privacy_now
         self.render_section('Cuenta',self.render_live_header,row)
         if first_render or page==2:self.render_section('Órdenes',self.render_live_orders,row)
-        if first_render or page==4:self.render_section('Fuentes',self.render_source_cards,row)
+        if first_render or page in (3,4):self.render_section('Fuentes',self.render_source_cards,row)
         if first_render or page in (0,1):self.render_section('Gráficos',self.render_live_charts,row,closed)
         elif privacy_changed:self.render_section('Privacidad gráficos',self.render_dashboard_privacy,row)
         if first_render or page==3:self.render_section('Análisis',self.render_live_analysis,row)
@@ -1841,7 +2106,18 @@ class Desktop(DesktopServices,StrategyDirectory):
         mask='••••••' if os.name=='nt' else '******'
         self.account_label.configure(text='Cuenta MT5: '+(str(a.get('login') or '') if not private else 'OCULTA')+' · '+('Libre '+number(a.get('margin_free'))+' '+ccy if not private else 'Importes ocultos por tu elección'))
         if hasattr(self,'privacy_button'):self.privacy_button.configure(text='MOSTRAR IMPORTES' if private else 'OCULTAR IMPORTES')
-        self.connection.configure(text=f"{'VISTA PREVIA · DATOS SINTÉTICOS · ' if row.get('preview') else ''}{row['mode'].upper()} · Revisión cada {self.cfg['poll_seconds']:.2f} s · ciclo {row['cycle_ms']:.0f} ms · {'PAUSA' if row.get('paused') else 'ESCRITURAS BLOQUEADAS' if row.get('execution_block') else 'MT5 conectado'}",fg=AMBER if row.get('execution_block') else GREEN)
+        gate=row.get('execution_gate') or {}
+        operational=bool(gate.get('execution_allowed')) if gate else (row['mode']=='trade' and not row.get('paused') and not row.get('execution_block') and row.get('network_available',True))
+        code=gate.get('code')
+        mode={'OFFLINE':'SIN INTERNET · RECONECTANDO','TRADE_ENABLED':'OPERATIVA ACTIVA',
+              'OBSERVE':'SOLO ANÁLISIS · NO ENVÍA ÓRDENES',
+              'PAUSED':'GESTIÓN PAUSADA','BROKER_BLOCK':'MT5 · EJECUCIÓN BLOQUEADA',
+              'PREVIEW':'VISTA PREVIA'}.get(code, 'OPERATIVA ACTIVA' if operational else 'GESTIÓN BLOQUEADA')
+        self.connection.configure(text=f"{'VISTA PREVIA · ' if row.get('preview') else ''}{mode} · ciclo {row['cycle_ms']:.0f} ms · {'ESCRITURAS BLOQUEADAS' if row.get('execution_block') else 'MT5 conectado'}",fg=GREEN if operational else AMBER)
+        if hasattr(self,'mode_button'):
+            self.mode_button.configure(text='SOLO ANÁLISIS' if row['mode']=='trade' else 'ACTIVAR OPERATIVA',state='disabled' if row.get('preview') else 'normal')
+        if gate and hasattr(self,'brain_status'):
+            self._execution_gate_explanation=gate['reason']+' '+gate['next_action']
         if float(row.get('ui_age_seconds') or 0)>3:self.connection.configure(text=self.connection.cget('text')+' · Estado antiguo: no llega una revisión nueva del motor',fg=AMBER)
         self.metrics['balance'].configure(text=mask if private else number(a.get('balance'))+' '+ccy)
         self.metrics['equity'].configure(text=mask if private else number(a.get('equity'))+' '+ccy)
@@ -1853,6 +2129,7 @@ class Desktop(DesktopServices,StrategyDirectory):
         self.metrics['daily'].configure(fg=GREEN if float(a.get('daily_net') or 0)>=0 else RED)
         self.metrics['floating'].configure(fg=GREEN if float(a.get('floating') or 0)>=0 else PINK)
         self.side_connection.configure(text='VISTA PREVIA' if row.get('preview') else 'MT5 · conectado',fg=AMBER if row.get('preview') else GREEN)
+        if row.get('network_available') is False:self.side_connection.configure(text='SIN INTERNET · reconectando',fg=AMBER)
 
     def render_account_budget(self,row):
         a=row['account'];ccy=a.get('currency','')
@@ -1892,15 +2169,16 @@ class Desktop(DesktopServices,StrategyDirectory):
     def render_source_cards(self,row):
         research=row.get('research') or {};sources=research.get('sources') or {}
         from cyber_ui import source_presentation
-        selected=self.analysis_sources.selection()
-        self.analysis_sources.delete(*self.analysis_sources.get_children())
+        selected=self.analysis_sources.selection();rows=[]
         self._source_reasons={}
-        for name,source in sources.items():
+        for name,source in sorted(sources.items()):
             if not isinstance(source,dict):continue
             title,status,detail=source_presentation(name,source)
             age=source.get('age_seconds',source.get('age'))
-            iid=self.analysis_sources.insert('','end',iid=name,values=(title,status,number(age,1)+' s' if age is not None else '—',detail),tags=('fresh' if status=='DISPONIBLE' else 'wait',))
+            rows.append((name,(title,status,number(age,1)+' s' if age is not None else '—',detail),('fresh' if status=='DISPONIBLE' else 'wait',)))
             self._source_reasons[name]=title+' · '+status+'\n'+detail
+        from ui_updates import sync_table
+        sync_table(self.analysis_sources,rows)
         if selected and selected[0] in self._source_reasons:
             self.analysis_sources.selection_set(selected[0]);self.show_source_reason()
         def src_state(names):
@@ -1943,6 +2221,8 @@ class Desktop(DesktopServices,StrategyDirectory):
 
     def render_live_charts(self,row,closed):
         self.render_dashboard_privacy(row)
+        self.render_dashboard_activity(row)
+        self.render_pending_overview(row)
         for symbol,widgets in self.charts.items():
             try:self.render_dashboard_chart(symbol,widgets,row,closed)
             except Exception as exc:self.record_ui_error('Gráfico '+symbol,exc)
@@ -1960,23 +2240,23 @@ class Desktop(DesktopServices,StrategyDirectory):
 
     def render_live_orders(self,row):
         names={0:'BUY',1:'SELL',2:'BUY LIMIT',3:'SELL LIMIT',4:'BUY STOP',5:'SELL STOP'}
+        from ui_updates import sync_table
         for tree,records in ((self.orders,row['orders']),(self.positions,row['positions'])):
-            selection=tree.selection();tree.delete(*tree.get_children())
-            for p in records:tree.insert('','end',iid=str(p['ticket']),values=(p['ticket'],p['symbol'],names.get(p['type'],p['type']),p['volume'],number(p['entry'],3),number(p['sl'],3),number(p['tp'],3),number(p.get('profit')),'Akira' if p.get('owned') else 'Manual / otro EA'))
-            for key in selection:
-                if tree.exists(key):tree.selection_set(key)
+            sync_table(tree,[(str(p['ticket']),(p['ticket'],p['symbol'],names.get(p['type'],p['type']),p['volume'],number(p['entry'],3),number(p['sl'],3),number(p['tp'],3),number(p.get('profit')),'Akira' if p.get('owned') else 'Manual / otro EA'),()) for p in records])
 
     def render_live_analysis(self,row):
-        self.frames.delete(*self.frames.get_children())
+        frames=[]
         for symbol,info in row.get('symbols',{}).items():
-            for tf,f in info.get('frames',{}).items():self.frames.insert('','end',values=(symbol,tf,number(f.get('trend')),number(f.get('rsi')),number(f.get('atr')),number(f.get('ema9')),number(f.get('ema21')),number(f.get('ema50')),number(f.get('ema200')),number(f.get('adx')),number(f.get('macd')),number(f.get('vwap')),f.get('regime','')))
+            for tf,f in info.get('frames',{}).items():frames.append((symbol+':'+tf,(symbol,tf,number(f.get('trend')),number(f.get('rsi')),number(f.get('atr')),number(f.get('ema9')),number(f.get('ema21')),number(f.get('ema50')),number(f.get('ema200')),number(f.get('adx')),number(f.get('macd')),number(f.get('vwap')),f.get('regime','')),()))
+        from ui_updates import sync_table
+        sync_table(self.frames,frames)
         if hasattr(self,'analysis_summary'):
             body='\n\n'.join(analysis_text(row,s) for s in row.get('symbols',{}))
-            replace_text(self.analysis_summary,body)
-            for tag in ('section','bull','bear','closed'):self.analysis_summary.tag_remove(tag,'1.0','end')
-            for n,line in enumerate(body.splitlines(),1):
-                tag='closed' if 'CERRADO' in line else 'bull' if 'ALCISTA' in line else 'bear' if 'BAJISTA' in line else 'section' if line and (line.isupper() or ' · BTCUSD' in line or ' · XAUUSD' in line) else None
-                if tag:self.analysis_summary.tag_add(tag,f'{n}.0',f'{n}.end')
+            if replace_text(self.analysis_summary,body):
+                for tag in ('section','bull','bear','closed'):self.analysis_summary.tag_remove(tag,'1.0','end')
+                for n,line in enumerate(body.splitlines(),1):
+                    tag='closed' if 'CERRADO' in line else 'bull' if 'ALCISTA' in line else 'bear' if 'BAJISTA' in line else 'section' if line and (line.isupper() or ' · BTCUSD' in line or ' · XAUUSD' in line) else None
+                    if tag:self.analysis_summary.tag_add(tag,f'{n}.0',f'{n}.end')
         audit={'estado':row.get('status'),'uso_de_datos':row.get('analysis'),'evaluacion_de_zonas':row.get('audit'),'solicitudes_sin_confirmar':row.get('unconfirmed')}
         replace_text(self.audit,json.dumps(audit,ensure_ascii=False,indent=2,default=str))
 
@@ -2003,13 +2283,21 @@ class Desktop(DesktopServices,StrategyDirectory):
             inflight=[name for name,s in sources.items() if isinstance(s,dict) and s.get('inflight')]
             state=('Buscando ahora: '+', '.join(inflight[:5])) if inflight else 'Ronda externa en reposo; Akira usa lo último vigente y MT5 en tiempo real.'
             replace_text(self.sources_summary,state+'\n\n'+'\n\n'.join(friendly)+'\n\nCuando una fuente nueva termina, Akira vuelve a comparar el mapa; no espera a Internet para preparar los primeros niveles.')
+        gate=row.get('execution_gate') or {}
+        if gate:
+            brain.insert(0,'MODO EFECTIVO · '+str(gate.get('code',''))+'\n'+str(gate.get('reason',''))+'\n'+str(gate.get('next_action','')))
         replace_text(self.sources,public_status('\n'.join(lines)));replace_text(self.brain_status,public_status('\n\n'.join(brain)))
 
     def render_dashboard_chart(self,s,widgets,row,closed):
         chart,title,state,tf_var=widgets
         info=row.get('symbols',{}).get(s,{});requested=tf_var.get();tf,bars=available_chart_frame(info,requested)
         if tf!=requested:tf_var.set(tf)
-        chart_info=dict(info);chart_info['market_closed']=s in closed;chart_info['indicator']=self.cfg['charts']['indicator'];chart_info['engine_frame']=info.get('frames',{}).get(tf,{});chart_info['timeframe']=tf;chart_info['bars']=bars;chart.update_data(chart_info);title.configure(text=s+'   '+number(info.get('bid'))+' / '+number(info.get('ask')))
+        chart_info=dict(info);chart_info['market_closed']=s in closed;chart_info['indicator']=self.cfg['charts']['indicator'];chart_info['engine_frame']=info.get('frames',{}).get(tf,{});chart_info['timeframe']=tf;chart_info['bars']=bars;chart.update_data(chart_info)
+        # If the first render ran before the new dashboard's pane geometry
+        # settled, ensure unchanged data still receives its initial drawing.
+        if hasattr(chart,'winfo_height') and hasattr(chart,'find_all') and chart.winfo_height() >= 70 and not chart.find_all():
+            chart.redraw()
+        title.configure(text=s+'   '+number(info.get('bid'))+' / '+number(info.get('ask')))
         status=row['status'].get(s,{});state.configure(text=status.get('state','')+' · '+status.get('detail',''))
         runner=info.get('runner') or {}
         if runner:
@@ -2032,7 +2320,7 @@ class Desktop(DesktopServices,StrategyDirectory):
 
     def open_resource_panel(self):
         from resource_optimizer import config_limits,process_usage,PROFILES,profile_budget
-        self.navigate(6);self.settings_notebook.select(self.settings_interface_tab)
+        self.navigate(6);self.settings_notebook.select(self.settings_resources_tab)
         if getattr(self,'_resource_window',None) is not None:
             try:
                 if self._resource_window.winfo_exists():
@@ -2052,7 +2340,6 @@ class Desktop(DesktopServices,StrategyDirectory):
         ttk.Combobox(shell,textvariable=mode,values=tuple(PROFILES),state='readonly',style='Akira.TCombobox').pack(fill='x',ipady=3,pady=(0,5))
         effective=label(shell,'',CYAN,9,anchor='w',wraplength=389,justify='left')
         effective.pack(fill='x',pady=(0,12))
-        effective.bind('<Configure>',lambda e:effective.configure(wraplength=max(220,e.width-10)))
         def preview_profile(*_):
             p=PROFILES.get(mode.get(),PROFILES['Equilibrado'])
             effective.configure(text=(f"Pantalla: {p['target_fps']} FPS objetivo · paneles cada {p['render_seconds']:.2f} s · "
@@ -2092,16 +2379,23 @@ class Desktop(DesktopServices,StrategyDirectory):
         def sample():
             try:
                 if not win.winfo_exists():return
-                data=process_usage()
-                def view(number,suffix):return ('No disponible' if number is None else str(number)+suffix)
-                status.configure(text=('AKIRA RAM: '+view(data['akira_mb'],' MB')+
-                    ' · Ollama RAM: '+view(data['ollama_mb'],' MB')+
-                    ' · llama-server RAM: '+view(data.get('llama_server_mb'),' MB')+
-                    '\nCPU de AKIRA: '+view(data.get('akira_cpu_pct'),'%')+
-                    ' · RAM del sistema: '+view(data['system_ram_pct'],'%')+
-                    '\nGPU: medición por proceso no disponible (no se inventan porcentajes).'))
-                win.after(4000,sample)
+                if not getattr(win,'_usage_inflight',False):
+                    win._usage_inflight=True
+                    def work():
+                        try:data=process_usage()
+                        except Exception:data={}
+                        self.replies.put({'resource_sample':{'window':win,'label':status,'data':data}})
+                    threading.Thread(target=work,name='AkiraResourceSample',daemon=True).start()
+                win._usage_after=win.after(4000,sample)
             except tk.TclError:pass
+        def stop_sampling(event):
+            if event.widget is not win:return
+            job=getattr(win,'_usage_after',None)
+            if job is not None:
+                try:win.after_cancel(job)
+                except tk.TclError:pass
+            win._usage_after=None
+        win.bind('<Destroy>',stop_sampling,add='+')
         sample()
         def reveal():
             parent=self._resource_host
@@ -2132,9 +2426,31 @@ class Desktop(DesktopServices,StrategyDirectory):
         button(shell,'APLICAR LIMITES',apply,GREEN).pack(fill='x',pady=(7,3))
 
     def save_settings(self):
-        self.apply_settings_form()
+        if hasattr(self,'studio_controls'):
+            self._studio_avatar=self.studio_controls.staged_avatar()
+        saved=self.apply_settings_form()
         # The next UI cycle uses the saved mode. Trading, risk and MT5 remain live.
-        self._apply_performance()
+        if saved is not False:
+            self._apply_performance()
+            name=self.cfg['studio']['brand_name']
+            self.root.title(name+' · 16.3.5 · R8 Studio Rev4')
+            self.brand_title.configure(text=name)
+            self._activate_user_avatar()
+    def _activate_user_avatar(self):
+        from akira_studio import UserCatalog
+        from akira_expressions import get_catalog
+        from akira_live2d import _root as _assets
+        item=self.cfg['studio']['avatar']
+        catalog=UserCatalog(get_catalog(_assets()),item) if item.get('active') and item.get('entries') else get_catalog(_assets())
+        self.root._akira_user_catalog=catalog
+        director=getattr(self,'avatar_director',None)
+        if director:
+            director.catalog=catalog
+            for avatar in self.avatars:
+                avatar.catalog=catalog
+                avatar._photos.clear();avatar._state_images.clear();avatar._visual_key=None
+            director.publish('idle','Nuevo avatar',force=True)
+
     def open_folder(self,name):
         path=self.folder/name;path.mkdir(exist_ok=True)
         if os.name=='nt':os.startfile(path)
@@ -2287,6 +2603,11 @@ class Desktop(DesktopServices,StrategyDirectory):
                 messagebox.showinfo('Informe de Akira',text,parent=self.report_window)
         except tk.TclError:pass
     def close(self):
+        ambient=getattr(self,'_ambient_wallpaper',None)
+        if ambient is not None:ambient.stop()
+        studio=getattr(self,'studio_controls',None)
+        if studio is not None and studio._preview is not None:studio._preview.stop()
+        if hasattr(self,'network_monitor'):self.network_monitor.close()
         self.persist_window_size()
         self.end_call();self.cancel_voice_download();self.knowledge_worker.close();self.layout.save();self.stop.set();self.bridge.connected=False;self.bridge.starting=False
         self.assistant.cancel_current_reply()
@@ -2307,4 +2628,14 @@ def main(preview=False):
     folder=application_root()
     # A fresh portable build has no user config until its first launch.
     ensure_user_config(folder)
-    set_identity();root=tk.Tk();Desktop(root,folder,preview);root.mainloop()
+    from akira_studio import activate_style
+    import desktop_services, strategy_directory
+    config=load_config(folder/'akira_config.json')
+    activate_style(config['studio'],(sys.modules[__name__],desktop_services,strategy_directory))
+    from tk_runtime import create_root
+    set_identity();root=create_root()
+    percent=config['studio'].get('font_scale',100)
+    if int(percent)!=100:
+        try:root.tk.call('tk','scaling',float(root.tk.call('tk','scaling'))*int(percent)/100)
+        except tk.TclError:pass
+    Desktop(root,folder,preview);root.mainloop()

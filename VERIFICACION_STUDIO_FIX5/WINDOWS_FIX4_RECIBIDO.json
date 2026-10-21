@@ -1,0 +1,111 @@
+{
+  "run": "https://github.com/juanpablo-ordo/akira/actions/runs/39006312418",
+  "commit": "32c12cece888f10a44f19f0cb6941bfc2d679377",
+  "revision": "Windows 4",
+  "observed_utc": "2026-10-17T05:45:05.020Z",
+  "conclusion": "failure",
+  "steps": [
+    {
+      "name": "Set up job",
+      "conclusion": "success"
+    },
+    {
+      "name": "Obtener código de AKIRA",
+      "conclusion": "success"
+    },
+    {
+      "name": "Preparar Python de 64 bits",
+      "conclusion": "success"
+    },
+    {
+      "name": "Instalar dependencias",
+      "conclusion": "success"
+    },
+    {
+      "name": "Comprobar y aislar Tcl-Tk de Python antes de las regresiones",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verificar que se incorporo REV5 antes de construir el instalador",
+      "conclusion": "success"
+    },
+    {
+      "name": "Pruebas de regresion principales",
+      "conclusion": "success"
+    },
+    {
+      "name": "Incorporar reconocimiento visual local de sprites",
+      "conclusion": "success"
+    },
+    {
+      "name": "Compilar y autocontrolar AKIRA.exe Studio en Windows",
+      "conclusion": "success"
+    },
+    {
+      "name": "Incorporar llama.cpp oficial para Windows (CPU y Vulkan)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Incorporar componente JavaScript de YouTube verificado",
+      "conclusion": "success"
+    },
+    {
+      "name": "Comprobar IA real en Windows sin Ollama",
+      "conclusion": "failure"
+    },
+    {
+      "name": "Empaquetar ejecutable con motor local (sin el modelo GGUF)",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Compilar instalador Windows con logo, Instalar y Cancelar",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Probar instalador completo y respuesta de la IA instalada",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Publicar instalador de AKIRA con IA incluida y verificada",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Descargar binario construido",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Descargar diagnosticos incluso si falla",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Preparar Python de 64 bits",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Post Obtener código de AKIRA",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "conclusion": "success"
+    }
+  ],
+  "regressions": {
+    "passed": 1210,
+    "subtests_passed": 102,
+    "skipped": 1,
+    "skip_reason": "tests/test_r6_expressions_layout.py:141: A graphical Tk display is required",
+    "failed": 0
+  },
+  "native_exe_build_and_self_check": "success",
+  "source_sprite_ai": "success",
+  "frozen_sprite_ai": "success",
+  "real_ai_smoke": {
+    "greeting_visible_characters": 5,
+    "result": "FAILED",
+    "error": "ModuleNotFoundError: No module named 'akira_local_ai' after first response"
+  },
+  "installer_compiled": false,
+  "installed_ai_verified": false,
+  "scope": "Historical Windows run for FIX4; not certification of FIX5."
+}

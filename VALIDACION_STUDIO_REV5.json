@@ -1,0 +1,171 @@
+{
+  "build": "AKIRA_16_4_0_STUDIO_REV5",
+  "date": "2026-10-17",
+  "status": "SOURCE_VERIFIED_WINDOWS_PENDING",
+  "pytest": {
+    "passed": 1226,
+    "subtests_passed": 118,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 72.494,
+    "report": "VERIFICACION_STUDIO_FIX6/REGRESIONES_FINALES.xml",
+    "platform": "Linux Tcl/Tk 8.6.14, pantalla 1024x768"
+  },
+  "offline_unittest": {
+    "build": "AKIRA_16_4_0_STUDIO_REV5",
+    "collected": 1223,
+    "tests_run": 1223,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failed_tests": [],
+    "failure_details": [],
+    "skipped_tests": [],
+    "seconds": 62.487,
+    "network": "blocked"
+  },
+  "native_studio": {
+    "passed": true,
+    "gates": 12,
+    "report": "VERIFICACION_STUDIO_FIX4/NATIVE_STUDIO.json",
+    "data": "FakeMT5"
+  },
+  "native_legacy": {
+    "passed": true,
+    "gates": 27,
+    "report": "VERIFICACION_STUDIO_FIX4/NATIVE_LEGACY_TK86.json"
+  },
+  "default_entrypoint": "VERIFICACION_STUDIO_REV5/ARRANQUE_PREDETERMINADO.json",
+  "performance_scope": "VERIFICACION_STUDIO_REV5/CARGA_INTERFAZ.json: solo 12,34 s en Linux, chat simulado; no prueba Windows, modelo, voz física ni rentabilidad.",
+  "github": {
+    "repository": "juanpablo-ordo/akira",
+    "base_published": true,
+    "base_commit": "4d3511e66474e677a5a929a8c39971ec52947781",
+    "base_windows_tests_passed": 1215,
+    "base_windows_subtests_passed": 118,
+    "base_windows_tk_runtime_passed": true,
+    "base_windows_sprite_source_fixture_passed": false,
+    "base_exe_created": false,
+    "base_exe_self_check_passed": false,
+    "correction_published": true,
+    "correction_new_ci_run": false,
+    "error": null,
+    "branch_prepared": "akira-studio-rev5-20261016",
+    "base_windows_suite_completed": true,
+    "historic_fix1_windows_tests_passed": 1202,
+    "historic_fix1_windows_subtests_passed": 102,
+    "base_run_scope": "FIX5: importaciones previas aprobadas; WinError 32 al borrar el video temporal. No se ejecutaron las etapas posteriores.",
+    "base_run_status_observed": "completed/failure",
+    "base_run": "https://github.com/juanpablo-ordo/akira/actions/runs/39007735029",
+    "base_windows_suite_success": false,
+    "base_windows_failures": 1,
+    "base_windows_skipped": 1,
+    "base_frozen_sprite_fixture_passed": false,
+    "historic_fix4_windows_exe_and_visual_passed": true,
+    "connection_installation_confirmed": true,
+    "write_verified": true
+  },
+  "windows_exe_built": false,
+  "windows_install_verified": false,
+  "mt5_demo_verified": false,
+  "six_hour_session_verified": false,
+  "real_model_inference_verified": true,
+  "visual_semantic_inference_verified": true,
+  "physical_audio_verified": false,
+  "profitability_verified": false,
+  "target_hardware": {
+    "cpu": "Intel Core i7-12700K",
+    "gpu": "NVIDIA RTX 5060 Ti 8 GB",
+    "ram": "32 GB DDR5-6000",
+    "board": "ASUS ROG STRIX Z790-H",
+    "tested": false
+  },
+  "inputs": {
+    "rev4_zip": {
+      "name": "AKIRA_REV4_GITHUB_Y_COMPILACION_PREPARADO(1).zip",
+      "sha256": "0cc53e27a19aaffab5d96f08893e5554b91e88e13a421fc4a23b3c71484d289c"
+    },
+    "master_docx": {
+      "name": "AKIRA_Instrucciones_Maestras(4).docx",
+      "sha256": "9b495dadb29e70adf59dd20662daa169cd8553243ec9a1120868d1dea8dd04e2"
+    }
+  },
+  "acceptance_matrix": "REQUISITOS_232_ESTADO.json",
+  "financial_risk_thresholds_changed": false,
+  "new_install_defaults": {
+    "mode": "observe",
+    "bound_account": 0,
+    "pending_only": false
+  },
+  "existing_explicit_pending_only_preserved": true,
+  "revision": "WINDOWS_MEDIA_SHUTDOWN_FIX_6",
+  "updated_utc": "2026-10-17T06:06:44.203627+00:00",
+  "tk_runtime_check": {
+    "report": "VERIFICACION_STUDIO_FIX4/TK_RUNTIME_12.json",
+    "native_initializations": 12,
+    "scope": "Linux Tcl/Tk 8.6.14 y 9.0.4. Inicialización del cargador ausente y archivos ausentes probada. Windows 8.6.12 pendiente.",
+    "verified_copy_report": "VERIFICACION_STUDIO_FIX4/TK_RUNTIME_CLI_COPY.json"
+  },
+  "windows_regression_fix": {
+    "revision": 4,
+    "financial_engine_changed": false,
+    "all_source_tests_passed": true,
+    "windows_fix4_verified": true,
+    "native_win32_reflow_cause_reproduced": false,
+    "missing_loader_case_reproduced": true,
+    "tcl_loader_initialized_before_tk": true,
+    "wrap_and_scroll_reflow_ms": 16,
+    "monitor_fitted_profiles_verified": true,
+    "probe_process_deadline_seconds": 45,
+    "ci_regression_deadline_minutes": 15,
+    "no_checks_skipped": true,
+    "scope": "Historical FIX4 run 26 passed regressions and native EXE; installed AI was not verified."
+  },
+  "visual_semantic_inference_scope": "Historical FIX4 Windows source and frozen executable: bundled sleeping-sprite fixture, ambiguity requires review. FIX5 installed check still pending.",
+  "universal_sprite_recognition_verified": false,
+  "frozen_sprite_inference_verified": false,
+  "real_model_inference": {
+    "passed": true,
+    "platform": "Linux x86_64 CPU",
+    "runtime": "llama.cpp b10355",
+    "model": "Qwen3-4B-Q4_K_M.gguf",
+    "sha256_verified": true,
+    "report": "VERIFICACION_STUDIO_FIX5/LOCAL_AI_REAL_LINUX.json",
+    "environment": "VERIFICACION_STUDIO_FIX5/LOCAL_AI_ENTORNO.json",
+    "fact_scope": "Recorded synthetic context, not a live fact lookup.",
+    "windows_verified": false,
+    "scope": "Historical FIX5 real CPU inference. AI client and installer check scripts are byte-identical in FIX6; see VERIFICACION_STUDIO_FIX6/CODIGO_CONSERVADO.json."
+  },
+  "installer_entrypoint_fix": {
+    "revision": 5,
+    "project_root_resolved_before_imports": true,
+    "direct_and_module_cli_verified": true,
+    "isolated_production_client_fixture_verified": true,
+    "wrong_answers_still_fail": true,
+    "real_model_linux_passed": true,
+    "prebuild_import_check": true,
+    "server_logs_preserved": true,
+    "no_checks_removed": true,
+    "windows_fix5_verified": false
+  },
+  "wallpaper_decoder_shutdown": {
+    "revision": 6,
+    "native_windows_wait_before_handle_close": true,
+    "reader_pipe_closed_before_wait": true,
+    "old_worker_retained_until_exit": true,
+    "final_shutdown_joins_reader": true,
+    "real_decoder_cycles": 12,
+    "file_deletion_verified": true,
+    "unrelated_process_preserved": true,
+    "permanent_locks_still_fail": true,
+    "test_file_release_deadline_seconds": 2,
+    "windows_wait_branch": "Simulated native handle in unit test",
+    "linux_verified": true,
+    "windows_fix6_verified": false,
+    "report": "VERIFICACION_STUDIO_FIX6/MEDIA_CIERRE.json"
+  }
+}

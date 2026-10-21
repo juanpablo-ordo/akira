@@ -48,7 +48,7 @@ def voice_inventory(root,include_online=False):
  try:data=json.loads(catalog.read_text(encoding='utf-8'))
  except (OSError,ValueError):pass
  if include_online:
-  from urllib.request import urlopen
+  from network_tls import urlopen
   with urlopen(PIPER_CATALOG,timeout=8) as response:
    raw=response.read(2000001)
    if len(raw)>2000000:raise ValueError('Catálogo de voces demasiado grande')
@@ -71,7 +71,7 @@ def voice_inventory(root,include_online=False):
 
 def install_voice(root,row,progress=lambda x:None,cancel=None,byte_progress=None):
  if row.get('engine')!='piper':return
- from urllib.request import urlopen
+ from network_tls import urlopen
  folder=Path(root)/'state'/'voices';folder.mkdir(parents=True,exist_ok=True)
  # Validate the complete model/config pair before replacing any installed file.
  with tempfile.TemporaryDirectory(prefix='install_',dir=folder) as staging:

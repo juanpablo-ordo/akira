@@ -1,0 +1,127 @@
+{
+  "build": "AKIRA_16_4_3_STUDIO_REV8",
+  "status": "PASSED",
+  "data": "SYNTHETIC",
+  "live_account_used": false,
+  "reviews": {
+    "BTCUSDm": {
+      "seconds": 69.047,
+      "data": {
+        "verdict": "ABSTAIN",
+        "strategy": "BREAKOUT",
+        "reason": "Falta evidencia concreta para activar el plan. No hay señal confirmada ni datos suficientes para validar el caso sintético. PENDIENTE: Revis",
+        "missing": [
+          "señal confirmada",
+          "datos suficientes"
+        ]
+      },
+      "created": 1792399675.8090007,
+      "verified_twice": false,
+      "verification_error": "",
+      "evidence_at": "2026-10-19T08:45:57.048942+00:00",
+      "input_scope": "COMPACT_INDICATORS_COMPLETE_TIMEFRAMES",
+      "recovery": "",
+      "model_mode": "AKIRA",
+      "review_seconds": 69.032
+    },
+    "XAUUSDm": {
+      "seconds": 56.469,
+      "data": {
+        "verdict": "ABSTAIN",
+        "strategy": "BREAKOUT",
+        "reason": "Falta evidencia concreta para activar el plan. No se han confirmado señales en los datos proporcionados. La tendencia en los marcos no es cl",
+        "missing": [
+          "señal confirmada",
+          "evidencia técnica"
+        ]
+      },
+      "created": 1792399744.867007,
+      "verified_twice": false,
+      "verification_error": "",
+      "evidence_at": "2026-10-19T08:45:57.048942+00:00",
+      "input_scope": "COMPACT_INDICATORS_COMPLETE_TIMEFRAMES",
+      "recovery": "",
+      "model_mode": "AKIRA",
+      "review_seconds": 56.453
+    }
+  },
+  "summary": {
+    "BTCUSDm": {
+      "bias": 1.0,
+      "confidence": 0.35,
+      "note": "No se pueden generar ejecuciones sin evidencia de origen swing/ob/bos en H1/H4",
+      "preferred": [
+        "BUY_STOP",
+        "SELL_STOP"
+      ],
+      "avoid": [],
+      "thesis": "Tendencia positiva en H1 y D1, pero sin confirmación de estructura o swing. No ejecutar en ausencia "
+    },
+    "XAUUSDm": {
+      "bias": 0.0,
+      "confidence": 0.0,
+      "note": "No se han encontrado señales confirmadas en fuentes externas.",
+      "preferred": [],
+      "avoid": [],
+      "thesis": "Tendencia continua en XAUUSDm según datos técnicos."
+    },
+    "_meta": {
+      "input_chars": 3724,
+      "active_symbols": [
+        "BTCUSDm",
+        "XAUUSDm"
+      ],
+      "source_count": 2,
+      "reduced_sources": [],
+      "unavailable_sources": [],
+      "input_scope": "COMPACT_INDICATORS_COMPLETE_TIMEFRAMES",
+      "engine_indicators_complete": true,
+      "omitted_raw_indicator_values": 266,
+      "timeframe_count": 14,
+      "sources_omitted_for_budget": [
+        "fed",
+        "global_news:fixture-0",
+        "global_news:fixture-1",
+        "global_news:fixture-2",
+        "global_news:fixture-3",
+        "global_news:fixture-4",
+        "global_news:fixture-5",
+        "global_news:fixture-6",
+        "global_news:fixture-7",
+        "global_news:fixture-8",
+        "global_news:fixture-9",
+        "global_news:fixture-10",
+        "global_news:fixture-11",
+        "global_news:fixture-12",
+        "global_news:fixture-13",
+        "global_news:fixture-14",
+        "global_news:fixture-15",
+        "global_news:fixture-16",
+        "global_news:fixture-17",
+        "global_news:fixture-18",
+        "global_news:fixture-19",
+        "global_news:fixture-20",
+        "global_news:fixture-21",
+        "global_news:fixture-22",
+        "global_news:fixture-23"
+      ],
+      "model": "D:\\a\\_temp\\Qwen3-4B-Q4_K_M.gguf",
+      "verified_twice": false,
+      "verification_error": "",
+      "created": 1792399675.7915087,
+      "review_seconds": 114.219,
+      "mode": "SEQUENTIAL_COMPLETE_ASSET_REVIEW"
+    }
+  },
+  "summary_seconds": 118.75,
+  "effective_parameters": {
+    "owned_pid": 4208,
+    "context_tokens": 2048,
+    "gpu_layers": 0,
+    "cpu_threads": 2,
+    "pending_reload": false
+  },
+  "broker_requests": 0,
+  "engine_log_tail": "\nINICIO IA 2026-10-19 08:45:57\n0.00.025.815 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.026.277 W srv  llama_server: -----------------\n0.00.026.289 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set\n0.00.026.290 W srv  llama_server: this can be a security risk (cross-origin attacks)\n0.00.026.291 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655\n0.00.026.291 W srv  llama_server: -----------------\n0.00.036.733 I srv    load_model: loading model 'D:\\a\\_temp\\Qwen3-4B-Q4_K_M.gguf'\n0.00.645.034 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.03.575.782 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 2048, kv_unified = 'false'\n0.03.592.691 I srv  llama_server: model loaded\n0.03.592.714 I srv  llama_server: listening on http://127.0.0.1:18996\n0.03.838.777 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1\n0.03.839.352 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n1.12.234.013 I slot print_timing: id  0 | task 0 | prompt eval time =   55259.38 ms /  1126 tokens (   49.08 ms per token,    20.38 tokens per second)\n1.12.234.041 I slot print_timing: id  0 | task 0 |        eval time =   13133.94 ms /    93 tokens (  141.23 ms per token,     7.08 tokens per second)\n1.12.234.043 I slot print_timing: id  0 | task 0 |       total time =   68393.32 ms /  1219 tokens\n1.12.234.045 I slot print_timing: id  0 | task 0 |    graphs reused =         92\n1.12.234.196 I slot      release: id  0 | task 0 | stop processing: n_tokens = 1218, truncated = 0\n1.12.292.703 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.266 (> 0.100 thold), f_keep = 0.243\n1.12.342.692 I slot launch_slot_: id  0 | task 94 | processing task, is_child = 0\n1.58.008.749 I slot print_timing: id  0 | task 94 | prompt eval time =   37110.10 ms /   817 tokens (   45.42 ms per token,    22.02 tokens per second)\n1.58.008.777 I slot print_timing: id  0 | task 94 |        eval time =    8555.03 ms /    62 tokens (  137.98 ms per token,     7.25 tokens per second)\n1.58.008.779 I slot print_timing: id  0 | task 94 |       total time =   45665.13 ms /   879 tokens\n1.58.008.780 I slot print_timing: id  0 | task 94 |    graphs reused =        152\n1.58.008.964 I slot      release: id  0 | task 94 | stop processing: n_tokens = 1174, truncated = 0\n1.58.084.856 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 117984575\n1.58.134.384 I slot launch_slot_: id  0 | task 157 | processing task, is_child = 0\n3.06.917.649 I slot print_timing: id  0 | task 157 | n_decoded =    100, tg =   6.00 t/s, tg_3s =   6.00 t/s\n3.07.067.811 I slot print_timing: id  0 | task 157 | prompt eval time =   52122.42 ms /  1140 tokens (   45.72 ms per token,    21.87 tokens per second)\n3.07.067.834 I slot print_timing: id  0 | task 157 |        eval time =   16809.65 ms /   101 tokens (  166.43 ms per token,     6.01 tokens per second)\n3.07.067.836 I slot print_timing: id  0 | task 157 |       total time =   68932.07 ms /  1241 tokens\n3.07.067.837 I slot print_timing: id  0 | task 157 |    graphs reused =        251\n3.07.068.024 I slot      release: id  0 | task 157 | stop processing: n_tokens = 1267, truncated = 0\n3.07.115.870 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.286 (> 0.100 thold), f_keep = 0.262\n3.07.170.174 I slot launch_slot_: id  0 | task 259 | processing task, is_child = 0\n4.03.538.532 I slot print_timing: id  0 | task 259 | prompt eval time =   41185.01 ms /   827 tokens (   49.80 ms per token,    20.08 tokens per second)\n4.03.538.563 I slot print_timing: id  0 | task 259 |        eval time =   15182.20 ms /    99 tokens (  153.36 ms per token,     6.52 tokens per second)\n4.03.538.565 I slot print_timing: id  0 | task 259 |       total time =   56367.20 ms /   926 tokens\n4.03.538.567 I slot print_timing: id  0 | task 259 |    graphs reused =        348\n4.03.538.721 I slot      release: id  0 | task 259 | stop processing: n_tokens = 1257, truncated = 0\n",
+  "seconds": 246.203
+}

@@ -175,9 +175,11 @@ class Gateway:
 
     @staticmethod
     def fingerprint(obj,kind):
+        from order_timing import broker_seconds
         return {'kind':kind,'ticket':int(obj.ticket),'symbol':str(obj.symbol),'magic':int(obj.magic),
                 'type':int(obj.type),'entry':float(obj.price_open),'sl':float(obj.sl),'tp':float(obj.tp),
-                'volume':float(obj.volume if kind=='position' else obj.volume_current)}
+                'volume':float(obj.volume if kind=='position' else obj.volume_current),
+                'time':broker_seconds(obj,kind)}
 
     def snapshot(self):
         a,t=self.api.account_info(),self.api.terminal_info()
@@ -232,6 +234,8 @@ class Gateway:
     def permissions(self,snap,entry=True):
         a,t=snap.account,snap.terminal
         if self.runtime_execution_block:raise Blocked(self.runtime_execution_block)
+        if self.cfg['mode']=='trade' and getattr(self,'requires_execution_lease',False) and not getattr(self,'execution_lease_active',False):raise Blocked('Activando operativa: esperando bloqueo exclusivo de la cuenta')
+        if entry and getattr(self,'network_available',True) is False:raise Blocked('Sin Internet: nuevas entradas en pausa; reconexión automática pendiente')
         if self.cfg['mode']!='trade':raise Blocked('OBSERVAR: sin envíos ni modificaciones')
         if not getattr(t,'connected',False):raise Blocked('MT5 desconectado')
         if not getattr(t,'trade_allowed',False) or getattr(t,'tradeapi_disabled',False):raise Blocked('Activa Trading algorítmico y API Python en MT5')
@@ -284,6 +288,14 @@ class Gateway:
         money=float(r.get('min_lot_structural_override_money_cap',r['max_trade_money']))
         return max(base,min(money,equity*pct/100.0))
 
+    def entry_cap(self,plan,snap):
+        from runner_protection import entry_cap
+        return entry_cap(self,plan,snap)
+
+    def runner_protection(self,plan,snap):
+        from runner_protection import decision
+        return decision(self,plan,snap)
+
     def plan_money(self,plan,volume=None,q=None,evaluation=None):
         volume=self.cfg['lot'] if volume is None else float(volume);q=q or self.quote(plan.symbol,evaluation)
         info=self.valuation_call(evaluation,'symbol_info',plan.symbol)
@@ -314,13 +326,13 @@ class Gateway:
         maximum=min(float(info.volume_max),float(sizing['max_lot']))
         ledger=self.reservation_ledger(snap,ignore_orders,evaluation)
         if ledger['available_usd']<=0:raise Blocked(self.reservation_reason(ledger))
-        capacity=min(self.trade_cap(snap),ledger['available_usd'])
+        capacity=min(self.entry_cap(plan,snap),ledger['available_usd'])
         unit,_=self.plan_money(plan,minimum,evaluation=evaluation)
         if unit<=0:raise Blocked('Riesgo del lote mínimo no calculable')
         if unit>capacity+1e-9 or maximum<minimum-1e-9:
             raise Blocked(f'Lote mínimo {minimum:g}: riesgo {unit:.2f} > presupuesto disponible {capacity:.2f}; conservar parámetros, no acercar SL')
         qualifies=(float(plan.score)>=sizing['boost_score'] and float(plan.quality_score)>=sizing['boost_quality'])
-        can_boost=boost and qualifies and (plan.lane=='RUNNER' or sizing['scale_pending'])
+        can_boost=boost and qualifies and ((plan.lane=='RUNNER' and self.cfg['runner'].get('allow_size_boost',False)) or (plan.lane=='PENDING' and sizing['scale_pending']))
         ceiling=maximum if can_boost else min(maximum,max(minimum,float(self.cfg['lot'])))
         fit=capacity/unit*minimum*(sizing['risk_utilization'] if can_boost else 1.0)
         volume=math.floor((min(ceiling,fit)+1e-10)/step)*step
@@ -335,7 +347,7 @@ class Gateway:
         checked_volume=minimum if self.cfg['sizing']['enabled'] else float(self.cfg['lot'])
         risk,_=self.plan_money(plan,checked_volume,evaluation=evaluation)
         ledger=self.reservation_ledger(snap,ignore_orders,evaluation);available=ledger['available_usd']
-        cap=self.trade_cap(snap);capacity=min(cap,available)
+        cap=self.entry_cap(plan,snap);capacity=min(cap,available)
         return {'broker_min_lot':round(minimum,8),'volume_step':step,'evaluated_lot':checked_volume,
                 'minimum_risk_usd':round(risk,4),'trade_cap_usd':round(cap,4),
                 'portfolio_available_usd':round(available,4),'available_usd':round(capacity,4),
@@ -378,6 +390,8 @@ class Gateway:
         if runner:
             if self.cfg['execution'].get('pending_only',False):raise Blocked('Entradas exclusivamente pendientes; los runners se gestionan tras activarse una pendiente')
             rules=self.cfg['runner']
+            protection=self.runner_protection(plan,snap)
+            if not protection['allowed']:raise Blocked(protection['reason'])
             if not rules['enabled'] or not plan.key.startswith('RUN:'):raise Blocked('Entrada a mercado sin tesis runner autorizada')
             if plan.score<rules['min_score'] or plan.quality_score<rules['min_quality']:raise Blocked('Runner sin confirmación técnica suficiente')
             if plan.key in self.journal.data.get('runner_entries',{}):raise Blocked('Este runner ya se solicitó; esperar nueva vela/tesis')
@@ -441,7 +455,7 @@ class Gateway:
         own=[o for o in snap.orders if o.symbol==plan.symbol and int(o.ticket) not in ignore_orders and self.owned_order(o)]
         if not runner and (len(own)>=self.cfg['pending']['max_own_map_orders'] or sum((1 if int(o.type)%2==0 else -1)==plan.side for o in own)>=self.cfg['pending']['max_same_side_orders']):raise Blocked('Mapa de este símbolo completo')
         risk,reward=self.plan_money(plan,volume,q,evaluation)
-        if risk<=0 or risk>self.trade_cap(snap)+1e-9:raise Blocked(f'Riesgo de operación {risk:.2f} supera límite estructural {self.trade_cap(snap):.2f}')
+        if risk<=0 or risk>self.entry_cap(plan,snap)+1e-9:raise Blocked(f'Riesgo de operación {risk:.2f} supera límite estructural {self.entry_cap(plan,snap):.2f}')
         if reward/risk<float(cfg['pending_hard_min_rr']):raise Blocked(f'R:R neto {reward/risk:.2f} insuficiente')
         total=self.exposure_risk(snap,ignore_orders,evaluation)+risk
         if total>self.total_cap(snap)+1e-9:raise Blocked(f'Riesgo conjunto {total:.2f} supera {self.total_cap(snap):.2f}')
@@ -650,6 +664,9 @@ class Gateway:
             if found is None:return False
             if not (self.owned_order(found) if order_op else self.owned(found)):raise Blocked('Ticket externo')
             if self.fingerprint(found,'order' if order_op else 'position')!=meta.get('before'):raise Blocked('Ticket cambió antes de order_send')
+            if operation=='modify_order' and plan is not None:
+                guard=getattr(self,'entry_quality_guard',None)
+                if guard:guard(plan,snap)
             expected={'cancel':REMOVE,'modify_order':MODIFY,'protect':SLTP,'close':DEAL}
             if expected.get(operation)!=action:raise Blocked('Operación no autorizada por el motor de pendientes')
             if operation=='modify_order':
@@ -707,8 +724,11 @@ class Gateway:
                 matched=matching_objects(self,snap,symbol,i)
                 orders=[obj for kind,obj in matched if kind=='pending']
                 positions=[obj for kind,obj in matched if kind=='position']
-                for o in orders:self.journal.data['orders'][str(o.ticket)]={'plan':i.get('plan'),'created':i['created'],'last_modify':i['created']}
-                for p in positions:self.register_position(p,i.get('plan'))
+                for o in orders:
+                    from order_timing import broker_seconds
+                    self.journal.data['orders'][str(o.ticket)]={'plan':i.get('plan'),'created':i['created'],
+                        'broker_setup_at':broker_seconds(o,'order'),'last_modify':i['created']}
+                for p in positions:self.register_position(p,i.get('plan'),requested_at=i['created'],order_ticket=i.get('order'))
                 expected_volume=float(req.get('volume',0) or 0)
                 visible_volume=sum(float(o.volume_current) for o in orders)+sum(float(p.volume) for p in positions)
                 resolved=bool(orders or positions) and expected_volume>0 and visible_volume>=expected_volume-1e-9
@@ -772,6 +792,8 @@ class Gateway:
                             'old_sl':(i.get('before') or {}).get('sl'),'new_sl':req.get('sl'),
                             'rr_at_request':i.get('rr_at_request'),'retcode':i.get('retcode')})
                         row['management_events']=changes[-100:]
+                        if op=='protect':
+                            row['protection_state']='Protección confirmada en MT5' if p is not None else 'Posición cerrada; revisar el cierre confirmado por MT5'
                 self.journal.data['intents'].pop(symbol,None)
                 self.log.event(symbol,'CONFIRMADO '+str(op),operation='confirmed_'+str(op),
                     request=req,reason=i.get('reason',''),retcode=i.get('retcode'),
@@ -788,9 +810,13 @@ class Gateway:
             if k not in active and not row.get('closed_observed_at'):row['closed_observed_at']=self.clock();dirty=True
         if dirty:self.journal.save()
 
-    def register_position(self,p,plan):
+    def register_position(self,p,plan,requested_at=None,order_ticket=None):
+        from order_timing import broker_seconds
+        linked=self.journal.data['orders'].get(str(getattr(p,'identifier',p.ticket))) or {}
         self.journal.data['positions'].setdefault(str(p.ticket),{'entry':float(p.price_open),
             'initial_sl':float(p.sl) or float((plan or {}).get('sl',0) or 0),'time':float(getattr(p,'time',self.clock())),
+            'opened_at':broker_seconds(p),'requested_at':requested_at or linked.get('created'),
+            'order_ticket':order_ticket or (getattr(p,'identifier',p.ticket) if linked else None),
             'plan':plan,'symbol':str(p.symbol),'side':1 if int(p.type)==BUY else -1,'volume':float(p.volume),
             'lane':'RUNNER' if int(getattr(p,'magic',0))==OWN_RUNNER else 'PENDING',
             'identifier':int(getattr(p,'identifier',p.ticket)),'magic':int(getattr(p,'magic',0)),

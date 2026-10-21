@@ -1,11 +1,14 @@
 {
-  "build": "AKIRA_16_3_4_R7",
-  "tests": 1093,
-  "status": "VALIDACION_LOCAL_R7_WINDOWS_FIX_COMPLETA_WINDOWS_PENDIENTE",
-  "date": "2026-10-15",
+  "build": "AKIRA_16_4_6_STUDIO_REV11",
+  "tests": 1417,
+  "pytest_tests": 1420,
+  "pytest_subtests": 169,
+  "status": "PASSED",
+  "date": "2026-10-20",
   "skipped": 0,
-  "scope": "Linux: pytest completo, unittest con red bloqueada, autocontrol nativo v7 y reproducción de los cinco fallos mediante alias de carpeta aprobados. Nueva compilación e instalador Windows pendientes.",
-  "test_report": "VERIFICACION_R7_WINDOWS_FIX/PRUEBAS_COMPLETAS.xml",
-  "pytest_tests": 1096,
-  "pytest_subtests": 83
+  "source_commit": "37e6975ccdfd6d276e80341f893068fe555a9a78",
+  "scope": "tests conserva el contador unittest requerido por el instalador de código fuente; pytest_tests registra la suite ejecutada en Windows. No certifica rentabilidad.",
+  "notes_file": "ACEPTACION_REV11.md",
+  "evidence_file": "VALIDACION_REV11.json",
+  "workflow_run_id": 39534974903
 }

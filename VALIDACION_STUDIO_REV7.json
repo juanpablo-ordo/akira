@@ -1,0 +1,259 @@
+{
+  "build": "AKIRA_16_4_2_STUDIO_REV7",
+  "date": "2026-10-18",
+  "status": "WINDOWS_INSTALLER_AND_INSTALLED_AI_VERIFIED",
+  "source_commit": "6070db2184476e325b186d71d8dcbddbc7b5a054",
+  "windows": {
+    "status": "PASSED",
+    "run_id": 39152121928,
+    "job_id": 117747743425,
+    "run_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39152121928",
+    "conclusion": "success",
+    "tests": 1279,
+    "subtests": 120,
+    "seconds": 389.415,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "report": "VERIFICACION_STUDIO_REV7/REGRESSIONS_WINDOWS.xml",
+    "installer_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39152121928/artifacts/12146076612",
+    "installer_filename": "AKIRA_16_4_2_STUDIO_REV7_IA_INCLUIDA.exe",
+    "artifact": {
+      "id": 12146076612,
+      "name": "AKIRA-16.4.2-Studio-Rev7-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA",
+      "size_in_bytes": 2865740448,
+      "url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12146076612",
+      "archive_download_url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12146076612/zip",
+      "expired": false,
+      "created_at": "2026-10-18T18:19:53Z",
+      "expires_at": "2026-10-25T18:19:30Z",
+      "updated_at": "2026-10-18T18:19:53Z",
+      "digest": "sha256:5ec9bd23da93819c4320f5e3ddabfb680b4e148b40304398957a4e93066ba3c1",
+      "workflow_run": {
+        "id": 39152121928,
+        "repository_id": 1419886118,
+        "head_repository_id": 1419886118,
+        "head_branch": "akira-studio-rev7-20261018",
+        "head_sha": "6070db2184476e325b186d71d8dcbddbc7b5a054"
+      }
+    }
+  },
+  "linux": {
+    "tests": 1279,
+    "subtests": 120,
+    "seconds": 94.2,
+    "skipped": 0,
+    "report": "VERIFICACION_STUDIO_REV7/REGRESSIONS_LINUX.xml",
+    "offline_unittest": {
+      "build": "AKIRA_16_4_2_STUDIO_REV7",
+      "collected": 1276,
+      "tests_run": 1276,
+      "successful": true,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "expected_failures": 0,
+      "unexpected_successes": 0,
+      "failed_tests": [],
+      "failure_details": [],
+      "skipped_tests": [],
+      "seconds": 83.975,
+      "network": "blocked"
+    }
+  },
+  "https": {
+    "status": "PASSED",
+    "bundled_ca_present": true,
+    "trusted_roots": 431,
+    "certificate_required": true,
+    "hostname_required": true,
+    "trusted_https": true,
+    "bad_host_rejected": true,
+    "bad_chain_rejected": true
+  },
+  "two_core_workload": {
+    "build": "AKIRA_16_4_2_STUDIO_REV7",
+    "data": "SYNTHETIC",
+    "broker": "FakeMT5",
+    "live_account_used": false,
+    "logical_cores_available": 2,
+    "profiles": {
+      "Equilibrado": {
+        "cpu_seconds": 0.578,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 3.61,
+        "ui_delay_p95_ms": 14.0,
+        "engine_cycle_p95_ms": 21.7,
+        "engine_cycles": 39,
+        "fresh_quote_cycles": 39,
+        "rss_mb": 160.2,
+        "financial_poll_seconds": 0.2
+      },
+      "Ahorro de energía": {
+        "cpu_seconds": 0.641,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 4.0,
+        "ui_delay_p95_ms": 14.0,
+        "engine_cycle_p95_ms": 17.8,
+        "engine_cycles": 39,
+        "fresh_quote_cycles": 39,
+        "rss_mb": 160.3,
+        "financial_poll_seconds": 0.2
+      },
+      "minimized": {
+        "cpu_seconds": 0.609,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 3.81,
+        "ui_delay_p95_ms": 14.0,
+        "engine_cycle_p95_ms": 17.3,
+        "engine_cycles": 39,
+        "fresh_quote_cycles": 39,
+        "rss_mb": 160.3,
+        "financial_poll_seconds": 0.2
+      }
+    },
+    "status": "PASSED"
+  },
+  "real_eco_review": {
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "live_account_used": false,
+    "requested_context_tokens": 2048,
+    "summary": {
+      "BTCUSDm": {
+        "bias": 0.0,
+        "confidence": 0.0,
+        "note": "H1/H4 sin origen SWING/OB/BOS observado; no ejecutar EMA/Fib/zona dinámica como若",
+        "preferred": [
+          "BUY_STOP",
+          "SELL_STOP"
+        ],
+        "avoid": [],
+        "thesis": "TENDENCIA"
+      },
+      "XAUUSDm": {
+        "bias": 0.0,
+        "confidence": 0.0,
+        "note": "H1/H4 sin origen SWING/OB/BOS observado; no ejecutar EMA/Fib/zona dinámica como若",
+        "preferred": [
+          "BUY_STOP",
+          "SELL_STOP"
+        ],
+        "avoid": [],
+        "thesis": "TENDENCIA"
+      },
+      "_meta": {
+        "input_chars": 3363,
+        "active_symbols": [
+          "BTCUSDm",
+          "XAUUSDm"
+        ],
+        "source_count": 2,
+        "reduced_sources": [],
+        "unavailable_sources": [],
+        "input_scope": "COMPACT_INDICATORS_COMPLETE_TIMEFRAMES",
+        "engine_indicators_complete": true,
+        "omitted_raw_indicator_values": 336,
+        "timeframe_count": 14,
+        "sources_omitted_for_budget": [],
+        "model": "D:\\a\\_temp\\Qwen3-4B-Q4_K_M.gguf",
+        "verified_twice": false,
+        "verification_error": "",
+        "created": 1792347163.837636,
+        "review_seconds": 68.859,
+        "mode": "SEQUENTIAL_COMPLETE_ASSET_REVIEW"
+      }
+    },
+    "effective_parameters": {
+      "owned_pid": 9464,
+      "context_tokens": 2048,
+      "gpu_layers": 0,
+      "cpu_threads": 2,
+      "pending_reload": false
+    },
+    "seconds": 72.407
+  },
+  "conversation": {
+    "status": "PASSED",
+    "scenarios": [
+      {
+        "name": "typos_and_new_topic",
+        "question": "Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?",
+        "answer": "La memoria RAM es temporal y se usa para almacenar datos que el procesador necesita acceder rápidamente. El disco duro (HDD) o SSD es de almacenamiento a largo plazo y almacena los archivos y el sistema operativo.",
+        "seconds": 12.313,
+        "first_visible_seconds": 7.922
+      },
+      {
+        "name": "follow_up",
+        "question": "¿Cuál de las dos pierde los datos cuando apago la computadora?",
+        "answer": "La RAM pierde los datos cuando apagas la computadora, ya que es una memoria volátil. El disco duro (HDD) o SSD mantiene los datos incluso después de apagarla, ya que es una memoria no volátil.",
+        "seconds": 8.422,
+        "first_visible_seconds": 3.797
+      },
+      {
+        "name": "topic_change",
+        "question": "Cambiemos de tema: tengo 3 manzanas y regalo 1. ¿Cuántas me quedan?",
+        "answer": "Te quedan 2 manzanas.",
+        "seconds": 7.875,
+        "first_visible_seconds": 6.718
+      },
+      {
+        "name": "current_news_evidence",
+        "question": "Xbox acaba de lanzar el nuevo Gears: según la ficha de prueba, ¿cómo se llama y quiénes son sus protagonistas?",
+        "answer": "Según la ficha de prueba de Xbox, el juego se llama \"Gears Prueba\" y sus protagonistas son Mara y Sol.\n\nFuentes consultadas:\n[1] [Xbox Wire · Gears Prueba · ficha sintética](https://news.xbox.com/es-es/gears-prueba/)",
+        "seconds": 8.516,
+        "first_visible_seconds": 5.969
+      },
+      {
+        "name": "strict_json",
+        "answer": "{\"bias\": 0}"
+      }
+    ],
+    "news_data": "SYNTHETIC; not a real Xbox announcement",
+    "live_account_used": false,
+    "scenario_filter": "all"
+  },
+  "installed_ai": {
+    "status": "PASSED",
+    "model_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "model_present_after_setup": true,
+    "visible_chat_verified": true,
+    "model_downloaded_by_check": false,
+    "installed_components_verified": true,
+    "installed_studio_verified": true,
+    "installed_sprite_ai_verified": true,
+    "live_account_used": false,
+    "root": "D:\\a\\_temp\\AKIRA_INSTALACION_VERIFICADA",
+    "server_log": "D:\\a\\akira\\akira\\diagnostics\\INSTALLED_LOCAL_AI.llama.log"
+  },
+  "native_studio": {
+    "version": 1,
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "broker": "FakeMT5",
+    "eight_pages": true,
+    "real_records": true,
+    "privacy": true,
+    "stable_selection": true,
+    "responsive": true,
+    "shared_avatar": true,
+    "no_expression_gallery": true,
+    "global_wallpaper": true,
+    "live_theme": true,
+    "language_switch": true,
+    "event_loop": true,
+    "no_broker_requests": true
+  },
+  "model_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+  "scope": "Datos financieros sintéticos, FakeMT5, modelo real CPU, ejecutable Windows e instalación real. Sin cuenta real. La medición de CPU del cliente no incluye generación de texto del modelo.",
+  "full_acceptance": false,
+  "requirements": "REQUISITOS_232_ESTADO.json",
+  "remaining_acceptance": [
+    "Consumo, fluidez y tiempos de respuesta en la laptop del usuario, también durante inferencia",
+    "Sesión MT5 demo prolongada y latencia real de envíos, modificaciones y cancelaciones",
+    "Audio y monitores físicos con diferentes escalas DPI",
+    "Coincidencia visual de todos los diálogos con las referencias y valoración de naturalidad del avatar",
+    "Traducción completa de los motivos dinámicos y aplicación automática de estrategias discrecionales de cualquier vídeo"
+  ],
+  "documentation_commit_scope": "La rama verificada añade informes y documentación al código construido; no cambia código de aplicación, pruebas, imágenes ni configuración predeterminada."
+}

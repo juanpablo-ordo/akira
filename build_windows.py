@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse,hashlib,json,os,subprocess,sys
 from akira_version import BUILD_ID
 from frozen_ui_contract import UI_MODULES,require_render_check
+from native_studio_check import require_studio_check
 
 def read_self_check_report(path,returncode,stderr=''):
  """Windowed executables write failures to JSON even when stderr is empty."""
@@ -15,6 +16,9 @@ def read_self_check_report(path,returncode,stderr=''):
  if returncode or report.get('status')!='PASSED':
   parts=['Código de salida: '+str(returncode)]
   if report.get('error'):parts.append(str(report['error']))
+  detail=report.get('render_diagnostics')
+  if isinstance(detail,dict) and detail.get('charts'):
+   parts.append('Estado de gráficos: '+json.dumps(detail['charts'],ensure_ascii=True))
   if read_error:parts.append(read_error)
   if stderr.strip():parts.append(stderr.strip()[-1200:])
   raise RuntimeError('Falló la comprobación nativa: '+'; '.join(parts)+'. Revisa NATIVE_SELF_CHECK.json y NATIVE_SELF_CHECK_STDERR.log; no se activa.')
@@ -28,7 +32,8 @@ def build_command(source,destination,work):
  for filename in ('default_config.json','akira_config.json'):
   command+=['--add-data',str(source/filename)+os.pathsep+'.']
  command+=['--add-data',str(source/'assets')+os.pathsep+'assets']
- for package in ('MetaTrader5','ctranslate2','faster_whisper','sounddevice','pyttsx3','piper','reportlab','PIL','imageio_ffmpeg','yt_dlp','yt_dlp_ejs','docx','tzdata','pypdf'):
+ command+=['--add-data',str(source/'third_party')+os.pathsep+'licenses']
+ for package in ('certifi','truststore','MetaTrader5','ctranslate2','faster_whisper','sounddevice','pyttsx3','piper','reportlab','PIL','imageio_ffmpeg','yt_dlp','yt_dlp_ejs','docx','tzdata','pypdf','onnxruntime','tokenizers'):
   command+=['--collect-all',package]
  for package in ('pyttsx3.drivers.sapi5','tests.fake_mt5','numpy','onnxruntime','av','win32com.propsys.propsys','win32com.propsys.pscon','win32com.shell.shell','pythoncom','win32crypt'):
   command+=['--hidden-import',package]
@@ -59,6 +64,7 @@ def main():
   raise RuntimeError('AKIRA.exe tardó más de 90 segundos en iniciar su autocomprobación; se conserva la versión anterior.') from error
  report=read_self_check_report(check,result.returncode,result.stderr)
  require_render_check(report)
+ require_studio_check(report)
  if report.get('status')!='PASSED' or report.get('build')!=BUILD_ID or report.get('frozen') is not True or report.get('window_icon') is not True or report.get('app_id')!='AKIRA.Desktop.16':raise RuntimeError('La identidad o las dependencias de la aplicación no coinciden con el paquete')
  # A working --self-check is insufficient: launch from a genuinely empty
  # directory to reproduce the user's first-run FileNotFoundError.

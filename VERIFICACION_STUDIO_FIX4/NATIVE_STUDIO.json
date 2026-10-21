@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "status": "PASSED",
+  "data": "SYNTHETIC",
+  "broker": "FakeMT5",
+  "eight_pages": true,
+  "real_records": true,
+  "privacy": true,
+  "stable_selection": true,
+  "responsive": true,
+  "shared_avatar": true,
+  "no_expression_gallery": true,
+  "global_wallpaper": true,
+  "live_theme": true,
+  "language_switch": true,
+  "event_loop": true,
+  "no_broker_requests": true
+}

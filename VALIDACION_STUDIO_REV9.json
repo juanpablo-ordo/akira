@@ -1,0 +1,139 @@
+{
+  "build": "AKIRA_16_4_4_STUDIO_REV9",
+  "date": "2026-10-20",
+  "status": "WINDOWS_INSTALLER_AND_INSTALLED_AI_VERIFIED",
+  "evidence_text_format": "UTF-8 without BOM, LF line endings; values unchanged. Original bytes remain in the linked diagnostic ZIP.",
+  "source_commit": "20df6cb7374345b20826ea2507a403153fb60599",
+  "source_branch": "akira-studio-rev9-20261020",
+  "windows": {
+    "status": "PASSED",
+    "run_id": 39366924498,
+    "job_id": 118445758394,
+    "run_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39366924498",
+    "conclusion": "success",
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "tests": 1340,
+    "subtests": 128,
+    "seconds": 542.808,
+    "new_execution_cases": 26,
+    "report": "VERIFICACION_STUDIO_REV9/REGRESSIONS_WINDOWS.xml",
+    "installer_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39366924498/artifacts/12240821934",
+    "installer_filename": "AKIRA_16_4_4_STUDIO_REV9_IA_INCLUIDA.exe",
+    "artifact": {
+      "id": 12240821934,
+      "name": "AKIRA-16.4.4-Studio-Rev9-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA",
+      "size_in_bytes": 2865765458,
+      "url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12240821934",
+      "archive_download_url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12240821934/zip",
+      "expired": false,
+      "created_at": "2026-10-20T04:25:46Z",
+      "expires_at": "2026-10-27T04:25:23Z",
+      "updated_at": "2026-10-20T04:25:46Z",
+      "digest": "sha256:67f5cd99f16758f841acd8e7bff69c8e5459b308c9533835d2ab7ae73d72646c",
+      "workflow_run": {
+        "id": 39366924498,
+        "repository_id": 1419886118,
+        "head_repository_id": 1419886118,
+        "head_branch": "akira-studio-rev9-20261020",
+        "head_sha": "20df6cb7374345b20826ea2507a403153fb60599"
+      }
+    },
+    "diagnostics_artifact": {
+      "id": 12240407759,
+      "name": "AKIRA-Windows-diagnosticos",
+      "size_in_bytes": 87208115,
+      "url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12240407759",
+      "archive_download_url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12240407759/zip",
+      "expired": false,
+      "created_at": "2026-10-20T04:26:05Z",
+      "expires_at": "2026-10-27T04:26:02Z",
+      "updated_at": "2026-10-20T04:26:05Z",
+      "digest": "sha256:1cb5badb1c46522047d3abe8e05222b46145f62e35d87a2532414a422b748ab8",
+      "workflow_run": {
+        "id": 39366924498,
+        "repository_id": 1419886118,
+        "head_repository_id": 1419886118,
+        "head_branch": "akira-studio-rev9-20261020",
+        "head_sha": "20df6cb7374345b20826ea2507a403153fb60599"
+      }
+    },
+    "diagnostics_zip_sha256": "1cb5badb1c46522047d3abe8e05222b46145f62e35d87a2532414a422b748ab8"
+  },
+  "real_model": {
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "live_account_used": false,
+    "context_tokens": 2048,
+    "gpu_layers": 0,
+    "summary_seconds": 145.765,
+    "individual_seconds": {
+      "BTCUSDm": 75.219,
+      "XAUUSDm": 70.516
+    },
+    "broker_requests": 0,
+    "report": "VERIFICACION_STUDIO_REV9/MODEL_REVIEWS_WINDOWS.json"
+  },
+  "two_core_workload": {
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "generating_text_during_workload": false,
+    "profiles": {
+      "Equilibrado": {
+        "cpu_seconds": 0.938,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 5.86,
+        "ui_delay_p95_ms": 29.0,
+        "engine_cycle_p95_ms": 20.3,
+        "engine_cycles": 40,
+        "fresh_quote_cycles": 40,
+        "rss_mb": 160.8,
+        "financial_poll_seconds": 0.2
+      },
+      "Ahorro de energía": {
+        "cpu_seconds": 0.953,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 5.96,
+        "ui_delay_p95_ms": 14.0,
+        "engine_cycle_p95_ms": 25.2,
+        "engine_cycles": 40,
+        "fresh_quote_cycles": 40,
+        "rss_mb": 161.2,
+        "financial_poll_seconds": 0.2
+      },
+      "minimized": {
+        "cpu_seconds": 0.812,
+        "wall_seconds": 8.0,
+        "cpu_percent_of_two_cores": 5.08,
+        "ui_delay_p95_ms": 29.0,
+        "engine_cycle_p95_ms": 24.3,
+        "engine_cycles": 40,
+        "fresh_quote_cycles": 40,
+        "rss_mb": 161.2,
+        "financial_poll_seconds": 0.2
+      }
+    },
+    "report": "VERIFICACION_STUDIO_REV9/LOW_RESOURCE_WINDOWS.json"
+  },
+  "installation": {
+    "status": "PASSED",
+    "report": "VERIFICACION_STUDIO_REV9/INSTALLED_AI_WINDOWS.json",
+    "model_bundled": true,
+    "installed_model_replied": true,
+    "model_downloaded_by_check": false
+  },
+  "scope": {
+    "financial_tests": "Synthetic causal execution replays and FakeMT5; no real broker orders.",
+    "profitability_verified": false,
+    "customer_laptop_measured": false,
+    "customer_private_data_published": false,
+    "notes_file": "ACEPTACION_REV9.md"
+  },
+  "verification_branch": "akira-studio-rev9-verificado-20261020",
+  "application_code_unchanged_from_tested_source": true,
+  "local_comparison": {
+    "report": "VERIFICACION_STUDIO_REV9/PERFORMANCE_COMPARISON_LOCAL.json",
+    "scope": "Una ejecución secuencial de 8 s por perfil, sin inferencia; no demuestra una mejora estadística ni mide la laptop del usuario."
+  }
+}

@@ -1,5 +1,5 @@
 """Citable research ledger for strategy hypotheses. Never executes, approves or changes live MT5 orders."""
-import hashlib,json,sqlite3,time
+import hashlib,json,sqlite3,time,threading,copy
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -34,6 +34,7 @@ class ResearchLedger:
     """Keep evidence and hypotheses separate. A YouTube search snippet is NOT an analyzed video."""
     def __init__(self,root,clock=time.time):
         self.path=Path(root)/'state'/'research_sources.sqlite3';self.clock=clock
+        self._summary_cache=None;self._summary_due=0;self._lock=threading.RLock()
         self.path.parent.mkdir(parents=True,exist_ok=True)
         with _database(self.path, timeout=2) as db:
             db.execute('CREATE TABLE IF NOT EXISTS sources (id TEXT PRIMARY KEY,url TEXT,kind TEXT,seen REAL,body TEXT)')
@@ -59,14 +60,20 @@ class ResearchLedger:
         with _database(self.path, timeout=3) as db:
             db.execute('INSERT OR REPLACE INTO sources VALUES (?,?,?,?,?)',(key,url,kind,record['observed_at'],json.dumps(record,ensure_ascii=False)))
             db.execute('DELETE FROM sources WHERE id NOT IN (SELECT id FROM sources ORDER BY seen DESC LIMIT 1000)')
+        with self._lock:self._summary_cache=None
         return record
     def recent(self,limit=30):
         with _database(self.path, timeout=3) as db:
             rows=db.execute('SELECT body FROM sources ORDER BY seen DESC LIMIT ?',(max(1,min(int(limit),100)),)).fetchall()
         return [json.loads(r[0]) for r in rows]
     def summary(self):
-        rows=self.recent(100)
-        return {'sources':len(rows),'youtube':sum(x['kind'].startswith('youtube') for x in rows),
+        with self._lock:
+            now=self.clock()
+            if self._summary_cache is not None and now<self._summary_due:return copy.deepcopy(self._summary_cache)
+            rows=self.recent(100)
+            result={'sources':len(rows),'youtube':sum(x['kind'].startswith('youtube') for x in rows),
                 'news':sum(x['kind'].startswith('news') for x in rows),
                 'reviewable':sum(x['complete_evidence'] for x in rows),'recent':rows[:8],
                 'live_trading_from_sources':False,'status':'FUENTES PARA HIPÓTESIS Y BACKTEST; NO OPERACIONES REALES'}
+            self._summary_cache=result;self._summary_due=now+30
+            return copy.deepcopy(result)

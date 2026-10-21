@@ -1,0 +1,3 @@
+# Studio Rev5 · corrección Windows 6
+
+FIX5 aprobó las importaciones en Windows, pero falló al borrar el video de prueba con WinError 32. FIX6 confirma el cierre nativo del decodificador, libera su salida y handle y conserva su propiedad hasta que termine. Las pruebas exigen el borrado real del archivo y conservan un proceso ajeno durante doce ciclos. Consulta `CORRECCION_WINDOWS_6.md`; los resultados finales están en `VERIFICACION_STUDIO_FIX6` y `VALIDACION_STUDIO_REV5.json`. Se conservan los arreglos previos y la evidencia Qwen3 real de FIX5. La instalación Windows necesita aprobar una ejecución nueva.

@@ -34,10 +34,11 @@ def retire(g):
             raw=control.read_text(encoding='utf-8-sig').strip().split('|')
             if len(raw)!=37 or raw[0]!='AKIRA_NATIVE_V3' or raw[-1]!='END':raise Blocked('Controlador anterior con protocolo inesperado')
             if raw[2]!=str(snap.account.login) or raw[3]!=str(snap.account.server) or raw[4]!=symbol:raise Blocked('Controlador anterior de cuenta distinta')
-            raw[5]=str(int(g.clock()*1000));raw[6]=raw[7]='0'
-            temp=control.with_suffix('.retire.tmp')
-            with temp.open('w',encoding='utf-8') as f:f.write('|'.join(raw)+'\n');f.flush();os.fsync(f.fileno())
-            temp.replace(control)
+            if raw[6]!='0' or raw[7]!='0':
+                raw[5]=str(int(g.clock()*1000));raw[6]=raw[7]='0'
+                temp=control.with_suffix('.retire.tmp')
+                with temp.open('w',encoding='utf-8') as f:f.write('|'.join(raw)+'\n');f.flush();os.fsync(f.fileno())
+                temp.replace(control)
         except OSError as e:raise Blocked('No se pudo pausar el controlador anterior: '+str(e))
         intent=g.journal.data['intents'].get(symbol)
         if intent and intent.get('native_id'):

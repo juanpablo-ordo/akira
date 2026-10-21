@@ -1,0 +1,19 @@
+{
+  "artwork": "Original imagegen assets generated from the user references; files copied unchanged",
+  "sources": {
+    "friendly": "Cuadrícula de nueve expresiones de cachorro.png",
+    "joy": "Atlas de nueve expresiones del cachorro blanco.png",
+    "curious": "Atlas de nueve expresiones de cachorro.png",
+    "thinking": "Atlas de nueve expresiones de cachorro(1).png",
+    "listening": "Atlas 3×3 de nueve expresiones caninas.png",
+    "speaking": "Atlas 3×3 de expresiones del cachorro.png",
+    "affection": "Cachorro esponjoso en nueve expresiones.png",
+    "surprise": "Atlas 3x3 de expresiones de cachorro.png",
+    "sleep": "Nueve expresiones del cachorro samoyedo.png",
+    "focus": "Atlas 3x3 de cachorro samoyedo.png",
+    "encourage": "Nueve expresiones de cachorro samoyedo.png",
+    "concern": "Atlas de nueve expresiones de cachorro(2).png"
+  },
+  "motion": "Atlas 4×4 de cachorro blanco con expresiones.png",
+  "visual_review": "Joy and concern banks assigned by visual inspection; PNG pixels preserved."
+}

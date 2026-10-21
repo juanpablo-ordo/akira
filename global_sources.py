@@ -2,7 +2,8 @@
 import csv,io,math,time
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from datetime import datetime,timedelta,timezone
-from urllib.request import Request,urlopen
+from urllib.request import Request
+from network_tls import urlopen
 from urllib.parse import urlencode,urlsplit
 from email.utils import parsedate_to_datetime
 from providers import _public_json,parse_rss,_freshness_weight,lexical_bias

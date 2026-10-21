@@ -1,0 +1,45 @@
+{
+  "name": "AKIRA 16.3.5 R8 Studio Rev4 source",
+  "origin": "R8 Studio Rev3 source + local patches",
+  "artifact_type": "source ZIP, not Windows EXE",
+  "changes": [
+    "fail-closed individual AI review, even when malformed or missing essential data",
+    "prevent an old ticket reappearing from resetting inactivity watch",
+    "broker-book reconciliation required for confirmed pending badges",
+    "theme/palette/texture/font scale applied on restart in Tk modules",
+    "localized main section headings in nine additional bundled languages",
+    "source files mapped to 232 owner requirements and 16 additional requests"
+  ],
+  "testing": {
+    "full_suite": {
+      "passed": 1174,
+      "subtests": 90,
+      "failures": 0,
+      "platform": "Linux Xvfb FakeMT5",
+      "log": "akira_r12_archive_fulltest.log"
+    },
+    "new_post_suite_tests": {
+      "passed": 0,
+      "platform": "Linux",
+      "scope": "All new tests included in extracted-package full suite"
+    },
+    "native_render": {
+      "controls": 27,
+      "passed": true,
+      "broker": "FakeMT5",
+      "live_account_used": false
+    }
+  },
+  "windows_compiled": false,
+  "windows_installer_installed": false,
+  "mt5_demo_end_to_end": false,
+  "real_exness_connection": false,
+  "historical_profitable_outperformance_proven": false,
+  "requirements_232_fully_accepted": 0,
+  "automatic_live_trading_enabled": false,
+  "full_original_image_fidelity_confirmed": false,
+  "universal_sprite_expression_recognition": false,
+  "global_video_wallpaper_behind_every_widget": false,
+  "full_dynamic_translation_and_languages_voice": false,
+  "user_guidance": "No iniciar operaciones reales ni ofrecer comercialmente hasta superar pruebas de Windows y MT5 demo."
+}

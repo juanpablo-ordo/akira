@@ -1,0 +1,29 @@
+{
+  "revision": "WINDOWS_6",
+  "full_pytest": {
+    "passed": 1226,
+    "subtests_passed": 118,
+    "failed": 0,
+    "skipped": 0
+  },
+  "offline_unittest": {
+    "passed": 1223,
+    "failed": 0,
+    "skipped": 0
+  },
+  "post_metadata_install_checks": {
+    "passed": 57
+  },
+  "media_lifecycle_tests_passed": 11,
+  "real_decoder_play_close_delete_cycles": 12,
+  "unrelated_process_preserved": true,
+  "windows_native_wait_test_scope": "simulated native handle; actual Windows CI pending",
+  "source_manifest_verified_files": 323,
+  "source_install_validation": "PASSED",
+  "financial_engine_and_ai_unchanged": true,
+  "github_write_error": null,
+  "new_windows_workflow_required": true,
+  "windows_install_verified": false,
+  "github_write_verified": true,
+  "github_published": true
+}

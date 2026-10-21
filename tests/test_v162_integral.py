@@ -11,12 +11,12 @@ from execution import Blocked,DEAL,OWN_PENDING,OWN_RUNNER
 from engine import Engine
 
 class Execution162(PendingCase,unittest.TestCase):
-    def test_default_rejects_direct_runner_without_sending_or_cancelling(self):
+    def test_explicit_pending_only_profile_rejects_direct_runner_without_sending_or_cancelling(self):
         p=replace(self.plan(),lane='RUNNER',kind='MARKET')
         self.assertTrue(self.cfg['execution']['pending_only'])
         with self.assertRaisesRegex(Blocked,'exclusivamente pendientes'):self.g.send_runner(p)
         self.assertFalse(self.api.sent)
-    def test_default_engine_never_calls_market_runner_send(self):
+    def test_explicit_pending_only_profile_never_calls_market_runner_send(self):
         e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)
         with patch.object(self.g,'send_runner',side_effect=AssertionError('Market entry')):self.assertFalse(e.try_runner('BTCUSDm',self.g.quote('BTCUSDm')))
     def test_study_configuration_freezes_models_and_source_weights_without_credentials(self):
@@ -263,11 +263,11 @@ class Cloud162(TempCase162):
             self.assertNotIn(value,target.read_text());self.assertEqual(akira_secrets._read(target)['OPENAI_API_KEY'],value)
     def test_failed_encryption_does_not_overwrite_existing_secret_store(self):
         import akira_secrets,sys
-        target=self.root/'protected.json';target.write_bytes(b'previous protected credentials')
+        target=self.root/'protected.json';previous=json.dumps({'OPENAI_API_KEY':'sk-prior-fixture'}).encode('utf-8');target.write_bytes(previous)
         def fail(*a):raise OSError('DPAPI unavailable')
         with patch.object(akira_secrets,'os',NS(name='nt')),patch.object(akira_secrets,'canonical_path',return_value=target),patch.dict(sys.modules,{'win32crypt':NS(CryptProtectData=fail)}):
             with self.assertRaises(OSError):akira_secrets.save_secrets({'OPENAI_API_KEY':'sk-new-fixture'},merge=False)
-        self.assertEqual(target.read_bytes(),b'previous protected credentials')
+        self.assertEqual(target.read_bytes(),previous)
     def test_cloud_auth_status_lists_real_response_models_without_echoing_key(self):
         from cloud_status import verify_cloud
         with patch('cloud_status.get_secret',return_value='sk-test-private'):

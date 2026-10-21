@@ -18,7 +18,7 @@ class FakeResponse:
 
 class Tests(unittest.TestCase):
     def test_new_version_and_no_powershell_voice(self):
-        self.assertIn('16_3',BUILD_ID)
+        self.assertIn('16_4',BUILD_ID)
         from pathlib import Path
         voice=(Path(__file__).resolve().parents[1]/'voice_akira.py').read_text(encoding='utf-8')
         self.assertNotIn('powershell.exe',voice.lower())

@@ -1,0 +1,182 @@
+{
+  "build": "AKIRA_16_4_1_STUDIO_REV6",
+  "date": "2026-10-18",
+  "status": "WINDOWS_INSTALLER_AND_INSTALLED_AI_VERIFIED",
+  "native_studio": {
+    "version": 1,
+    "status": "PASSED",
+    "data": "SYNTHETIC",
+    "broker": "FakeMT5",
+    "eight_pages": true,
+    "real_records": true,
+    "privacy": true,
+    "stable_selection": true,
+    "responsive": true,
+    "shared_avatar": true,
+    "no_expression_gallery": true,
+    "global_wallpaper": true,
+    "live_theme": true,
+    "language_switch": true,
+    "event_loop": true,
+    "no_broker_requests": true
+  },
+  "owner_acceptance_cases": {
+    "interface_and_preferences": 20,
+    "media_strategy_and_priority": 6,
+    "additional_small_model_review": 1,
+    "scope": "Linux, synthetic UI/financial data and real owned FFmpeg files",
+    "additional_delayed_ack_reversion": 1
+  },
+  "full_acceptance": "Windows packaging, installation, bundled-model inference and automated UI/financial contracts passed. This does not certify all 248 master items or profitability.",
+  "requirements": "REQUISITOS_232_ESTADO.json",
+  "source_commit": "9b5fa0f0ed3ef41d5d23bd25609f5ef157d9cb23",
+  "windows_run": "https://github.com/juanpablo-ordo/akira/actions/runs/39103591576",
+  "pytest": {
+    "passed": 1257,
+    "subtests_passed": 120,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 170.29,
+    "report": "VERIFICACION_STUDIO_REV6/REGRESIONES_LINUX.xml",
+    "scope": "Linux/Tcl8.6/offscreen Qt; synthetic financial data"
+  },
+  "real_model": {
+    "status": "PASSED",
+    "scenarios": 5,
+    "model": "Qwen3-4B-Q4_K_M.gguf",
+    "engine": "llama.cpp b10355 official Linux CPU",
+    "threads": 4,
+    "context": 4096,
+    "report": "VERIFICACION_STUDIO_REV6/CONVERSACION_REAL_CPU.json",
+    "facts": "Synthetic Xbox fixture; not a real announcement",
+    "scope": "Container, not the owner GPU or Windows performance"
+  },
+  "offline_unittest": {
+    "build": "AKIRA_16_4_1_STUDIO_REV6",
+    "collected": 1254,
+    "tests_run": 1254,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failed_tests": [],
+    "failure_details": [],
+    "skipped_tests": [],
+    "seconds": 161.665,
+    "network": "blocked"
+  },
+  "windows_progress": {
+    "regressions": "PASSED",
+    "zero_omissions": true,
+    "source_and_frozen_ui": "PASSED",
+    "real_model": "PASSED",
+    "production_conversation": "PASSED",
+    "installer": "PASSED",
+    "installed_ai": "PASSED"
+  },
+  "artwork_correction": "Joy and concern atlas assignments corrected after visual inspection. All 108 images remain distinct and unchanged in pixels.",
+  "final_save_fix": "Explicit edited fields survive a return to their original value while an earlier save is awaiting its acknowledgement. Covered by a blocked-ack UI regression.",
+  "native_bootstrap_fix": {
+    "observed_run": 39102392976,
+    "observed_error": "Windows native Tcl init.tcl read: No error; immediately following initialization succeeded",
+    "recovery": "At most three fresh native Tcl initializations, only for that Windows read error when Python can read the selected nonempty library. Missing/incompatible libraries fail. Native Tk and render checks remain required.",
+    "regression_cases": 3,
+    "zero_skips_required": true
+  },
+  "windows": {
+    "status": "PASSED",
+    "source_commit": "9b5fa0f0ed3ef41d5d23bd25609f5ef157d9cb23",
+    "run_id": 39103591576,
+    "job_id": 117604680992,
+    "run_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39103591576",
+    "conclusion": "success",
+    "tests": 1257,
+    "subtests": 120,
+    "seconds": 200.88,
+    "skipped": 0,
+    "installer_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39103591576/artifacts/12127717784",
+    "artifact": {
+      "id": 12127717784,
+      "name": "AKIRA-16.4.1-Studio-Rev6-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA",
+      "size_in_bytes": 2865705489,
+      "url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12127717784",
+      "archive_download_url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12127717784/zip",
+      "expired": false,
+      "created_at": "2026-10-18T06:30:37Z",
+      "expires_at": "2026-10-25T06:30:11Z",
+      "updated_at": "2026-10-18T06:30:37Z",
+      "digest": "sha256:77b9329d25c77916469b3468a491127c0864db4b0aef93ac8e445d1339fad823",
+      "workflow_run": {
+        "id": 39103591576,
+        "repository_id": 1419886118,
+        "head_repository_id": 1419886118,
+        "head_branch": "akira-studio-rev5-20261016",
+        "head_sha": "9b5fa0f0ed3ef41d5d23bd25609f5ef157d9cb23"
+      }
+    },
+    "report": "VERIFICACION_STUDIO_REV6/REGRESIONES_WINDOWS.xml"
+  },
+  "installed_ai": {
+    "status": "PASSED",
+    "model_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "model_present_after_setup": true,
+    "visible_chat_verified": true,
+    "model_downloaded_by_check": false,
+    "installed_components_verified": true,
+    "installed_studio_verified": true,
+    "installed_sprite_ai_verified": true,
+    "live_account_used": false,
+    "root": "D:\\a\\_temp\\AKIRA_INSTALACION_VERIFICADA",
+    "server_log": "D:\\a\\akira\\akira\\diagnostics\\INSTALLED_LOCAL_AI.llama.log"
+  },
+  "windows_real_conversation": {
+    "status": "PASSED",
+    "scenarios": [
+      {
+        "name": "typos_and_new_topic",
+        "question": "Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?",
+        "answer": "La memoria RAM es temporal y se usa para almacenar datos que el procesador necesita acceder rápidamente. El disco duro (HD) o SSD es permanente y almacena los archivos y el sistema operativo de manera duradera.",
+        "seconds": 7.25,
+        "first_visible_seconds": 4.156
+      },
+      {
+        "name": "follow_up",
+        "question": "¿Cuál de las dos pierde los datos cuando apago la computadora?",
+        "answer": "La RAM pierde los datos cuando apagas la computadora, ya que es una memoria volátil. El disco duro (HD) o SSD mantiene los datos incluso después de apagarla, ya que es una memoria no volátil.",
+        "seconds": 5.172,
+        "first_visible_seconds": 1.984
+      },
+      {
+        "name": "topic_change",
+        "question": "Cambiemos de tema: tengo 3 manzanas y regalo 1. ¿Cuántas me quedan?",
+        "answer": "Te quedan 2 manzanas.",
+        "seconds": 3.703,
+        "first_visible_seconds": 3.125
+      },
+      {
+        "name": "current_news_evidence",
+        "question": "Xbox acaba de lanzar el nuevo Gears: según la ficha de prueba, ¿cómo se llama y quiénes son sus protagonistas?",
+        "answer": "Según la ficha de prueba de Xbox, el juego se llama \"Gears Prueba\" y sus protagonistas son Mara y Sol.\n\nFuentes consultadas:\n[1] [Xbox Wire · Gears Prueba · ficha sintética](https://news.xbox.com/es-es/gears-prueba/)",
+        "seconds": 5.109,
+        "first_visible_seconds": 3.281
+      },
+      {
+        "name": "strict_json",
+        "answer": "{\"bias\": 0}"
+      }
+    ],
+    "news_data": "SYNTHETIC; not a real Xbox announcement",
+    "live_account_used": false,
+    "scenario_filter": "all"
+  },
+  "remaining_acceptance": [
+    "MT5 demo session of at least six hours and measured broker latencies",
+    "Physical microphone/speakers and device switching",
+    "Physical monitors/DPI and resource usage on the owner PC",
+    "All modal visual states compared to the references",
+    "Complete translation of remaining dynamic explanations"
+  ]
+}

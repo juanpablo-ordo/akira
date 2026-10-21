@@ -1,0 +1,11 @@
+{
+  "status": "PASSED",
+  "entrypoint": "Akira.py",
+  "frontend": "desktop_qt.StudioWindow",
+  "build": "AKIRA_16_4_0_STUDIO_REV5",
+  "mode": "observe",
+  "preview": true,
+  "actor_started": true,
+  "connected": true,
+  "live_account_used": false
+}

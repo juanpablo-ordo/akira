@@ -68,6 +68,7 @@ class ResearchTests(unittest.TestCase):
     def test_no_sources_means_no_invented_external_confidence(self):
         r=self.w.read();self.assertEqual(r['fusion']['BTCUSDm']['confidence'],0)
     def test_assistant_receives_current_source_data_and_excludes_stale_facts(self):
+        self.cfg['research']['derivatives_provider']='coinglass'
         self.source('news',{'items':[{'title':'Dato actual','url':'https://example.org/news'}]})
         self.source('coinglass:BTCUSDm',{'funding':[{'close':.001}]})
         self.source('derivatives:BTCUSDm',{'premium':{'lastFundingRate':.002}})
@@ -108,7 +109,8 @@ class ResearchTests(unittest.TestCase):
     def test_public_derivatives_are_not_fabricated_for_gold(self):
         jobs=self.w.jobs_for({},{});self.assertIn('derivatives:BTCUSDm',jobs);self.assertNotIn('derivatives:XAUUSDm',jobs)
     def test_provider_intervals_are_independent(self):
-        jobs=self.w.jobs_for({},{});self.assertEqual(jobs['fed'][0],8);self.assertEqual(jobs['youtube'][0],25);self.assertEqual(jobs['coinglass:BTCUSDm'][0],12)
+        jobs=self.w.jobs_for({},{});self.assertEqual(jobs['fed'][0],8);self.assertEqual(jobs['youtube'][0],25);self.assertEqual(jobs['derivatives:BTCUSDm'][0],60)
+        self.assertNotIn('coinglass:BTCUSDm',jobs)
     def test_paid_cloud_is_not_automatically_enabled(self):
         self.assertNotIn('cloud',self.w.jobs_for({'symbols':{'BTCUSDm':{}}},{}))
     def test_ambiguous_local_model_abstains(self):
@@ -123,7 +125,7 @@ class ResearchTests(unittest.TestCase):
         self.assertTrue(a['source_complete']);self.assertGreater(a['chunks'],1);self.assertGreater(a['bias'],0)
     def test_transcript_is_reused_without_repeated_download(self):
         self.cfg['symbols']={'BTCUSDm':True}
-        self.w.store.put({'url':'https://youtube.com/watch?v=abc','title':'BTC','topic':'BTCUSDm','status':'analyzed','body':'Bitcoin bullish','summary':'{}','published':'20261006'})
+        self.w.store.put({'url':'https://youtube.com/watch?v=abc','title':'BTC','topic':'BTCUSDm','status':'analyzed','body':'Bitcoin bullish. '*40,'complete':True,'summary':'{"source_complete":true}','published':'20261006'})
         with patch('research.youtube_search',return_value=[{'url':'https://youtube.com/watch?v=abc'}]),patch('research.read_youtube') as fetch:self.w._youtube()
         fetch.assert_not_called()
     def test_nonfinite_remote_values_are_rejected(self):

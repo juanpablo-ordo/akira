@@ -1,0 +1,40 @@
+{
+  "status": "PASSED",
+  "scenarios": [
+    {
+      "name": "typos_and_new_topic",
+      "question": "Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?",
+      "answer": "La memoria RAM es temporal y se usa para almacenar datos que el procesador necesita acceder rápidamente. El disco, como HDD o SSD, es de almacenamiento a largo plazo y guarda los archivos y programas incluso cuando se cierra la computadora.",
+      "seconds": 38.061,
+      "first_visible_seconds": 21.846
+    },
+    {
+      "name": "follow_up",
+      "question": "¿Cuál de las dos pierde los datos cuando apago la computadora?",
+      "answer": "La RAM pierde los datos cuando apagas la computadora, mientras que el disco mantiene los archivos y la información almacenada incluso después de apagarla.",
+      "seconds": 16.714,
+      "first_visible_seconds": 7.352
+    },
+    {
+      "name": "topic_change",
+      "question": "Cambiemos de tema: tengo 3 manzanas y regalo 1. ¿Cuántas me quedan?",
+      "answer": "Te quedan 2 manzanas.",
+      "seconds": 13.027,
+      "first_visible_seconds": 10.704
+    },
+    {
+      "name": "current_news_evidence",
+      "question": "Xbox acaba de lanzar el nuevo Gears: según la ficha de prueba, ¿cómo se llama y quiénes son sus protagonistas?",
+      "answer": "Según la ficha de prueba de Xbox, el juego se llama \"Gears Prueba\" y sus protagonistas son Mara y Sol.\n\nFuentes consultadas:\n[1] [Xbox Wire · Gears Prueba · ficha sintética](https://news.xbox.com/es-es/gears-prueba/)",
+      "seconds": 18.703,
+      "first_visible_seconds": 11.274
+    },
+    {
+      "name": "strict_json",
+      "answer": "{\"bias\": 0}"
+    }
+  ],
+  "news_data": "SYNTHETIC; not a real Xbox announcement",
+  "live_account_used": false,
+  "scenario_filter": "all"
+}

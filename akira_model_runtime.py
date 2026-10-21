@@ -26,16 +26,32 @@ def shared_runtime(settings,log_root,profile=None):
         return runtime
 
 
-def hardware_profile(ram_gb=32, gpu_vram_gb=8, cpu_cores=12):
+def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
     """Starting recommendation, not a promise of fixed RAM/VRAM consumption."""
-    vram=max(0,float(gpu_vram_gb))
+    # Auto mode reads this PC. Unknown GPU memory is zero, not an assumed 8 GB.
+    if ram_gb is None:
+        try:
+            import psutil
+            ram_gb=psutil.virtual_memory().total/1073741824
+        except (ImportError,OSError):ram_gb=4
+    if cpu_cores is None:
+        cpu_cores=os.cpu_count() or 2
+        try:
+            import psutil
+        except ImportError:pass
+        else:
+            try:cpu_cores=len(psutil.Process().cpu_affinity())
+            except (psutil.Error,OSError,AttributeError):pass
+    vram=max(0,float(gpu_vram_gb or 0))
     ram=max(1,float(ram_gb))
     # A 4B Q4 model has headroom; large 14B/30B models saturate 8GB cards.
     return {
         'model_class':'4B GGUF Q4_K_M' if ram>=16 else '2B GGUF Q4_K_M',
         'context_tokens':4096 if ram>=16 else 2048,
         'gpu_layers':12 if vram>=8 else 0,
-        'cpu_threads':min(6,max(2,int(cpu_cores)//2)),
+        'cpu_threads':min(6,max(1,int(cpu_cores)//2)),
+        'logical_cores':max(1,int(cpu_cores)),
+        'detected_ram_gb':round(ram,2),
         'parallel_requests':1,
         'idle_unload_seconds':30,
         'target_model_vram_gb':4.5 if vram>=8 else 0.0,
@@ -57,6 +73,7 @@ class ManagedLlamaProcess:
         self._closed=False
         self.log_path=Path(log_root)/'logs'/'IA_LOCAL.log' if log_root is not None else None
         self.path_resolution={}
+        self._launch_command=None;self._requested_command=None
 
     def _paths(self):
         exe_value=str(self.settings.get('local_runtime_exe') or '').strip()
@@ -98,7 +115,7 @@ class ManagedLlamaProcess:
         port=self._port(endpoint)
         desktop=desktop or {}
         profile=self.profile
-        ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))))
+        ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))),max(1024,int(desktop.get('memory_budget_mb',3072))*2))
         use_gpu=bool(desktop.get('model_use_gpu',True)) and not self._force_cpu
         gpu=max(0,int(profile['gpu_layers'])) if use_gpu else 0
         exe=paths[0]
@@ -106,9 +123,29 @@ class ManagedLlamaProcess:
             cpu=exe.parent.parent/'cpu'/'llama-server.exe'
             if cpu.is_file():exe=cpu
         if exe.parent.name.lower()=='cpu':gpu=0
-        return [str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
+        mode=desktop.get('performance_profile','Equilibrado')
+        threads=max(1,int(profile['cpu_threads']))
+        if mode=='Ahorro de energía':threads=min(2,threads)
+        elif mode=='Equilibrado':threads=min(4,threads)
+        batch,ubatch=(128,64) if mode=='Ahorro de energía' else (256,128)
+        cache_mb=0 if mode=='Ahorro de energía' else 512 if mode=='Equilibrado' else 1024
+        loading='none' if mode=='Ahorro de energía' and gpu==0 else 'mmap'
+        command=[str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
-                '--threads',str(profile['cpu_threads']),'--parallel','1']
+                '--threads',str(threads),'--threads-batch',str(threads),
+                '--batch-size',str(batch),'--ubatch-size',str(ubatch),
+                '--load-mode',loading,'--cache-ram',str(cache_mb),
+                '--poll','0','--poll-batch','0','--parallel','1','--jinja']
+        if mode=='Ahorro de energía' and gpu==0:
+            command+=['--flash-attn','on','--cache-type-k','q8_0','--cache-type-v','q8_0']
+        return command
+
+    def reconfigure(self,desktop):
+        with self.lock:
+            self._idle_override=int(desktop.get('model_keep_alive_seconds',15))
+            endpoint=self.settings.get('local_endpoint','http://127.0.0.1:18987/v1/chat/completions')
+            self._requested_command=self.command(endpoint,desktop) if self._paths() else None
+            if not self.active and self.proc and self._launch_command!=self._requested_command:self._terminate_own()
 
     def _terminate_own(self):
         proc=self.proc
@@ -129,11 +166,15 @@ class ManagedLlamaProcess:
         with self.lock:
             if self._closed:raise RuntimeError('La aplicación cerró su motor de IA.')
             if self.proc and self.proc.poll() is None:
-                self.last_use=self.clock();return True
+                self._requested_command=command
+                if self._launch_command is not None and command!=self._launch_command and self.active<=1:self._terminate_own()
+                else:self.last_use=self.clock();return True
             # No apropiarse de otro servidor/modelo, que puede ser ajeno a Akira.
             if self._health(port):
                 raise RuntimeError('El puerto de la IA está ocupado por un servidor externo. Akira no lo cerrará.')
-            flags=getattr(subprocess,'CREATE_NO_WINDOW',0)
+            # Keep the owned model below normal CPU priority so MT5 and Tk
+            # retain scheduling preference when the machine is under load.
+            flags=getattr(subprocess,'CREATE_NO_WINDOW',0)|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)
             stream=None
             try:
                 if self.log_path is not None:
@@ -144,6 +185,9 @@ class ManagedLlamaProcess:
                     stream.write(('\nINICIO IA '+time.strftime('%Y-%m-%d %H:%M:%S')+'\n').encode('utf-8'))
                 self.proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=stream or subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,creationflags=flags)
+                self._launch_command=list(command);self._requested_command=list(command)
+                if self._closed:
+                    self._terminate_own();raise RuntimeError('La aplicación cerró mientras arrancaba el modelo')
             finally:
                 if stream is not None:stream.close()
             self.last_use=self.clock()
@@ -157,24 +201,29 @@ class ManagedLlamaProcess:
             time.sleep(2)
             with self.lock:
                 if self.proc is None:return
-                idle=int(self.settings.get('local_runtime_idle_seconds',self.profile['idle_unload_seconds']))
+                idle=int(getattr(self,'_idle_override',self.settings.get('local_runtime_idle_seconds',self.profile['idle_unload_seconds'])))
                 idle=max(0,min(900,idle))
-                if not self.active and self.clock()-self.last_use>=idle:
+                pending=self._launch_command is not None and self._requested_command is not None and self._launch_command!=self._requested_command
+                if not self.active and (pending or self.clock()-self.last_use>=idle):
                     self._terminate_own()
                     return
 
     @contextmanager
-    def session(self,endpoint,desktop=None):
+    def session(self,endpoint,desktop=None,cancel_event=None):
+        if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         if not self.enabled():
             yield
             return
-        with self.lock:self.active+=1
+        with self.lock:
+            self.active+=1
+            if desktop and 'model_keep_alive_seconds' in desktop:self._idle_override=max(0,min(600,int(desktop['model_keep_alive_seconds'])))
         try:
             self.start(endpoint,desktop)
             # Give the server a short bootstrap window, never block MT5.
             port=self._port(endpoint)
             deadline=self.clock()+90
             while self.clock()<deadline and not self._health(port):
+                if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
                 with self.lock:
                     if self.proc is None or self.proc.poll() is not None:
                         if not self._force_cpu and bool((desktop or {}).get('model_use_gpu',True)):
@@ -186,7 +235,8 @@ class ManagedLlamaProcess:
                             raise RuntimeError('El motor local no pudo iniciar, ni con CPU')
                 time.sleep(.4)
             if not self._health(port):raise TimeoutError('llama.cpp no completó el inicio en 90 s')
-            yield
+            from akira_local_ai import owned_context
+            with owned_context(self.effective_parameters().get('context_tokens') or int((desktop or {}).get('model_context_tokens',self.profile['context_tokens']))):yield
         finally:
             with self.lock:
                 self.active=max(0,self.active-1)
@@ -203,3 +253,25 @@ class ManagedLlamaProcess:
             self._closed=True
             self.active=0
             self._terminate_own()
+
+    def shutdown_async(self):
+        """Signal the owned child before UI exit; reap without freezing the window."""
+        self._closed=True;proc=self.proc;self.proc=None;self.active=0
+        if proc is None or proc.poll() is not None:return
+        try:proc.terminate()
+        except OSError:return
+        def reap():
+            try:proc.wait(timeout=4)
+            except subprocess.TimeoutExpired:
+                try:proc.kill();proc.wait(timeout=3)
+                except (OSError,subprocess.TimeoutExpired):pass
+        threading.Thread(target=reap,name='AkiraModelReaper',daemon=True).start()
+
+    def effective_parameters(self):
+        command=self._launch_command or []
+        def value(flag):
+            try:return int(command[command.index(flag)+1])
+            except (ValueError,IndexError):return None
+        return {'owned_pid':self.proc.pid if self.proc and self.proc.poll() is None else None,
+                'context_tokens':value('--ctx-size'),'gpu_layers':value('--n-gpu-layers'),'cpu_threads':value('--threads'),
+                'pending_reload':bool(self._requested_command is not None and self._launch_command!=self._requested_command)}

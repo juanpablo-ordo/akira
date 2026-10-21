@@ -1,0 +1,24 @@
+{
+  "run_id": 39004132398,
+  "commit": "9446986a1dafd45bbc1551753d4f3f471f739de1",
+  "job_id": 117312996787,
+  "status": "FAILED",
+  "passed": 1205,
+  "failed": 2,
+  "subtests_passed": 102,
+  "seconds": 493.77,
+  "failed_tests": [
+    "ChartViewportTests.test_high_dpi_short_dashboard_keeps_both_real_charts_drawn_and_scrollable",
+    "CandidateCockpit.test_unconfirmed_is_not_displayed_as_sent"
+  ],
+  "chart_phase": "before_resize_1366x768",
+  "native_call": "tkinter.update",
+  "monitor": [
+    1024,
+    768
+  ],
+  "tcl_tk": "8.6.12",
+  "scaling": 1.9958256599140576,
+  "tcl_error": "invalid command name \"tcl_findLibrary\"",
+  "windows_internal_reflow_cause_confirmed": false
+}

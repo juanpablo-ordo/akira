@@ -1,4 +1,5 @@
 """Regressions: wheel events in a Toplevel and functional resource presets."""
+from tk_runtime import create_root
 import json, tempfile, unittest, tkinter as tk
 from pathlib import Path
 from resource_optimizer import profile_budget, ollama_limits, PROFILES
@@ -25,7 +26,7 @@ class ResourcePresetRegressions(unittest.TestCase):
 
 class WindowWheelRegressions(unittest.TestCase):
     def test_mousewheel_over_notification_card_in_dialog(self):
-        try:r=tk.Tk()
+        try:r=create_root()
         except tk.TclError:self.skipTest('Tk graphical display required')
         self.addCleanup(r.destroy);r.withdraw()
         win=tk.Toplevel(r);win.geometry('430x280+40+40')

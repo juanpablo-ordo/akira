@@ -76,7 +76,7 @@ function Get-AkiraRemovalPlan {
         $active=($roots | Sort-Object { (Get-Item -LiteralPath (Join-Path $_ 'akira_config.json')).LastWriteTimeUtc } -Descending | Select-Object -First 1)
     }
     [pscustomobject]@{context=$Context;roots=@($roots.ToArray());active=$active;pointer=$pointer;
-        count=$roots.Count;data_names=@('akira_config.json','AKIRA_SECRETS.json','state','logs','exports')}
+        count=$roots.Count;data_names=@('akira_config.json','AKIRA_SECRETS.json','state','logs','exports','studio')}
 }
 
 function Test-AkiraOwnedProcess {

@@ -51,7 +51,7 @@ class AkiraGeneralAIRegressions(unittest.TestCase):
     def test_verified_current_fact_accepts_official_without_year_plus_independent(self):
         official={'title':'Presidencia de Guatemala','url':'https://presidencia.gob.gt/presidente','text':'Presidente Bernardo Arévalo dirige el Gobierno de Guatemala.'}
         independent={'title':'Reuters','url':'https://www.reuters.com/world/americas/guatemala-x','text':'Guatemala President Bernardo Arevalo spoke on Tuesday.'}
-        with patch('web_facts._duck_html',return_value=[official,independent]), patch('web_facts._bing_rss',return_value=[]), patch('web_facts._duck',return_value=[]), patch('web_facts._wiki',return_value=[]):
+        with patch('web_facts._official_presidency',return_value=[]),patch('web_facts._duck_html',return_value=[official,independent]), patch('web_facts._bing_rss',return_value=[]), patch('web_facts._duck',return_value=[]), patch('web_facts._wiki',return_value=[]):
             out=lookup_verified_current_fact('presidente actual de Guatemala',limit=4)
         urls=[x['url'] for x in out['results']]
         self.assertIn(official['url'],urls)

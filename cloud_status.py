@@ -1,6 +1,7 @@
 """Validate optional OpenAI without creating a billable model response."""
 import json
-from urllib.request import Request,urlopen
+from urllib.request import Request
+from network_tls import urlopen
 from akira_secrets import get_secret
 
 def verify_cloud(opener=urlopen):

@@ -8,15 +8,119 @@ import json, os, re, time, threading
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlsplit
+from http.client import HTTPConnection
+from contextlib import contextmanager
+import io
 
 _STATUS={"when":0.0,"ok":None,"detail":"no comprobado"}
 _STATUS_LOCK=threading.Lock()
+_CONTEXT=threading.local()
+
+@contextmanager
+def visible_output(callback):
+    previous=getattr(_CONTEXT,'visible',None);_CONTEXT.visible=callback
+    try:yield
+    finally:_CONTEXT.visible=previous
+
+@contextmanager
+def owned_context(tokens):
+    """Actual owned server context, scoped to this request's worker thread."""
+    previous=getattr(_CONTEXT,'tokens',None);_CONTEXT.tokens=int(tokens)
+    try:yield
+    finally:_CONTEXT.tokens=previous
+
+def owned_context_tokens():
+    """Return the running owned server's context, without probing or loading it."""
+    return getattr(_CONTEXT,'tokens',None)
+
+def fit_owned_request(endpoint,payload,timeout,cancel_event):
+    """Count the exact Jinja prompt with the same pinned server, not characters.
+
+    Only old conversational turns may be removed. System instructions, evidence,
+    tools and the current user message remain intact or the request fails.
+    """
+    context=getattr(_CONTEXT,'tokens',None)
+    if not context:return payload
+    parts=urlsplit(endpoint);base=parts.scheme+'://'+parts.netloc;deadline=time.monotonic()+float(timeout)
+    result={**payload,'messages':list(payload['messages'])}
+    for _ in range(8):
+        if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
+        remaining=deadline-time.monotonic()
+        if remaining<=0:raise TimeoutError('Se agotó el plazo preparando el contexto local')
+        template=_post(base+'/apply-template',result,timeout=min(3,remaining),cancel_event=cancel_event,stream_on_cancel=False)
+        if not isinstance(template.get('prompt'),str):raise RuntimeError('El servidor no confirmó la plantilla del contexto local')
+        tokens=_post(base+'/tokenize',{'content':template['prompt'],'add_special':True,'parse_special':True,'with_pieces':False},timeout=min(3,max(.1,deadline-time.monotonic())),cancel_event=cancel_event,stream_on_cancel=False).get('tokens')
+        if not isinstance(tokens,list):raise RuntimeError('El servidor no confirmó los tokens del contexto local')
+        room=context-len(tokens)-64
+        wanted=max(128,min(int(result['max_tokens']),context//2))
+        if room>=wanted:result['max_tokens']=min(int(result['max_tokens']),room);return result
+        messages=result['messages'];last_user=max((i for i,r in enumerate(messages) if r.get('role')=='user'),default=-1)
+        old=[i for i,r in enumerate(messages[:last_user]) if r.get('role') in ('user','assistant') and not r.get('tool_calls')]
+        if old:
+            remove=set(old[:2]);result['messages']=[r for i,r in enumerate(messages) if i not in remove];continue
+        if room>=128:result['max_tokens']=min(int(result['max_tokens']),room);return result
+        raise RuntimeError('El mensaje y sus datos esenciales no caben en el contexto local de '+str(context)+' tokens. Amplía el contexto en Ajustes o reduce el adjunto; no se recortó la pregunta ni se ejecutó ninguna acción.')
+    raise RuntimeError('No se pudo ajustar la conversación al contexto local sin quitar datos esenciales')
+
+
+def _post_direct_cancellable(url,payload,timeout,cancel_event):
+    """Own the socket before response headers, where model generation can wait."""
+    parts=urlsplit(url);connection=HTTPConnection(parts.hostname,parts.port or 80,timeout=timeout)
+    done=threading.Event();expired=threading.Event();deadline=time.monotonic()+float(timeout)
+    def interrupt():
+        while not done.wait(.05):
+            if time.monotonic()>=deadline or cancel_event.is_set():
+                if time.monotonic()>=deadline:expired.set()
+                try:
+                    import socket
+                    if connection.sock is not None:connection.sock.shutdown(socket.SHUT_RDWR)
+                except (OSError,AttributeError):pass
+                connection.close();return
+    threading.Thread(target=interrupt,name='AkiraCancelLocal',daemon=True).start()
+    try:
+        path=parts.path+('?' +parts.query if parts.query else '')
+        connection.request('POST',path,json.dumps(payload,ensure_ascii=False).encode('utf-8'),
+                           {'Content-Type':'application/json','User-Agent':'AKIRA local'})
+        response=connection.getresponse()
+        if response.status>=400:
+            raise HTTPError(url,response.status,response.reason,response.headers,io.BytesIO(response.read(2000)))
+        if payload.get('stream'):
+            content=[];total=0;last=0;finish=None
+            while True:
+                raw=response.readline()
+                if not raw:break
+                total+=len(raw)
+                if total>8_000_000:raise RuntimeError('Respuesta de IA demasiado grande')
+                if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
+                if not raw.startswith(b'data:'):continue
+                data=raw[5:].strip()
+                if data==b'[DONE]':break
+                choice=(json.loads(data).get('choices') or [{}])[0];delta=choice.get('delta') or {}
+                if delta.get('content'):content.append(str(delta['content']))
+                if choice.get('finish_reason'):finish=choice['finish_reason']
+                callback=getattr(_CONTEXT,'visible',None)
+                if callback and content and time.monotonic()-last>.08:callback(_clean(''.join(content)));last=time.monotonic()
+            callback=getattr(_CONTEXT,'visible',None)
+            if callback and content:callback(_clean(''.join(content)))
+            result={'choices':[{'message':{'role':'assistant','content':''.join(content)},'finish_reason':finish}]}
+        else:result=json.loads(response.read(8_000_000).decode('utf-8','replace'))
+        if expired.is_set():raise TimeoutError('AKIRA agotó el tiempo total de inferencia')
+        if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
+        return result
+    except Exception:
+        if expired.is_set():raise TimeoutError('AKIRA agotó el tiempo total de inferencia; la consulta fue detenida') from None
+        if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario') from None
+        raise
+    finally:done.set();connection.close()
 
 
 def _post(url,payload,timeout=90,cancel_event=None,stream_on_cancel=True):
     """Streaming cancellable; close the real socket when user presses DETENER."""
     if cancel_event is not None and cancel_event.is_set():
         raise RuntimeError('Análisis detenido por el usuario')
+    parts=urlsplit(str(url))
+    if cancel_event is not None and parts.scheme=='http' and parts.hostname in ('127.0.0.1','localhost','::1') and parts.path.rstrip('/').endswith('/v1/chat/completions'):
+        return _post_direct_cancellable(url,payload,timeout,cancel_event)
     streaming = cancel_event is not None and stream_on_cancel
     payload=dict(payload)
     if streaming:payload['stream']=True
@@ -97,13 +201,19 @@ def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_
              'max_tokens':int(opts.get('num_predict',3000)),
              'chat_template_kwargs':{'enable_thinking':bool(think)}}
     if tools:payload['tools']=tools
+    elif response_format is None and getattr(_CONTEXT,'visible',None) is not None and cancel_event is not None:payload['stream']=True
     if not think and mapped and not any('/no_think' in str(m.get('content','')) for m in mapped):
         # Qwen3 can consume the whole token budget in hidden reasoning otherwise.
         mapped.insert(0,{'role':'system','content':'/no_think\nDa una respuesta visible, concisa y útil.'})
     if response_format is not None:
-        payload['response_format']={'type':'json_object'} if response_format=='json' else response_format
+        if response_format=='json':payload['response_format']={'type':'json_object'}
+        elif isinstance(response_format,dict) and response_format.get('type') not in ('json_object','json_schema'):
+            # llama.cpp expects a format envelope, not a bare JSON Schema.
+            payload['response_format']={'type':'json_object','schema':response_format}
+        else:payload['response_format']=response_format
     try:
-        data=_post(endpoint,payload,timeout=timeout,cancel_event=cancel_event,stream_on_cancel=False)
+        began=time.monotonic();payload=fit_owned_request(endpoint,payload,timeout,cancel_event)
+        data=_post(endpoint,payload,timeout=max(.1,float(timeout)-(time.monotonic()-began)),cancel_event=cancel_event,stream_on_cancel=False)
     except HTTPError as exc:
         raise RuntimeError(f'Motor local HTTP {exc.code}: '+exc.read(500).decode('utf-8','replace')) from exc
     except URLError as exc:

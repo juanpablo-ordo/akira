@@ -19,7 +19,7 @@ class AllVoicesTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
  def opener(self,data):
-  def open_(url,timeout):return io.BytesIO(data[url.removeprefix(voice.PIPER_ROOT)])
+  def open_(url,timeout,**kwargs):return io.BytesIO(data[url.removeprefix(voice.PIPER_ROOT)])
   return open_
  def test_one_click_installs_every_model_in_catalog(self):
   first,a=row();second,b=row('en_US-two-high');events=[]
@@ -48,7 +48,7 @@ class AllVoicesTests(unittest.TestCase):
   self.assertEqual(result['downloaded'],1);self.assertTrue(voice.voice_pair_valid(self.root,item))
  def test_failure_continues_and_retry_only_downloads_missing_pair(self):
   first,a=row();second,b=row('en_US-two-high');data={**a,**b}
-  def fail_one(url,timeout):
+  def fail_one(url,timeout,**kwargs):
    if url.endswith(Path(first['files'][0]).name):raise OSError('Network interrupted')
    return self.opener(data)(url,timeout)
   with patch('urllib.request.urlopen',side_effect=fail_one):result=voice.install_all_voices(self.root,[first,second])

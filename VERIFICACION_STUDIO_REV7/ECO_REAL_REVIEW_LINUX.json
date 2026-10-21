@@ -1,0 +1,60 @@
+{
+  "status": "PASSED",
+  "data": "SYNTHETIC",
+  "live_account_used": false,
+  "requested_context_tokens": 2048,
+  "summary": {
+    "BTCUSDm": {
+      "bias": 0.0,
+      "confidence": 0.0,
+      "note": "H1/H4 sin origen SWING/OB/BOS observado; no ejecutar EMA/Fib/zona dinámica como若",
+      "preferred": [
+        "BUY_STOP",
+        "SELL_STOP"
+      ],
+      "avoid": [],
+      "thesis": "TENDENCIA"
+    },
+    "XAUUSDm": {
+      "bias": 0.0,
+      "confidence": 0.0,
+      "note": "H1/H4 sin origen SWING/OB/BOS observado; no ejecutar EMA/Fib/zona dinámica como若",
+      "preferred": [
+        "BUY_STOP",
+        "SELL_STOP"
+      ],
+      "avoid": [],
+      "thesis": "TENDENCIA"
+    },
+    "_meta": {
+      "input_chars": 3363,
+      "active_symbols": [
+        "BTCUSDm",
+        "XAUUSDm"
+      ],
+      "source_count": 2,
+      "reduced_sources": [],
+      "unavailable_sources": [],
+      "input_scope": "COMPACT_INDICATORS_COMPLETE_TIMEFRAMES",
+      "engine_indicators_complete": true,
+      "omitted_raw_indicator_values": 336,
+      "timeframe_count": 14,
+      "sources_omitted_for_budget": [],
+      "model": "/workspace/scratch/76f348340c16/real_ai_rev7/Qwen3-4B-Q4_K_M.gguf",
+      "verified_twice": false,
+      "verification_error": "",
+      "created": 1792345132.2745526,
+      "review_seconds": 91.247,
+      "mode": "SEQUENTIAL_COMPLETE_ASSET_REVIEW"
+    }
+  },
+  "effective_parameters": {
+    "owned_pid": 5,
+    "context_tokens": 2048,
+    "gpu_layers": 0,
+    "cpu_threads": 2,
+    "pending_reload": false
+  },
+  "engine_log_tail": "\nINICIO IA 2026-10-18 13:37:17\n0.00.017.459 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.018.262 W srv  llama_server: -----------------\n0.00.018.272 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set\n0.00.018.273 W srv  llama_server: this can be a security risk (cross-origin attacks)\n0.00.018.273 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655\n0.00.018.273 W srv  llama_server: -----------------\n0.00.019.900 I srv    load_model: loading model '/workspace/scratch/76f348340c16/real_ai_rev7/Qwen3-4B-Q4_K_M.gguf'\n0.00.471.872 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.03.092.558 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 2048, kv_unified = 'false'\n0.03.102.634 I srv  llama_server: model loaded\n0.03.102.651 I srv  llama_server: listening on http://127.0.0.1:18996\n0.03.225.623 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1\n0.03.226.249 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n0.48.435.889 I slot print_timing: id  0 | task 0 | prompt eval time =   34366.15 ms /   909 tokens (   37.81 ms per token,    26.45 tokens per second)\n0.48.435.910 I slot print_timing: id  0 | task 0 |        eval time =   10843.39 ms /    76 tokens (  142.68 ms per token,     7.01 tokens per second)\n0.48.435.911 I slot print_timing: id  0 | task 0 |       total time =   45209.53 ms /   985 tokens\n0.48.435.918 I slot print_timing: id  0 | task 0 |    graphs reused =         75\n0.48.436.085 I slot      release: id  0 | task 0 | stop processing: n_tokens = 984, truncated = 0\n0.48.459.513 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 3129419024\n0.48.526.855 I slot launch_slot_: id  0 | task 77 | processing task, is_child = 0\n1.34.449.515 I slot print_timing: id  0 | task 77 | prompt eval time =   34905.11 ms /   865 tokens (   40.35 ms per token,    24.78 tokens per second)\n1.34.449.531 I slot print_timing: id  0 | task 77 |        eval time =   11017.50 ms /    77 tokens (  143.08 ms per token,     6.99 tokens per second)\n1.34.449.532 I slot print_timing: id  0 | task 77 |       total time =   45922.61 ms /   942 tokens\n1.34.449.533 I slot print_timing: id  0 | task 77 |    graphs reused =        150\n1.34.449.637 I slot      release: id  0 | task 77 | stop processing: n_tokens = 1002, truncated = 0\n1.34.451.048 I srv    operator(): operator(): cleaning up before exit...\n",
+  "seconds": 94.584
+}

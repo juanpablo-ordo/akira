@@ -44,6 +44,8 @@ def load_config(path):
     raw=copy.deepcopy(path) if isinstance(path,dict) else json.loads(Path(path).read_text(encoding='utf-8-sig'))
     if not isinstance(raw,dict):raise ValueError('Configuración: se requiere un objeto JSON')
     cfg=merge(DEFAULT,raw)
+    from akira_studio import safe_studio
+    cfg['studio']=safe_studio(raw)
     # Migrate only the legacy default Ollama endpoint when a complete, local
     # llama.cpp runtime is actually bundled alongside AKIRA.exe. This does not
     # download programs or change an explicitly selected custom endpoint.
@@ -58,8 +60,8 @@ def load_config(path):
                             'local_runtime_enabled','local_runtime_exe','local_runtime_model',
                             'auto_install_local_ai'):
                     cfg['assistant'][key]=copy.deepcopy(DEFAULT['assistant'][key])
-    # This update makes amounts visible. Later explicit privacy choices persist.
-    if not (raw.get('desktop') or {}).get('visibility_preference_saved',False):cfg['desktop']['privacy']=False
+    # Hide amounts for fresh installs; preserve every explicit visibility choice.
+    if 'privacy' not in (raw.get('desktop') or {}):cfg['desktop']['privacy']=True
     cfg['desktop']['visibility_preference_saved']=True
     # Legacy defaults were Work Mode aliases, not documented public API IDs.
     # Preserve every other explicitly selected model and every trading limit.
@@ -86,6 +88,8 @@ def load_config(path):
         for k in ('enabled','youtube','investing','coinglass','coinglass_public_fallback','local_model','local_ai_summary'):
             cfg['research'][k]=True
     cfg['schema_version']=1600
+    if cfg['research'].get('derivatives_provider') not in ('public','coinglass'):
+        raise ValueError('Elige datos de derivados públicos o CoinGlass opcional')
     from datetime import datetime
     for closure in cfg.get('market_hours',{}).get('closures',[]):
         if closure.get('symbol') not in cfg['symbols']:raise ValueError('Cierre extraordinario para símbolo desconocido')
@@ -361,7 +365,7 @@ def load_config(path):
             for k,v in value.items():finite(v,name+'.'+k)
         elif isinstance(value,(int,float)) and not isinstance(value,bool):
             if not math.isfinite(value) or value<0:raise ValueError(name+' debe ser número finito no negativo')
-    finite(cfg,'config')
+    finite({k:v for k,v in cfg.items() if k!='studio'},'config')
     attempts=cfg['execution']['pending_attempts_per_cycle']
     if type(attempts) is not int or not 1<=attempts<=16:raise ValueError('Intentos por ciclo deben ser entero entre 1 y 16')
     if cfg['execution']['pending_rejection_retry_seconds']<1:raise ValueError('Reintento de pendiente rechazada debe esperar al menos 1 segundo')
@@ -381,6 +385,11 @@ def load_config(path):
     if cfg['runner']['max_signal_age_seconds']<=0 or cfg['runner']['entry_cooldown_seconds']<=0:raise ValueError('Ventanas runner deben ser positivas')
     if cfg['runner']['min_stop_atr']<=0 or cfg['runner']['max_stop_atr']<cfg['runner']['min_stop_atr']:raise ValueError('Distancia estructural runner inválida')
     if cfg['runner']['min_rr']<1:raise ValueError('R:R runner debe ser >=1')
+    if not 0 < cfg['runner']['max_trade_budget_pct'] <= 100:raise ValueError('Presupuesto runner debe estar entre 0 y 100% del límite por operación')
+    if not 60 <= cfg['runner']['loss_cooldown_seconds'] <= 86400:raise ValueError('Pausa tras pérdida runner debe ser de 60 a 86400 segundos')
+    if not .25 <= cfg['runner']['loss_budget_trades'] <= 3:raise ValueError('Presupuesto de pérdidas runner debe ser 0.25 a 3 límites por operación')
+    for key in ('preserve_pending_orders','allow_size_boost'):
+        if type(cfg['runner'][key]) is not bool:raise ValueError('runner.'+key+' debe ser booleano')
     if not cfg['symbols'] or not any(cfg['symbols'].values()):raise ValueError('Activa BTC y/o XAU')
     for s,on in cfg['symbols'].items():
         if not isinstance(s,str) or not s.upper().startswith(('BTC','XAU')) or type(on) is not bool:raise ValueError('Solo símbolos BTC/XAU de MT5 y true/false')
@@ -398,10 +407,13 @@ def load_config(path):
         if v<1 or int(v)!=v:raise ValueError('pending.'+k+' debe ser entero positivo')
     if cfg['pending']['replace_min_ticks']<2:raise ValueError('Se necesitan al menos dos ticks distintos para retirar/sustituir')
     if cfg['management']['trail_at_r']<cfg['management']['breakeven_at_r']:raise ValueError('El trailing debe empezar después del breakeven')
+    if type(cfg['management']['protect_progress']) is not bool:raise ValueError('La protección de avance debe ser booleana')
     if cfg['strategy']['pending_hard_min_rr']<1:raise ValueError('R:R duro debe ser >=1')
     if cfg['strategy']['max_tick_age_seconds']<=0:raise ValueError('La edad máxima de tick debe ser positiva')
     for k in ('news_refresh_seconds','coinglass_refresh_seconds','youtube_discovery_seconds','model_refresh_seconds'):
         if cfg['research'][k]<5:raise ValueError('Intervalo de fuente inválido: '+k)
+    from akira_studio import validate_studio,safe_studio
+    cfg['studio']=validate_studio(safe_studio(cfg))
     return cfg
 
 

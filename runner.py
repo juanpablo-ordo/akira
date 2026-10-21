@@ -192,6 +192,10 @@ def runner_plan(symbol,frames,quote,cfg,context=None):
     from strategy_adaptation import candidate_decision,frame_features
     from dataclasses import replace
     candidates,detail=baseline_runner_candidates(symbol,frames,quote,cfg,context)
+    from strategy_choice import allows,tag
+    eligible=[(tag(plan,cfg),reason) for plan,reason in candidates if allows(plan,cfg)]
+    if candidates and not eligible:return None,'La estrategia elegida para esta sesión no autoriza esta familia de runner.'
+    candidates=eligible
     for plan,reason in candidates:
         allowed,evidence=candidate_decision(plan,frame_features(frames),context or {},quote.time)
         if allowed:return (replace(plan,reason=plan.reason+' · '+evidence) if evidence else plan),reason

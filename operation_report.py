@@ -5,6 +5,7 @@ import copy,json,math,os,re,tempfile,zipfile
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 from trade_review import assess_plan,finite
+from order_timing import broker_seconds,pending_times,positive
 from analysis_details import indicator_rows,analysis_text
 
 LOCAL=timezone(timedelta(hours=-6),'Guatemala')
@@ -13,10 +14,10 @@ ET.register_namespace('',NS)
 SHEETS=('Resumen','Pendientes','Runners','Cierres','Riesgo','Fuentes','Decisiones')
 HEADERS={
  'Resumen':('Área','Dato','Valor','Interpretación'),
- 'Pendientes':('Ticket / propuesta','Símbolo','Tipo','Propiedad','Entrada','SL','TP','R:R','Riesgo USD','Lote','Estrellas','Revisión'),
- 'Runners':('Símbolo','Estado','Dirección','Entrada','SL','TP','Lote','Riesgo USD','Límite USD','Motivo'),
- 'Cierres':('Posición','Símbolo','Vía','Entrada local','Salida local','Duración min','Precio entrada','SL original','Precio salida','Neto USD','MFE R','Captura observada','Motivo','Evaluación'),
- 'Riesgo':('Ticket / solicitud','Símbolo','Origen','Propiedad','Lote','Entrada','SL','Reserva USD','Margen futuro USD','Detalle'),
+ 'Pendientes':('Ticket / propuesta','Símbolo','Tipo','Propiedad','Entrada','SL','TP','R:R','Riesgo USD','Lote','Estrellas','Revisión','Colocación local','Origen de hora'),
+ 'Runners':('Símbolo','Estado','Dirección','Entrada','SL','TP','Lote','Riesgo USD','Límite USD','Motivo','Ticket','Solicitud local','Apertura MT5 local'),
+ 'Cierres':('Posición','Símbolo','Vía','Entrada local','Salida local','Duración min','Precio entrada','SL original','Precio salida','Neto USD','MFE R','Captura observada','Motivo','Evaluación','Colocación local','Origen de hora'),
+ 'Riesgo':('Ticket / solicitud','Símbolo','Origen','Propiedad','Lote','Entrada','SL','Reserva USD','Margen futuro USD','Detalle','Colocación / apertura local','Origen de hora'),
  'Fuentes':('Fuente','Estado','Fecha / edad','Uso','Detalle'),
  'Decisiones':('Hora local','Símbolo','Acción','Ticket','Motivo','SL anterior','SL nuevo','R al solicitar')}
 
@@ -60,7 +61,7 @@ def closed_trades(snapshot,cutoff):
         pid=deal.get('position_id')
         if not pid or deal.get('type') not in (0,1):continue
         groups.setdefault(str(pid),[]).append(deal)
-    out=[]
+    out=[];times=pending_times(snapshot)
     for pid,deals in groups.items():
         deals=sorted(deals,key=lambda d:finite(d.get('time'),0));ins=[d for d in deals if d.get('entry')==0];exits=[d for d in deals if d.get('entry') in (1,3)]
         if not exits or finite(exits[-1].get('time'),0)<cutoff:continue
@@ -84,8 +85,10 @@ def closed_trades(snapshot,cutoff):
         review='Sin MFE registrado: no se puede juzgar si cerró demasiado pronto.' if mfe is None else 'Máximo observado desde '+stamp(row.get('tracking_started_at'))+'; no demuestra qué habría pasado después.'
         if cause=='Stop Loss' and capture is not None and capture<.25 and mfe>=1.25:
             review='SL ejecutado tras devolver parte del máximo observado; revisar los cambios de protección. '+review
-        out.append({'ticket':str(key),'symbol':ins[0].get('symbol',''),'lane':lane,'entry_time':finite(ins[0].get('time')),
-            'exit_time':finite(exits[-1].get('time')),'duration_minutes':(finite(exits[-1].get('time'),0)-finite(ins[0].get('time'),0))/60,
+        out.append({'ticket':str(key),'symbol':ins[0].get('symbol',''),'lane':lane,'entry_time':broker_seconds(ins[0]),
+            'placed_at':(times.get(str(ins[0].get('order'))) or {}).get('placed_at') or positive(row.get('requested_at')),
+            'placement_source':(times.get(str(ins[0].get('order'))) or {}).get('source') or ('Akira: solicitud registrada' if positive(row.get('requested_at')) else 'Sin registro de colocación'),
+            'exit_time':broker_seconds(exits[-1]),'duration_minutes':(finite(exits[-1].get('time'),0)-finite(ins[0].get('time'),0))/60,
             'entry':entry,'initial_sl':finite(row.get('initial_sl')),'exit_price':exit_price,'net_usd':net,
             'mfe_r':mfe,'capture':capture,'cause':cause,'review':review})
     return sorted(out,key=lambda r:r['exit_time'],reverse=True)
@@ -120,7 +123,7 @@ def source_rows(research,as_of):
     for name,row in (research.get('sources') or {}).items():
         if not isinstance(row,dict):continue
         age=finite(row.get('age_seconds'))
-        if age is None and finite(row.get('updated')) is not None:age=max(0,as_of-float(row['updated']))
+        if age is None and finite(row.get('updated'),0)>0:age=max(0,as_of-float(row['updated']))
         state='Vigente según proveedor' if row.get('fresh') is True else 'Sin vigencia confirmada'
         rows.append([str(name),state,f'{age:.0f} s' if age is not None else 'Sin fecha','Contexto auxiliar',str(row.get('error') or row.get('state') or '')])
     from email.utils import parsedate_to_datetime
@@ -159,13 +162,13 @@ def build_report(snapshot,hours=24):
     history=snapshot.get('history_state') or {}
     if history.get('error'):warnings.append('Historial de cierres: '+str(history['error']))
     if finite(account.get('equity')) is None:warnings.append('Patrimonio no disponible: el límite de riesgo no se interpreta como saldo.')
-    pendings=[];seen=set();runners=[];decisions=[];overview=[]
+    pendings=[];seen=set();runners=[];decisions=[];overview=[];times=pending_times(snapshot)
     summary=[['Cuenta','Hora de la captura',stamp(as_of),'America/Guatemala (UTC-6)'],['Cuenta','Versión',snapshot.get('build','No registrada'),'Versión del motor que produjo los datos'],
         ['Cuenta','Patrimonio USD',finite(account.get('equity')),'Dato MT5; ausente no significa cero'],
         ['Riesgo','Límite conjunto USD',finite(ledger.get('cap_usd')),'Compartido entre BTC, oro y operaciones manuales'],
         ['Riesgo','Reservado USD',finite(ledger.get('reserved_usd')),'Suma de posiciones, pendientes y solicitudes sin confirmar'],
         ['Riesgo','Libre USD',finite(ledger.get('available_usd')),'Capacidad conjunta; cada operación también tiene su propio límite'],
-        ['Riesgo','Límite por operación USD',finite(snapshot.get('trade_risk_cap')),'Un runner puede superar este límite aunque exista riesgo conjunto libre'],
+        ['Riesgo','Límite por operación USD',finite(snapshot.get('trade_risk_cap')),'Ninguna entrada nueva puede superarlo por tener presupuesto conjunto libre; las runners directas tienen además su propio tope reducido'],
         ['Velocidad','Último ciclo ms',finite(snapshot.get('cycle_ms')),'Medición del motor; no garantiza latencia futura del bróker']]
     for symbol,info in symbols.items():
         if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
@@ -177,7 +180,7 @@ def build_report(snapshot,hours=24):
         if runner_risk is None:runner_risk=finite(funding.get('minimum_risk_usd'))
         runners.append([symbol,runner.get('state','Sin diagnóstico'),'LONG' if plan.get('side')==1 else 'SHORT' if plan.get('side')==-1 else 'Sin señal',
             finite(plan.get('entry')),finite(plan.get('sl')),finite(plan.get('tp')),finite(runner.get('volume')),runner_risk,
-            finite(funding.get('trade_cap_usd'),finite(snapshot.get('trade_risk_cap'))),runner.get('detail','No registrado')])
+            finite(funding.get('trade_cap_usd'),finite(snapshot.get('trade_risk_cap'))),runner.get('detail','No registrado'),'Sin ticket',None,None])
         plans=list(info.get('scenario_book') or info.get('pending_book') or [])
         represented={str(r.get('ticket')) for r in plans if r.get('ticket')}
         for row in info.get('pending_book') or []:
@@ -198,6 +201,19 @@ def build_report(snapshot,hours=24):
             'lane':'PENDING','confirmed':True,'quality_score':None}
         financial=next((r for r in ledger.get('rows',[]) if r.get('kind')=='pending' and r.get('ticket')==row.get('ticket')),{})
         row['risk_usd']=financial.get('risk_usd');row['assessment']=assess_plan(row);pendings.append(row)
+    # A runner diagnostic is not an open position. List confirmed live positions
+    # independently, including positions activated from a pending order.
+    for position in snapshot.get('positions') or []:
+        ticket=str(position.get('ticket') or '')
+        meta=(snapshot.get('position_journal') or {}).get(ticket) or {}
+        plan=meta.get('plan') or {};lane=plan.get('lane') or meta.get('lane')
+        if lane not in ('RUNNER','PENDING') and position.get('magic') not in (170002,170003):continue
+        risk=next((r.get('risk_usd') for r in ledger.get('rows',[]) if str(r.get('ticket'))==ticket and r.get('kind')=='position'),None)
+        opened=broker_seconds(position) or positive(meta.get('opened_at'))
+        runners.append([position.get('symbol',''),'POSICIÓN ABIERTA · '+('runner directa' if lane=='RUNNER' or position.get('magic')==170003 else 'pendiente activada'),
+            'LONG' if position.get('type')==0 else 'SHORT',finite(position.get('entry')),finite(position.get('sl')),finite(position.get('tp')),
+            finite(position.get('volume')),finite(risk),finite(snapshot.get('trade_risk_cap')),'SL/TP vigentes en MT5.',
+            ticket,stamp(meta.get('requested_at')) or 'Sin registro',stamp(opened) or 'Sin registro de apertura MT5'])
     closed=closed_trades(snapshot,cutoff) if hours else []
     closed=[r for r in closed if not (snapshot.get('markets') or {}).get(r['symbol'],{}).get('scheduled_closed')]
     for ticket,row in (snapshot.get('position_journal') or {}).items():
@@ -218,12 +234,28 @@ def build_report(snapshot,hours=24):
         a=row['assessment'];ticket=row.get('ticket');own=(str(ticket) in owned_ids) if ticket else None
         review='; '.join(a['evidence']+a['warnings'])
         if a.get('quality_score') is not None:review=f'Índice técnico {a["quality_score"]:.1f}/100. '+review
+        timing=times.get(str(ticket)) or {}
+        row['placed_at']=timing.get('placed_at');row['placement_source']=timing.get('source','Aún no enviada' if not ticket else 'Sin registro de hora')
         pending_rows.append([str(ticket) if ticket else 'Propuesta',row.get('symbol',''),('BUY' if row.get('side') in (1,'BUY') else 'SELL')+' '+str(row.get('kind','')),
             'Akira' if own else 'Manual / externa' if ticket else a['state'],finite(row.get('entry')),finite(row.get('sl')),finite(row.get('tp')),
-            finite(a.get('rr')),finite(a.get('risk_usd')),finite(row.get('volume')),a['label'],review])
+            finite(a.get('rr')),finite(a.get('risk_usd')),finite(row.get('volume')),a['label'],review,stamp(row['placed_at']) or ('Aún no enviada' if not ticket else 'Sin registro'),row['placement_source']])
     risk_rows=[[str(r.get('ticket') or r.get('operation') or 'Sin ticket'),r.get('symbol',''),{'pending':'Pendiente','position':'Posición','intent':'Solicitud sin confirmar'}.get(r.get('kind'),r.get('kind','')),'Akira' if r.get('owned') else 'Manual / externa',
         finite(r.get('volume')),finite(r.get('entry')),finite(r.get('sl')),finite(r.get('reserved_usd')),finite(r.get('future_margin_usd')),r.get('reason','')] for r in ledger.get('rows',[])]
-    close_rows=[[r['ticket'],r['symbol'],r['lane'],stamp(r['entry_time']),stamp(r['exit_time']),r['duration_minutes'],r['entry'],r['initial_sl'],r['exit_price'],r['net_usd'],r['mfe_r'],r['capture'],r['cause'],r['review']] for r in closed]
+    for record in risk_rows:
+        ticket=record[0]
+        timing=times.get(ticket) or {}
+        position=next((p for p in snapshot.get('positions') or [] if str(p.get('ticket'))==ticket),None)
+        if position is not None:
+            record.extend([stamp(broker_seconds(position)) or 'Sin registro','MT5: apertura de posición'])
+        else:record.extend([stamp(timing.get('placed_at')) or 'Sin registro',timing.get('source','Sin registro de hora')])
+    # Historical confirmed pending receipts survive log rotation/cancellation.
+    for ticket,meta in (snapshot.get('order_journal') or {}).items():
+        timing=times.get(str(ticket)) or {};placed=positive(timing.get('placed_at'))
+        if placed is None or placed<cutoff:continue
+        plan=meta.get('plan') or {}
+        decisions.append([stamp(placed),plan.get('symbol',''),'Colocación de pendiente',str(ticket),
+            timing.get('source','')+'; el registro de envío no implica que la pendiente se activó.',None,finite(plan.get('sl')),None])
+    close_rows=[[r['ticket'],r['symbol'],r['lane'],stamp(r['entry_time']),stamp(r['exit_time']),r['duration_minutes'],r['entry'],r['initial_sl'],r['exit_price'],r['net_usd'],r['mfe_r'],r['capture'],r['cause'],r['review'],stamp(r.get('placed_at')) or 'Sin registro',r.get('placement_source','Sin registro')] for r in closed]
     summary.append(['Historial','Operaciones cerradas completas',len(closed),f'Últimas {hours} horas; solo operaciones con entrada y cierre completos en el historial disponible'])
     summary.append(['Historial','Neto de esos cierres USD',sum(r['net_usd'] for r in closed) if closed else None,'Incluye beneficio, comisión, swap y fee de cada operación reconstruida'])
     for warning in warnings:summary.append(['Revisar','Dato faltante',None,warning])
@@ -326,7 +358,13 @@ def write_pdf(model,path):
     def safe(value):
         text='Sin dato' if value is None else f'{value:,.3f}' if isinstance(value,float) else str(value)
         text=text.replace('★','*').replace('☆','-')
-        return escape(text).replace('\n','<br/>')
+        from urllib.parse import urlsplit
+        parts=[];pos=0
+        for match in re.finditer(r'https?://[^\s<>]+',text):
+            url=match.group(0);host=urlsplit(url).hostname or 'Fuente'
+            parts.append(escape(text[pos:match.start()]));parts.append('<link href="'+escape(url,{'"':'&quot;'})+'" color="#087E9B">'+escape(host.removeprefix('www.'))+'</link>');pos=match.end()
+        parts.append(escape(text[pos:]))
+        return ''.join(parts).replace('\n','<br/>')
     def paragraph(value,small=False):return Paragraph(safe(value),styles['AkiraSmall' if small else 'AkiraBody'])
     def table(headers,rows,widths=None):
         data=[[paragraph(x,True) for x in headers]]+[[paragraph(x,True) for x in r] for r in rows]
@@ -362,6 +400,7 @@ def write_pdf(model,path):
         title=f'{row[1]} · {row[2]} · {row[0]} · {row[3]}'
         story.append(KeepTogether([Paragraph(safe(title),styles['Heading3']),
             table(('Entrada','SL','TP','R:R','Riesgo USD','Lote'),[row[4:10]],[99,99,99,65,90,71]),
+            paragraph('Colocación: '+str(row[12])+' · '+str(row[13])+' · Guatemala (UTC-6).'),
             paragraph('Valoración: '+str(row[10])+' · '+str(row[11])),Spacer(1,9)]))
     if not model['tables']['Pendientes']:story.append(paragraph('No hay pendientes o propuestas documentadas en esta captura.'))
     if model.get('verifications'):
@@ -373,7 +412,8 @@ def write_pdf(model,path):
             story.append(paragraph(row['scope']))
     story.append(Paragraph('Posiciones y gestión de runners',styles['Heading2']))
     for row in model['tables']['Runners']:
-        story.append(Paragraph(safe(row[0]+' · '+row[1]),styles['Heading3']));story.append(paragraph(row[-1]))
+        story.append(Paragraph(safe(row[0]+' · '+row[1]),styles['Heading3']));story.append(paragraph(row[9]))
+        story.append(paragraph('Ticket '+str(row[10])+' · Solicitud: '+str(row[11] or 'Sin registro')+' · Apertura MT5: '+str(row[12] or 'Sin registro')+' · Guatemala (UTC-6).'))
         if row[3] is not None:story.append(table(('Dirección','Entrada','SL','TP','Riesgo USD','Límite USD'),[[row[2],row[3],row[4],row[5],row[7],row[8]]],[79,99,99,99,77,70]))
     story.append(Paragraph('Reservas por ticket',styles['Heading2']))
     story.append(table(('Ticket','Símbolo / origen','Propiedad','Reserva USD','Margen USD'),[[r[0],r[1]+' / '+r[2],r[3],r[7],r[8]] for r in model['tables']['Riesgo']],[95,135,125,84,84]))
@@ -382,6 +422,7 @@ def write_pdf(model,path):
     for row in model['closed'][:500]:
         story.append(Paragraph(safe(f'{row["symbol"]} · #{row["ticket"]} · {row["lane"]}'),styles['Heading3']))
         story.append(paragraph(f'Entrada {stamp(row["entry_time"])}; salida {stamp(row["exit_time"])}; duración {row["duration_minutes"]:.1f} min. Neto {row["net_usd"]:.2f} USD. Motivo: {row["cause"]}.'))
+        story.append(paragraph('Colocación: '+(stamp(row.get('placed_at')) or 'Sin registro')+' · '+row.get('placement_source','Sin registro de hora')+'.'))
         story.append(paragraph(row['review']))
     if len(model['closed'])>500:story.append(paragraph('PDF muestra los 500 cierres más recientes. Excel conserva todos los cierres reconstruidos.'))
     story.append(Paragraph('Decisiones y cambios',styles['Heading2']))
@@ -418,6 +459,7 @@ def write_excel(model,path,template=None):
         money_style=price_sheet.find('.//{'+NS+'}c[@r="I6"]').get('s','0')
         close_sheet=ET.fromstring(source.read('xl/worksheets/sheet4.xml'))
         percentage_style=close_sheet.find('.//{'+NS+'}c[@r="L6"]').get('s','0')
+        date_style=close_sheet.find('.//{'+NS+'}c[@r="D6"]').get('s','0')
         for item in source.infolist():
             content=source.read(item.filename)
             match=re.fullmatch(r'xl/worksheets/sheet(\d+)\.xml',item.filename)
@@ -438,6 +480,18 @@ def write_excel(model,path,template=None):
                         for c in list(r):r.remove(c)
                         c=ET.SubElement(r,'{'+NS+'}c',{'r':'A3','t':'inlineStr'})
                         ET.SubElement(ET.SubElement(c,'{'+NS+'}is'),'{'+NS+'}t').text=model['local_time']+' · Guatemala · '+str(model.get('build') or '')
+                header=data.find("{"+NS+"}row[@r='5']")
+                if header is not None:
+                    first=next(iter(header),None);header_style=first.get('s','0') if first is not None else '0'
+                    for child in list(header):header.remove(child)
+                    for ci,title in enumerate(HEADERS[name]):
+                        cell=ET.SubElement(header,'{'+NS+'}c',{'r':column(ci)+'5','s':header_style,'t':'inlineStr'})
+                        ET.SubElement(ET.SubElement(cell,'{'+NS+'}is'),'{'+NS+'}t').text=title
+                cols=root.find('{'+NS+'}cols')
+                if cols is not None:
+                    for ci in range(len(HEADERS[name])):
+                        if ci not in widths:
+                            ET.SubElement(cols,'{'+NS+'}col',{'min':str(ci+1),'max':str(ci+1),'width':'27','customWidth':'1'});widths[ci]=27
                 rows=model['tables'][name]
                 if not rows:rows=[['Sin registros disponibles']+[None]*(len(HEADERS[name])-1)]
                 for ri,values in enumerate(rows,6):
@@ -452,7 +506,9 @@ def write_excel(model,path,template=None):
                             ET.SubElement(c,'{'+NS+'}v').text=str(value)
                         elif value is not None:
                             c.set('t','inlineStr');t=ET.SubElement(ET.SubElement(c,'{'+NS+'}is'),'{'+NS+'}t');t.set('{http://www.w3.org/XML/1998/namespace}space','preserve');t.text=literal(value)
-                        if name=='Cierres' and ci in (3,4) and value:
+                        date_columns={'Cierres':(3,4,14),'Pendientes':(12,),'Runners':(11,12),'Riesgo':(10,)}
+                        if ci in date_columns.get(name,()) and value and re.fullmatch(r'\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}',str(value)):
+                            c.set('s',date_style)
                             when=datetime.strptime(str(value),'%d/%m/%Y %H:%M:%S')
                             serial=(when-datetime(1899,12,30)).total_seconds()/86400
                             for child in list(c):c.remove(child)

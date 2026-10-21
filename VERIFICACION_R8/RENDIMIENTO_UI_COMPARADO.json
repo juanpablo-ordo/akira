@@ -1,0 +1,51 @@
+{
+  "scope": "Synthetic Tk UI on Linux, not Windows hardware or broker latency",
+  "baseline": "R7 Windows-fix",
+  "updated": "16.3.5 R8",
+  "measurements": [
+    {
+      "source_root": "akira_r6",
+      "platform": "linux",
+      "table_updates": {
+        "median_ms": 0.836,
+        "p95_ms": 1.101,
+        "max_ms": 1.16
+      },
+      "queued_ui_events": {
+        "median_ms": 0.889,
+        "p95_ms": 1.175,
+        "max_ms": 1.28
+      },
+      "resize_events": {
+        "median_ms": 10.081,
+        "p95_ms": 15.087,
+        "max_ms": 17.268
+      },
+      "frames": 60,
+      "network_used": false,
+      "live_account_used": false
+    },
+    {
+      "source_root": "akira_r8",
+      "platform": "linux",
+      "table_updates": {
+        "median_ms": 0.865,
+        "p95_ms": 1.134,
+        "max_ms": 1.408
+      },
+      "queued_ui_events": {
+        "median_ms": 0.919,
+        "p95_ms": 1.19,
+        "max_ms": 1.47
+      },
+      "resize_events": {
+        "median_ms": 10.269,
+        "p95_ms": 11.323,
+        "max_ms": 14.941
+      },
+      "frames": 60,
+      "network_used": false,
+      "live_account_used": false
+    }
+  ]
+}

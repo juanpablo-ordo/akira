@@ -1,3 +1,4 @@
+from tk_runtime import create_root
 import tkinter as tk
 import unittest
 import tempfile,json,os
@@ -9,7 +10,7 @@ from akira_expressions import get_catalog
 
 class SharedExpression(unittest.TestCase):
     def test_first_frame_exists_before_the_window_is_mapped(self):
-        root=tk.Tk();self.addCleanup(root.destroy);root.withdraw()
+        root=create_root();self.addCleanup(root.destroy);root.withdraw()
         avatar=AkiraLive2D(root,width=150,height=120);avatar.pack()
         self.assertFalse(avatar.winfo_ismapped())
         image=avatar.canvas.itemcget(avatar.sprite,'image')
@@ -18,7 +19,7 @@ class SharedExpression(unittest.TestCase):
         self.assertGreater(root.tk.call('image','height',image),0)
 
     def test_hidden_changes_wait_until_map_without_decoding_or_painting(self):
-        root=tk.Tk();self.addCleanup(root.destroy);root.withdraw()
+        root=create_root();self.addCleanup(root.destroy);root.withdraw()
         avatar=AkiraLive2D(root,width=150,height=120);avatar.pack()
         first_image=avatar.canvas.itemcget(avatar.sprite,'image')
         with patch.object(avatar,'_image',wraps=avatar._image) as decode, \
@@ -35,7 +36,7 @@ class SharedExpression(unittest.TestCase):
             self.assertNotEqual(avatar.canvas.itemcget(avatar.sprite,'image'),first_image)
 
     def test_all_panels_and_call_share_face_and_playback_priority(self):
-        root=tk.Tk();self.addCleanup(root.destroy)
+        root=create_root();self.addCleanup(root.destroy)
         first=AkiraLive2D(root,width=150,height=120);first.pack()
         second=AkiraLive2D(root,width=150,height=120);second.pack()
         call=tk.Toplevel(root);third=AkiraLive2D(call,width=150,height=120,director=first.director);third.pack()
@@ -63,7 +64,7 @@ class SourceSettingsPage(unittest.TestCase):
         from settings import DEFAULT,load_config
         with tempfile.TemporaryDirectory() as temporary,patch.dict(os.environ,{'LOCALAPPDATA':temporary}):
             folder=Path(temporary);(folder/'akira_config.json').write_text(json.dumps(load_config(DEFAULT)),encoding='utf-8')
-            root=tk.Tk();app=Desktop(root,folder,preview=True,start_actor=False)
+            root=create_root();app=Desktop(root,folder,preview=True,start_actor=False)
             try:
                 root.geometry('1024x640+0+0');app.navigate(6)
                 app.settings_notebook.select(app.settings_sources_tab);root.update()

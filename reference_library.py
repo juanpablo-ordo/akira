@@ -71,5 +71,9 @@ def import_document(root,path):
 
 def update_reference(root,url):
  if url not in [row[1] for row in CATALOG]:raise ValueError('Referencia fuera del catálogo')
- row=read_web(url);row['topic']=next(r[0] for r in CATALOG if r[1]==url);row['kind']='reference_web';KnowledgeStore(root).put(row)
+ row=read_web(url)
+ # A redirect must not turn the canonical catalog URL into a permanent cache
+ # miss. Retain both requested and actually read URLs as provenance.
+ row['resolved_url']=row['url'];row['url']=url
+ row['topic']=next(r[0] for r in CATALOG if r[1]==url);row['kind']='reference_web';KnowledgeStore(root).put(row)
  return {'title':row['title'],'characters':len(row['body']),'fetched':row['fetched'],'scope':'Página pública consultada; no se afirma haber descargado todo el sitio'}

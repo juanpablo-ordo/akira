@@ -138,6 +138,30 @@ class DailyLearner:
         tmp=self.path.with_suffix('.tmp'); tmp.write_text(json.dumps(self.state,ensure_ascii=False,indent=2),encoding='utf-8');tmp.replace(self.path)
         return copy.deepcopy(self.state)
 
+    def run_by_family(self,outcomes,account,selector,now=None):
+        """Keep archived champions; each new policy learns its own campaigns."""
+        from akira_version import BUILD_ID
+        from strategy_choice import STRATEGY_VERSION,SELECTOR_VERSION
+        cohort={'execution_build':BUILD_ID,'strategy_version':STRATEGY_VERSION,
+                'selector_id':selector,'selector_version':SELECTOR_VERSION}
+        rows=[r for r in outcomes if all(r.get(k)==v for k,v in cohort.items())
+              and r.get('strategy_id') not in (None,'','SIN_TESIS_REGISTRADA')]
+        groups={}
+        for row in rows:groups.setdefault((row.get('symbol'),row['strategy_id']),[]).append(row)
+        self._family_learners=getattr(self,'_family_learners',{})
+        result={**cohort,'account':account,'family_champions':{},'family_reports':{},
+                'scope':'Familia, selector, versión y build; cierres completos con costes.',
+                'comparable_campaigns':len(rows),'excluded_campaigns':len(outcomes)-len(rows)}
+        for (symbol,family),cases in groups.items():
+            key=hashlib.sha256(json.dumps([cohort,symbol,family],sort_keys=True).encode()).hexdigest()[:24]
+            if key not in self._family_learners:
+                self._family_learners[key]=DailyLearner(self.path.parent/'family_models'/key)
+            state=self._family_learners[key].run(cases,now=now,account=account)
+            result['family_reports'].setdefault(symbol,{})[family]=(state.get('reports') or {}).get(symbol,{})
+            champion=(state.get('champions') or {}).get(symbol)
+            if champion:result['family_champions'].setdefault(symbol,{})[family]=champion
+        return result
+
 
 class EvolutionWorker:
     def __init__(self,cfg,root):
@@ -225,7 +249,9 @@ class EvolutionWorker:
         with self.lock:cfg=copy.deepcopy(self.cfg);snap=copy.deepcopy(self.snapshot);videos=copy.deepcopy(self.videos);state=copy.deepcopy(self.state)
         kc=cfg.get('knowledge',{})
         if cfg.get('learning',{}).get('daily_outcome_learning',True) and 'confirmed_learning_outcomes' in snap:
-            state['daily_learning']=self.learner.run(snap['confirmed_learning_outcomes'],account=snap.get('learning_account'))
+            from strategy_choice import selected
+            state['daily_learning']=self.learner.run_by_family(snap['confirmed_learning_outcomes'],
+                account=snap.get('learning_account'),selector=selected(cfg))
             # Make validated learning visible before slow video fetching/LLM work.
             with self.lock:self.state['daily_learning']=copy.deepcopy(state['daily_learning'])
         if kc.get('enabled',True):

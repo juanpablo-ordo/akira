@@ -31,6 +31,13 @@ class Widget:
     def selection(self):return self.selected
     def selection_set(self,key):self.selected=(key,)
     def exists(self,key):return key in self.items
+    def item(self,key,option=None,**kw):
+        self.items[key].update(kw)
+        return self.items[key].get(option) if option else self.items[key]
+    def move(self,key,parent,index):
+        value=self.items[key];keys=[k for k in self.items if k!=key];keys.insert(int(index),key)
+        self.items={k:value if k==key else self.items[k] for k in keys}
+    def winfo_exists(self):return True
     def tag_names(self):return tuple(self.tags)
     def tag_delete(self,key):self.tags.pop(key,None)
     def tag_add(self,key,*args):self.tags[key]=args
@@ -57,7 +64,7 @@ class Widget:
     def update_data(self,data):self.data=data
     def set_expression(self,value,context=''):self.expression=value
     def __getattr__(self,name):
-        if name in ('theme_use','map','layout','pack','pack_propagate','place','place_forget','grid','columnconfigure','rowconfigure','heading','column','bind','see','after','after_idle','after_cancel','title','geometry','minsize','iconbitmap','protocol','destroy','itemconfigure','focus_set','set','option_add','tag_remove','selection_set','selection_clear'):
+        if name in ('theme_use','map','layout','pack','pack_forget','pack_propagate','place','place_forget','grid','columnconfigure','rowconfigure','heading','column','bind','see','after','after_idle','after_cancel','title','geometry','minsize','iconbitmap','protocol','destroy','itemconfigure','focus_set','set','option_add','tag_remove','selection_set','selection_clear'):
             return lambda *args,**kw:self.calls.append((name,args,kw))
         raise AttributeError(name)
 
