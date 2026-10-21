@@ -96,6 +96,7 @@ def run(exe, model, report):
                     ('followup','¿Cuál pierde los datos cuando apago la computadora?',lambda a:'ram' in a and any(w in a for w in ('pierde','perder','borra','volatil','volátil','apaga','apagado'))),
                     ('personal_conversation','Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?',lambda a:any(w in a for w in ('respir','practic','calm','pausa','tranquil')))
                 ]
+                result['expected_scenarios']=[name for name,question,check in cases]
                 for name,question,check in cases:
                     if stop.is_set():raise RuntimeError('QA interrupted')
                     window.controller.chat_busy=True;began=time.monotonic()
@@ -140,7 +141,9 @@ def run(exe, model, report):
             engine_cycle_p95_ms=round(ordered[min(len(ordered)-1,int(len(ordered)*.95))],2) if ordered else None,
             engine_cycles=len(cycles),fresh_quote_cycles=sum(fresh),actor_errors=actor_errors)
         result['status']='PASSED' if (done.is_set() and not actor_errors and not result.get('conversation_error')
-            and len(result['scenarios'])==6 and result['cpu_percent_of_available_cpus']<80
+            and result.get('expected_scenarios')
+            and [row['name'] for row in result['scenarios']]==result['expected_scenarios']
+            and result['cpu_percent_of_available_cpus']<80
             and result['ui_delay_p95_ms'] is not None and result['ui_delay_p95_ms']<200
             and peak_mb<=3200 and len(cycles)>=20 and all(fresh)) else 'FAILED'
     except Exception:
