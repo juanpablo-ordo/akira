@@ -91,6 +91,7 @@ def run(exe, model, report):
                     ('identity','¿Quién eres?',lambda a:'akira' in a),
                     ('presence_typo','¿Me escuhas, Akira?',lambda a:'leo' in a),
                     ('capabilities','Oye Akira, ¿qué puedes hacer?',lambda a:'conversar' in a),
+                    ('science_capability','sabes de ciencia?',lambda a:'podemos hablar' in a and 'fuentes' not in a),
                     ('new_topic_typo','Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?',lambda a:'ram' in a and any(w in a for w in ('disco','ssd','almacenamiento'))),
                     ('followup','¿Cuál pierde los datos cuando apago la computadora?',lambda a:'ram' in a and any(w in a for w in ('pierde','perder','borra','volatil','volátil','apaga','apagado'))),
                     ('personal_conversation','Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?',lambda a:any(w in a for w in ('respir','practic','calm','pausa','tranquil')))

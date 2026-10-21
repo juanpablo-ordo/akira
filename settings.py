@@ -407,6 +407,7 @@ def load_config(path):
         if v<1 or int(v)!=v:raise ValueError('pending.'+k+' debe ser entero positivo')
     if cfg['pending']['replace_min_ticks']<2:raise ValueError('Se necesitan al menos dos ticks distintos para retirar/sustituir')
     if cfg['management']['trail_at_r']<cfg['management']['breakeven_at_r']:raise ValueError('El trailing debe empezar después del breakeven')
+    if type(cfg['management']['protect_progress']) is not bool:raise ValueError('La protección de avance debe ser booleana')
     if cfg['strategy']['pending_hard_min_rr']<1:raise ValueError('R:R duro debe ser >=1')
     if cfg['strategy']['max_tick_age_seconds']<=0:raise ValueError('La edad máxima de tick debe ser positiva')
     for k in ('news_refresh_seconds','coinglass_refresh_seconds','youtube_discovery_seconds','model_refresh_seconds'):

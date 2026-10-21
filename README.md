@@ -1,4 +1,12 @@
-# AKIRA 16.4.5 · Studio Rev10
+# AKIRA 16.4.6 · Studio Rev11
+
+Esta revisión protege el capital de las runners directas, da prioridad a pendientes y solicita protección de avance en posiciones propias cuando alcanzan el umbral R, aunque falte un pivote M15. Conserva SL/TP y controles del bróker. El chat distingue preguntas personales de investigación, mantiene el hilo y responde preguntas directas sin cargar el modelo. PDF, Excel y JSON separan solicitud, colocación y apertura de cada orden.
+
+La validación del instalador de esta revisión se publica en [Actions de la rama Rev11](https://github.com/juanpablo-ordo/akira/actions/workflows/build-windows.yml?query=branch%3Aakira-studio-rev11-20261020). Usa el artefacto **instalador-Windows-IA-INCLUIDA** de una ejecución correcta. El artefacto «build-no-es-instalador» no incluye todos los componentes para instalar.
+
+Para equipos modestos: Ajustes → Rendimiento → Ahorro de energía. La IA incluida sigue necesitando memoria al conversar; no se promete ejecución instantánea ni rentabilidad. Consulta [criterios y límites de Rev11](ACEPTACION_REV11.md).
+
+## Historial de Rev10
 
 [Descargar el instalador Windows con la IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39397248037/artifacts/12253483233) · `AKIRA_16_4_5_STUDIO_REV10_IA_INCLUIDA.exe`.
 

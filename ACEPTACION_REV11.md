@@ -10,7 +10,9 @@ Estado inicial: PENDIENTE DE REGRESIONES Y VALIDACIÓN WINDOWS. Este archivo des
 - Pérdida confirmada de runner: pausa de 3600 segundos del mismo activo. Las runners de BTC y oro comparten un presupuesto de pérdidas brutas en 24 horas equivalente a un límite general por operación.
 - Las ganancias y un reinicio no borran las pérdidas del período. El cálculo depende de cierres propios completos confirmados por MT5.
 - El impulso adverso de dos M1 cerradas también veta entradas directas. Una única vela roja o verde no predice el resultado de una operación.
-- No se aumentan límites generales ni se modifican SL/TP de posiciones existentes por esta actualización.
+- No se aumentan límites generales. Las posiciones propias abiertas también pueden recibir protección de avance cuando su precio actual alcanza el umbral configurado; nunca se amplía un SL ni se elimina el TP.
+- Protección de avance activada por defecto: a partir de `management.breakeven_at_r`, el SL puede cubrir costes estimados aunque falte un pivote M15 posterior. Un pivote solo mejora ese suelo. Se conservan espera mínima, intervalo entre modificaciones y validación stops/freeze del bróker. Puede desactivarse expresamente en Ajustes → Riesgo.
+- Se distinguen runners directas de pendientes activadas que usan gestión estructural. Leer un máximo favorable histórico no autoriza a inventar una protección ejecutable después de que el precio haya retrocedido.
 
 ## Conversación
 
@@ -18,6 +20,7 @@ Estado inicial: PENDIENTE DE REGRESIONES Y VALIDACIÓN WINDOWS. Este archivo des
 - Charla personal usa el modelo y el hilo. Se conservan los recuerdos suministrados en el contexto general.
 - Actualidad y hechos externos siguen requiriendo evidencia. Las respuestas deterministas no se presentan como una reparación o una inferencia verificada.
 - Se prueban faltas, continuidad, tema nuevo y conversación personal con el GGUF real.
+- La pregunta de capacidades «¿sabes de ciencia?» se contesta directamente. Si falla el modelo en una conversación personal, no se pega una lista de noticias ajenas al tema.
 
 ## Horas de las órdenes
 
@@ -36,4 +39,4 @@ PDF, Excel y JSON separan solicitud/colocación de apertura de posición. Priori
 
 ## Límites de esta entrega
 
-No se puede asegurar rentabilidad, eliminar toda pérdida ni certificar el rendimiento de un equipo que no se ha medido. Los adjuntos de esta incidencia no estaban accesibles en el entorno de trabajo al preparar los cambios; no se atribuyen causas a operaciones particulares sin leer sus registros.
+No se puede asegurar rentabilidad, eliminar toda pérdida ni certificar el rendimiento de un equipo que no se ha medido. Se revisaron localmente el informe JSON, el PDF y las siete capturas aportadas al reanudar esta incidencia. Se identificó la diferencia entre origen pendiente y gestión estructural, y un bloqueo de protección por ausencia de pivote. Los datos privados no se incorporan al repositorio. No se dispone de toda la secuencia histórica de ticks para demostrar qué resultado habría producido la nueva gestión en aquellas operaciones.

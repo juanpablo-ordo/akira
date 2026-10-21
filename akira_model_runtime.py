@@ -35,10 +35,13 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
             ram_gb=psutil.virtual_memory().total/1073741824
         except (ImportError,OSError):ram_gb=4
     if cpu_cores is None:
+        cpu_cores=os.cpu_count() or 2
         try:
             import psutil
-            cpu_cores=len(psutil.Process().cpu_affinity())
-        except (ImportError,OSError,AttributeError):cpu_cores=os.cpu_count() or 2
+        except ImportError:pass
+        else:
+            try:cpu_cores=len(psutil.Process().cpu_affinity())
+            except (psutil.Error,OSError,AttributeError):pass
     vram=max(0,float(gpu_vram_gb or 0))
     ram=max(1,float(ram_gb))
     # A 4B Q4 model has headroom; large 14B/30B models saturate 8GB cards.

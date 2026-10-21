@@ -14,7 +14,7 @@ from assistant_akira import AkiraAssistant
 from akira_model_runtime import ManagedLlamaProcess, hardware_profile
 from conversation_intent import is_personal_conversation, self_reply
 from engine import Engine
-from execution import Blocked, Gateway, OWN_RUNNER
+from execution import Blocked, Gateway, OWN_RUNNER, OWN_PENDING
 from operation_report import HEADERS, NS as XMLNS, build_report, export_report, stamp
 from order_timing import broker_seconds
 from resource_optimizer import ui_poll_ms
@@ -23,6 +23,93 @@ from settings import DEFAULT, load_config
 from tests.fixtures import PendingCase, optional_ollama_fixture
 from tests.test_studio_rev9_execution import impulse_frames
 from entry_momentum import adverse_impulse
+
+
+class ProgressProtectionTests(PendingCase, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        from position_manager import PositionManager
+        self.manager=PositionManager(self.g,NS(caches={}))
+
+    def position(self,side=1,lane='PENDING',symbol='BTCUSDm'):
+        for name,tick in list(self.api.ticks.items()):self.api.set_quote(name,tick.bid,fill=False)
+        entry=self.g.quote(symbol).ask if side==1 else self.g.quote(symbol).bid
+        risk=100 if symbol.startswith('BTC') else 1
+        p=self.api.add_position(symbol,0 if side==1 else 1,entry=entry,
+            sl=entry-side*risk,tp=entry+side*risk*3,
+            magic=OWN_RUNNER if lane=='RUNNER' else OWN_PENDING)
+        plan=replace(self.plan(symbol,side),lane=lane,entry=entry,sl=p.sl,tp=p.tp).to_dict()
+        self.g.register_position(p,plan)
+        self.clock.advance(90)
+        close=entry+side*risk*1.35
+        self.api.set_quote(symbol,close if side==1 else close-self.api.ticks[symbol].ask+self.api.ticks[symbol].bid,fill=False)
+        return p
+
+    def test_both_lanes_and_assets_protect_progress_without_m15_or_m5(self):
+        for lane in ('RUNNER','PENDING'):
+            for side in (1,-1):
+                for symbol in ('BTCUSDm','XAUUSDm'):
+                    with self.subTest(lane=lane,side=side,symbol=symbol):
+                        p=self.position(side,lane,symbol);tp=p.tp;old_sl=p.sl
+                        self.manager.step(self.g.snapshot());self.g.reconcile(self.g.snapshot())
+                        self.assertGreater(side*(p.sl-p.price_open),0)
+                        self.assertGreater(side*(p.sl-old_sl),0)
+                        self.assertEqual(p.tp,tp)
+                        row=self.g.journal.data['positions'][str(p.ticket)]
+                        self.assertAlmostEqual(row['last_rr'],1.35,places=5)
+                        self.assertIn('sin esperar pivote',row['management_events'][-1]['reason'])
+                        self.api.positions.remove(p)
+
+    def test_missing_pivot_does_not_silently_veto_progress_floor(self):
+        engine=Engine(self.g,self.cfg,self.g.log);self.addCleanup(engine.close);engine.warmup()
+        self.manager.planner=engine.planner
+        p=self.position(side=-1)
+        cache=engine.planner.caches[p.symbol]
+        cache.frames['M15']=replace(cache.frames['M15'],highs=(),lows=())
+        with patch('position_manager.runner_exit',return_value=''):
+            self.manager.step(self.g.snapshot())
+        self.assertLess(p.sl,p.price_open)
+
+    def test_old_historical_peak_does_not_force_a_stop_after_price_has_reversed(self):
+        p=self.position();row=self.g.journal.data['positions'][str(p.ticket)]
+        row['max_favorable_r']=1.4
+        self.api.set_quote(p.symbol,p.price_open-20,fill=False)
+        with patch.object(self.g,'update_stop') as update:self.manager.step(self.g.snapshot())
+        update.assert_not_called()
+
+    def test_stop_already_better_than_floor_is_never_widened(self):
+        p=self.position();p.sl=p.price_open+50
+        with patch.object(self.g,'update_stop') as update:self.manager.step(self.g.snapshot())
+        update.assert_not_called()
+
+    def test_minimum_hold_and_modify_interval_still_apply(self):
+        p=self.position();row=self.g.journal.data['positions'][str(p.ticket)]
+        row['time']=self.clock()-1
+        with patch.object(self.g,'update_stop') as update:self.manager.step(self.g.snapshot())
+        update.assert_not_called()
+        row['time']=self.clock()-90;row['last_modify']=self.clock()-1
+        with patch.object(self.g,'update_stop') as update:self.manager.step(self.g.snapshot())
+        update.assert_not_called()
+
+    def test_broker_stop_distance_is_enforced_before_sending(self):
+        p=self.position();self.api.infos[p.symbol].trade_stops_level=100000
+        old=p.sl
+        self.manager.step(self.g.snapshot())
+        self.assertEqual(p.sl,old);self.assertFalse(self.api.sent)
+        self.assertFalse(self.g.journal.data['positions'][str(p.ticket)].get('management_events'))
+
+    def test_an_external_position_is_not_protected_by_this_policy(self):
+        p=self.position();p.magic=0
+        with patch.object(self.g,'update_stop') as update:self.manager.step(self.g.snapshot())
+        update.assert_not_called()
+
+    def test_missing_setting_migrates_to_progress_protection_and_respects_opt_out(self):
+        cfg=copy.deepcopy(DEFAULT);cfg['management'].pop('protect_progress')
+        self.assertTrue(load_config(cfg)['management']['protect_progress'])
+        cfg['management']['protect_progress']=False
+        self.assertFalse(load_config(cfg)['management']['protect_progress'])
+        cfg['management']['protect_progress']='yes'
+        with self.assertRaises(ValueError):load_config(cfg)
 
 
 class RunnerCapitalTests(PendingCase, unittest.TestCase):
@@ -189,6 +276,19 @@ class ConversationRoutingTests(unittest.TestCase):
         from language_normalization import understood
         self.assertEqual(understood('Hay una ola de calor'),'Hay una ola de calor')
 
+    def test_science_capability_question_from_chat_is_answered_without_web_or_model_boot(self):
+        with patch.object(self.bot,'local_llm_reply',side_effect=AssertionError('model boot')), \
+             patch('assistant_akira.lookup_current_fact',side_effect=AssertionError('irrelevant web search')):
+            answer=self.bot.reply('sabes de ciencia?',{},False)
+        self.assertIn('podemos hablar',answer)
+
+    def test_failed_personal_conversation_does_not_paste_irrelevant_search_results(self):
+        with patch.object(self.bot,'local_llm_reply',side_effect=TimeoutError('fixture timeout')), \
+             patch('assistant_akira.lookup_current_fact',side_effect=AssertionError('irrelevant web search')):
+            answer=self.bot.reply('¿Tienes amigos?',{},False)
+        self.assertIn('motor de conversación',answer)
+        self.assertNotIn('referencias',answer)
+
     def test_own_identity_is_not_confused_with_current_factual_questions(self):
         for message in ('¿Quién es el presidente actual de Guatemala?','¿Qué anunció Xbox hoy?','Recuerdas quién es el presidente actual de Guatemala?'):
             self.assertIsNone(self_reply(message))
@@ -307,6 +407,11 @@ class TimingExportTests(PendingCase, unittest.TestCase):
 
 
 class LowResourcePolicyTests(unittest.TestCase):
+    def test_denied_or_unavailable_process_metrics_do_not_disable_chat(self):
+        import psutil
+        with patch('psutil.Process',side_effect=psutil.NoSuchProcess(123)),patch('os.cpu_count',return_value=4):
+            self.assertEqual(hardware_profile(ram_gb=8)['logical_cores'],4)
+
     def test_default_profile_detects_ram_and_available_cpu_instead_of_assuming_a_gaming_pc(self):
         with patch('psutil.virtual_memory',return_value=NS(total=8*1073741824)), \
              patch('psutil.Process') as process:

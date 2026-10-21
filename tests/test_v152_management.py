@@ -46,12 +46,14 @@ class ManagementTests(PendingCase,unittest.TestCase):
         self.assertAlmostEqual(meta['recent_zones'][-1]['entry'],p.entry,places=2)
         self.assertTrue(self.e.pending_return_reason(meta,p,self.clock()))
     def test_runner_does_not_move_sl_to_entry_without_new_m15_swing(self):
+        self.cfg['management']['protect_progress']=False  # Explicit opt-out preserves pivot-only policy.
         p,pos=self.position();cache=self.e.planner.caches[p.symbol]
         cache.frames['M15']=replace(cache.frames['M15'],lows=(),highs=())
         with patch('position_manager.runner_exit',return_value=''),patch.object(self.g,'update_stop') as update:self.e.positions.step(self.g.snapshot())
         update.assert_not_called();self.assertAlmostEqual(pos.sl,p.sl,delta=.011)
         self.assertIn('falta pivote',self.g.journal.data['positions'][str(pos.ticket)]['protection_state'])
     def test_runner_never_uses_m5_fallback_to_tighten_m15_protection(self):
+        self.cfg['management']['protect_progress']=False
         p,pos=self.position();self.e.planner.caches[p.symbol].frames.pop('M15')
         with patch.object(self.g,'update_stop') as update:self.e.positions.step(self.g.snapshot())
         update.assert_not_called();self.assertAlmostEqual(pos.sl,p.sl,delta=.011)

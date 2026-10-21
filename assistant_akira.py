@@ -1439,7 +1439,7 @@ class AkiraAssistant:
             # Si fallaron ambos modelos y NO era trading, no contaminar una
             # conversación general con el resumen de P/L de la cuenta.
             if not trading:
-                if is_casual(message):
+                if is_casual(message) or is_personal_conversation(message):
                     if routing['repair']:
                         cached=self._research_cache.get(question) or {}
                         if cached.get('rows'):return self._limited_evidence_reply(question,cached['rows'])

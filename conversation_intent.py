@@ -22,6 +22,8 @@ def self_intent(message, brand='AKIRA'):
         return 'identity'
     if re.fullmatch(r'(?:que (?:puedes|sabes) hacer|que haces tu|para que sirves|como funcionas|que puedes hacer por mi|en que me puedes ayudar)', text):
         return 'capabilities'
+    if re.fullmatch(r'(?:sabes (?:de|sobre)|puedes (?:hablar|explicarme cosas) (?:de|sobre)) (?:la )?(?:ciencia|fisica|quimica|biologia|matematicas|historia|literatura|programacion|tecnologia)',text):
+        return 'subject_capability'
     if re.fullmatch(r'(?:que haces|que estas haciendo|en que estas|estas ahi|sigues ahi|me (?:oyes|escuchas|entiendes)|puedes hablar conmigo|puedes conversar conmigo)', text):
         return 'presence'
     if re.fullmatch(r'(?:como estas|como te va|que tal estas|todo bien)', text):
@@ -57,6 +59,7 @@ def self_reply(message, brand='AKIRA'):
     return {
         'identity': f'Soy {brand}, tu asistente. Podemos conversar, investigar y revisar juntos lo que está pasando en el programa.',
         'capabilities': 'Puedo conversar contigo, explicar temas, ayudarte a escribir, investigar fuentes y revisar el estado de Akira. Las operaciones pasan por el motor y sus controles de riesgo; hablar conmigo no coloca órdenes por sí solo.',
+        'subject_capability': 'Sí, podemos hablar de ese tema. Puedo explicártelo paso a paso o ayudarte con una duda concreta. ¿Qué te gustaría saber?',
         'presence': 'Aquí estoy, te leo. Puedes hablarme directamente y seguir el tema que llevábamos.',
         'greeting': 'Aquí estoy, lista para conversar contigo. ¿Cómo te ha ido?',
         'conversation': 'Claro, conversemos. Cuéntame qué tienes en mente.',

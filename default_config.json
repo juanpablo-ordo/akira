@@ -333,6 +333,7 @@
     "trail_atr": 0.7,
     "modify_seconds": 5.0,
     "runner_structure_only": true,
+    "protect_progress": true,
     "pending_fills_as_runners": true,
     "extend_targets": false,
     "extension_min_r": 1.8
