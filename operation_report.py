@@ -168,7 +168,7 @@ def build_report(snapshot,hours=24):
         ['Riesgo','Límite conjunto USD',finite(ledger.get('cap_usd')),'Compartido entre BTC, oro y operaciones manuales'],
         ['Riesgo','Reservado USD',finite(ledger.get('reserved_usd')),'Suma de posiciones, pendientes y solicitudes sin confirmar'],
         ['Riesgo','Libre USD',finite(ledger.get('available_usd')),'Capacidad conjunta; cada operación también tiene su propio límite'],
-        ['Riesgo','Límite por operación USD',finite(snapshot.get('trade_risk_cap')),'Un runner puede superar este límite aunque exista riesgo conjunto libre'],
+        ['Riesgo','Límite por operación USD',finite(snapshot.get('trade_risk_cap')),'Ninguna entrada nueva puede superarlo por tener presupuesto conjunto libre; las runners directas tienen además su propio tope reducido'],
         ['Velocidad','Último ciclo ms',finite(snapshot.get('cycle_ms')),'Medición del motor; no garantiza latencia futura del bróker']]
     for symbol,info in symbols.items():
         if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
