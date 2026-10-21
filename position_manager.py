@@ -127,4 +127,6 @@ class PositionManager:
                         row['last_modify']=now
                         row['protection_state']='Protección solicitada; esperando confirmación MT5'
                         g.journal.save()
+                else:
+                    row['protection_state']='SL vigente en MT5; sin mejora de protección disponible'
             except Blocked as e:g.log.report(p.symbol,'PROTECCIÓN',str(e))

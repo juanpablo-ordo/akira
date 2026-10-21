@@ -24,7 +24,7 @@ def self_intent(message, brand='AKIRA'):
         return 'capabilities'
     if re.fullmatch(r'(?:sabes (?:de|sobre)|puedes (?:hablar|explicarme cosas) (?:de|sobre)) (?:la )?(?:ciencia|fisica|quimica|biologia|matematicas|historia|literatura|programacion|tecnologia)',text):
         return 'subject_capability'
-    if re.fullmatch(r'(?:que haces|que estas haciendo|en que estas|estas ahi|sigues ahi|me (?:oyes|escuchas|entiendes)|puedes hablar conmigo|puedes conversar conmigo)', text):
+    if re.fullmatch(r'(?:que haces|que estas haciendo|en que estas|estas ahi|sigues ahi|me (?:oyes|escuchas|entiendes)|puedes hablar conmigo|puedes conversar conmigo)(?: (?:ahora|ahorita|en este momento))?', text):
         return 'presence'
     if re.fullmatch(r'(?:como estas|como te va|que tal estas|todo bien)', text):
         return 'greeting'

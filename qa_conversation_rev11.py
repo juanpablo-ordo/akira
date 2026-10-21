@@ -62,7 +62,7 @@ def run(exe, model, report):
             local_runtime_model=str(Path(model).resolve()),
             local_endpoint='http://127.0.0.1:18996/v1/chat/completions',
             local_runtime_start_on_launch=False,auto_research=False,auto_youtube_research=False,
-            self_review=False,cloud=False,fast_chat_timeout_seconds=120)
+            self_review=False,cloud=False)
         save_config(cfg,root/'akira_config.json')
         window=StudioWindow(root,preview=True,start_actor=False)
         window.resize(1366,768);window.show();window.navigate(3)
@@ -119,7 +119,7 @@ def run(exe, model, report):
                 result['model_effective_parameters']=bot._managed_model.effective_parameters()
                 command=bot._managed_model._launch_command or []
                 result['model_command_limits']={key:command[command.index(key)+1] for key in
-                    ('--threads','--threads-batch','--poll','--poll-batch','--ctx-size','--n-gpu-layers','--load-mode','--cache-ram') if key in command}
+                    ('--threads','--threads-batch','--poll','--poll-batch','--ctx-size','--n-gpu-layers','--load-mode','--cache-ram','--flash-attn','--cache-type-k','--cache-type-v') if key in command}
             except Exception:
                 result['conversation_error']=traceback.format_exc()
             finally:

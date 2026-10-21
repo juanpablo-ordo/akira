@@ -1124,6 +1124,8 @@ class AkiraAssistant:
             continuity=routing if routing.get('contextual') or routing.get('repair') else {},budget=context_budget)
         tools=self._local_tools() if deep or file_request or (urls and explicit_research) else []
         timeout=float(cfg.get('local_timeout_seconds',120) if deep else max(120 if source_rows and fresh else 75,cfg.get('fast_chat_timeout_seconds',75)))
+        if (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía':
+            timeout=max(120,timeout)  # Small CPU budgets need time to finish; Engine stays independent.
         rounds=min(5,int(cfg.get('local_agent_rounds',4))) if deep else 2 if tools else 1
         inference_deadline=time.monotonic()+timeout
         from resource_optimizer import ollama_limits

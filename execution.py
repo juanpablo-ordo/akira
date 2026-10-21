@@ -792,6 +792,8 @@ class Gateway:
                             'old_sl':(i.get('before') or {}).get('sl'),'new_sl':req.get('sl'),
                             'rr_at_request':i.get('rr_at_request'),'retcode':i.get('retcode')})
                         row['management_events']=changes[-100:]
+                        if op=='protect':
+                            row['protection_state']='Protección confirmada en MT5' if p is not None else 'Posición cerrada; revisar el cierre confirmado por MT5'
                 self.journal.data['intents'].pop(symbol,None)
                 self.log.event(symbol,'CONFIRMADO '+str(op),operation='confirmed_'+str(op),
                     request=req,reason=i.get('reason',''),retcode=i.get('retcode'),

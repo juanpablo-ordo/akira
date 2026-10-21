@@ -58,6 +58,7 @@ class ProgressProtectionTests(PendingCase, unittest.TestCase):
                         row=self.g.journal.data['positions'][str(p.ticket)]
                         self.assertAlmostEqual(row['last_rr'],1.35,places=5)
                         self.assertIn('sin esperar pivote',row['management_events'][-1]['reason'])
+                        self.assertEqual(row['protection_state'],'Protección confirmada en MT5')
                         self.api.positions.remove(p)
 
     def test_missing_pivot_does_not_silently_veto_progress_floor(self):
@@ -81,6 +82,7 @@ class ProgressProtectionTests(PendingCase, unittest.TestCase):
         p=self.position();p.sl=p.price_open+50
         with patch.object(self.g,'update_stop') as update:self.manager.step(self.g.snapshot())
         update.assert_not_called()
+        self.assertIn('SL vigente',self.g.journal.data['positions'][str(p.ticket)]['protection_state'])
 
     def test_minimum_hold_and_modify_interval_still_apply(self):
         p=self.position();row=self.g.journal.data['positions'][str(p.ticket)]
@@ -245,7 +247,9 @@ class ConversationRoutingTests(unittest.TestCase):
         questions=['¿Quién eres?','¿Qué eres?','oye Akira, ¿qué puedes hacer?',
             '¿Para qué sirbes?','¿Me escuhas?','¿Estás ahí?',
             '¿Cómo funcionas?','Quiero comversar contigo','¿Qué estás haciendo?',
-            'Hola Akira, ¿cómo estás?','¿Eres una IA?']
+            'Hola Akira, ¿cómo estás?','¿Eres una IA?',
+            '¿Qué estás haciendo ahorita?','Akira, ¿me escuchas ahora?',
+            'Quiero convenzar contigo','Quiero converzar contigo']
         with patch.object(self.bot,'local_llm_reply',side_effect=AssertionError('model boot')), \
              patch('assistant_akira.lookup_current_fact',side_effect=AssertionError('web lookup')):
             for question in questions:
@@ -271,6 +275,18 @@ class ConversationRoutingTests(unittest.TestCase):
              patch('assistant_akira.ollama_agent',side_effect=answer), \
              patch.object(self.bot,'_source_tool',side_effect=AssertionError('unwanted search')):
             self.assertEqual(self.bot._local_llm_reply_impl(message,snapshot),'Te leo. Cuéntame qué pasó hoy.')
+
+    def test_eco_chat_uses_production_cpu_deadline_instead_of_a_qa_override(self):
+        for profile,expected in [('Ahorro de energía',120),('Equilibrado',75)]:
+            self.cfg['desktop']['performance_profile']=profile
+            self.cfg['assistant']['fast_chat_timeout_seconds']=25
+            with self.subTest(profile=profile), \
+                 patch('assistant_akira.ollama_status',return_value={'ok':True,'models':['qwen3:8b','qwen3:4b']}), \
+                 patch('assistant_akira.ollama_agent',return_value='Cuéntame, te leo.') as model, \
+                 patch.object(self.bot,'_source_tool',side_effect=AssertionError('unwanted search')):
+                self.bot._local_llm_reply_impl('Quiero contarte algo de mi día.',{})
+                self.assertEqual(model.call_args.kwargs['timeout'],expected)
+                self.assertEqual(model.call_args.kwargs['total_timeout'],expected)
 
     def test_weather_word_ola_is_not_rewritten_as_a_greeting(self):
         from language_normalization import understood
@@ -435,7 +451,11 @@ class LowResourcePolicyTests(unittest.TestCase):
         self.assertEqual(flag('--poll-batch'),'0')
         self.assertEqual(flag('--ubatch-size'),'64')
         self.assertEqual(flag('--load-mode'),'none')
-        self.assertEqual(flag('--cache-ram'),'128')
+        self.assertEqual(flag('--cache-ram'),'0')
+        self.assertEqual(flag('--flash-attn'),'on')
+        self.assertEqual(flag('--cache-type-k'),'q8_0')
+        self.assertEqual(flag('--cache-type-v'),'q8_0')
+        self.assertNotIn('--no-repack',command)
         self.assertEqual(flag('--n-gpu-layers'),'0')
 
     def test_visual_timer_slows_while_hidden_but_chat_remains_responsive(self):
