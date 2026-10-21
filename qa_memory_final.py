@@ -12,11 +12,11 @@ def probe(exe, model, folder):
     original=ManagedLlamaProcess.command
     variants={
         'current':{},
-        'cache0_small_batches':{'--cache-ram':'0','--batch-size':'64','--ubatch-size':'32'},
-        'cache0_no_repack':{'--cache-ram':'0','--batch-size':'64','--ubatch-size':'32','--no-repack':None},
+        'cache0_flash_f16':{'--cache-ram':'0','--flash-attn':'on'},
+        'cache0_flash_q8':{'--cache-ram':'0','--flash-attn':'on','--cache-type-k':'q8_0','--cache-type-v':'q8_0'},
     }
     result={'status':'FAILED','variants':{},'same_model_and_questions':True,
-            'same_source':'0bdbd8fb2ea167ed2df4dc97894afe039427f495','live_account_used':False}
+            'same_source':'0bdbd8fb2ea167ed2df4dc97894afe039427f495','live_account_used':False,'source_sprite_component_prepared':True}
     try:
         for name,overrides in variants.items():
             launched=[]

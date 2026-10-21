@@ -1,5 +1,5 @@
 name: AKIRA comparar el pico de memoria Rev11
-run-name: Rev11 comparar caché y lotes de memoria con siete preguntas
+run-name: Rev11 comparar atención y caché con siete preguntas
 on:
   push:
     branches:
@@ -40,6 +40,11 @@ jobs:
           "AKIRA_PROBE_MODEL=$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" >> $env:GITHUB_ENV
           python -c "import os;from pathlib import Path;from installer.smoke_local_ai import get_model;get_model(Path(os.environ['RUNNER_TEMP'])/'Qwen3-4B-Q4_K_M.gguf')"
           if ($LASTEXITCODE -ne 0) { throw 'Modelo no verificado' }
+      - name: Igualar componente visual de la compilación completa
+        shell: pwsh
+        run: |
+          python -m installer.prepare_sprite_ai --dest assets/sprite_vision
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo preparar el mismo componente visual del instalador' }
       - name: Mismo chat real, interfaz y BTC-oro en dos CPUs con tres cargas
         shell: pwsh
         run: |
