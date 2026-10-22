@@ -17,13 +17,13 @@ class CommandBridge:
                 return {'ok':False,'error':'El motor no inició esta solicitud; se retiró de la cola'}
         return {'ok':False,'unconfirmed':True,'note':'Solicitud iniciada, respuesta MT5 aún no disponible. Revisa TERMINAL antes de repetir.'}
 
-def dispatch(engine,cmd):
+def dispatch(engine,cmd,handler=None):
     lock=cmd.get('_lock')
     if lock:
         with lock:
             if cmd.get('_cancelled'):return
             cmd['_started']=True
-    try:result=engine.handle_command(cmd)
+    try:result=(handler or engine.handle_command)(cmd)
     except Exception as exc:result={'ok':False,'error':type(exc).__name__+': '+str(exc)}
     if '_reply' in cmd:cmd['_reply']['result']=result
     if '_done' in cmd:cmd['_done'].set()

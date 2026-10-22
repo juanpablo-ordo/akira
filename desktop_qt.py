@@ -111,6 +111,9 @@ class StudioWindow(QMainWindow):
         self.build_header(main_box);self.build_metrics(main_box)
         self.mode_row=QHBoxLayout();self.mode_label=label('','muted');self.mode_label.setWordWrap(True);self.mode_row.addWidget(self.mode_label,1)
         self.mode_button=self.btn('ACTIVAR OPERATIVA',self.activate_execution,'','shield');self.mode_row.addWidget(self.mode_button);main_box.addLayout(self.mode_row)
+        self.mt5_banner=QWidget();connection_row=QHBoxLayout(self.mt5_banner);connection_row.setContentsMargins(0,0,0,0)
+        self.mt5_detail=label('','muted');self.mt5_detail.setWordWrap(True);connection_row.addWidget(self.mt5_detail,1)
+        self.mt5_retry=self.btn('RECONECTAR MT5',self.controller.reconnect_mt5,glyph='bolt');connection_row.addWidget(self.mt5_retry);main_box.addWidget(self.mt5_banner)
         self.book=QStackedWidget();main_box.addWidget(self.book,1)
         self.tables=[];self.pages=[];self.build_home();self.build_pending();self.build_account();self.build_analysis();self.build_sources();self.build_chat();self.build_settings();self.build_terminal()
         self.statusBar().hide();self.apply_visual(self.cfg['studio']);self.navigate(0);self.render({})
@@ -408,7 +411,7 @@ class StudioWindow(QMainWindow):
             if self.controller.voice and not self.controller.voice.stop_event.is_set():self.controller.speak(data['text'])
             QTimer.singleShot(6000,lambda:self.director.publish('idle') if not self.controller.chat_busy else None)
         elif kind=='settings_saved':
-            self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
+            self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
         elif kind=='wallpaper_imported':self.settings_panel.media_imported(data)
         elif kind=='font_imported':self.settings_panel.font_imported(data)
         elif kind=='sprites_imported':
@@ -471,11 +474,20 @@ class StudioWindow(QMainWindow):
         if connected!=getattr(self,'_connection_ready',None):
             self._connection_ready=connected;self.connection.setStyleSheet('color:'+ (INK['green'] if connected else INK['amber'])+';')
         self.connection_footer.setText('● MT5 '+('conectado' if connected else 'esperando'))
+        self.connection_footer.setStyleSheet('color:'+(INK['green'] if connected else INK['amber'])+';')
+        self.mode_button.setEnabled(connected and not self.controller.preview)
+        connection=view.get('mt5_connection') or {};message=str(connection.get('message') or view.get('error') or 'Esperando conexión con MetaTrader 5.')
+        action=str(connection.get('next_action') or 'Abre MT5 con tu cuenta demo conectada. Si usas varios terminales, selecciona el correcto en Ajustes → Operación.')
+        delay=connection.get('retry_seconds') or 0
+        detail=message+' '+action+(f' Próximo intento en {delay} segundos.' if delay else '')
+        self.mt5_banner.setVisible(not connected);self.mt5_detail.setText(detail)
+        self.mt5_retry.setEnabled(not self.controller.preview and connection.get('code')!='CONNECTING')
+        self.settings_panel.mt5_status.setText('MT5 conectado · cuenta '+str(connection.get('account_type') or 'comprobada')+'.' if connected else detail)
         self.account_badge.setText('Cuenta privada' if self.private else 'Cuenta: '+str(a.get('login','—'))+' · Libre '+number(a.get('margin_free'))+' '+currency)
         for key,metric in self.metrics.items():
             value=a.get(key) if key in a else view.get(key)
             metric.value.setText(('••••••' if self.private else number(value)+' '+currency) if key!='cycle_ms' else number(value,0)+' ms')
-        self.mode_label.setText(('VISTA PREVIA · ' if self.controller.preview else '')+(str(gate.get('reason')) if gate.get('reason') else self.text('SOLO ANÁLISIS · NO ENVÍA ÓRDENES') if mode!='trade' else self.text('OPERATIVA AUTORIZADA')))
+        self.mode_label.setText(('VISTA PREVIA · ' if self.controller.preview else '')+('Sin conexión con MT5: no se pueden enviar órdenes.' if not connected and not self.controller.preview else str(gate.get('reason')) if gate.get('reason') else self.text('SOLO ANÁLISIS · NO ENVÍA ÓRDENES') if mode!='trade' else self.text('OPERATIVA AUTORIZADA')))
         self.mode_button.setText(self.text('ACTIVAR OPERATIVA') if mode!='trade' else self.text('REANUDAR GESTIÓN' if view.get('paused') else 'PAUSAR GESTIÓN'))
         self.clock_label.setText('America/Guatemala\n'+when(view.get('as_of_utc') or view.get('updated')))
         phase=self._model_status.get('phase');summary=['● IA local disponible' if self._model_status.get('ready') else '◷ IA en reposo · se activa al necesitarla' if phase=='IDLE' else '◷ Preparando el asistente' if phase in ('CHECKING','PREPARING') else '◷ IA pendiente de comprobar']
@@ -658,8 +670,12 @@ class StudioWindow(QMainWindow):
         try:
             draft=self.settings_panel.draft();login=None
             if draft['mode']=='trade' and (self.cfg['mode']!='trade' or self.cfg['expected_login']!=draft['expected_login']):
-                login=self.confirm_execution(draft)
-                if login is None:return
+                connected_login=(self.controller.view.get('account') or {}).get('login')
+                if self.cfg['expected_login']!=draft['expected_login'] and (not self.controller.bridge.connected or draft['expected_login']!=connected_login):
+                    draft['mode']='observe'
+                else:
+                    login=self.confirm_execution(draft)
+                    if login is None:return
             keys={k:widget.text() for k,widget in self.settings_panel.keys.items()}
             accepted=self.controller.save(draft,keys,confirmed_account=login)
             if accepted:self.settings_panel.save_button.setEnabled(False);self.settings_panel.message.setText('Guardando…')

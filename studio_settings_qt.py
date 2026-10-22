@@ -88,14 +88,21 @@ class SettingsPanel(QWidget):
     def operation(self):
         card=self.card(0,'OPERACIÓN','bolt')
         self.field(card,'mode','Modo de operación',(('observe','Solo análisis'),('trade','Operativa automática')),help='Solo análisis estudia sin enviar órdenes. Operativa automática envía, edita y retira propuestas válidas tras autorizar la cuenta y respetar los límites de riesgo.')
-        self.field(card,'terminal_path','Ruta de MetaTrader 5',help='Es la ubicación de terminal64.exe del MetaTrader que quieres conectar. Déjalo vacío para detección automática; no es una clave ni una carpeta de estrategias.')
-        self.field(card,'expected_login','Cuenta autorizada',limits=(0,2147483647),help='La activación comprueba la cuenta conectada; nunca elige una cuenta desconocida.')
+        self.field(card,'terminal_path','Ruta de MetaTrader 5',help='Es el programa terminal64.exe del MetaTrader que quieres conectar. Puedes seleccionarlo con el botón de abajo. Déjalo vacío para detección automática; Akira recordará el último terminal comprobado.')
+        self.add_button(card,'SELECCIONAR METATRADER 5',self.choose_terminal)
+        self.field(card,'expected_login','Cuenta autorizada',limits=(0,2147483647),help='Akira usará esta cuenta al reconectar y comprobará que MT5 la confirme. Inicia sesión primero en MT5 y guarda allí tus datos; escribir solo el número aquí no sustituye la contraseña del bróker.')
+        self.mt5_status=label('Esperando conexión con MT5. Guarda los cambios de cuenta o ruta antes de reconectar.','muted');self.mt5_status.setWordWrap(True);card.body.addWidget(self.mt5_status)
+        self.add_button(card,'RECONECTAR MT5',self.controller.reconnect_mt5,'','bolt')
         self.field(card,'execution.pending_only','Entradas únicamente mediante pendientes',help='Desmarcado permite runners directos confirmados. Las posiciones activadas desde pendientes pueden gestionarse como runners.')
         self.field(card,'runner.enabled','Gestionar runners normales')
         self.field(card,'lot','Lote base',limits=(.001,100))
         self.field(card,'symbols.BTCUSDm','Bitcoin · BTCUSDm');self.field(card,'symbols.XAUUSDm','Oro · XAUUSDm')
         self.add_button(card,'ACTIVAR OPERATIVA',self.window.activate_execution,'primary','shield')
         note=label('Selecciona y aplica la estrategia en Pendientes. El motor actúa automáticamente con los límites y la cuenta autorizados.','muted');note.setWordWrap(True);card.body.addWidget(note)
+
+    def choose_terminal(self):
+        path,_=QFileDialog.getOpenFileName(self,'Seleccionar MetaTrader 5','','Programas de Windows (*.exe)')
+        if path:self.fields['terminal_path'][0].setText(path)
     def risk(self):
         card=self.card(1,'PRESUPUESTO Y LÍMITES','shield')
         for path,title in [('risk.max_trade_money','Pérdida máxima por operación (USD)'),('risk.max_trade_pct','Máximo por operación (%)'),('risk.portfolio_money_cap','Límite conjunto (USD; 0 usa porcentaje)'),('risk.portfolio_capital_pct','Presupuesto conjunto (%)'),('risk.daily_loss_money','Pérdida diaria autorizada (USD; 0 desactiva)'),('risk.daily_loss_pct','Pérdida diaria autorizada (%)'),('risk.minimum_margin_level_pct','Nivel mínimo de margen (%)')]:self.field(card,path,title,limits=(0,100 if path.endswith('_pct') and 'margin' not in path else 1e8))

@@ -45,8 +45,16 @@ def summarize(root, folder):
         'real_conversation_and_load':json.loads((folder/'REAL_CHAT_LOW_RESOURCE_REV11.json').read_text(encoding='utf-8')),
         'frozen_without_text_inference':json.loads((folder/'LOW_RESOURCE_FROZEN_REV10.json').read_text(encoding='utf-8')),
         'reports':reports,'live_account_used':False,'user_attachments_reviewed':False,'profitability_verified':False}
-    (folder/'VERIFICATION_REV11.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('AKIRA_REV11_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
+    source=json.loads((folder/'SOURCE_SELF_CHECK.json').read_text(encoding='utf-8'))
+    native=json.loads((folder/'NATIVE_APPLICATION.json').read_text(encoding='utf-8'))
+    reconnect={'source':source.get('studio_check',{}).get('mt5_reconnect_details'),
+        'frozen':native.get('self_check',{}).get('studio_check',{}).get('mt5_reconnect_details')}
+    for name,check in reconnect.items():
+        if not check or check.get('status')!='PASSED' or check.get('build')!=BUILD_ID or not all(check.get('checks',{}).values()):
+            raise RuntimeError('MT5 restart not verified: '+name)
+    result['mt5_reconnect']=reconnect
+    (folder/'VERIFICATION_REV12.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('AKIRA_REV12_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
 
 
