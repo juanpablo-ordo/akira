@@ -1,29 +1,384 @@
 {
   "build": "AKIRA_16_4_7_STUDIO_REV12",
-  "status": "PENDING_WINDOWS_VERIFICATION",
-  "date": "2026-10-22",
-  "local_real_engine_reconnect": {
-    "status": "PASSED",
-    "build": "AKIRA_16_4_7_STUDIO_REV12",
-    "broker": "FakeMT5",
-    "engine": "production Engine and run_session",
-    "live_account_used": false,
-    "native_mt5_login_tested": false,
-    "checks": {
-      "first_connection_to_demo": true,
-      "shutdown_before_reopen": true,
-      "saved_target_on_restart": true,
-      "fresh_account_and_both_assets": true,
-      "lost_broker_cannot_claim_ready": true,
-      "recover_without_restarting_ui": true,
-      "timeout_recovery": true,
-      "wrong_account_rejected": true,
-      "preferences_unchanged": true,
-      "no_broker_orders": true,
-      "single_mt5_owner": true
+  "status": "PASSED",
+  "source_commit": "42099ee9c06e9d3d885fbb6f919085f48eb9ec14",
+  "source_tree": "e6ab26e6e2c677a1d0fa49029bb5502a7d3faf15",
+  "workflow_run_id": 39732801697,
+  "workflow_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39732801697",
+  "regressions": {
+    "xml_testcases": 1448,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "pytest_passed": 1448,
+    "pytest_subtests_passed": 170,
+    "seconds": 493.45
+  },
+  "unittest_collected_cases": 1445,
+  "manifest_entries_verified": 426,
+  "mt5_reconnect": {
+    "source": {
+      "status": "PASSED",
+      "build": "AKIRA_16_4_7_STUDIO_REV12",
+      "broker": "FakeMT5",
+      "engine": "production Engine and run_session",
+      "native_mt5_library_version": "5.0.6180",
+      "live_account_used": false,
+      "native_mt5_login_tested": false,
+      "checks": {
+        "first_connection_to_demo": true,
+        "shutdown_before_reopen": true,
+        "saved_target_on_restart": true,
+        "fresh_account_and_both_assets": true,
+        "lost_broker_cannot_claim_ready": true,
+        "recover_without_restarting_ui": true,
+        "timeout_recovery": true,
+        "wrong_account_rejected": true,
+        "preferences_unchanged": true,
+        "no_broker_orders": true,
+        "single_mt5_owner": true
+      }
+    },
+    "frozen": {
+      "status": "PASSED",
+      "build": "AKIRA_16_4_7_STUDIO_REV12",
+      "broker": "FakeMT5",
+      "engine": "production Engine and run_session",
+      "native_mt5_library_version": "5.0.6180",
+      "live_account_used": false,
+      "native_mt5_login_tested": false,
+      "checks": {
+        "first_connection_to_demo": true,
+        "shutdown_before_reopen": true,
+        "saved_target_on_restart": true,
+        "fresh_account_and_both_assets": true,
+        "lost_broker_cannot_claim_ready": true,
+        "recover_without_restarting_ui": true,
+        "timeout_recovery": true,
+        "wrong_account_rejected": true,
+        "preferences_unchanged": true,
+        "no_broker_orders": true,
+        "single_mt5_owner": true
+      }
     }
   },
-  "live_account_used": false,
+  "installer": {
+    "id": 12406783420,
+    "name": "AKIRA-16.4.7-Studio-Rev12-reconexion-MT5-instalador-Windows-IA-INCLUIDA",
+    "size_in_bytes": 2865840520,
+    "url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12406783420",
+    "archive_download_url": "https://api.github.com/repos/juanpablo-ordo/akira/actions/artifacts/12406783420/zip",
+    "expired": false,
+    "created_at": "2026-10-22T06:44:35Z",
+    "expires_at": "2026-10-29T06:44:13Z",
+    "updated_at": "2026-10-22T06:44:35Z",
+    "digest": "sha256:cdcb48d6eddf7aa1368505ee40a8464bb9a4ebc9c617ffdcaca161f21edf9d02",
+    "workflow_run": {
+      "id": 39732801697,
+      "repository_id": 1419886118,
+      "head_repository_id": 1419886118,
+      "head_branch": "akira-studio-rev12-mt5-20261022",
+      "head_sha": "42099ee9c06e9d3d885fbb6f919085f48eb9ec14"
+    }
+  },
+  "installer_url": "https://github.com/juanpablo-ordo/akira/actions/runs/39732801697/artifacts/12406783420",
+  "ci_summary": {
+    "status": "PASSED",
+    "build": "AKIRA_16_4_7_STUDIO_REV12",
+    "source_commit": "42099ee9c06e9d3d885fbb6f919085f48eb9ec14",
+    "workflow_run_id": "39732801697",
+    "manifest_entries_verified": 426,
+    "regressions": {
+      "xml_testcases": 1448,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "real_conversation_and_load": {
+      "status": "PASSED",
+      "build": "AKIRA_16_4_7_STUDIO_REV12",
+      "live_account_used": false,
+      "market_data": "SYNTHETIC FakeMT5",
+      "conversation_model": "REAL bundled GGUF",
+      "internet_requests_enabled": false,
+      "logical_cpus": 2,
+      "scenarios": [
+        {
+          "name": "identity",
+          "question": "¿Quién eres?",
+          "answer": "Soy AKIRA, tu asistente. Podemos conversar, investigar y revisar juntos lo que está pasando en el programa.",
+          "seconds": 0.11,
+          "first_visible_seconds": null
+        },
+        {
+          "name": "presence_typo",
+          "question": "¿Me escuhas, Akira?",
+          "answer": "Aquí estoy, te leo. Puedes hablarme directamente y seguir el tema que llevábamos.",
+          "seconds": 0.078,
+          "first_visible_seconds": null
+        },
+        {
+          "name": "capabilities",
+          "question": "Oye Akira, ¿qué puedes hacer?",
+          "answer": "Puedo conversar contigo, explicar temas, ayudarte a escribir, investigar fuentes y revisar el estado de Akira. Las operaciones pasan por el motor y sus controles de riesgo; hablar conmigo no coloca órdenes por sí solo.",
+          "seconds": 0.078,
+          "first_visible_seconds": null
+        },
+        {
+          "name": "science_capability",
+          "question": "sabes de ciencia?",
+          "answer": "Sí, podemos hablar de ese tema. Puedo explicártelo paso a paso o ayudarte con una duda concreta. ¿Qué te gustaría saber?",
+          "seconds": 0.063,
+          "first_visible_seconds": null
+        },
+        {
+          "name": "new_topic_typo",
+          "question": "Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?",
+          "answer": "La RAM es memoria temporal que permite al computador acceder rápidamente a los datos mientras se ejecutan programas. El disco duro (o SSD) es de almacenamiento a largo plazo, donde se guardan los archivos y el sistema operativo. La RAM se borra al apagar el equipo, mientras que el disco mantiene los datos incluso sin conexión.",
+          "seconds": 65.984,
+          "first_visible_seconds": 47.765
+        },
+        {
+          "name": "followup",
+          "question": "¿Cuál pierde los datos cuando apago la computadora?",
+          "answer": "La RAM pierde los datos cuando apagas la computadora. El disco duro (o SSD) mantiene los archivos y el sistema operativo incluso después de apagar el equipo.",
+          "seconds": 35.25,
+          "first_visible_seconds": 26.141
+        },
+        {
+          "name": "personal_conversation",
+          "question": "Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?",
+          "answer": "Me siento igual. Puedes respirar profundamente, enfocarte en lo que prepares y recordar que la entrevista es una oportunidad. Si te sientes muy nervioso, haz una pausa y vuelve a empezar. Estás haciendo bien.",
+          "seconds": 41.062,
+          "first_visible_seconds": 27.562
+        }
+      ],
+      "expected_scenarios": [
+        "identity",
+        "presence_typo",
+        "capabilities",
+        "science_capability",
+        "new_topic_typo",
+        "followup",
+        "personal_conversation"
+      ],
+      "model_effective_parameters": {
+        "owned_pid": 4532,
+        "context_tokens": 2048,
+        "gpu_layers": 0,
+        "cpu_threads": 1,
+        "pending_reload": false
+      },
+      "model_command_limits": {
+        "--threads": "1",
+        "--threads-batch": "1",
+        "--poll": "0",
+        "--poll-batch": "0",
+        "--ctx-size": "2048",
+        "--n-gpu-layers": "0",
+        "--load-mode": "none",
+        "--cache-ram": "0",
+        "--flash-attn": "on",
+        "--cache-type-k": "q8_0",
+        "--cache-type-v": "q8_0"
+      },
+      "wall_seconds": 142.641,
+      "cpu_seconds_app_and_owned_model": 160.266,
+      "cpu_percent_of_available_cpus": 56.18,
+      "peak_app_and_model_mb": 2751.6,
+      "memory_peak_limit_mb": 3200,
+      "ui_delay_p95_ms": 30,
+      "engine_cycle_p95_ms": 26.3,
+      "engine_cycles": 689,
+      "fresh_quote_cycles": 689,
+      "actor_errors": []
+    },
+    "frozen_without_text_inference": {
+      "build": "AKIRA_16_4_7_STUDIO_REV12",
+      "data": "SYNTHETIC",
+      "broker": "FakeMT5",
+      "live_account_used": false,
+      "logical_cores_available": 2,
+      "profiles": {
+        "Equilibrado": {
+          "cpu_seconds": 0.984,
+          "wall_seconds": 8,
+          "cpu_percent_of_two_cores": 6.15,
+          "ui_delay_p95_ms": 21,
+          "engine_cycle_p95_ms": 25.1,
+          "engine_cycles": 39,
+          "fresh_quote_cycles": 39,
+          "rss_mb": 163,
+          "financial_poll_seconds": 0.2
+        },
+        "Ahorro de energía": {
+          "cpu_seconds": 0.859,
+          "wall_seconds": 8,
+          "cpu_percent_of_two_cores": 5.37,
+          "ui_delay_p95_ms": 16,
+          "engine_cycle_p95_ms": 23.8,
+          "engine_cycles": 39,
+          "fresh_quote_cycles": 39,
+          "rss_mb": 163.4,
+          "financial_poll_seconds": 0.2
+        },
+        "minimized": {
+          "cpu_seconds": 0.734,
+          "wall_seconds": 8,
+          "cpu_percent_of_two_cores": 4.59,
+          "ui_delay_p95_ms": 31,
+          "engine_cycle_p95_ms": 25.9,
+          "engine_cycles": 39,
+          "fresh_quote_cycles": 39,
+          "rss_mb": 163.4,
+          "financial_poll_seconds": 0.2
+        }
+      },
+      "workload": {
+        "research_references": 100,
+        "research_chars_each": 6000,
+        "news_items": 80,
+        "text_inference_running": false,
+        "network_requests_running": false
+      },
+      "status": "PASSED"
+    },
+    "reports": {
+      "SOURCE_SELF_CHECK": {
+        "status": "PASSED",
+        "sha256": "b939fc9bdc4061ac92637d57e81e5fe4369266b176a35464a2b383d4242a3ebd",
+        "bytes": 7562
+      },
+      "NATIVE_APPLICATION": {
+        "status": "PASSED",
+        "sha256": "847eeeddcd292ec947bb53ccce3e3a680b75dc2c485d933b15021df305fbfa37",
+        "bytes": 8404
+      },
+      "NATIVE_FIRST_RUN": {
+        "status": "PASSED",
+        "sha256": "5e939b1d1d7713251489daa2f15a0812b78848d2d9c0b82d3a3d818b7942dc98",
+        "bytes": 99
+      },
+      "SPRITE_AI_SOURCE": {
+        "status": "PASSED",
+        "sha256": "c2ae89634d56653f74ad7c891ebc00d06ca4a46ce32b3684f1438e2abe42425c",
+        "bytes": 615
+      },
+      "SPRITE_AI_FROZEN": {
+        "status": "PASSED",
+        "sha256": "c2ae89634d56653f74ad7c891ebc00d06ca4a46ce32b3684f1438e2abe42425c",
+        "bytes": 615
+      },
+      "HTTPS_SOURCE_REV10": {
+        "status": "PASSED",
+        "sha256": "028c7d0bb51d02193a5008d560607ae20a5f5171fc9f17ca75f2cf79a9d69de1",
+        "bytes": 408
+      },
+      "HTTPS_FROZEN_REV10": {
+        "status": "PASSED",
+        "sha256": "028c7d0bb51d02193a5008d560607ae20a5f5171fc9f17ca75f2cf79a9d69de1",
+        "bytes": 408
+      },
+      "LOW_RESOURCE_FROZEN_REV10": {
+        "status": "PASSED",
+        "sha256": "fd05ee09a6c5006370bd2b170fb030ade55d39e851ad692821f823580eb52266",
+        "bytes": 1350
+      },
+      "PUBLIC_SOURCES_SOURCE_REV10": {
+        "status": "PASSED",
+        "sha256": "109d7931e70448b053f8a43f8c87b0a20f5e0cf4306cc4b75cb4ec11d9a28a94",
+        "bytes": 2008
+      },
+      "PUBLIC_SOURCES_FROZEN_REV10": {
+        "status": "PASSED",
+        "sha256": "b4c40704fc8f9d64cf2ee5f255f597106f1ad79651d41aa2bfed61ed8ec41243",
+        "bytes": 2008
+      },
+      "LOCAL_AI_SCENARIOS": {
+        "status": "PASSED",
+        "sha256": "13fb85ee5d7e3f1d5dc32371fcbe4ee9cfcfb3d4cd9c74f4cc2934aeb964562e",
+        "bytes": 482
+      },
+      "REAL_REVIEW_REV10": {
+        "status": "PASSED",
+        "sha256": "9d561a12bb339916de08d146611d978c9f5ef8e2c270813bdbe529650e1f8fe2",
+        "bytes": 9669
+      },
+      "REAL_CONVERSATION_REV6_WINDOWS": {
+        "status": "PASSED",
+        "sha256": "935e9e0cd60cda4f746ead905f6c36f37b9f51498e5c0215803777efc41373de",
+        "bytes": 1940
+      },
+      "REAL_CHAT_LOW_RESOURCE_REV11": {
+        "status": "PASSED",
+        "sha256": "083e5720bf6f13a8ae2f1ae9f69a26a8f9e417b68f00114c1ee562eb236f084f",
+        "bytes": 3878
+      },
+      "INSTALLED_LOCAL_AI": {
+        "status": "PASSED",
+        "sha256": "dc093d3a7f07a1e47f3ce5cc469ee28643da547f7945536ceaf6c88fb94038de",
+        "bytes": 516
+      }
+    },
+    "live_account_used": false,
+    "user_attachments_reviewed": false,
+    "profitability_verified": false,
+    "mt5_reconnect": {
+      "source": {
+        "status": "PASSED",
+        "build": "AKIRA_16_4_7_STUDIO_REV12",
+        "broker": "FakeMT5",
+        "engine": "production Engine and run_session",
+        "native_mt5_library_version": "5.0.6180",
+        "live_account_used": false,
+        "native_mt5_login_tested": false,
+        "checks": {
+          "first_connection_to_demo": true,
+          "shutdown_before_reopen": true,
+          "saved_target_on_restart": true,
+          "fresh_account_and_both_assets": true,
+          "lost_broker_cannot_claim_ready": true,
+          "recover_without_restarting_ui": true,
+          "timeout_recovery": true,
+          "wrong_account_rejected": true,
+          "preferences_unchanged": true,
+          "no_broker_orders": true,
+          "single_mt5_owner": true
+        }
+      },
+      "frozen": {
+        "status": "PASSED",
+        "build": "AKIRA_16_4_7_STUDIO_REV12",
+        "broker": "FakeMT5",
+        "engine": "production Engine and run_session",
+        "native_mt5_library_version": "5.0.6180",
+        "live_account_used": false,
+        "native_mt5_login_tested": false,
+        "checks": {
+          "first_connection_to_demo": true,
+          "shutdown_before_reopen": true,
+          "saved_target_on_restart": true,
+          "fresh_account_and_both_assets": true,
+          "lost_broker_cannot_claim_ready": true,
+          "recover_without_restarting_ui": true,
+          "timeout_recovery": true,
+          "wrong_account_rejected": true,
+          "preferences_unchanged": true,
+          "no_broker_orders": true,
+          "single_mt5_owner": true
+        }
+      }
+    }
+  },
+  "user_screenshot_reviewed": true,
   "native_mt5_login_tested": false,
-  "profitability_verified": false
+  "live_account_used": false,
+  "profitability_verified": false,
+  "limits": [
+    "La conexión se reproduce con el actor y motor de producción y bróker sintético; no inicia sesión en la cuenta del usuario.",
+    "La biblioteca MT5 real se importa en Windows tanto en origen como dentro del ejecutable; esto no certifica el enlace con un bróker concreto.",
+    "MT5 debe conservar los datos de acceso de la cuenta. Akira guarda su número, terminal y servidor comprobados; no almacena la contraseña del bróker.",
+    "Una cuenta nueva requiere confirmación separada para operar. Se conservan los límites de riesgo y los rechazos del bróker.",
+    "No se certifica rentabilidad."
+  ]
 }

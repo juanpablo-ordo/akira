@@ -2,10 +2,13 @@
   "build": "AKIRA_16_4_7_STUDIO_REV12",
   "tests": 1445,
   "pytest_tests": 1448,
-  "status": "PENDING_WINDOWS_VERIFICATION",
+  "status": "PASSED",
   "date": "2026-10-22",
   "skipped": 0,
   "scope": "tests conserva el contador unittest requerido por el instalador de código fuente; pytest_tests registra la suite ejecutada en Windows. No certifica rentabilidad.",
   "notes_file": "ACEPTACION_REV12.md",
-  "evidence_file": "VALIDACION_REV12.json"
+  "evidence_file": "VALIDACION_REV12.json",
+  "pytest_subtests": 170,
+  "source_commit": "42099ee9c06e9d3d885fbb6f919085f48eb9ec14",
+  "workflow_run_id": 39732801697
 }
