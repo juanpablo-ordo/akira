@@ -169,6 +169,12 @@ class SessionReconnectTests(unittest.TestCase):
         self.api.account.login=456;self.commands.put({'action':'reconnect_mt5'})
         self.assertTrue(wait_for(lambda:any(r.get('mt5_connection',{}).get('code')=='ACCOUNT_CHANGED' for r in self.rows)))
         self.assertEqual(len(self.engines),1);self.assertTrue(self.engines[0].closed);self.assertFalse(self.api.sent)
+    def test_explicit_new_target_in_observe_can_reconnect_without_old_account_journal(self):
+        self.start();self.assertTrue(wait_for(lambda:any(r.get('connected') for r in self.rows)))
+        changed=copy.deepcopy(self.cfg);changed['expected_login']=456;self.api.account.login=456
+        self.commands.put({'action':'apply_settings','config':changed,'changed_paths':['expected_login']})
+        self.assertTrue(wait_for(lambda:len(self.engines)==2 and self.rows[-1].get('connected')))
+        self.assertTrue(self.engines[0].closed);self.assertEqual(self.engines[1].cfg['mode'],'observe');self.assertEqual(self.rows[-1]['account']['login'],456);self.assertFalse(self.api.sent)
     def test_offline_order_requests_are_rejected_instead_of_replayed(self):
         self.api.outcomes=[False];box={};self.commands.put({'action':'assistant_plan','symbol':'BTCUSDm','_reply':box});self.start()
         self.assertTrue(wait_for(lambda:bool(box)));self.assertFalse(box['result']['ok']);self.assertIn('no se conservan',box['result']['error']);self.assertFalse(self.api.sent)
@@ -216,6 +222,18 @@ class ControllerAndWindowTests(unittest.TestCase):
                     controller._start_actor()
                 self.assertEqual(thread.call_args.kwargs['args'][0]['expected_login'],123)
             finally:controller.close()
+    def test_correcting_a_disconnected_trade_account_saves_it_without_reusing_authorization(self):
+        from studio_controller import StudioController
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg=load_config(DEFAULT);cfg['mode']='trade';cfg['expected_login']=123;save_config(cfg,Path(tmp)/'akira_config.json')
+            controller=StudioController(tmp,start_actor=False)
+            try:
+                draft=copy.deepcopy(controller.cfg);draft['expected_login']=456
+                self.assertTrue(controller.save(draft));self.assertTrue(wait_for(lambda:not controller._jobs))
+                saved=load_config(Path(tmp)/'akira_config.json');self.assertEqual(saved['expected_login'],456);self.assertEqual(saved['mode'],'observe');self.assertEqual(saved['risk'],cfg['risk'])
+                result=next(r['data'] for r in controller.poll() if r['kind']=='settings_saved')
+                self.assertTrue(result['result']['account_confirmation_required'])
+            finally:controller.close()
     def test_reconnect_button_queues_control_without_requesting_an_order(self):
         from studio_controller import StudioController
         with tempfile.TemporaryDirectory() as tmp:
@@ -223,6 +241,18 @@ class ControllerAndWindowTests(unittest.TestCase):
             try:
                 controller.actor=Mock();controller.actor.is_alive.return_value=True;controller._services_started=True
                 self.assertTrue(controller.reconnect_mt5());self.assertEqual(controller.commands.get_nowait(),{'action':'reconnect_mt5'})
+            finally:controller.close()
+    def test_an_old_form_cannot_transfer_trading_authorization_to_another_target(self):
+        from studio_controller import StudioController
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg=load_config(DEFAULT);cfg['mode']='trade';cfg['expected_login']=123;save_config(cfg,Path(tmp)/'akira_config.json')
+            controller=StudioController(tmp,start_actor=False)
+            try:
+                draft=copy.deepcopy(controller.cfg);draft.dirty_paths.add('mode')
+                controller.cfg['mode']='observe';controller.cfg['expected_login']=456;save_config(controller.cfg,Path(tmp)/'akira_config.json')
+                self.assertTrue(controller.save(draft));self.assertTrue(wait_for(lambda:not controller._jobs))
+                saved=load_config(Path(tmp)/'akira_config.json');self.assertEqual(saved['mode'],'observe');self.assertEqual(saved['expected_login'],456)
+                self.assertTrue(any(r['kind']=='error' and 'cuenta' in r['data'] for r in controller.poll()))
             finally:controller.close()
     def test_disconnected_trade_mode_does_not_claim_operational_authorization(self):
         from desktop_qt import StudioWindow

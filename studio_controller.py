@@ -179,6 +179,14 @@ class StudioController:
         validated=validate_form(draft)
         with self._settings_lock:
             before=copy.deepcopy(getattr(draft,'baseline',self.cfg));self._save_serial+=1;serial=self._save_serial
+        account_changed=before['expected_login']!=validated['expected_login']
+        if account_changed and validated['mode']=='trade':
+            login=(self.view.get('account') or {}).get('login')
+            if self.preview or not self.bridge.connected or not login or confirmed_account!=login or validated['expected_login']!=login:
+                # Allow repairing a stored connection while offline, without
+                # transferring the previous account's trading authorization.
+                validated['mode']='observe'
+        confirmation_required=account_changed and before['mode']=='trade' and validated['mode']=='observe'
         if validated['mode']=='trade' and (before['mode']!='trade' or before['expected_login']!=validated['expected_login']):
             login=(self.view.get('account') or {}).get('login')
             if self.preview or not self.bridge.connected or not login or confirmed_account!=login:raise ValueError('Confirma la cuenta conectada antes de activar la operativa.')
@@ -198,6 +206,10 @@ class StudioController:
                 previous=copy.deepcopy(self.cfg);merged=copy.deepcopy(previous)
                 for path,value in updates.items():put(merged,path,value)
                 merged=validate_form(merged)
+                if merged['mode']=='trade' and (previous['mode']!='trade' or previous['expected_login']!=merged['expected_login']):
+                    login=(self.view.get('account') or {}).get('login')
+                    if self.preview or not self.bridge.connected or not login or confirmed_account!=login or merged['expected_login']!=login:
+                        raise ValueError('La cuenta cambió antes de guardar. Conecta y confirma de nuevo la cuenta antes de activar la operativa.')
                 if keys:self._save_keys(keys)
                 save_config(merged,self.folder/'akira_config.json');result={'ok':True,'settings_applied':True,'local_only':not self.bridge.connected}
                 if self.bridge.connected and paths:
@@ -210,6 +222,7 @@ class StudioController:
                     # in the UI or replaying an order after reconnecting.
                     self.commands.put({'action':'apply_settings','config':copy.deepcopy(merged),'changed_paths':paths})
                     result={'ok':True,'settings_applied':False,'connection_pending':True}
+                if confirmation_required:result['account_confirmation_required']=True
                 self.cfg=ConfigSnapshot(copy.deepcopy(merged));self.assistant.cfg=self.cfg;runtime=self.assistant._managed_model;runtime.settings=self.cfg.get('assistant') or {}
                 if hasattr(runtime,'reconfigure') and any(p.startswith('desktop.') for p in paths):runtime.reconfigure(self.cfg.get('desktop') or {})
                 if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg

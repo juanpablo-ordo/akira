@@ -411,7 +411,7 @@ class StudioWindow(QMainWindow):
             if self.controller.voice and not self.controller.voice.stop_event.is_set():self.controller.speak(data['text'])
             QTimer.singleShot(6000,lambda:self.director.publish('idle') if not self.controller.chat_busy else None)
         elif kind=='settings_saved':
-            self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
+            self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
         elif kind=='wallpaper_imported':self.settings_panel.media_imported(data)
         elif kind=='font_imported':self.settings_panel.font_imported(data)
         elif kind=='sprites_imported':
@@ -670,8 +670,12 @@ class StudioWindow(QMainWindow):
         try:
             draft=self.settings_panel.draft();login=None
             if draft['mode']=='trade' and (self.cfg['mode']!='trade' or self.cfg['expected_login']!=draft['expected_login']):
-                login=self.confirm_execution(draft)
-                if login is None:return
+                connected_login=(self.controller.view.get('account') or {}).get('login')
+                if self.cfg['expected_login']!=draft['expected_login'] and (not self.controller.bridge.connected or draft['expected_login']!=connected_login):
+                    draft['mode']='observe'
+                else:
+                    login=self.confirm_execution(draft)
+                    if login is None:return
             keys={k:widget.text() for k,widget in self.settings_panel.keys.items()}
             accepted=self.controller.save(draft,keys,confirmed_account=login)
             if accepted:self.settings_panel.save_button.setEnabled(False);self.settings_panel.message.setText('Guardando…')

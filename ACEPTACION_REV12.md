@@ -18,6 +18,8 @@ La interfaz muestra el motivo, el siguiente paso y Reconectar MT5. Ajustes → O
 1. Abre MT5 e inicia sesión en tu demo. MT5 debe recordar los datos de esa cuenta; introducir solo su número en Akira no sustituye la contraseña y servidor guardados en MT5.
 2. En Ajustes → Operación comprueba la cuenta guardada y pulsa Guardar ajustes. Si usas varios MT5, selecciona su `terminal64.exe`. Pulsa Reconectar MT5 y espera el resultado.
 3. Debe aparecer «MT5 conectado · cuenta demo» en Ajustes y el balance recibido en Cuenta. Cierra y reabre Akira y comprueba que se recuperen sin volver a introducir la cuenta.
+Si corriges la cuenta guardada mientras MT5 está desconectado, se guarda en Solo análisis. La autorización de la cuenta anterior no se transfiere; puedes conectar y confirmar la nueva sin reinstalar.
+
 4. Para autorizar operaciones usa el modo y confirmación de cuenta ya existentes. Conectar no activa por sí solo la operativa. Los límites, margen, permisos del bróker y comprobaciones de identidad siguen vigentes.
 
 ## Validación y límites

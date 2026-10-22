@@ -46,7 +46,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             'execution_gate':{'code':'MT5_DISCONNECTED','execution_allowed':False,
                 'reason':status['message'],'next_action':status['next_action']}})
     def handle(cmd):
-        nonlocal reconnect,network_available
+        nonlocal reconnect,network_available,bound_identity
         action=cmd.get('action')
         if action=='reconnect_mt5':
             reconnect=True
@@ -62,7 +62,11 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             result={'ok':True}
         else:return {'ok':False,'error':'MT5 aún no está conectado. Las solicitudes de órdenes no se conservan para enviarlas después.'}
         if result.get('ok') and action=='network_state':network_available=cmd['online']
-        if result.get('ok') and before!=target_signature(cfg):reconnect=True
+        if result.get('ok') and before!=target_signature(cfg):
+            reconnect=True
+            # An explicit target change in observe mode starts a fresh journal
+            # and requires separate confirmation before any new trading.
+            if cfg['mode']=='observe':bound_identity=None
         return result
     def drain():
         for _ in range(128):

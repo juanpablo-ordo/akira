@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_4_7_STUDIO_REV12",
-  "tests": 1442,
-  "pytest_tests": 1445,
+  "tests": 1445,
+  "pytest_tests": 1448,
   "status": "PENDING_WINDOWS_VERIFICATION",
   "date": "2026-10-22",
   "skipped": 0,
