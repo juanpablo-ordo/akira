@@ -44,12 +44,26 @@ class StudioController:
         if not self.preview:
             from akira_secrets import protect_existing
             self.job('protect_existing_credentials',protect_existing)
-        self.actor=threading.Thread(target=run_session,args=(self._runtime_cfg,self.folder,self.reporter,self.stop,self.commands,self.publish,self.preview),name='AkiraMT5',daemon=True);self.actor.start()
+        self._start_actor()
         if not self.preview:
             from connectivity import ConnectivityMonitor,internet_available
             self.network=ConnectivityMonitor(lambda row:self.emit('network',row),check=lambda:time.monotonic()-self.last_evidence<5 or internet_available());self.network.start()
             from knowledge_update import KnowledgeUpdater
             self.knowledge=KnowledgeUpdater(self.cfg,self.folder,lambda row:self.emit('knowledge',row));self.knowledge.start(initial_delay_seconds=45)
+
+    def _start_actor(self):
+        if self.closed or (self.actor and self.actor.is_alive()):return
+        self._runtime_cfg=copy.deepcopy(self.cfg)
+        self.actor=threading.Thread(target=run_session,args=(self._runtime_cfg,self.folder,self.reporter,self.stop,self.commands,self.publish,self.preview),name='AkiraMT5',daemon=True);self.actor.start()
+
+    def reconnect_mt5(self):
+        """Wake the sole MT5 owner; the GUI never calls the terminal API."""
+        if self.closed or self.preview:return False
+        if not self._services_started:self.start_services();return True
+        if not self.actor or not self.actor.is_alive():self._start_actor();return True
+        try:self.commands.put_nowait({'action':'reconnect_mt5'})
+        except queue.Full:self.emit('error','Hay solicitudes pendientes. Espera un momento antes de reconectar.');return False
+        return True
 
     def emit(self,kind,data):
         if self.closed:return
@@ -190,6 +204,12 @@ class StudioController:
                     result=self.bridge.request({'action':'apply_settings','config':merged,'changed_paths':paths})
                     if not result.get('ok') and not result.get('unconfirmed'):
                         save_config(previous,self.folder/'akira_config.json');raise RuntimeError('No se aplicaron los ajustes. Se conservan los anteriores. '+str(result.get('error','')))
+                elif paths and self.actor and self.actor.is_alive():
+                    # A disconnected actor still needs new terminal/account
+                    # settings before its next attempt, without waiting on MT5
+                    # in the UI or replaying an order after reconnecting.
+                    self.commands.put({'action':'apply_settings','config':copy.deepcopy(merged),'changed_paths':paths})
+                    result={'ok':True,'settings_applied':False,'connection_pending':True}
                 self.cfg=ConfigSnapshot(copy.deepcopy(merged));self.assistant.cfg=self.cfg;runtime=self.assistant._managed_model;runtime.settings=self.cfg.get('assistant') or {}
                 if hasattr(runtime,'reconfigure') and any(p.startswith('desktop.') for p in paths):runtime.reconfigure(self.cfg.get('desktop') or {})
                 if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg

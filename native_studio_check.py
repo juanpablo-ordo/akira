@@ -5,7 +5,7 @@ import copy,json,tempfile,time
 
 STUDIO_CHECK_VERSION=1
 REQUIRED=('eight_pages','real_records','privacy','stable_selection','responsive','shared_avatar',
-          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests','per_asset_activity')
+          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests','per_asset_activity','mt5_reconnect')
 
 def settle(app,seconds=.03):
     until=time.monotonic()+seconds
@@ -61,7 +61,10 @@ def run_studio_check(screenshot_dir=None):
             style['language_ui']='en';window.apply_visual(style);checks['language_switch']=window.nav[6].text()=='SETTINGS';style['language_ui']='es';window.apply_visual(style)
             tick=[];QTimer.singleShot(10,lambda:tick.append(time.monotonic()));settle(app,.1);checks['event_loop']=bool(tick)
             checks['no_broker_requests']=len(api.sent)==before and window.controller.actor is None
-            result={'version':STUDIO_CHECK_VERSION,'status':'PASSED','data':'SYNTHETIC','broker':'FakeMT5',**{k:bool(v) for k,v in checks.items()}}
+            from qa_mt5_reconnect_rev12 import run_check
+            reconnect=run_check();checks['mt5_reconnect']=reconnect['status']=='PASSED'
+            result={'version':STUDIO_CHECK_VERSION,'status':'PASSED','data':'SYNTHETIC','broker':'FakeMT5',
+                'mt5_reconnect_details':reconnect,**{k:bool(v) for k,v in checks.items()}}
             require_studio_check({'studio_check':result});return result
         finally:
             if engine:engine.close()

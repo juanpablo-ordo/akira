@@ -1,0 +1,29 @@
+{
+  "build": "AKIRA_16_4_7_STUDIO_REV12",
+  "status": "PENDING_WINDOWS_VERIFICATION",
+  "date": "2026-10-22",
+  "local_real_engine_reconnect": {
+    "status": "PASSED",
+    "build": "AKIRA_16_4_7_STUDIO_REV12",
+    "broker": "FakeMT5",
+    "engine": "production Engine and run_session",
+    "live_account_used": false,
+    "native_mt5_login_tested": false,
+    "checks": {
+      "first_connection_to_demo": true,
+      "shutdown_before_reopen": true,
+      "saved_target_on_restart": true,
+      "fresh_account_and_both_assets": true,
+      "lost_broker_cannot_claim_ready": true,
+      "recover_without_restarting_ui": true,
+      "timeout_recovery": true,
+      "wrong_account_rejected": true,
+      "preferences_unchanged": true,
+      "no_broker_orders": true,
+      "single_mt5_owner": true
+    }
+  },
+  "live_account_used": false,
+  "native_mt5_login_tested": false,
+  "profitability_verified": false
+}
