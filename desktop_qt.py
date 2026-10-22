@@ -474,6 +474,8 @@ class StudioWindow(QMainWindow):
         if connected!=getattr(self,'_connection_ready',None):
             self._connection_ready=connected;self.connection.setStyleSheet('color:'+ (INK['green'] if connected else INK['amber'])+';')
         self.connection_footer.setText('● MT5 '+('conectado' if connected else 'esperando'))
+        self.connection_footer.setStyleSheet('color:'+(INK['green'] if connected else INK['amber'])+';')
+        self.mode_button.setEnabled(connected and not self.controller.preview)
         connection=view.get('mt5_connection') or {};message=str(connection.get('message') or view.get('error') or 'Esperando conexión con MetaTrader 5.')
         action=str(connection.get('next_action') or 'Abre MT5 con tu cuenta demo conectada. Si usas varios terminales, selecciona el correcto en Ajustes → Operación.')
         delay=connection.get('retry_seconds') or 0

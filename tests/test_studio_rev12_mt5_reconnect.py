@@ -230,7 +230,7 @@ class ControllerAndWindowTests(unittest.TestCase):
             window=StudioWindow(tmp,preview=False,start_actor=False)
             try:
                 window.render({'connected':False,'mode':'trade','mt5_connection':{'code':'NO_ACCOUNT','message':'MT5 no confirma una cuenta.','next_action':'Inicia sesión en MT5.'}})
-                self.assertIn('Sin conexión',window.mode_label.text());self.assertNotIn('AUTORIZADA',window.mode_label.text());self.assertFalse(window.mt5_banner.isHidden());self.assertTrue(window.mt5_retry.isEnabled())
+                self.assertIn('Sin conexión',window.mode_label.text());self.assertNotIn('AUTORIZADA',window.mode_label.text());self.assertFalse(window.mt5_banner.isHidden());self.assertTrue(window.mt5_retry.isEnabled());self.assertFalse(window.mode_button.isEnabled())
                 self.assertIn('Inicia sesión',window.settings_panel.mt5_status.text());self.assertIn('Inicia sesión',window.mt5_detail.text())
                 window.render({'connected':True,'mode':'observe','mt5_connection':{'code':'CONNECTED','account_type':'demo'}})
                 self.assertTrue(window.mt5_banner.isHidden());self.assertIn('demo',window.settings_panel.mt5_status.text())
