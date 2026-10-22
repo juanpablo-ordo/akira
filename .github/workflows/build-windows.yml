@@ -82,7 +82,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_studio_rev12_mt5_reconnect.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV12_TARGETED.xml
+          python -u -m pytest -vv tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV12_TARGETED.xml
           if ($LASTEXITCODE -ne 0) { throw 'Una regresión nueva de Rev12 falló; revisar REV12_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar

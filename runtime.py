@@ -172,13 +172,17 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                         disconnected(ConnectionProblem('ACCOUNT_STATE',str(exc),'Revisa el estado de tu cuenta en MT5.'))
                     stop.wait(max(.02,cfg['poll_seconds']-(time.monotonic()-began)))
             except Exception as exc:
-                failures+=1;stage='ESPERANDO RECONEXIÓN MT5'
+                failures+=1
+                if not preview:stage='ESPERANDO RECONEXIÓN MT5'
                 problem=exc if isinstance(exc,ConnectionProblem) else ConnectionProblem('SESSION',
                     'No se completó la conexión con MT5. Se volverá a intentar.',
                     'Mantén MT5 abierto con tu cuenta demo; si persiste, revisa Terminal → Diagnóstico.',type(exc).__name__+': '+str(exc))
                 delay=min(30,3*2**min(failures-1,4))
                 log.event('MT5','RECONEXIÓN: '+str(problem),detail=problem.detail,traceback=traceback.format_exc())
-                disconnected(problem,delay)
+                disconnected(problem,0 if preview else delay)
+                # Preview has no external terminal to recover. A broken local
+                # fixture must report its failed stage and terminate promptly.
+                if preview:break
             finally:
                 release()
             if stop.is_set():break
