@@ -29,3 +29,9 @@ Si tienes varias instalaciones de MT5 abiertas, selecciona el archivo terminal64
 Las pruebas de cuentas usan datos sintéticos, el controlador, actor y motor de producción. Comprueban cambios de número y servidor, distintos terminales, cierre/reapertura, diarios separados, límites conservados y ausencia de órdenes. Se ejecutan también dentro del ejecutable Windows. La biblioteca MT5 nativa se importa en Windows; no se realiza un inicio de sesión con el bróker del usuario.
 
 Consulta el resultado efectivo en VALIDACION_REV13.json. No se presenta una simulación como validación de una sesión real ni se certifican ganancias.
+
+## Resultado Windows
+
+1469 pruebas y 171 subpruebas pasaron sin omisiones. El ejecutable, fuentes HTTPS, IA real, prueba con dos núcleos e instalador completo pasaron en la ejecución 39991467904.
+
+[Descargar instalador con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39991467904/artifacts/12518303926). Descomprime y ejecuta AKIRA_16_4_8_STUDIO_REV13_IA_INCLUIDA.exe con Akira cerrado.
