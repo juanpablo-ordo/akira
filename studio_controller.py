@@ -98,7 +98,9 @@ class StudioController:
             if not login or not server:raise ValueError('MT5 no confirmó el número y el servidor de la cuenta.')
             with self._settings_lock:
                 previous=copy.deepcopy(self.cfg);merged=copy.deepcopy(previous)
-                merged.update(mode='observe',expected_login=login,expected_server=server,terminal_path=detected['terminal_path'])
+                # An automatically detected executable stays in connection
+                # metadata. Do not turn detection into a pinned old terminal.
+                merged.update(mode='observe',expected_login=login,expected_server=server,terminal_path=str(terminal_path or '').strip())
                 merged=validate_form(merged);paths=[r['path'] for r in changes(previous,merged)]
                 save_config(merged,self.folder/'akira_config.json')
                 self.commands.put({'action':'apply_settings','config':copy.deepcopy(merged),'changed_paths':paths})

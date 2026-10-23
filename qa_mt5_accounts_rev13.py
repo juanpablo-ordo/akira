@@ -63,8 +63,9 @@ def run_check():
                 api.terminal.path=str(other.parent)
                 with patch('mt5_connection.running_terminals',return_value=[str(other)]):
                     c.use_open_mt5_account(terminal_path='')
-                    wait_for(lambda:not c._jobs and c.view.get('connected') is True and c.cfg['terminal_path']==str(other))
-                checks['running_terminal_can_replace_old_path']=c.cfg['terminal_path']==str(other)
+                    wait_for(lambda:not c._jobs and c.view.get('connected') is True and c.view.get('mt5_connection',{}).get('terminal_path')==str(other))
+                checks['running_terminal_can_replace_old_path']=json.loads((root/'state/mt5_connection.json').read_text(encoding='utf-8'))['terminal_path']==str(other)
+                checks['automatic_detection_is_not_pinned_to_previous_terminal']=c.cfg['terminal_path']==''
                 checks['never_forces_remembered_login_or_server']=bool(calls) and all(set(options)=={'timeout'} for _,options,_ in calls)
                 checks['no_credentials_in_connection_metadata']=set(json.loads((root/'state/mt5_connection.json').read_text(encoding='utf-8')))=={'terminal_path','login','server'}
                 close(c)

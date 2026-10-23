@@ -289,7 +289,7 @@
   "strategy_lab.py": "fb7ad052e29c262102765b16e9263a848d912db5314f110561be6502e740b703",
   "strategy_research.py": "6e7e802732097557d25266bb084a8bd3c4ef5e03bfab41f5cb7d6a7ec90c9816",
   "studio_background.py": "4cf8e11b6852aa0ef2b2f97353dfc4b553b05b1a5c84b8b02d775123a4931490",
-  "studio_controller.py": "5f8454e2bdcd47db93c2fe44f992037b2627f6221e0d0635463f232ffff7a1c8",
+  "studio_controller.py": "ca5047c450e6ee75d6073b5e134fff46284981786412405db3a2bf7dc121f4ff",
   "studio_editors.py": "7e901c6b688d7cae4089d1cdde6c1558143a3dc9db9828d4b7c58cb054aba3e2",
   "studio_presenter.py": "652b2579613a86e0bf80c3856de2bfd6052e6c819d935b6e1cef0c1096e0180a",
   "studio_settings_qt.py": "9e4a45ccb9c86a4cc467b088fb4bd9288c4619eb5c7cf29906327fddd498bcc6",
@@ -425,7 +425,7 @@
   "windows_identity.py": "5a312bc562001e17c7096f9ec8c9370f191f8bfd6f440a28936398125035287d",
   "windows_version.txt": "2b7b55a122d57094609ee3aaeb7f0493e449efb331b5879f23ffeb34e00e8cef",
   "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8",
-  "qa_mt5_accounts_rev13.py": "339ed9a4814fa6b97c9136801b5e9a143307ee367fa686c840a0fd17671da42e",
+  "qa_mt5_accounts_rev13.py": "157d4b4cd5d2b7585ea61e702995c9edcae294584534f27af6b6ad51176e8580",
   "tests/test_studio_rev13_mt5_accounts.py": "280788ad7e20dc054f73ef79829e9e48957e11639cf5254b3f4593fc9bf9ed40",
   "ACEPTACION_REV13.md": "047aed44bda277019f83634005c5264e64bd50d2f2ef47c3999b594866520ed7",
   "VALIDACION_REV13.json": "39c5519af5dfaa1c64c5e680c8d37c539681864239726186dbcd21bcd43431bf"
