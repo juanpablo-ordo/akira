@@ -2,6 +2,7 @@
   "mode": "observe",
   "terminal_path": "",
   "expected_login": 0,
+  "expected_server": "",
   "symbols": {
     "BTCUSDm": true,
     "XAUUSDm": true

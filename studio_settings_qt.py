@@ -90,7 +90,9 @@ class SettingsPanel(QWidget):
         self.field(card,'mode','Modo de operación',(('observe','Solo análisis'),('trade','Operativa automática')),help='Solo análisis estudia sin enviar órdenes. Operativa automática envía, edita y retira propuestas válidas tras autorizar la cuenta y respetar los límites de riesgo.')
         self.field(card,'terminal_path','Ruta de MetaTrader 5',help='Es el programa terminal64.exe del MetaTrader que quieres conectar. Puedes seleccionarlo con el botón de abajo. Déjalo vacío para detección automática; Akira recordará el último terminal comprobado.')
         self.add_button(card,'SELECCIONAR METATRADER 5',self.choose_terminal)
-        self.field(card,'expected_login','Cuenta autorizada',limits=(0,2147483647),help='Akira usará esta cuenta al reconectar y comprobará que MT5 la confirme. Inicia sesión primero en MT5 y guarda allí tus datos; escribir solo el número aquí no sustituye la contraseña del bróker.')
+        self.use_mt5_button=self.add_button(card,'USAR CUENTA ABIERTA EN MT5',self.use_open_account,'primary','bolt')
+        self.field(card,'expected_login','Número de cuenta',limits=(0,2147483647),help='Para cambiar de cuenta: inicia sesión en MT5 y pulsa Usar cuenta abierta en MT5. Akira copiará el número, el servidor y el programa correcto sin pedirte la contraseña. Después pulsa Activar operativa para autorizar esa cuenta.')
+        self.field(card,'expected_server','Servidor del bróker',help='Debe ser el mismo servidor que aparece en MT5, por ejemplo el servidor Demo de tu bróker. Usar cuenta abierta en MT5 lo completa automáticamente. Los datos de acceso y la contraseña se guardan en MT5.')
         self.mt5_status=label('Esperando conexión con MT5. Guarda los cambios de cuenta o ruta antes de reconectar.','muted');self.mt5_status.setWordWrap(True);card.body.addWidget(self.mt5_status)
         self.add_button(card,'RECONECTAR MT5',self.controller.reconnect_mt5,'','bolt')
         self.field(card,'execution.pending_only','Entradas únicamente mediante pendientes',help='Desmarcado permite runners directos confirmados. Las posiciones activadas desde pendientes pueden gestionarse como runners.')
@@ -103,6 +105,11 @@ class SettingsPanel(QWidget):
     def choose_terminal(self):
         path,_=QFileDialog.getOpenFileName(self,'Seleccionar MetaTrader 5','','Programas de Windows (*.exe)')
         if path:self.fields['terminal_path'][0].setText(path)
+    def use_open_account(self):
+        accepted=self.controller.use_open_mt5_account(self.fields['terminal_path'][1]().strip())
+        if accepted:
+            self.use_mt5_button.setEnabled(False)
+            self.mt5_status.setText('Comprobando la cuenta abierta en MT5… La operativa quedará en Solo análisis mientras se guarda.')
     def risk(self):
         card=self.card(1,'PRESUPUESTO Y LÍMITES','shield')
         for path,title in [('risk.max_trade_money','Pérdida máxima por operación (USD)'),('risk.max_trade_pct','Máximo por operación (%)'),('risk.portfolio_money_cap','Límite conjunto (USD; 0 usa porcentaje)'),('risk.portfolio_capital_pct','Presupuesto conjunto (%)'),('risk.daily_loss_money','Pérdida diaria autorizada (USD; 0 desactiva)'),('risk.daily_loss_pct','Pérdida diaria autorizada (%)'),('risk.minimum_margin_level_pct','Nivel mínimo de margen (%)')]:self.field(card,path,title,limits=(0,100 if path.endswith('_pct') and 'margin' not in path else 1e8))
@@ -213,7 +220,8 @@ class SettingsPanel(QWidget):
         submitted=data.get('submitted') or data['config'];current=data['config']
         for path,(widget,read) in self.fields.items():
             value=read()
-            if path not in self.touched or value==get(submitted,path):
+            adopted=data.get('adopted_mt5_account') and path in ('mode','terminal_path','expected_login','expected_server')
+            if adopted or path not in self.touched or value==get(submitted,path):
                 target=get(current,path);widget.blockSignals(True)
                 try:
                     if isinstance(widget,ColorButton):widget.setValue(target)
@@ -223,7 +231,7 @@ class SettingsPanel(QWidget):
                     else:widget.setValue(target)
                 finally:widget.blockSignals(False)
                 self.initial[path]=copy.deepcopy(read())
-                if value==get(submitted,path):self.touched.discard(path)
+                if adopted or value==get(submitted,path):self.touched.discard(path)
         for path in list(self.extra):
             if self.extra[path]==get(submitted,path):self.extra.pop(path)
         if self.avatar==submitted['studio']['avatar']:self.avatar_initial=copy.deepcopy(self.avatar);self.avatar_touched=False
@@ -402,3 +410,4 @@ class SpriteEditor(QDialog):
             if self.preview_index+1>=len(frames) and not self.repeat.isChecked():self.preview_timer.stop();return
             self.preview_index=(self.preview_index+1)%len(frames);self.preview_timer.start(int(frame.get('duration_ms',180)))
         else:self.preview_timer.stop()
+

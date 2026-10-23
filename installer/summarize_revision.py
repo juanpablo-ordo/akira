@@ -53,8 +53,14 @@ def summarize(root, folder):
         if not check or check.get('status')!='PASSED' or check.get('build')!=BUILD_ID or not all(check.get('checks',{}).values()):
             raise RuntimeError('MT5 restart not verified: '+name)
     result['mt5_reconnect']=reconnect
-    (folder/'VERIFICATION_REV12.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('AKIRA_REV12_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
+    accounts={'source':source.get('studio_check',{}).get('mt5_account_switch_details'),
+        'frozen':native.get('self_check',{}).get('studio_check',{}).get('mt5_account_switch_details')}
+    for name,check in accounts.items():
+        if not check or check.get('status')!='PASSED' or check.get('build')!=BUILD_ID or not all(check.get('checks',{}).values()):
+            raise RuntimeError('MT5 account switch not verified: '+name)
+    result['mt5_account_switch']=accounts
+    (folder/'VERIFICATION_REV13.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('AKIRA_REV13_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
 
 
@@ -66,3 +72,4 @@ if __name__=='__main__':
     args=parser.parse_args()
     if args.manifest_only:print('SHA256 verified files:',verify_manifest(args.root))
     else:summarize(args.root,args.diagnostics)
+

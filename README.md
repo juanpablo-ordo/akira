@@ -1,17 +1,11 @@
-# AKIRA 16.4.7 · Studio Rev12
+# AKIRA 16.4.8 · Studio Rev13
 
-[Descargar instalador Windows con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39732801697/artifacts/12406783420)
+Corrige el cambio entre cuentas de MT5: comprueba juntos número, servidor y terminal, y evita que una cuenta recordada sustituya a la elegida en MT5.
 
-Descomprime la descarga y ejecuta `AKIRA_16_4_7_STUDIO_REV12_IA_INCLUIDA.exe`. Conserva tus ajustes existentes.
+En MT5 inicia sesión en la cuenta que quieres probar. En Akira pulsa **Ajustes → Operación → Usar cuenta abierta en MT5**. Se guardan los datos comprobados y se conservan tus límites de riesgo. El cambio queda en **Solo análisis**; para operar pulsa **Activar operativa** y confirma esa cuenta y su servidor.
 
-Corrección de la reconexión MT5 y la cuenta demo al cerrar y reabrir Akira. Incluye los cambios de runners, conversación, informes y rendimiento de Studio Rev11.
+Si hay varios terminales abiertos, selecciona antes el archivo terminal64.exe correcto. La contraseña se introduce y se guarda en MT5.
 
-En MT5, inicia sesión en tu demo y guarda allí sus datos. En **Ajustes → Operación** de Akira guarda el número de cuenta y, si usas varios MT5, selecciona su `terminal64.exe`. **Reconectar MT5** usa esos ajustes y comprueba la cuenta antes de continuar. La cuenta conectada y el motivo de cualquier fallo aparecen en la pantalla.
+La comprobación Windows y el instalador de esta revisión están pendientes. Consulta [VALIDACION_REV13.json](VALIDACION_REV13.json) para el resultado efectivo. Las pruebas de cuentas usan el controlador y motor de producción con datos sintéticos; no se ha probado una conexión con el bróker del usuario ni se certifica rentabilidad.
 
-No es necesario volver a escribir los ajustes al reabrir. La conexión conserva la cuenta y terminal comprobados, el modo elegido y los límites de riesgo. Una cuenta distinta queda bloqueada. Conectar no autoriza operaciones por sí solo.
-
-La compilación Windows verifica las regresiones, el ejecutable gráfico, cierre/reapertura del motor, importación de MT5, fuentes HTTPS, IA real incluida, recursos y la instalación completa. Consulta el estado efectivo en [VALIDACION_REV12.json](VALIDACION_REV12.json). No se certifica rentabilidad ni una sesión real del equipo del usuario.
-
-[Instrucciones y comprobaciones](ACEPTACION_REV12.md) · [Cambios previos de runners, chat y consumo](ACEPTACION_REV11.md)
-
-Validación Windows terminada: **1448 pruebas y 170 subpruebas**, sin fallos ni omisiones. [Compilación verificada](https://github.com/juanpablo-ordo/akira/actions/runs/39732801697) · [Cambios](https://github.com/juanpablo-ordo/akira/pull/2).
+[Instrucciones](ACEPTACION_REV13.md) · [Corrección anterior de reconexión](ACEPTACION_REV12.md) · [Cambios de runners, chat y consumo](ACEPTACION_REV11.md)

@@ -11,6 +11,7 @@ from runtime import run_session
 from settings import load_config,save_config,DEFAULT
 from settings_effects import validate_form,changes
 from notification_center import NotificationCenter,safe_text
+from mt5_connection import target_signature,account_identity,confirmation_matches
 
 
 class ConfigSnapshot(dict):
@@ -72,6 +73,39 @@ class StudioController:
             # Financial events are durably recorded by Reporter before delivery.
             # Only an overrun of the display queue is discarded; never commands.
             self._display_overrun=True
+
+    def use_open_mt5_account(self,terminal_path=''):
+        """Adopt only an actor-verified account; keep all risk preferences."""
+        if self.closed or self.preview:return False
+        if not self._services_started:self.start_services()
+        elif not self.actor or not self.actor.is_alive():self._start_actor()
+        def adopt():
+            # Persist the pause before inspecting a different terminal. The actor
+            # consumes this message first, even when its previous login failed.
+            with self._settings_lock:
+                paused=validate_form(copy.deepcopy(self.cfg));paused['mode']='observe'
+                save_config(paused,self.folder/'akira_config.json')
+                self.commands.put({'action':'apply_settings','config':paused,'changed_paths':['mode']})
+                self.cfg=ConfigSnapshot(copy.deepcopy(paused));self.assistant.cfg=self.cfg
+                if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
+                self.emit('settings_saved',{'config':copy.deepcopy(paused),'submitted':paused,'paths':['mode'],
+                    'result':{'ok':True,'connection_pending':True},'saved':True})
+            detected=self.bridge.request({'action':'inspect_mt5','terminal_path':terminal_path})
+            if not detected.get('ok'):raise RuntimeError(detected.get('error') or 'No se pudo comprobar la cuenta de MT5. Mantén MT5 abierto e inténtalo de nuevo.')
+            login,server=int(detected['login']),str(detected['server']).strip()
+            if not login or not server:raise ValueError('MT5 no confirmó el número y el servidor de la cuenta.')
+            with self._settings_lock:
+                previous=copy.deepcopy(self.cfg);merged=copy.deepcopy(previous)
+                merged.update(mode='observe',expected_login=login,expected_server=server,terminal_path=detected['terminal_path'])
+                merged=validate_form(merged);paths=[r['path'] for r in changes(previous,merged)]
+                save_config(merged,self.folder/'akira_config.json')
+                self.commands.put({'action':'apply_settings','config':copy.deepcopy(merged),'changed_paths':paths})
+                self.cfg=ConfigSnapshot(copy.deepcopy(merged));self.assistant.cfg=self.cfg
+                if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
+                self.emit('settings_saved',{'config':copy.deepcopy(merged),'submitted':merged,'paths':paths,
+                    'adopted_mt5_account':True,'result':{'ok':True,'account_confirmation_required':True},'saved':True})
+            return {'ok':True,'detail':'Cuenta de MT5 guardada en Solo análisis. Al conectar, pulsa Activar operativa si deseas autorizarla.'}
+        return self.job('use_open_mt5_account',adopt,'mt5_account_detected',executor=self.settings_io)
 
     def publish(self,view):
         with self._snapshot_lock:self._latest=view
@@ -179,19 +213,17 @@ class StudioController:
         validated=validate_form(draft)
         with self._settings_lock:
             before=copy.deepcopy(getattr(draft,'baseline',self.cfg));self._save_serial+=1;serial=self._save_serial
-        account_changed=before['expected_login']!=validated['expected_login']
+        account_changed=target_signature(before)!=target_signature(validated)
         if account_changed and validated['mode']=='trade':
-            login=(self.view.get('account') or {}).get('login')
-            if self.preview or not self.bridge.connected or not login or confirmed_account!=login or validated['expected_login']!=login:
-                # Allow repairing a stored connection while offline, without
-                # transferring the previous account's trading authorization.
-                validated['mode']='observe'
+            validated['mode']='observe'
         confirmation_required=account_changed and before['mode']=='trade' and validated['mode']=='observe'
-        if validated['mode']=='trade' and (before['mode']!='trade' or before['expected_login']!=validated['expected_login']):
-            login=(self.view.get('account') or {}).get('login')
-            if self.preview or not self.bridge.connected or not login or confirmed_account!=login:raise ValueError('Confirma la cuenta conectada antes de activar la operativa.')
+        if validated['mode']=='trade' and before['mode']!='trade':
+            account=self.view.get('account') or {};login,server=account_identity(account)
+            if self.preview or not self.bridge.connected or not confirmation_matches(confirmed_account,account):raise ValueError('Confirma la cuenta y el servidor conectados antes de activar la operativa.')
             if validated.get('expected_login') not in (0,login):raise ValueError('La cuenta autorizada no coincide con MT5.')
+            if validated.get('expected_server') and validated['expected_server'].casefold()!=server.casefold():raise ValueError('El servidor autorizado no coincide con MT5.')
             validated['expected_login']=int(login)
+            validated['expected_server']=server
         paths=list(dict.fromkeys([row['path'] for row in changes(before,validated)]+list(getattr(draft,'dirty_paths',()))))
         def at(data,path):
             for key in path.split('.'):data=data[key]
@@ -206,21 +238,21 @@ class StudioController:
                 previous=copy.deepcopy(self.cfg);merged=copy.deepcopy(previous)
                 for path,value in updates.items():put(merged,path,value)
                 merged=validate_form(merged)
-                if merged['mode']=='trade' and (previous['mode']!='trade' or previous['expected_login']!=merged['expected_login']):
-                    login=(self.view.get('account') or {}).get('login')
-                    if self.preview or not self.bridge.connected or not login or confirmed_account!=login or merged['expected_login']!=login:
+                if merged['mode']=='trade' and (previous['mode']!='trade' or target_signature(previous)!=target_signature(merged)):
+                    account=self.view.get('account') or {};login,server=account_identity(account)
+                    if self.preview or not self.bridge.connected or not confirmation_matches(confirmed_account,account) or merged['expected_login']!=login or merged['expected_server']!=server:
                         raise ValueError('La cuenta cambió antes de guardar. Conecta y confirma de nuevo la cuenta antes de activar la operativa.')
                 if keys:self._save_keys(keys)
                 save_config(merged,self.folder/'akira_config.json');result={'ok':True,'settings_applied':True,'local_only':not self.bridge.connected}
                 if self.bridge.connected and paths:
-                    result=self.bridge.request({'action':'apply_settings','config':merged,'changed_paths':paths})
+                    result=self.bridge.request({'action':'apply_settings','config':merged,'changed_paths':paths,'authorized_identity':confirmed_account})
                     if not result.get('ok') and not result.get('unconfirmed'):
                         save_config(previous,self.folder/'akira_config.json');raise RuntimeError('No se aplicaron los ajustes. Se conservan los anteriores. '+str(result.get('error','')))
                 elif paths and self.actor and self.actor.is_alive():
                     # A disconnected actor still needs new terminal/account
                     # settings before its next attempt, without waiting on MT5
                     # in the UI or replaying an order after reconnecting.
-                    self.commands.put({'action':'apply_settings','config':copy.deepcopy(merged),'changed_paths':paths})
+                    self.commands.put({'action':'apply_settings','config':copy.deepcopy(merged),'changed_paths':paths,'authorized_identity':confirmed_account})
                     result={'ok':True,'settings_applied':False,'connection_pending':True}
                 if confirmation_required:result['account_confirmation_required']=True
                 self.cfg=ConfigSnapshot(copy.deepcopy(merged));self.assistant.cfg=self.cfg;runtime=self.assistant._managed_model;runtime.settings=self.cfg.get('assistant') or {}
@@ -312,3 +344,4 @@ class StudioController:
         if hasattr(self,'knowledge'):self.knowledge.close()
         self.settings_io.shutdown(wait=False,cancel_futures=False);self.io.shutdown(wait=False,cancel_futures=False)
         self.assistant._managed_model.shutdown_async()
+
