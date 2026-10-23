@@ -1,0 +1,20 @@
+{
+  "build": "AKIRA_16_4_8_STUDIO_REV13",
+  "status": "WINDOWS_PENDING",
+  "date": "2026-10-23",
+  "pytest_tests_collected": 1469,
+  "unittest_tests_collected": 1466,
+  "local_account_and_reconnect_tests": 69,
+  "local_account_and_reconnect_status": "PASSED",
+  "live_account_used": false,
+  "native_mt5_login_tested": false,
+  "profitability_verified": false,
+  "linux_full_suite": {
+    "passed": 1441,
+    "failed_no_tk_display": 21,
+    "skipped": 5,
+    "subtests_passed": 171,
+    "seconds": 84.04
+  },
+  "inspection_shutdown": "Cancelable queued and started read-only inspections; native actor remains sole owner."
+}

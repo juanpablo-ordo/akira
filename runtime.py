@@ -8,7 +8,7 @@ from account_lock import AccountLock
 from research import ContextWorker
 from legacy_handoff import retire
 from command_bridge import dispatch
-from mt5_connection import MT5Connection,ConnectionProblem,target_signature
+from mt5_connection import MT5Connection,ConnectionProblem,target_signature,account_identity,confirmation_matches
 
 
 def session_write_guard(g,account,lock):
@@ -51,7 +51,25 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
         if action=='reconnect_mt5':
             reconnect=True
             return {'ok':True,'detail':'Reconexión MT5 solicitada. Se comprobará la cuenta antes de operar.'}
+        if action=='inspect_mt5':
+            if preview:return {'ok':False,'error':'La vista previa no accede a cuentas reales.'}
+            reconnect=True
+            cfg['mode']='observe'
+            release()
+            disconnected(ConnectionProblem('INSPECTING','Comprobando la cuenta abierta en MT5…',
+                'La cuenta se guardará en Solo análisis. Después podrás autorizar sus operaciones.'))
+            probe={**cfg,'terminal_path':str(cmd.get('terminal_path') or '').strip(),'mode':'observe'}
+            account=connector.connect(probe,verify_target=False,prefer_open=True)
+            return {'ok':True,**connector.observed}
         before=target_signature(cfg)
+        if action=='apply_settings':
+            from settings_effects import validate_form
+            saved=validate_form(cmd['config'])
+            if before!=target_signature(saved) and saved['mode']=='trade':
+                current=api.account_info() if not preview else None
+                if current is None or account_identity(current)!=bound_identity or not confirmation_matches(cmd.get('authorized_identity'),current):
+                    saved['mode']='observe'
+            cmd={**cmd,'config':saved}
         if engine is not None:
             result=engine.handle_command(cmd)
         elif action=='apply_settings':
@@ -107,7 +125,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                 stage='CONECTANDO MT5'
                 if not preview:
                     disconnected(ConnectionProblem('CONNECTING','Conectando con MetaTrader 5…',
-                        'El primer inicio puede tardar hasta 60 segundos. Se usará la cuenta guardada en Ajustes.'))
+                        'El primer inicio puede tardar hasta 60 segundos. Se comprobará la cuenta seleccionada en MT5.'))
                     signature=target_signature(cfg)
                     account=connector.connect(cfg)
                     # Saves made while initialize() was waiting must apply before
@@ -120,7 +138,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                 if bound_identity is None:bound_identity=identity_pair
                 if identity_pair!=bound_identity:
                     raise ConnectionProblem('ACCOUNT_CHANGED','La cuenta cambió mientras Akira estaba abierto.',
-                        'Vuelve a seleccionar la cuenta original en MT5. Para usar otra, reinicia Akira y autorízala; no se enviarán órdenes a una cuenta distinta.')
+                        'En Ajustes → Operación pulsa Usar cuenta abierta en MT5. Se guardará en Solo análisis y podrás autorizarla sin reiniciar Akira.')
                 identity=hashlib.sha256(f'{account.server}:{account.login}'.encode()).hexdigest()[:16]
                 journal=Journal(root/'state'/('preview.json' if preview else 'cuenta_'+identity+'.json'),read_only=preview)
                 g=Gateway(api,cfg,journal,log,clock)
@@ -138,6 +156,11 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                 engine=Engine(g,cfg,log,context);engine.paused=paused
                 while not stop.is_set():
                     began=time.monotonic()
+                    if not preview:
+                        current=api.account_info()
+                        if current is not None and account_identity(current)!=bound_identity:
+                            raise ConnectionProblem('ACCOUNT_CHANGED','Se seleccionó otra cuenta en MT5.',
+                                'Pulsa Usar cuenta abierta en MT5 en Ajustes → Operación para conectar esa cuenta y volver a autorizarla.')
                     stage='RETIRANDO MOTOR ANTERIOR' if not preview else 'VISTA PREVIA'
                     if not preview:
                         lock,g.runtime_execution_block=session_write_guard(g,account,lock)
@@ -191,3 +214,4 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
         log.event('ERROR',type(exc).__name__+': '+str(exc),traceback=traceback.format_exc())
         disconnected(ConnectionProblem('RUNTIME_UNAVAILABLE','No se pudo iniciar el componente de conexión MT5.',
             'Comprueba que estás usando Windows y el instalador completo de esta versión. Consulta Terminal → Diagnóstico.',str(exc)))
+

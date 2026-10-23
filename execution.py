@@ -187,7 +187,7 @@ class Gateway:
         if a is None or t is None or p is None or o is None:raise Blocked('MT5: estado incompleto')
         ident=(int(a.login),str(a.server))
         if self.identity is None:self.identity=ident
-        if self.identity!=ident:raise Blocked('Cambió la cuenta MT5; reinicia Akira en la cuenta elegida')
+        if self.identity!=ident:raise Blocked('Cambió la cuenta MT5. En Ajustes → Operación pulsa Usar cuenta abierta en MT5 y vuelve a autorizarla.')
         saved=self.journal.data.get('account_identity')
         if saved is not None and tuple(saved)!=ident:raise Blocked('El diario pertenece a otra cuenta')
         if saved is None:self.journal.data['account_identity']=list(ident);self.journal.save()
@@ -241,6 +241,7 @@ class Gateway:
         if not getattr(t,'trade_allowed',False) or getattr(t,'tradeapi_disabled',False):raise Blocked('Activa Trading algorítmico y API Python en MT5')
         if not getattr(a,'trade_allowed',False) or not getattr(a,'trade_expert',False):raise Blocked('La cuenta no permite operaciones algorítmicas')
         if self.cfg['expected_login'] and int(a.login)!=self.cfg['expected_login']:raise Blocked('Cuenta diferente de expected_login')
+        if self.cfg.get('expected_server') and str(a.server).casefold()!=self.cfg['expected_server'].casefold():raise Blocked('El servidor MT5 no coincide con la cuenta autorizada')
         if entry and (not math.isfinite(float(a.equity)) or float(a.equity)<=0):raise Blocked('Capital no válido')
         limits=[x for x in (float(self.cfg['risk'].get('daily_loss_money',0)),float(a.equity)*float(self.cfg['risk'].get('daily_loss_pct',0))/100) if x>0]
         if entry and limits:

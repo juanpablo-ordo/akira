@@ -394,6 +394,8 @@ def load_config(path):
     for s,on in cfg['symbols'].items():
         if not isinstance(s,str) or not s.upper().startswith(('BTC','XAU')) or type(on) is not bool:raise ValueError('Solo símbolos BTC/XAU de MT5 y true/false')
     if int(cfg['expected_login'])!=cfg['expected_login']:raise ValueError('expected_login debe ser entero')
+    if not isinstance(cfg['expected_server'],str) or len(cfg['expected_server'])>200:raise ValueError('Servidor de MT5 inválido')
+    cfg['expected_server']=cfg['expected_server'].strip()
     for k in ('max_trade_money','max_trade_pct','minimum_margin_level_pct'):
         if cfg['risk'][k]<=0:raise ValueError('risk.'+k+' debe ser positivo')
     if cfg['risk'].get('min_lot_structural_override_enabled',False):

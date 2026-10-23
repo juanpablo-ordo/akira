@@ -39,15 +39,15 @@ class ConnectionTargetTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
         self.api=Terminal(self.root);self.cfg=load_config(DEFAULT);self.cfg['mode']='observe';self.cfg['expected_login']=123
-    def test_saved_account_is_passed_to_initialize_with_full_startup_timeout(self):
+    def test_selected_account_is_verified_without_forcing_an_old_login(self):
         MT5Connection(self.api,self.root).connect(self.cfg)
         args,options,_=self.api.calls[-1]
-        self.assertEqual(args,());self.assertEqual(options,{'login':123,'timeout':60000});self.assertEqual(CONNECT_TIMEOUT_MS,60000)
+        self.assertEqual(args,());self.assertEqual(options,{'timeout':60000});self.assertEqual(CONNECT_TIMEOUT_MS,60000)
     def test_reopening_reuses_only_the_verified_account_server_and_terminal(self):
         MT5Connection(self.api,self.root).connect(self.cfg)
         next_connection=MT5Connection(self.api,self.root);next_connection.connect(load_config(self.cfg))
         args,options,_=self.api.calls[-1]
-        self.assertEqual(args,(str(self.api.program),));self.assertEqual(options['server'],'TEST');self.assertEqual(options['login'],123)
+        self.assertEqual(args,(str(self.api.program),));self.assertEqual(options,{'timeout':60000})
         saved=json.loads(next_connection.path.read_text(encoding='utf-8'))
         self.assertEqual(set(saved),{'terminal_path','login','server'});self.assertNotIn('password',saved)
     def test_reopening_keeps_mode_and_risk_while_connecting_the_demo(self):
@@ -185,7 +185,7 @@ class SessionReconnectTests(unittest.TestCase):
         import runtime
         self.thread=threading.Thread(target=runtime.run_session,args=(self.cfg,self.root,self.log,self.stop,self.commands,self.rows.append),daemon=True);self.thread.start()
         self.assertTrue(wait_for(lambda:any(r.get('connected') for r in self.rows)),self.rows)
-        self.assertEqual(self.api.calls[-1][0],(str(self.api.program),));self.assertEqual(self.api.calls[-1][1]['login'],123);self.assertEqual(self.cfg['mode'],'observe');self.assertFalse(self.api.sent)
+        self.assertEqual(self.api.calls[-1][0],(str(self.api.program),));self.assertEqual(self.api.calls[-1][1],{'timeout':60000});self.assertEqual(self.cfg['mode'],'observe');self.assertFalse(self.api.sent)
 
     def test_production_engine_reads_both_assets_again_after_demo_reopen(self):
         from qa_mt5_reconnect_rev12 import run_check
@@ -268,3 +268,4 @@ class ControllerAndWindowTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+

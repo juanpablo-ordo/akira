@@ -114,6 +114,7 @@ class StudioWindow(QMainWindow):
         self.mt5_banner=QWidget();connection_row=QHBoxLayout(self.mt5_banner);connection_row.setContentsMargins(0,0,0,0)
         self.mt5_detail=label('','muted');self.mt5_detail.setWordWrap(True);connection_row.addWidget(self.mt5_detail,1)
         self.mt5_retry=self.btn('RECONECTAR MT5',self.controller.reconnect_mt5,glyph='bolt');connection_row.addWidget(self.mt5_retry);main_box.addWidget(self.mt5_banner)
+        self.mt5_use_open=self.btn('USAR CUENTA ABIERTA',lambda:self.settings_panel.use_open_account());connection_row.addWidget(self.mt5_use_open)
         self.book=QStackedWidget();main_box.addWidget(self.book,1)
         self.tables=[];self.pages=[];self.build_home();self.build_pending();self.build_account();self.build_analysis();self.build_sources();self.build_chat();self.build_settings();self.build_terminal()
         self.statusBar().hide();self.apply_visual(self.cfg['studio']);self.navigate(0);self.render({})
@@ -412,6 +413,8 @@ class StudioWindow(QMainWindow):
             QTimer.singleShot(6000,lambda:self.director.publish('idle') if not self.controller.chat_busy else None)
         elif kind=='settings_saved':
             self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
+        elif kind=='mt5_account_detected':
+            self.settings_panel.use_mt5_button.setEnabled(True);self.settings_panel.message.setText(data['detail'])
         elif kind=='wallpaper_imported':self.settings_panel.media_imported(data)
         elif kind=='font_imported':self.settings_panel.font_imported(data)
         elif kind=='sprites_imported':
@@ -430,7 +433,7 @@ class StudioWindow(QMainWindow):
             if prefs.get('notifications',True):
                 if prefs.get('notification_sound',True):QApplication.beep()
                 if prefs.get('notification_popup',True):self.show_toast(data)
-        elif kind=='error':self.settings_panel.save_button.setEnabled(True);self.show_error(data)
+        elif kind=='error':self.settings_panel.save_button.setEnabled(True);self.settings_panel.use_mt5_button.setEnabled(True);self.show_error(data)
         elif kind=='exported':self.information('Archivo guardado',data['path'])
         elif kind=='report_preview':
             if data['hours']==(self.report_period.currentData() or 24):set_document(self.report_preview,data['text'])
@@ -481,7 +484,8 @@ class StudioWindow(QMainWindow):
         delay=connection.get('retry_seconds') or 0
         detail=message+' '+action+(f' Próximo intento en {delay} segundos.' if delay else '')
         self.mt5_banner.setVisible(not connected);self.mt5_detail.setText(detail)
-        self.mt5_retry.setEnabled(not self.controller.preview and connection.get('code')!='CONNECTING')
+        self.mt5_retry.setEnabled(not self.controller.preview and connection.get('code') not in ('CONNECTING','INSPECTING'))
+        self.mt5_use_open.setEnabled(not self.controller.preview and 'use_open_mt5_account' not in self.controller._jobs)
         self.settings_panel.mt5_status.setText('MT5 conectado · cuenta '+str(connection.get('account_type') or 'comprobada')+'.' if connected else detail)
         self.account_badge.setText('Cuenta privada' if self.private else 'Cuenta: '+str(a.get('login','—'))+' · Libre '+number(a.get('margin_free'))+' '+currency)
         for key,metric in self.metrics.items():
@@ -669,13 +673,11 @@ class StudioWindow(QMainWindow):
     def save_settings(self):
         try:
             draft=self.settings_panel.draft();login=None
-            if draft['mode']=='trade' and (self.cfg['mode']!='trade' or self.cfg['expected_login']!=draft['expected_login']):
-                connected_login=(self.controller.view.get('account') or {}).get('login')
-                if self.cfg['expected_login']!=draft['expected_login'] and (not self.controller.bridge.connected or draft['expected_login']!=connected_login):
-                    draft['mode']='observe'
-                else:
-                    login=self.confirm_execution(draft)
-                    if login is None:return
+            from mt5_connection import target_signature
+            if target_signature(self.cfg)!=target_signature(draft):draft['mode']='observe'
+            elif draft['mode']=='trade' and self.cfg['mode']!='trade':
+                login=self.confirm_execution(draft)
+                if login is None:return
             keys={k:widget.text() for k,widget in self.settings_panel.keys.items()}
             accepted=self.controller.save(draft,keys,confirmed_account=login)
             if accepted:self.settings_panel.save_button.setEnabled(False);self.settings_panel.message.setText('Guardando…')
@@ -684,7 +686,7 @@ class StudioWindow(QMainWindow):
         view=self.controller.view;a=view.get('account') or {}
         if self.controller.preview or not self.controller.bridge.connected:self.show_error('Conecta una cuenta de MT5 antes de autorizar envíos.');return None
         login=a.get('login');body='Cuenta '+str(login)+' · '+str(a.get('server',''))+'\nSe autorizarán nuevas órdenes sujetas a los límites configurados.\nRiesgo por operación: '+str(draft['risk'].get('max_trade_money'))+' '+str(a.get('currency','USD'))+' y '+str(draft['risk'].get('max_trade_pct'))+'%.\n\n¿Confirmas esta cuenta y configuración?'
-        return login if self.confirm('Activar operativa',body) else None
+        return (int(login),str(a.get('server') or '').strip()) if self.confirm('Activar operativa',body) else None
     def activate_execution(self):
         if self.controller.view.get('mode',self.cfg['mode'])=='trade':self.pause();return
         draft=copy.deepcopy(self.cfg);draft['mode']='trade';login=self.confirm_execution(draft)
@@ -1014,3 +1016,4 @@ def main(preview=False):
     try:return app.exec()
     finally:
         if not window.controller.closed:window.close()
+

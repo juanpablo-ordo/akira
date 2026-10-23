@@ -49,7 +49,7 @@ def run_check():
                 checks['first_connection_to_demo']=rows[-1].get('mt5_connection',{}).get('account_type')=='demo'
                 close(actor,stop);checks['shutdown_before_reopen']=bool(shutdowns)
                 rows.clear();actor,stop,commands=start();wait_for(lambda:any(r.get('connected') for r in rows))
-                checks['saved_target_on_restart']=calls[-1][0]==(str(terminal),) and calls[-1][1].get('login')==123 and calls[-1][1].get('server')=='TEST'
+                checks['saved_target_on_restart']=calls[-1][0]==(str(terminal),) and calls[-1][1]=={'timeout':60000} and rows[-1].get('account',{}).get('login')==123
                 checks['fresh_account_and_both_assets']=set(rows[-1].get('symbols',{}))=={'BTCUSDm','XAUUSDm'} and rows[-1].get('account',{}).get('login')==123
                 api.terminal.connected=False
                 wait_for(lambda:rows[-1].get('mt5_connection',{}).get('code')=='BROKER_OFFLINE')
@@ -81,3 +81,4 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--report',type=Path);args=parser.parse_args();result=run_check()
     if args.report:args.report.parent.mkdir(parents=True,exist_ok=True);args.report.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(result,ensure_ascii=False))
+
