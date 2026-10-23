@@ -78,7 +78,7 @@
   "VALIDACION_STUDIO_REV7.json": "f5e1d07f12993f2179b163c7380e5b9735533d4d9b55035ff2d2ded8b1eec8af",
   "VALIDACION_STUDIO_REV8.json": "63cd96bebf4624aedfe8a5824b9d8a0d861c88e9a56d77d54470e90c2a662e37",
   "VALIDACION_STUDIO_REV9.json": "ddf377525cff9448ea60f88f05b7e5a8e68015b57f2836e7cb3a8eb8beb42597",
-  "VALIDACION_V12.json": "86f233ed3879005d7301b00fe67872530b42968d3f403895d3a5961d7a3adc8d",
+  "VALIDACION_V12.json": "fec70ccb1c148e00c0548f10264f653bddf39d281bb505813c3471a39a03ee87",
   "VALIDAR_AKIRA.bat": "5bf8712dc722f89ab58963322462ce31d0bfa892a1a7f115dffd79b646ad2a9b",
   "VERIFICACION_STUDIO_REV10/CONVERSATION_WINDOWS.json": "974b096d309895ed1167e809cad4e6e7b79e9b0c9caa8825406c5659636b5cbd",
   "VERIFICACION_STUDIO_REV10/EVIDENCE_SHA256.json": "b86afcb7323005bb9d2bf7587c9721da9ac89d14e6df773cd8dbba3187f2d3ce",
@@ -191,7 +191,7 @@
   "chart_render.py": "9f3ca796d0629f4f1410af2ae2b3b712faa76150b8d9ecfe290325ac94559eb1",
   "chat_store.py": "794ef34471c2622259f9d48af2169a8c70ff07e579ba320a4ca0114848ef72e8",
   "cloud_status.py": "7c3614be509588d35b4499fbbdbc2b225c01a9ac6a9ee9889dccc016af07cfeb",
-  "command_bridge.py": "3f59a789200bf4e1c0ea729c9952754eb459c9d6b75e3e26323742ce11b0dce3",
+  "command_bridge.py": "a21132a6719bbd9bffdb7709f59809dd2840cdd2ee20387c46346270e080a06c",
   "compact_review.py": "6c0f4f8ef8366401fae3cc51805cc0b3193eafb5ce0abfd5e2a6c1cf7cbf173e",
   "connectivity.py": "23f522b59ca5cf9ee659f3695d550e83d3787e71aea0038627922a6385837dbe",
   "conversation_intent.py": "47d50b56f84c4e1f5632350271b8a0d7480bb461715995d3d534f5becb62ba59",
@@ -289,7 +289,7 @@
   "strategy_lab.py": "fb7ad052e29c262102765b16e9263a848d912db5314f110561be6502e740b703",
   "strategy_research.py": "6e7e802732097557d25266bb084a8bd3c4ef5e03bfab41f5cb7d6a7ec90c9816",
   "studio_background.py": "4cf8e11b6852aa0ef2b2f97353dfc4b553b05b1a5c84b8b02d775123a4931490",
-  "studio_controller.py": "73eb2782e603ab7790f0f86f1b76920e2baaf0843d203f658139ef3e1dfe0100",
+  "studio_controller.py": "5f8454e2bdcd47db93c2fe44f992037b2627f6221e0d0635463f232ffff7a1c8",
   "studio_editors.py": "7e901c6b688d7cae4089d1cdde6c1558143a3dc9db9828d4b7c58cb054aba3e2",
   "studio_presenter.py": "652b2579613a86e0bf80c3856de2bfd6052e6c819d935b6e1cef0c1096e0180a",
   "studio_settings_qt.py": "9e4a45ccb9c86a4cc467b088fb4bd9288c4619eb5c7cf29906327fddd498bcc6",
@@ -426,7 +426,7 @@
   "windows_version.txt": "2b7b55a122d57094609ee3aaeb7f0493e449efb331b5879f23ffeb34e00e8cef",
   "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8",
   "qa_mt5_accounts_rev13.py": "339ed9a4814fa6b97c9136801b5e9a143307ee367fa686c840a0fd17671da42e",
-  "tests/test_studio_rev13_mt5_accounts.py": "e48b14726cf37b199cd4693156515058bbd45273f93a08e118827e1c8f0a357b",
-  "ACEPTACION_REV13.md": "55c1e535681de89b8c30d318a9868b219e370ae38dd4643c92626733c042a821",
-  "VALIDACION_REV13.json": "0449dd1c68b6581b9892b96fba32a49f1f228ebf63542f7504c759cef99e9ca0"
+  "tests/test_studio_rev13_mt5_accounts.py": "280788ad7e20dc054f73ef79829e9e48957e11639cf5254b3f4593fc9bf9ed40",
+  "ACEPTACION_REV13.md": "047aed44bda277019f83634005c5264e64bd50d2f2ef47c3999b594866520ed7",
+  "VALIDACION_REV13.json": "39c5519af5dfaa1c64c5e680c8d37c539681864239726186dbcd21bcd43431bf"
 }

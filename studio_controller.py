@@ -80,6 +80,7 @@ class StudioController:
         if not self._services_started:self.start_services()
         elif not self.actor or not self.actor.is_alive():self._start_actor()
         def adopt():
+            if self.closed:return {'ok':False,'cancelled':True}
             # Persist the pause before inspecting a different terminal. The actor
             # consumes this message first, even when its previous login failed.
             with self._settings_lock:
@@ -90,7 +91,8 @@ class StudioController:
                 if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
                 self.emit('settings_saved',{'config':copy.deepcopy(paused),'submitted':paused,'paths':['mode'],
                     'result':{'ok':True,'connection_pending':True},'saved':True})
-            detected=self.bridge.request({'action':'inspect_mt5','terminal_path':terminal_path})
+            detected=self.bridge.request({'action':'inspect_mt5','terminal_path':terminal_path},cancel_event=self.stop)
+            if self.closed or self.stop.is_set():return {'ok':False,'cancelled':True}
             if not detected.get('ok'):raise RuntimeError(detected.get('error') or 'No se pudo comprobar la cuenta de MT5. Mantén MT5 abierto e inténtalo de nuevo.')
             login,server=int(detected['login']),str(detected['server']).strip()
             if not login or not server:raise ValueError('MT5 no confirmó el número y el servidor de la cuenta.')

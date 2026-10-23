@@ -20,6 +20,7 @@ Si tienes varias instalaciones de MT5 abiertas, selecciona el archivo terminal64
 - Cambiar cuenta o terminal revoca la autorización anterior; los diarios permanecen separados.
 - Se puede adoptar otra cuenta sin cerrar Akira, incluso tras una conexión fallida.
 - La confirmación para operar incluye número y servidor y se comprueba de nuevo al guardar.
+- Cerrar Akira cancela la espera de una inspección pendiente, incluso si la llamada a MT5 ya comenzó.
 - La inspección fallida conserva la identidad anterior y deja las operaciones en Solo análisis.
 - La interfaz conserva otros cambios del formulario mientras actualiza los campos de la cuenta detectada.
 

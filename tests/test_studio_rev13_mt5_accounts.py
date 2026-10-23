@@ -1,5 +1,5 @@
 """Switch accounts through the real actor/controller; never use a broker."""
-import copy,json,tempfile,unittest
+import copy,json,queue,tempfile,threading,time,unittest
 from pathlib import Path
 from unittest.mock import Mock,patch
 from settings import DEFAULT,load_config,save_config
@@ -149,6 +149,24 @@ class AccountSwitchWindowTests(unittest.TestCase):
                     panel.use_open_account();detect.assert_called_once_with('chosen.exe')
                 self.assertFalse(panel.use_mt5_button.isEnabled());self.assertIn('Comprobando',panel.mt5_status.text())
             finally:window.close();self.app.processEvents()
+
+
+class InspectionShutdownTests(unittest.TestCase):
+    def test_close_cancels_a_queued_inspection_before_the_actor_can_start_it(self):
+        from command_bridge import CommandBridge,dispatch
+        commands=queue.Queue();bridge=CommandBridge(commands);stop=threading.Event();results=[]
+        worker=threading.Thread(target=lambda:results.append(bridge.request({'action':'inspect_mt5'},cancel_event=stop)))
+        worker.start();command=commands.get(timeout=1);stop.set();worker.join(1)
+        self.assertFalse(worker.is_alive());self.assertTrue(results[0]['cancelled'])
+        handler=Mock();dispatch(None,command,handler);handler.assert_not_called()
+    def test_close_cancels_the_wait_for_an_inspection_already_started(self):
+        from command_bridge import CommandBridge
+        commands=queue.Queue();bridge=CommandBridge(commands);stop=threading.Event();results=[]
+        worker=threading.Thread(target=lambda:results.append(bridge.request({'action':'inspect_mt5'},cancel_event=stop)))
+        worker.start();command=commands.get(timeout=1)
+        with command['_lock']:command['_started']=True
+        stop.set();worker.join(1)
+        self.assertFalse(worker.is_alive());self.assertTrue(results[0]['cancelled'])
 
 
 if __name__=='__main__':unittest.main()
