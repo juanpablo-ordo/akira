@@ -31,3 +31,13 @@ Se reproducen los límites altos en una cuenta sintética, su guardado real medi
 La compilación compara el coste de interfaz contra Rev13 con dos CPU y contenido recibido y prueba la IA real con la política de un equipo de 8 GB y dos núcleos físicos/cuatro lógicos. El procesador y la laptop físicos del usuario no se han medido directamente. No se utiliza una cuenta real ni se certifican ganancias.
 
 Consulta el resultado efectivo y el instalador en VALIDACION_REV14.json.
+
+## Resultado Windows
+
+[1493 pruebas y 172 subpruebas, sin fallos ni omisiones](https://github.com/juanpablo-ordo/akira/actions/runs/40227986286). Pasaron 17 informes, la comparación con Rev13, los 19 escenarios de riesgo y recursos en origen y ejecutable, el modelo real bajo política Dell y una instalación limpia que respondió con su propia IA.
+
+En la misma máquina, el renderizado mediano de Análisis pasó de 39,216 a 3,507 ms (−91,06 %) y el de Fuentes de 40,993 a 4,791 ms (−88,31 %). El coste de redimensionar la ventana se mantuvo similar: mediana de 64,592 a 65,479 ms. No se presenta una mejora de esa medida.
+
+Con política Dell e IA real: retraso de interfaz p95 de 30 ms, 859 ciclos con cotización fresca y pico conjunto de aplicación y modelo de 2758,3 MiB. Las tres respuestas generadas por el modelo tardaron 41–80 s; las cuatro respuestas de identidad/presencia/capacidades usan el flujo directo. La laptop física no se ha medido.
+
+[Descargar instalador con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/40227986286/artifacts/12613220332), disponible hasta 2026-11-01 14:26 (Guatemala, UTC-6). Fuente compilada: `aa13f6efd5200f376fc5aa06c9aab1e78484abeb`. Resultados, procedencia y límites de medición en VALIDACION_REV14.json.
