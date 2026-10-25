@@ -45,9 +45,11 @@ class RiskMeaningTests(unittest.TestCase):
         row=risk_dashboard(self.view,self.cfg)
         self.assertEqual(row['used_pct'],10);self.assertEqual(row['budget_pct'],100);self.assertIn('3.79',row['usage'])
     def test_unknown_reservations_are_described_as_provisional(self):
-        self.view['portfolio_risk'].update(reserved_usd=37.89,risk_known=False,unconfirmed_requests=1)
-        row=risk_dashboard(self.view,self.cfg)
-        self.assertEqual(row['used_pct'],100);self.assertIn('provisional',row['usage'])
+        for known in (False,True):
+            self.view['portfolio_risk'].update(reserved_usd=37.89,risk_known=known,unconfirmed_requests=1)
+            row=risk_dashboard(self.view,self.cfg)
+            self.assertEqual(row['used_pct'],100);self.assertIn('provisional',row['usage'])
+            self.assertNotIn('Reserva confirmada',row['usage'])
     def test_lowering_budget_below_existing_risk_reports_no_capacity(self):
         self.cfg['risk']['portfolio_money_cap']=1
         self.view['portfolio_risk'].update(reserved_usd=2,pending_orders=1)
@@ -155,6 +157,17 @@ class BudgetWindowTests(unittest.TestCase):
         self.assertEqual(chart._raster_count,count)
         chart.set_data([{'open':10,'high':12,'low':8,'close':9}]);second=chart.grab().toImage()
         self.assertNotEqual(first,second);self.assertEqual(chart._raster_count,count+1)
+    def test_close_releases_native_widgets_on_the_ui_thread(self):
+        import threading
+        from PySide6.QtCore import QCoreApplication,QEvent
+        from shiboken6 import isValid
+        from desktop_qt import StudioWindow
+        with tempfile.TemporaryDirectory() as tmp:
+            window=StudioWindow(tmp,preview=True,start_actor=False);destroyed=[]
+            window.destroyed.connect(lambda:destroyed.append(threading.get_ident()))
+            window.close();QCoreApplication.sendPostedEvents(None,QEvent.Type.DeferredDelete)
+            self.assertFalse(isValid(window));self.assertEqual(destroyed,[threading.get_ident()])
+            self.assertTrue(window.controller.closed)
     def test_real_controller_and_actor_apply_risk_and_observe_broker_reservations(self):
         from qa_risk_resources_rev14 import run_check
         result=run_check();self.assertEqual(result['status'],'PASSED');self.assertTrue(all(result['checks'].values()))

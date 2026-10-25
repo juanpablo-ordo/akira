@@ -2,7 +2,7 @@
 
 ## Entender los importes
 
-El riesgo en uso es la reserva calculada de las órdenes y posiciones recibidas de MT5. Si las listas están vacías puede ser cero aunque hayas elegido límites altos.
+El riesgo en uso incluye las reservas calculadas de órdenes y posiciones recibidas de MT5 y las solicitudes que aún esperan confirmación. Estas últimas se identifican como provisionales, incluso si su importe ya se conoce. Si las listas están vacías y no hay solicitudes pendientes puede ser cero aunque hayas elegido límites altos.
 
 Ahora se muestran por separado los topes elegidos, los límites efectivos de la cuenta, el presupuesto habilitado y el presupuesto realmente reservado. El porcentaje del presupuesto habilitado se calcula sobre el capital; el porcentaje en uso aumenta con las reservas. Un límite guardado no se presenta como una orden enviada.
 

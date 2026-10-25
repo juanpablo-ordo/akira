@@ -1,6 +1,6 @@
 {
   ".gitattributes": "4c51e4f7ad01965964bcbc681943db08c7b82af8256bf63b0d45b14c9024d564",
-  ".github/workflows/build-windows.yml": "ed8bbc2bc30ae1caf6ef8136c970f36782553d074d4f4ad07c03bcca5530b6b1",
+  ".github/workflows/build-windows.yml": "2335294bb8b8930f6fc959b95afb2caa43fa5e892c654bb844aa8ce7db0e8281",
   ".gitignore": "8e9a2da7b06f023142ca46e39e97dd0c180af159cdeb1eb9811eef17e96b6282",
   "ACEPTACION_REV10.md": "20bcf59595e8af1ba1e93a24488ca26ec08e9d60036bf2e8a0ac4a6c5b245a40",
   "ACEPTACION_REV11.md": "927a90631e870382103757e266f166d5ec8920f649b8289bbfc9fdbd7870402f",
@@ -78,7 +78,7 @@
   "VALIDACION_STUDIO_REV7.json": "f5e1d07f12993f2179b163c7380e5b9735533d4d9b55035ff2d2ded8b1eec8af",
   "VALIDACION_STUDIO_REV8.json": "63cd96bebf4624aedfe8a5824b9d8a0d861c88e9a56d77d54470e90c2a662e37",
   "VALIDACION_STUDIO_REV9.json": "ddf377525cff9448ea60f88f05b7e5a8e68015b57f2836e7cb3a8eb8beb42597",
-  "VALIDACION_V12.json": "2bd2f9e541896926be5aa849fe4b6ee3dd8be465c21ae56b0fa8a8dce7fc9a46",
+  "VALIDACION_V12.json": "a047c39ec152961bc7c379a0e82b3ec6319c00e07baf78d88cb727ff6f5d6436",
   "VALIDAR_AKIRA.bat": "5bf8712dc722f89ab58963322462ce31d0bfa892a1a7f115dffd79b646ad2a9b",
   "VERIFICACION_STUDIO_REV10/CONVERSATION_WINDOWS.json": "974b096d309895ed1167e809cad4e6e7b79e9b0c9caa8825406c5659636b5cbd",
   "VERIFICACION_STUDIO_REV10/EVIDENCE_SHA256.json": "b86afcb7323005bb9d2bf7587c9721da9ac89d14e6df773cd8dbba3187f2d3ce",
@@ -202,7 +202,7 @@
   "default_config.json": "7ab29d49127b5c0aa421fe31e1ac7f5c0a5da0547ffad04bea0a11efdc5a743f",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "e699ce6ed4188543f3a19bbc129ad09719720e37f8c96c9c95bfa52c13cdbf87",
+  "desktop_qt.py": "2966aeef263ebde7c2aeda66f28d282e5910db3778d29e4299a0b3c682697f2b",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
   "engine.py": "5f6c7755a302222c509d79b1eb811e81768dc10f72205c279b6e93f07f084f6e",
@@ -291,7 +291,7 @@
   "studio_background.py": "4ad45b42b271c21c7543a1678108d50583e617dae390b2b30c41d3acf956e335",
   "studio_controller.py": "ca5047c450e6ee75d6073b5e134fff46284981786412405db3a2bf7dc121f4ff",
   "studio_editors.py": "7e901c6b688d7cae4089d1cdde6c1558143a3dc9db9828d4b7c58cb054aba3e2",
-  "studio_presenter.py": "949374c415afb7227edd6ea1dfefd8f7d560097fec7021a2344eea6935b6a8e9",
+  "studio_presenter.py": "e8883b3baf7fb3895ed1d9841253b816c5c16014a19eedc686fe95f0eafe6fff",
   "studio_settings_qt.py": "c1e73f4703237bafa006ded1ce83c072bf58d998a9b1fefe66022c16f53ece07",
   "studio_theme.py": "a2656c3306c23d4f26414a520bfeef0c2bfb7fc8ccbf19fe5d7d695baa135d27",
   "studio_translations.py": "5375b8696f1405202e5817a9ae4baefa25cfb9bbed28e1ddf1aa63819343e690",
@@ -432,7 +432,7 @@
   "risk_limits.py": "3209253a6c295360065d64c92c6c3629d4acc0c9d44df4aa42e59fa1a6da9f8c",
   "qa_risk_resources_rev14.py": "c0f0de6cb9b970ee54cc3821d68c45aaf703d536c045f14f3c39137e39e50d98",
   "qa_ui_cost_rev14.py": "b271eb55ee12294c10914b42ba610a3463678ab701266b31bf739dda7ef2d1c8",
-  "tests/test_studio_rev14_risk_resources.py": "695880ca83993d08b76acc5bfa24af5d93d6a4eeb85fac4e734bd0cead17e5c7",
-  "ACEPTACION_REV14.md": "9cc48b377064d409c20b31aa9eef3246d1e026a34205a1f01069f84882488e20",
-  "VALIDACION_REV14.json": "2b935495b6e7f5f01ceb6e3aabdf5dd0d0c4acc7c4d0944221ae854139a3dbe8"
+  "tests/test_studio_rev14_risk_resources.py": "45749463a9ce5e72aaf92fee7dcc7725f5a42f15d2df0fbd6862238d0616e05c",
+  "ACEPTACION_REV14.md": "8897fa92bb518020d74b495d8289b1e104dc9ebcc636079ab7bd8e4ddfff547b",
+  "VALIDACION_REV14.json": "703e88b79ba8d8aeb158feb51f6705687e936ccc0935cb575355a7a92bedcddf"
 }

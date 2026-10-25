@@ -82,7 +82,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_studio_rev14_risk_resources.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV14_TARGETED.xml
+          python -u -m pytest -vv tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV14_TARGETED.xml
           if ($LASTEXITCODE -ne 0) { throw 'Una regresión nueva de Rev14 falló; revisar REV14_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar
@@ -98,7 +98,7 @@ jobs:
           AKIRA_TEST_DIAGNOSTICS: diagnostics
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests -ra -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
+          python -u -m pytest -vv tests -ra -x -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
           if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa la prueba indicada y REGRESSION_TESTS.xml en los diagnósticos.' }
           python -c "from xml.etree import ElementTree as E; r=E.parse('diagnostics/REGRESSION_TESTS.xml').getroot(); n=len(r.findall('.//testcase/skipped')); print('Pruebas omitidas:',n); assert n==0, 'La regresión debe comprobar también todos los paneles gráficos'"
           if ($LASTEXITCODE -ne 0) { throw 'La regresión omitió comprobaciones; no se publica una validación parcial.' }

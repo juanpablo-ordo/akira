@@ -92,6 +92,9 @@ def stylesheet(studio):
 class StudioWindow(QMainWindow):
     def __init__(self,folder,preview=False,start_actor=True,controller=None):
         super().__init__();self.controller=controller or StudioController(folder,preview,start_actor);self.cfg=self.controller.cfg
+        # Release the native widget tree on its Qt thread after closeEvent has
+        # joined owned workers. Python cycles must not destroy it on a decoder.
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.tr=Translator(folder,self.cfg['studio']['language_ui'],self.cfg['studio'].get('language_pack',''));self.page_index=0;self.private=bool(self.cfg['desktop'].get('privacy',True))
         self._review_overrides={};self._stream_text="";self._logs_dirty=False;self._logs_at=0;self._render_interval=.4;self._timers=[];self._ai_due=0;self._render_at=0;self._snapshot_pending=None;self._model_status={};self._translating=False
         self.asset_root=root_assets();self.setWindowIcon(QIcon(str(self.asset_root/'assets/akira.ico')))

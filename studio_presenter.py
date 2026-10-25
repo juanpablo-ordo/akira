@@ -76,7 +76,8 @@ def risk_dashboard(view,config,private=False):
             'usage':'Esperando órdenes y posiciones de MT5.','caption':'Límites guardados · conecta MT5','budget_pct':0,'used_pct':0}
     cap=limits['portfolio'];available=max(0,cap-used)
     count=int(ledger.get('pending_orders',len(view.get('orders') or [])))+int(ledger.get('positions',len(view.get('positions') or [])))
-    usage_note='Sin órdenes ni posiciones: todavía no hay riesgo reservado.' if not count and used==0 and not ledger.get('unconfirmed_requests') else 'Reserva confirmada de órdenes y posiciones.' if ledger.get('risk_known',True) else 'Hay una reserva provisional a la espera de confirmación de MT5.'
+    provisional=bool(ledger.get('unconfirmed_requests')) or not ledger.get('risk_known',True)
+    usage_note='Hay una reserva provisional a la espera de confirmación de MT5.' if provisional else 'Sin órdenes ni posiciones: todavía no hay riesgo reservado.' if not count and used==0 else 'Reserva confirmada de órdenes y posiciones.'
     total_choice=money(limits['portfolio_money']) if limits['portfolio_money']>0 else 'sin tope adicional en dinero'
     configured=(f"Por orden: hasta {money(limits['per_trade'])}\nElegiste {money(limits['trade_money'])} y {limits['trade_pct']:g}% del patrimonio."
         f"\nRunner directo: hasta {money(limits['runner'])}\nPresupuesto conjunto: {money(cap)}"
