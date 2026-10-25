@@ -1,0 +1,14 @@
+{
+  "build": "AKIRA_16_4_9_STUDIO_REV14",
+  "status": "WINDOWS_PENDING",
+  "date": "2026-10-25",
+  "pytest_tests_collected": 1491,
+  "unittest_tests_collected": 1488,
+  "new_local_tests_passed": 22,
+  "native_style_source_check": "PASSED",
+  "risk_and_resource_scenarios": 19,
+  "local_ui_cost_reduction_median_pct": {"analysis": 86.7, "sources": 85.9},
+  "real_laptop_tested": false,
+  "live_account_used": false,
+  "profitability_verified": false
+}

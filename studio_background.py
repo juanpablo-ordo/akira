@@ -210,6 +210,7 @@ class BackgroundSurface(QWidget):
         self._tick=QTimer(self);self._tick.setInterval(33);self._tick.timeout.connect(self.advance)
         self._resize=QTimer(self);self._resize.setSingleShot(True);self._resize.setInterval(180);self._resize.timeout.connect(self.restart)
     def configure(self,config,accent='#00ddff',secondary='#ff2585',style=None):
+        if dict(config)==self.config and accent==self.accent and secondary==self.secondary and dict(style or {})==self.style:return
         changed=dict(config)!=self.config
         self.config=dict(config);self.accent=accent;self.secondary=secondary;self.style=dict(style or {});self._cache_size=None
         if changed:self.restart()

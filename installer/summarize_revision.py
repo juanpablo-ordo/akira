@@ -33,7 +33,7 @@ def summarize(root, folder):
     names=('SOURCE_SELF_CHECK','NATIVE_APPLICATION','NATIVE_FIRST_RUN','SPRITE_AI_SOURCE',
         'SPRITE_AI_FROZEN','HTTPS_SOURCE_REV10','HTTPS_FROZEN_REV10','LOW_RESOURCE_FROZEN_REV10',
         'PUBLIC_SOURCES_SOURCE_REV10','PUBLIC_SOURCES_FROZEN_REV10','LOCAL_AI_SCENARIOS',
-        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','INSTALLED_LOCAL_AI')
+        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','REAL_CHAT_DELL_7280_REV14','UI_COMPARISON_REV14','INSTALLED_LOCAL_AI')
     reports={}
     for name in names:
         path=folder/(name+'.json');raw=path.read_bytes();data=json.loads(raw)
@@ -59,8 +59,16 @@ def summarize(root, folder):
         if not check or check.get('status')!='PASSED' or check.get('build')!=BUILD_ID or not all(check.get('checks',{}).values()):
             raise RuntimeError('MT5 account switch not verified: '+name)
     result['mt5_account_switch']=accounts
-    (folder/'VERIFICATION_REV13.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('AKIRA_REV13_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
+    risk={'source':source.get('studio_check',{}).get('risk_budget_resources_details'),
+        'frozen':native.get('self_check',{}).get('studio_check',{}).get('risk_budget_resources_details')}
+    for name,check in risk.items():
+        if not check or check.get('status')!='PASSED' or check.get('build')!=BUILD_ID or not all(check.get('checks',{}).values()):
+            raise RuntimeError('Risk budgets/resources not verified: '+name)
+    result['risk_budget_resources']=risk
+    result['dell_model_load']=json.loads((folder/'REAL_CHAT_DELL_7280_REV14.json').read_text(encoding='utf-8'))
+    result['ui_comparison']=json.loads((folder/'UI_COMPARISON_REV14.json').read_text(encoding='utf-8'))
+    (folder/'VERIFICATION_REV14.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('AKIRA_REV14_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
 
 

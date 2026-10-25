@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt,QTimer,QSize,QUrl,QSettings
 from PySide6.QtGui import QFont,QFontDatabase,QIcon,QDesktopServices,QColor
 from PySide6.QtWidgets import QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,QStackedWidget,QSplitter,QLineEdit,QComboBox,QTextBrowser,QPlainTextEdit,QListWidget,QListWidgetItem,QTabWidget,QScrollArea,QDialog,QDialogButtonBox,QFileDialog,QMessageBox,QInputDialog,QCheckBox,QDoubleSpinBox,QFormLayout,QProgressBar,QMenu
 from studio_widgets import Card,Metric,DataTable,ActivityFeed,CandleChart,AvatarWidget,SignalWave,label,button,icon,INK,Toggle
-from studio_presenter import human,rich_text,set_document,frame_html,budget_summary,plan_summary,report_html,source_abstract,market_activity,INDICATORS
+from studio_presenter import human,rich_text,set_document,set_plain_document,frame_html,budget_summary,risk_dashboard,plan_summary,report_html,source_abstract,market_activity,INDICATORS
 from studio_editors import ChoiceBox
 from studio_background import BackgroundSurface
 from studio_translations import Translator
@@ -82,7 +82,7 @@ def stylesheet(studio):
     QSplitter::handle {{background:transparent;}}QSplitter::handle:hover {{background:#14607c;}}
     QCheckBox::indicator {{width:30px;height:17px;border:1px solid #24617c;background:#062336;border-radius:8px;}}
     QCheckBox::indicator:checked {{background:{accent};border-color:{accent};}}
-    QProgressBar {{border:1px solid #164966;border-radius:4px;background:#062034;text-align:center;max-height:15px;}}
+    QProgressBar {{border:1px solid #164966;border-radius:4px;background:#062034;text-align:center;min-height:20px;max-height:24px;font-size:{round(14*scale)}px;}}
     QProgressBar::chunk {{background:{accent};border-radius:3px;}}
     QToolTip {{background:#041e32;color:#d7f5ff;border:1px solid {accent};padding:7px;}}
     QMenu {{background:#041526;border:1px solid #176886;}} QMenu::item {{padding:7px 22px;}}QMenu::item:selected {{background:#075375;}}
@@ -179,6 +179,8 @@ class StudioWindow(QMainWindow):
         self.metrics={}
         for key,title,glyph,color,caption in [('balance','BALANCE','wallet','#e8f3ff','Capital actual'),('equity','PATRIMONIO','layers','#00ddff','Valor total'),('floating','FLOTANTE','chart','#00e8b5','Ganancia / pérdida'),('daily_net','P/L DEL DÍA','chart','#ff2585','Resultado de hoy'),('reserved_risk','RIESGO','shield','#ffc548','Riesgo reservado'),('cycle_ms','CICLO','bolt','#00ddff','Tiempo del motor')]:
             metric=Metric(self.text(title),glyph,color);self.tr.bind(metric.caption,caption);row.addWidget(metric,0,len(self.metrics));self.metrics[key]=metric
+        self.metrics['reserved_risk'].name_label.setText('RIESGO EN USO')
+        self.risk_adjust=self.metrics['reserved_risk'].set_action('AJUSTAR',lambda:self.open_settings(1))
         layout.addWidget(self.metrics_widget)
 
     def build_home(self):
@@ -232,7 +234,15 @@ class StudioWindow(QMainWindow):
         for title,attribute,columns in [('ÓRDENES PENDIENTES CONFIRMADAS EN MT5','orders',['Ticket','Símbolo','Tipo','Volumen','Entrada','SL','TP','Autor']),('POSICIONES ABIERTAS EN MT5','positions',['Ticket','Símbolo','Tipo','Volumen','Entrada','SL','TP','P/L USD','Autor']),('OPERACIONES Y AUDITORÍA','audit_table',['Hora','Símbolo','Tipo','Motivo / contexto'])]:
             card=self.card(title,'account');table=self.table(columns);setattr(self,attribute,table);card.body.addWidget(table,1);left.addWidget(card,1)
             if attribute=='orders':card.heading.addWidget(self.btn('NUEVA ORDEN',self.new_order,glyph='pending'))
-        budget=self.card('PRESUPUESTO Y LÍMITES','shield');self.budget_text=label('','body');self.budget_text.setWordWrap(True);budget.body.addWidget(self.budget_text);self.budget_bar=QProgressBar();self.budget_bar.setRange(0,100);budget.body.addWidget(self.budget_bar);budget.body.addWidget(self.btn('AJUSTAR RIESGO',lambda:self.open_settings(1)));right.addWidget(budget)
+        budget=self.card('PRESUPUESTO Y LÍMITES','shield')
+        self.budget_status=label('','muted');self.budget_status.setWordWrap(True);budget.body.addWidget(self.budget_status)
+        self.budget_config=label('','body');self.budget_config.setWordWrap(True);budget.body.addWidget(self.budget_config)
+        self.budget_limit_bar=QProgressBar();self.budget_limit_bar.setRange(0,100);self.budget_limit_bar.setFormat('%p% del capital habilitado');budget.body.addWidget(self.budget_limit_bar)
+        self.budget_text=label('','body');self.budget_text.setWordWrap(True);budget.body.addWidget(self.budget_text)
+        self.budget_bar=QProgressBar();self.budget_bar.setRange(0,100);self.budget_bar.setFormat('%p% del presupuesto en uso');budget.body.addWidget(self.budget_bar)
+        self.budget_activity=label('','muted');self.budget_activity.setWordWrap(True);budget.body.addWidget(self.budget_activity)
+        self.budget_reasons=self.btn('VER MOTIVOS POR ACTIVO',lambda:self.navigate(3));budget.body.addWidget(self.budget_reasons)
+        budget.body.addWidget(self.btn('CAMBIAR LÍMITES',lambda:self.open_settings(1)));right.addWidget(budget)
         security=self.card('SEGURIDAD Y EJECUCIÓN','shield');self.security=QTextBrowser();security.body.addWidget(self.security,1);right.addWidget(security,2)
 
     def build_analysis(self):
@@ -287,6 +297,7 @@ class StudioWindow(QMainWindow):
         for i,nav in enumerate(self.nav):nav.setChecked(i==index)
         self.page_title.setText(self.text(NAV[index]));self.page_description.setText(self.text(DETAILS[index]));self.responsive()
         if index==5:self.render_chat()
+        if index in (0,7):self._logs_dirty=True
         if self.controller.view:self.render(self.controller.view)
     def open_settings(self,index=0):self.navigate(6);self.settings_panel.tabs.setCurrentIndex(index)
     def responsive(self):
@@ -328,14 +339,16 @@ class StudioWindow(QMainWindow):
         if self.surface.config.get('enabled'):self.surface._resize.start()
 
     def apply_visual(self,studio,desktop=None):
+        from resource_optimizer import effective_desktop
         self._visual_studio=copy.deepcopy(studio)
         sheet=stylesheet(studio)
         if sheet!=getattr(self,'_sheet',None):self.setStyleSheet(sheet);self._sheet=sheet
         brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
         QApplication.instance().setApplicationDisplayName(brand)
         from akira_version import BUILD_ID
-        self.setWindowTitle(brand+' · Studio · '+BUILD_ID.removeprefix('AKIRA_').replace('_STUDIO_',' · ').replace('_','.'));desktop=desktop or self.controller.cfg.get('desktop') or {};wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=1.4 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
-        for wave in self.findChildren(SignalWave):wave.set_saving(profile=='Ahorro de energía' or bool(studio.get('reduce_motion')))
+        self.setWindowTitle(brand+' · Studio · '+BUILD_ID.removeprefix('AKIRA_').replace('_STUDIO_',' · ').replace('_','.'));desktop=effective_desktop(desktop or self.controller.cfg.get('desktop'));wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=.8 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
+        self._saving_ui=profile=='Ahorro de energía'
+        for wave in self.findChildren(SignalWave):wave.set_saving(self._saving_ui or bool(studio.get('reduce_motion')))
         if profile=='Ahorro de energía':wallpaper.update(fps=min(3,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
         self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
         locale=studio.get('language_ui','es')
@@ -347,11 +360,12 @@ class StudioWindow(QMainWindow):
         scale=int(studio.get('font_scale',100))/100
         for metric in [*self.metrics.values(),*self.pending_metrics.values()]:metric.setMinimumHeight(round(90*scale));metric.setMaximumHeight(round(130*scale))
         self.responsive()
+        if hasattr(self,'settings_panel'):self.settings_panel.refresh_resources_preview(desktop)
     def retranslate(self):
         self.page_title.setText(self.text(NAV[self.page_index]));self.page_description.setText(self.text(DETAILS[self.page_index]))
         for table in self.tables:table.setHorizontalHeaderLabels([self.text(t) for t in table.columns])
         self.settings_panel.retranslate()
-        for key,title in [('balance','BALANCE'),('equity','PATRIMONIO'),('floating','FLOTANTE'),('daily_net','P/L DEL DÍA'),('reserved_risk','RIESGO'),('cycle_ms','CICLO')]:self.metrics[key].name_label.setText(self.text(title))
+        for key,title in [('balance','BALANCE'),('equity','PATRIMONIO'),('floating','FLOTANTE'),('daily_net','P/L DEL DÍA'),('reserved_risk','RIESGO EN USO'),('cycle_ms','CICLO')]:self.metrics[key].name_label.setText(self.text(title))
     def set_avatar(self,config):
         from akira_expressions import get_catalog
         from akira_studio import UserCatalog
@@ -364,7 +378,7 @@ class StudioWindow(QMainWindow):
             self.animation_timer.setInterval(750);return
         self.director.refresh()
         active=self.director.loading or self.director.playing or self.director.blink_frame is not None
-        self.animation_timer.setInterval(50 if self.director.blink_frame is not None else (250 if self._render_interval>=.9 else 125) if active else max(50,min(500,int((self.director._next_blink-time.monotonic())*1000))))
+        self.animation_timer.setInterval(50 if self.director.blink_frame is not None else (250 if self._saving_ui else 125) if active else max(50,min(500,int((self.director._next_blink-time.monotonic())*1000))))
         if self.director.loading:
             for avatar in self.avatars:
                 if avatar.isVisible():avatar.update()
@@ -378,7 +392,7 @@ class StudioWindow(QMainWindow):
         for event in self.controller.poll():self.handle_event(event)
         if self._snapshot_pending is not None and not self.isMinimized() and now-self._render_at>=self._render_interval:
             view=self._snapshot_pending;self._snapshot_pending=None;self._render_at=now;self.render(view)
-        if self._logs_dirty and now-self._logs_at>=.3:self.render_logs();self._logs_dirty=False;self._logs_at=now
+        if self._logs_dirty and self.page_index in (0,7) and not self.isMinimized() and now-self._logs_at>=.3:self.render_logs(visible_only=True);self._logs_dirty=False;self._logs_at=now
         if now>=self._ai_due:
             self._ai_due=now+1
             status={'ready':False,'phase':'DISABLED','detail':'Vista previa · sin modelo conectado'} if self.controller.preview else self.controller.assistant.local_ai_status()
@@ -412,7 +426,12 @@ class StudioWindow(QMainWindow):
             if self.controller.voice and not self.controller.voice.stop_event.is_set():self.controller.speak(data['text'])
             QTimer.singleShot(6000,lambda:self.director.publish('idle') if not self.controller.chat_busy else None)
         elif kind=='settings_saved':
-            self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True);self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.');self.apply_visual(self.cfg['studio']);self.set_avatar(self.cfg['studio']['avatar'])
+            self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True)
+            self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.')
+            paths=data.get('paths') or []
+            if any(p.startswith(('studio.','desktop.')) for p in paths):self.apply_visual(self.cfg['studio'])
+            if any(p=='studio.avatar' or p.startswith('studio.avatar.') for p in paths):self.set_avatar(self.cfg['studio']['avatar'])
+            self.render_budget(self.controller.view)
         elif kind=='mt5_account_detected':
             self.settings_panel.use_mt5_button.setEnabled(True);self.settings_panel.message.setText(data['detail'])
         elif kind=='wallpaper_imported':self.settings_panel.media_imported(data)
@@ -433,7 +452,7 @@ class StudioWindow(QMainWindow):
             if prefs.get('notifications',True):
                 if prefs.get('notification_sound',True):QApplication.beep()
                 if prefs.get('notification_popup',True):self.show_toast(data)
-        elif kind=='error':self.settings_panel.save_button.setEnabled(True);self.settings_panel.use_mt5_button.setEnabled(True);self.show_error(data)
+        elif kind=='error':self.settings_panel.save_button.setEnabled(True);self.settings_panel.risk_save_button.setEnabled(True);self.settings_panel.use_mt5_button.setEnabled(True);self.show_error(data)
         elif kind=='exported':self.information('Archivo guardado',data['path'])
         elif kind=='report_preview':
             if data['hours']==(self.report_period.currentData() or 24):set_document(self.report_preview,data['text'])
@@ -476,8 +495,8 @@ class StudioWindow(QMainWindow):
         connected=bool(view.get('connected'));self.connection.setText(('● '+self.text('CONECTADO')) if connected else '● '+self.text('ESPERANDO MT5'))
         if connected!=getattr(self,'_connection_ready',None):
             self._connection_ready=connected;self.connection.setStyleSheet('color:'+ (INK['green'] if connected else INK['amber'])+';')
+            self.connection_footer.setStyleSheet('color:'+(INK['green'] if connected else INK['amber'])+';')
         self.connection_footer.setText('● MT5 '+('conectado' if connected else 'esperando'))
-        self.connection_footer.setStyleSheet('color:'+(INK['green'] if connected else INK['amber'])+';')
         self.mode_button.setEnabled(connected and not self.controller.preview)
         connection=view.get('mt5_connection') or {};message=str(connection.get('message') or view.get('error') or 'Esperando conexión con MetaTrader 5.')
         action=str(connection.get('next_action') or 'Abre MT5 con tu cuenta demo conectada. Si usas varios terminales, selecciona el correcto en Ajustes → Operación.')
@@ -491,6 +510,7 @@ class StudioWindow(QMainWindow):
         for key,metric in self.metrics.items():
             value=a.get(key) if key in a else view.get(key)
             metric.value.setText(('••••••' if self.private else number(value)+' '+currency) if key!='cycle_ms' else number(value,0)+' ms')
+        self.render_budget(view)
         self.mode_label.setText(('VISTA PREVIA · ' if self.controller.preview else '')+('Sin conexión con MT5: no se pueden enviar órdenes.' if not connected and not self.controller.preview else str(gate.get('reason')) if gate.get('reason') else self.text('SOLO ANÁLISIS · NO ENVÍA ÓRDENES') if mode!='trade' else self.text('OPERATIVA AUTORIZADA')))
         self.mode_button.setText(self.text('ACTIVAR OPERATIVA') if mode!='trade' else self.text('REANUDAR GESTIÓN' if view.get('paused') else 'PAUSAR GESTIÓN'))
         self.clock_label.setText('America/Guatemala\n'+when(view.get('as_of_utc') or view.get('updated')))
@@ -503,9 +523,23 @@ class StudioWindow(QMainWindow):
         if self.page_index==1:self.render_pending()
         elif self.page_index==2:self.render_account()
         elif self.page_index==3:self.render_analysis()
-        elif self.page_index==4:self.render_sources()
+        elif self.page_index==4:self.render_sources(visible_only=True)
         elif self.page_index==7:self.render_terminal()
-        self.render_notices()
+        if self.page_index==0:self.render_notices()
+
+    def render_budget(self,view=None):
+        view=view if view is not None else self.controller.view
+        data=risk_dashboard(view,self.cfg,self.private)
+        self.metrics['reserved_risk'].caption.setText(data['caption'])
+        self.metrics['reserved_risk'].setToolTip('El valor grande es el riesgo reservado en órdenes y posiciones. Los límites configurados aparecen debajo. Ajustar abre los controles de riesgo.')
+        self.budget_config.setText(data['configured']);self.budget_text.setText(data['usage']);self.budget_status.setText(data['state'])
+        self.budget_limit_bar.setValue(data['budget_pct']);self.budget_bar.setValue(data['used_pct'])
+        empty=bool(view.get('connected')) and not view.get('orders') and not view.get('positions')
+        self.budget_activity.setVisible(empty);self.budget_reasons.setVisible(empty)
+        if empty:
+            rows=[market_activity(view,symbol) for symbol,on in self.cfg['symbols'].items() if on]
+            self.budget_activity.setText('Próximas entradas\n'+'\n'.join(row['title']+': '+row['state']+(' · '+row['detail'][:220] if not self.private else '') for row in rows))
+        if hasattr(self,'settings_panel'):self.settings_panel.refresh_risk_preview()
 
     def pending_rows(self):
         from pending_verification import targets,identity
@@ -539,7 +573,7 @@ class StudioWindow(QMainWindow):
         if not plan:return
         self.pending_title.setText(str(plan['symbol'])+' · '+('BUY' if plan['side']==1 else 'SELL')+' '+str(plan['kind']))
         for key,widget in self.pending_levels.items():widget.setText(number(plan.get(key)))
-        check=plan.get('verification') or {};brief='\n\n'.join(str(plan.get('reason','')).split(';')[:4]);set_document(self.pending_text,rich_text(brief));set_document(self.pending_evidence,rich_text('\n\n'.join(str(s['name'])+' · '+str(s['state'])+'\n'+str(s['detail']) for s in check.get('stages') or [])+'\n\nTesis técnica completa:\n'+str(plan.get('reason',''))))
+        check=plan.get('verification') or {};set_document(self.pending_evidence,rich_text('\n\n'.join(str(s['name'])+' · '+str(s['state'])+'\n'+str(s['detail']) for s in check.get('stages') or [])+'\n\nTesis técnica completa:\n'+str(plan.get('reason',''))))
         info=(self.controller.view.get('symbols') or {}).get(plan['symbol']) or {};frames=info.get('frames') or {};set_document(self.pending_timeframes,frame_html(frames));set_document(self.pending_text,plan_summary(plan,frames))
         self.pending_chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [],{'Entrada':plan.get('entry'),'SL':plan.get('sl'),'TP':plan.get('tp')})
         self.pending_state.setText(plan['display_state']+'\n'+str(check.get('detail') or 'El envío vuelve a verificar permisos, precio, margen y riesgo.'))
@@ -557,7 +591,7 @@ class StudioWindow(QMainWindow):
                 if name=='positions':values.append('••••••' if self.private else number(order.get('profit',order.get('pnl'))))
                 values.append('AKIRA' if order.get('owned') else 'Usuario / externa');rows.append((str(order.get('ticket')),values,order))
             getattr(self,name).update_rows(rows)
-        portfolio=v.get('portfolio_risk') or {};text,percent=budget_summary(portfolio,self.private);self.budget_text.setText(text);self.budget_bar.setValue(percent)
+        self.render_budget(v)
         from security_details import security_text
         try:set_document(self.security,rich_text('Importes ocultos por privacidad. La autorización, SL, margen, riesgo y reconciliación siguen activos. Pulsa el control de la cuenta para mostrar el detalle.' if self.private else security_text(v,self.cfg)))
         except TypeError:set_document(self.security,rich_text((v.get('execution_gate') or {}).get('reason') or 'Cada envío comprueba cuenta autorizada, margen y límite de pérdida.'))
@@ -575,12 +609,12 @@ class StudioWindow(QMainWindow):
             keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo'];rows=[]
             for key in keys:rows.append((key,[INDICATORS.get(key,key.upper()),number(values.get(key)),tf],{}))
             table.update_rows(rows);chart.set_data((info.get('bars_by_timeframe') or {}).get(tf) or info.get('bars') or [])
-        self.render_sources();self.decision_text.setPlainText('\n\n'.join(symbol+'\n'+str(state.get('detail') or '') for symbol,state in (v.get('status') or {}).items()))
+        self.render_sources(visible_only=True);set_plain_document(self.decision_text,'\n\n'.join(symbol+'\n'+str(state.get('detail') or '') for symbol,state in (v.get('status') or {}).items()))
 
-    def render_sources(self,*args):
+    def render_sources(self,*args,visible_only=False):
         if not hasattr(self,'source_table'):return
         from cyber_ui import source_presentation
-        v=self.controller.view;sources=copy.deepcopy((v.get('research') or {}).get('sources') or {});rows=[];analysis=[];query=self.source_search.text().casefold()
+        v=self.controller.view;sources=dict((v.get('research') or {}).get('sources') or {});rows=[];analysis=[];query=self.source_search.text().casefold()
         sources['mt5']={'fresh':bool(v.get('connected')),'enabled':True,'detail':'Cotizaciones y especificaciones recibidas del terminal.' if v.get('connected') else 'No hay conexión con el terminal.','age_seconds':0 if v.get('connected') else None}
         for name,row in sorted(sources.items(),key=lambda pair:pair[0]):
             if row.get('display_hidden'):continue
@@ -589,14 +623,20 @@ class StudioWindow(QMainWindow):
             from studio_presenter import next_query
             if not query or query in (title+state+detail).casefold():rows.append((name,[state,title,when(row.get('last_attempt')),when(row.get('updated')),age,next_query(row),detail],data))
             analysis.append((name,[title,state,age,detail],data))
-        self.source_table.update_rows(rows);self.analysis_sources.update_rows(analysis)
-        research=v.get('research') or {};content=[]
-        for group in ('news','videos'):
-            for item in research.get(group) or []:
-                if not isinstance(item,dict):continue
-                url=str(item.get('url') or '');title=html.escape(str(item.get('title') or group));link='<a href="'+html.escape(url,quote=True)+'">'+title+'</a>' if url.startswith(('https://','http://')) else title
-                content.append('<p><b>'+link+'</b><br>'+html.escape(str(item.get('author') or item.get('source') or ''))+' · '+html.escape(str(item.get('published') or item.get('date') or 'Fecha no recibida'))+'<br>'+html.escape(str(item.get('status') or item.get('state') or ''))+'<br>'+rich_text(source_abstract(item.get('summary') or item.get('text') or item.get('note') or '')[:3000])+'</p>')
-        set_document(self.source_content,''.join(content) or '<p>'+self.text('No hay datos recibidos todavía.')+'</p>')
+        if not visible_only or self.page_index==3:self.analysis_sources.update_rows(analysis)
+        if visible_only and self.page_index==3:return
+        self.source_table.update_rows(rows)
+        from studio_presenter import source_content_key
+        research=v.get('research') or {};content_key=source_content_key(research)
+        if content_key!=getattr(self,'_source_content_key',None):
+            self._source_content_key=content_key
+            content=[]
+            for group in ('news','videos'):
+                for item in research.get(group) or []:
+                    if not isinstance(item,dict):continue
+                    url=str(item.get('url') or '');title=html.escape(str(item.get('title') or group));link='<a href="'+html.escape(url,quote=True)+'">'+title+'</a>' if url.startswith(('https://','http://')) else title
+                    content.append('<p><b>'+link+'</b><br>'+html.escape(str(item.get('author') or item.get('source') or ''))+' · '+html.escape(str(item.get('published') or item.get('date') or 'Fecha no recibida'))+'<br>'+html.escape(str(item.get('status') or item.get('state') or ''))+'<br>'+rich_text(source_abstract(item.get('summary') or item.get('text') or item.get('note') or '')[:3000])+'</p>')
+            set_document(self.source_content,''.join(content) or '<p>'+self.text('No hay datos recibidos todavía.')+'</p>')
         self.research_status.setText('\n\n'.join(symbol+': '+str(state.get('detail') or '') for symbol,state in (v.get('status') or {}).items()))
         if self.source_table.currentRow()<0 and rows:self.source_table.selectRow(0)
         self.source_selected()
@@ -606,20 +646,20 @@ class StudioWindow(QMainWindow):
             from studio_presenter import next_query
             set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'))+'\nÚltimo contenido recibido: '+when(row.get('updated'))+'\nPróxima consulta: '+next_query(row)))
             self.source_detail.setToolTip('')
-    def render_logs(self,*args):
+    def render_logs(self,*args,visible_only=False):
         if not hasattr(self,'terminal_table'):return
         rows=[];query=self.log_search.text().casefold();kind=self.activity_filter.currentText()
         for i,row in enumerate(self.controller.log_rows):
             state=str(row.get('state') or row.get('operation') or 'SISTEMA');module=str(row.get('symbol') or 'AKIRA');text=str(row.get('detail') or row.get('message') or '')
             if query and query not in (module+state+text).casefold():continue
             rows.append((str(row.get('utc'))+module+state+text[:80],[str(row.get('utc',''))[11:19],module,state,text],row))
-        self.terminal_table.update_rows(rows)
-        self.activity.update_rows([r for r in rows if kind=='TODOS' or kind in str(r[1]).upper()][:120])
+        if not visible_only or self.page_index==7:self.terminal_table.update_rows(rows)
+        if not visible_only or self.page_index==0:self.activity.update_rows([r for r in rows if kind=='TODOS' or kind in str(r[1]).upper()][:120])
     def render_notices(self):
         if not hasattr(self,'home_notices'):return
         rows=self.controller.notices.list(limit=4);self.home_notices.setText('\n\n'.join(str(r.get('title'))+'\n'+('Detalle oculto por privacidad.' if self.private else str(r.get('body'))[:160]) for r in rows) or 'Sin avisos recientes.')
     def render_terminal(self):
-        self.render_logs()
+        self.render_logs(visible_only=True)
         if time.monotonic()<getattr(self,'_report_due',0):return
         self._report_due=time.monotonic()+3;hours=self.report_period.currentData() or 24;view=copy.deepcopy(self.controller.view)
         def prepare():
@@ -681,6 +721,11 @@ class StudioWindow(QMainWindow):
             keys={k:widget.text() for k,widget in self.settings_panel.keys.items()}
             accepted=self.controller.save(draft,keys,confirmed_account=login)
             if accepted:self.settings_panel.save_button.setEnabled(False);self.settings_panel.message.setText('Guardando…')
+        except Exception as error:self.show_error(str(error))
+    def save_risk_limits(self):
+        try:
+            accepted=self.controller.save(self.settings_panel.risk_draft())
+            if accepted:self.settings_panel.risk_save_button.setEnabled(False);self.settings_panel.message.setText('Guardando límites de riesgo…')
         except Exception as error:self.show_error(str(error))
     def confirm_execution(self,draft):
         view=self.controller.view;a=view.get('account') or {}

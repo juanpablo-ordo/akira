@@ -428,6 +428,7 @@
     "privacy": true,
     "visibility_preference_saved": true,
     "performance_profile": "Equilibrado",
+    "adaptive_resources": true,
     "memory_budget_mb": 3072,
     "model_context_tokens": 4096,
     "model_keep_alive_seconds": 15,

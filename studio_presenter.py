@@ -60,6 +60,53 @@ def budget_summary(portfolio,private=False):
     percent=min(100,max(0,round(used/cap*100))) if cap>0 else 0
     return ('Importes ocultos. Pulsa el ojo de la cuenta para verlos.' if private else f'Presupuesto conjunto: {cap:,.2f} USD\nReservado en órdenes y posiciones: {used:,.2f} USD\nDisponible: {available:,.2f} USD\n\nEl porcentaje indica presupuesto reservado; no mide ganancias.'),percent
 
+
+def risk_dashboard(view,config,private=False):
+    from risk_limits import configured_limits
+    connected=bool(view.get('connected'));account=(view.get('account') or {}) if connected else {}
+    limits=configured_limits(config,account);ledger=view.get('portfolio_risk') or {}
+    actor=view.get('configured_execution') or {}
+    applied=connected and actor.get('risk')==config['risk'] and (actor.get('runner') or {}).get('max_trade_budget_pct')==config['runner']['max_trade_budget_pct']
+    state='Aplicado en el motor' if applied else 'Guardado; esperando la actualización del motor' if connected else 'Guardado; pendiente de conectar MT5'
+    if view.get('preview'):state='Vista previa · no es una cuenta conectada al bróker'
+    money=lambda value:f"{float(value):,.2f} {limits['currency']}"
+    used=float(ledger.get('reserved_usd',view.get('reserved_risk',0)) or 0)
+    if not limits['ready']:
+        return {'ready':False,'state':state,'limits':limits,'configured':'Tus límites están guardados. Conecta MT5 para calcular los importes de esta cuenta.',
+            'usage':'Esperando órdenes y posiciones de MT5.','caption':'Límites guardados · conecta MT5','budget_pct':0,'used_pct':0}
+    cap=limits['portfolio'];available=max(0,cap-used)
+    count=int(ledger.get('pending_orders',len(view.get('orders') or [])))+int(ledger.get('positions',len(view.get('positions') or [])))
+    usage_note='Sin órdenes ni posiciones: todavía no hay riesgo reservado.' if not count and used==0 and not ledger.get('unconfirmed_requests') else 'Reserva confirmada de órdenes y posiciones.' if ledger.get('risk_known',True) else 'Hay una reserva provisional a la espera de confirmación de MT5.'
+    total_choice=money(limits['portfolio_money']) if limits['portfolio_money']>0 else 'sin tope adicional en dinero'
+    configured=(f"Por orden: hasta {money(limits['per_trade'])}\nElegiste {money(limits['trade_money'])} y {limits['trade_pct']:g}% del patrimonio."
+        f"\nRunner directo: hasta {money(limits['runner'])}\nPresupuesto conjunto: {money(cap)}"
+        f"\nElegiste {limits['portfolio_pct']:g}% del capital y {total_choice}. Se usa el menor límite aplicable.")
+    if limits.get('override'):configured+='\nEl permiso extra para el lote mínimo estructural está incluido en el tope por orden.'
+    usage=f"En uso: {money(used)}\nDisponible para nuevas órdenes: {money(available)}\n{usage_note}"
+    if used>cap:usage+='\nEl riesgo reservado supera el límite guardado; no queda presupuesto para nuevas entradas.'
+    if private:
+        configured='Límites ocultos. Pulsa el ojo de la cuenta para ver los importes.'
+        usage=usage_note;caption='Límites ocultos · Ajustar riesgo'
+    else:caption=f"Por orden: {money(limits['per_trade'])}\nConjunto: {money(cap)}"
+    return {'ready':True,'state':state,'limits':limits,'configured':configured,'usage':usage,'caption':caption,
+        'budget_pct':round(limits['portfolio_capital_pct']),
+        'used_pct':min(100,max(0,round(used/cap*100))) if cap>0 else 100 if used>0 else 0}
+
+
+def set_plain_document(widget,text):
+    if getattr(widget,'_studio_plain_document',None)==text:return
+    bar=widget.verticalScrollBar();position=bar.value()
+    widget._studio_plain_document=text;widget.setPlainText(text);bar.setValue(min(position,bar.maximum()))
+
+
+def source_content_key(research):
+    def freeze(value):
+        if isinstance(value,dict):return tuple((key,freeze(item)) for key,item in value.items())
+        if isinstance(value,(list,tuple)):return tuple(freeze(item) for item in value)
+        return value
+    fields=('url','title','author','source','published','date','status','state','summary','text','note')
+    return tuple((group,tuple(tuple(freeze(item.get(key)) for key in fields) for item in research.get(group) or [] if isinstance(item,dict))) for group in ('news','videos'))
+
 def source_abstract(value):
     if isinstance(value,str):
         try:value=json.loads(value)

@@ -109,12 +109,18 @@ class ManagedLlamaProcess:
                 return int(r.status)==200
         except (OSError,ValueError):return False
 
+    def desktop_policy(self,desktop):
+        profile=self.profile
+        from resource_optimizer import effective_desktop
+        hw={'ram_gb':profile.get('detected_ram_gb',0),'logical_cores':profile.get('logical_cores',0),
+            'physical_cores':profile.get('physical_cores',max(1,int(profile.get('logical_cores',0))//2)),
+            'dedicated_gpu':int(profile.get('gpu_layers',0))>0}
+        return effective_desktop(desktop,hardware=hw)
+
     def command(self,endpoint,desktop=None):
         paths=self._paths()
         if paths is None:raise FileNotFoundError('Faltan llama-server.exe y el modelo GGUF. Ejecuta el instalador de AKIRA completo.')
-        port=self._port(endpoint)
-        desktop=desktop or {}
-        profile=self.profile
+        port=self._port(endpoint);desktop=self.desktop_policy(desktop);profile=self.profile
         ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))),max(1024,int(desktop.get('memory_budget_mb',3072))*2))
         use_gpu=bool(desktop.get('model_use_gpu',True)) and not self._force_cpu
         gpu=max(0,int(profile['gpu_layers'])) if use_gpu else 0
@@ -125,7 +131,7 @@ class ManagedLlamaProcess:
         if exe.parent.name.lower()=='cpu':gpu=0
         mode=desktop.get('performance_profile','Equilibrado')
         threads=max(1,int(profile['cpu_threads']))
-        if mode=='Ahorro de energía':threads=min(2,threads)
+        if mode=='Ahorro de energía':threads=min(1 if 0<int(profile.get('logical_cores',0))<=4 else 2,threads)
         elif mode=='Equilibrado':threads=min(4,threads)
         batch,ubatch=(128,64) if mode=='Ahorro de energía' else (256,128)
         cache_mb=0 if mode=='Ahorro de energía' else 512 if mode=='Equilibrado' else 1024
@@ -141,6 +147,7 @@ class ManagedLlamaProcess:
         return command
 
     def reconfigure(self,desktop):
+        desktop=self.desktop_policy(desktop)
         with self.lock:
             self._idle_override=int(desktop.get('model_keep_alive_seconds',15))
             endpoint=self.settings.get('local_endpoint','http://127.0.0.1:18987/v1/chat/completions')
@@ -210,6 +217,7 @@ class ManagedLlamaProcess:
 
     @contextmanager
     def session(self,endpoint,desktop=None,cancel_event=None):
+        desktop=self.desktop_policy(desktop)
         if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         if not self.enabled():
             yield

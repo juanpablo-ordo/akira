@@ -1,15 +1,11 @@
-# AKIRA 16.4.8 · Studio Rev13
+# AKIRA 16.4.9 · Studio Rev14
 
-[Descargar instalador Windows con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/39991467904/artifacts/12518303926)
+Riesgo y presupuesto claros, guardado de límites con actualización inmediata y adaptación automática a equipos de pocos recursos.
 
-Descomprime la descarga y ejecuta AKIRA_16_4_8_STUDIO_REV13_IA_INCLUIDA.exe con Akira cerrado. Conserva tus ajustes existentes.
+Usa **AJUSTAR** en la tarjeta de riesgo o **Cuenta → Cambiar límites**. En **Ajustes → Riesgo** verás la vista previa de cada tope y el botón **Guardar límites de riesgo**. Se distinguen los límites elegidos del riesgo reservado por órdenes y posiciones; la barra de uso puede ser cero cuando no hay exposición.
 
-Corrige el cambio entre cuentas de MT5: comprueba juntos número, servidor y terminal y evita que una cuenta recordada sustituya a la elegida en MT5.
+En **Ajustes → Apariencia → Rendimiento** se muestra la configuración efectiva. El ajuste automático para un equipo de 8 GB y dos núcleos físicos reduce efectos y usa un hilo de IA, CPU y contexto pequeño. Las cotizaciones y la gestión financiera mantienen su frecuencia.
 
-En MT5 inicia sesión en la cuenta que quieres probar. En Akira pulsa **Ajustes → Operación → Usar cuenta abierta en MT5**. Se guardan los datos comprobados y se conservan los límites de riesgo. El cambio queda en **Solo análisis**; para operar pulsa **Activar operativa** y confirma esa cuenta y su servidor.
+La verificación Windows y el instalador de esta revisión están pendientes. Consulta [VALIDACION_REV14.json](VALIDACION_REV14.json) para el estado efectivo. Las pruebas de cuentas utilizan datos sintéticos; no se ha medido la laptop física del usuario ni se certifica rentabilidad.
 
-Si hay varios terminales abiertos, selecciona antes el archivo terminal64.exe correcto. La contraseña se introduce y se guarda en MT5. La detección automática puede cambiar al terminal que esté abierto. Cerrar Akira cancela la espera de una comprobación pendiente.
-
-Validación Windows terminada: **1469 pruebas y 171 subpruebas**, sin fallos ni omisiones. Pasaron el autocontrol del ejecutable, cambio de cuentas, fuentes HTTPS, IA real, recursos e instalación completa. Las pruebas de cuentas usan datos sintéticos, el controlador, actor y motor de producción; no certifican una sesión del bróker del usuario ni rentabilidad.
-
-[Compilación verificada](https://github.com/juanpablo-ordo/akira/actions/runs/39991467904) · [Resultado](VALIDACION_REV13.json) · [Instrucciones](ACEPTACION_REV13.md) · [Cambios](https://github.com/juanpablo-ordo/akira/pull/3)
+[Instrucciones](ACEPTACION_REV14.md) · [Cambio de cuentas MT5](ACEPTACION_REV13.md)

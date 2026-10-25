@@ -88,6 +88,7 @@ def load_config(path):
         for k in ('enabled','youtube','investing','coinglass','coinglass_public_fallback','local_model','local_ai_summary'):
             cfg['research'][k]=True
     cfg['schema_version']=1600
+    if type(cfg['desktop'].get('adaptive_resources',True)) is not bool:raise ValueError('El ajuste automático de recursos debe estar activado o desactivado')
     if cfg['research'].get('derivatives_provider') not in ('public','coinglass'):
         raise ValueError('Elige datos de derivados públicos o CoinGlass opcional')
     from datetime import datetime

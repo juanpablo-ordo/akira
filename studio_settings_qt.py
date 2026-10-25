@@ -12,6 +12,12 @@ from akira_studio import STATES,LOCALES,import_media,import_sprites,suggested_se
 
 STATE_TITLES={'idle':'En reposo','blink':'Parpadeo','listening':'Escuchando','talking':'Hablando','thinking':'Pensando','analyzing':'Analizando','happy':'Feliz','alert':'Alerta','sleeping':'Dormido','loading':'Cargando','connecting':'Conectando','waking':'Despertando','bullish':'Alcista','bearish':'Bajista','caring':'Cariñoso','surprised':'Sorprendido'}
 
+
+class RiskNumber(QDoubleSpinBox):
+    def textFromValue(self,value):
+        text=super().textFromValue(value);separator=self.locale().decimalPoint()
+        return text.rstrip('0'+self.locale().zeroDigit()).rstrip(separator) if separator in text else text
+
 def get(data,path,default=None):
     for key in path.split('.'):
         if not isinstance(data,dict):return default
@@ -67,11 +73,17 @@ class SettingsPanel(QWidget):
         elif isinstance(value,(int,float)) and not isinstance(value,bool):
             decimal=path.startswith('risk.') or path in ('runner.max_trade_budget_pct','runner.loss_budget_trades','runner.loss_cooldown_seconds')
             integer=type(value) is int and not decimal
-            widget=QSpinBox() if integer else QDoubleSpinBox()
+            widget=QSpinBox() if integer else RiskNumber() if path.startswith(('risk.','runner.')) else QDoubleSpinBox()
             lo,hi=limits or (-1e9,1e9)
             if integer:widget.setRange(int(lo),int(hi))
             else:widget.setRange(float(lo),float(hi));widget.setDecimals(4)
             widget.setValue(value);read=widget.value
+            if path.startswith('risk.') or path in ('runner.max_trade_budget_pct','runner.loss_cooldown_seconds','runner.loss_budget_trades'):
+                widget.setGroupSeparatorShown(True)
+                if path.endswith('_pct'):widget.setSuffix(' %')
+                elif path.endswith('loss_cooldown_seconds'):widget.setSuffix(' s')
+                elif path.endswith('loss_budget_trades'):widget.setSuffix(' ×')
+                elif path.startswith('risk.') and 'money' in path:widget.setSuffix(' USD')
         else:
             widget=QLineEdit(str(value or ''));read=widget.text
         widget.setMinimumWidth(160);widget.setMaximumWidth(420);widget.setSizePolicy(widget.sizePolicy().horizontalPolicy(),widget.sizePolicy().verticalPolicy())
@@ -80,7 +92,7 @@ class SettingsPanel(QWidget):
         row.addWidget(widget,1);card.body.addLayout(row);self.fields[path]=(widget,read);self.initial[path]=copy.deepcopy(read())
         signal=widget.valueChanged if isinstance(widget,ColorButton) else widget.currentTextChanged if isinstance(widget,QComboBox) else widget.toggled if isinstance(widget,QCheckBox) else widget.textChanged if isinstance(widget,QLineEdit) else widget.valueChanged
         signal.connect(lambda *args,p=path:self.touched.add(p))
-        if path.startswith('studio.') or path.startswith('desktop.model_') or path in ('desktop.performance_profile','desktop.memory_budget_mb'):
+        if path.startswith('studio.') or path.startswith('desktop.model_') or path in ('desktop.performance_profile','desktop.memory_budget_mb','desktop.adaptive_resources'):
             signal.connect(self.schedule_preview)
         return widget
     def add_button(self,card,title,callback,kind='',glyph=None):
@@ -111,14 +123,52 @@ class SettingsPanel(QWidget):
             self.use_mt5_button.setEnabled(False)
             self.mt5_status.setText('Comprobando la cuenta abierta en MT5… La operativa quedará en Solo análisis mientras se guarda.')
     def risk(self):
-        card=self.card(1,'PRESUPUESTO Y LÍMITES','shield')
-        for path,title in [('risk.max_trade_money','Pérdida máxima por operación (USD)'),('risk.max_trade_pct','Máximo por operación (%)'),('risk.portfolio_money_cap','Límite conjunto (USD; 0 usa porcentaje)'),('risk.portfolio_capital_pct','Presupuesto conjunto (%)'),('risk.daily_loss_money','Pérdida diaria autorizada (USD; 0 desactiva)'),('risk.daily_loss_pct','Pérdida diaria autorizada (%)'),('risk.minimum_margin_level_pct','Nivel mínimo de margen (%)')]:self.field(card,path,title,limits=(0,100 if path.endswith('_pct') and 'margin' not in path else 1e8))
+        before=set(self.fields)
+        card=self.card(1,'TUS LÍMITES EN ESTA CUENTA','shield')
+        self.risk_preview=label('Conecta MT5 para calcular los límites de tu cuenta.','body');self.risk_preview.setWordWrap(True);card.body.addWidget(self.risk_preview)
+        self.risk_save_button=self.add_button(card,'GUARDAR LÍMITES DE RIESGO',self.window.save_risk_limits,'primary','shield')
+        card=self.card(1,'CUÁNTO PUEDE ARRIESGAR CADA ORDEN','shield')
+        self.field(card,'risk.max_trade_money','Tope por orden en dinero',limits=(0,1e8),help='Pérdida máxima estimada si una orden llega a su protección. También se aplica el porcentaje de abajo: manda el menor de los dos límites.')
+        self.field(card,'risk.max_trade_pct','Tope por orden sobre el patrimonio',limits=(0,100),help='Con 40 USD de patrimonio, 5% equivale a 2 USD. La vista previa muestra cuánto permiten juntos tus dos topes.')
+        card=self.card(1,'PRESUPUESTO PARA TODAS LAS ÓRDENES','wallet')
+        self.field(card,'risk.portfolio_capital_pct','Parte del capital disponible para riesgo',limits=(0,100),help='Es el límite conjunto de pendientes y posiciones. Se calcula sobre el menor valor entre balance y patrimonio.')
+        self.field(card,'risk.portfolio_money_cap','Tope adicional del presupuesto en dinero',limits=(0,1e8),help='Con 0 se usa solo el porcentaje de arriba. Con otro importe se aplica el menor de ambos. La barra de uso aumenta cuando MT5 confirma riesgo reservado, no por subir este límite.')
+        card=self.card(1,'PÉRDIDA DEL DÍA Y MARGEN','shield')
+        self.field(card,'risk.daily_loss_money','Pérdida máxima del día en dinero',limits=(0,1e8),help='Al alcanzar este importe se pausan nuevas entradas. Con 0 este tope en dinero queda desactivado; el porcentaje sigue aplicando si es mayor que 0.')
+        self.field(card,'risk.daily_loss_pct','Pérdida máxima del día en porcentaje',limits=(0,100),help='Con 0 este tope porcentual queda desactivado. Se conserva la protección de posiciones existentes.')
+        self.field(card,'risk.minimum_margin_level_pct','Nivel mínimo de margen',limits=(0,1e8),help='Patrimonio dividido entre margen utilizado. Por ejemplo, 300% exige tres veces el margen estimado. El bróker también comprueba el margen antes de aceptar una orden.')
         card=self.card(1,'ENTRADAS DIRECTAS Y PROTECCIÓN DE CAPITAL','shield')
         self.field(card,'runner.max_trade_budget_pct','Riesgo runner: % del límite por operación',limits=(1,100),help='Con 50%, un límite general de 2 USD deja como máximo 1 USD para una entrada directa. Si el lote mínimo no cabe, se conserva el SL y se espera.')
         self.field(card,'runner.preserve_pending_orders','Dar prioridad a las pendientes confirmadas',help='Activado: una runner no retira pendientes del mismo activo para entrar a mercado. El mapa de pendientes se evalúa primero.')
         self.field(card,'runner.loss_cooldown_seconds','Pausa tras pérdida de runner (segundos)',limits=(60,86400),help='Solo tras un cierre propio confirmado por MT5. La pausa afecta nuevas runners del mismo activo; las pendientes y la protección siguen activas.')
         self.field(card,'runner.loss_budget_trades','Tope de pérdidas runner en 24 h: múltiplo del límite general',limits=(.25,3),help='Con 1 y un límite general de 2 USD, perder 2 USD entre runners de BTC y oro pausa nuevas runners. Las ganancias no borran esas pérdidas del contador.')
         self.field(card,'runner.allow_size_boost','Permitir aumentar lote de runners por puntuación',help='Desactivado por defecto. Una puntuación técnica alta no demuestra una mayor probabilidad de ganar.')
+        self.risk_paths=set(self.fields)-before
+        for path in self.risk_paths:
+            widget=self.fields[path][0];signal=widget.toggled if isinstance(widget,QCheckBox) else widget.valueChanged
+            signal.connect(lambda *args:self.refresh_risk_preview(force=True))
+        self.tabs.currentChanged.connect(lambda index:self.refresh_risk_preview(force=True) if index==1 else None)
+        self.refresh_risk_preview(force=True)
+
+    def risk_draft(self):
+        result=copy.deepcopy(self.controller.cfg);result.dirty_paths=set()
+        for path in self.risk_paths:
+            value=self.fields[path][1]()
+            if path in self.touched or value!=self.initial.get(path):
+                put(result,path,value);result.dirty_paths.add(path)
+        return result
+
+    def refresh_risk_preview(self,force=False):
+        if not hasattr(self,'risk_paths') or (not force and not self.risk_preview.isVisible()):return
+        from studio_presenter import risk_dashboard
+        config={'risk':dict(self.controller.cfg['risk']),'runner':dict(self.controller.cfg['runner'])}
+        for path in self.risk_paths:put(config,path,self.fields[path][1]())
+        data=risk_dashboard(self.controller.view,config,self.window.private)
+        text='Vista previa de lo que estás editando\n'+data['configured']
+        if data['ready'] and not self.window.private:text+='\nCapital usado para el presupuesto: '+format(data['limits']['capital_basis'],',.2f')+' '+data['limits']['currency']
+        changed=any(self.fields[p][1]()!=get(self.controller.cfg,p) for p in self.risk_paths)
+        text+='\n\nCambios sin guardar. Pulsa Guardar límites de riesgo.' if changed else '\n\n'+data['state']
+        self.risk_preview.setText(text)
         card=self.card(1,'GESTIÓN DE RUNNERS','analysis')
         self.field(card,'management.protect_progress','Proteger el avance aunque falte un pivote M15',help='Al alcanzar el umbral R configurado, solicita un SL que cubra costes estimados. Afecta runners directas y pendientes activadas gestionadas como runners; conserva el TP. Respeta la espera mínima y los límites del bróker. No garantiza el precio de ejecución ni elimina pérdidas por saltos de precio.')
         for path,title in [('management.breakeven_at_r','Equilibrio a partir de R'),('management.trail_at_r','Trailing a partir de R'),('management.trail_atr','Distancia de trailing (ATR)'),('management.runner_structure_only','Gestión estructural de runners'),('management.pending_fills_as_runners','Gestionar pendientes activadas como runners')]:self.field(card,path,title)
@@ -184,6 +234,8 @@ class SettingsPanel(QWidget):
         self.add_button(card,'USAR AKIRA ORIGINAL',self.original_avatar)
         self.field(card,'studio.reduce_motion','Reducir movimiento')
         card=self.card(4,'RENDIMIENTO','bolt')
+        self.field(card,'desktop.adaptive_resources','Ajustar automáticamente equipos de pocos recursos',help='En equipos de hasta 8 GB y dos núcleos físicos, Akira usa CPU, un contexto de IA pequeño y menos efectos. Desactívalo para aplicar solo tus preferencias manuales.')
+        self.effective_profile=label('','muted');self.effective_profile.setWordWrap(True);card.body.addWidget(self.effective_profile)
         profile=self.field(card,'desktop.performance_profile','Perfil de recursos',('Rendimiento','Equilibrado','Ahorro de energía'))
         for path,title,low,high in [('desktop.memory_budget_mb','Presupuesto del modelo (MB)',512,16384),('desktop.model_context_tokens','Contexto (tokens)',1024,16384),('desktop.model_keep_alive_seconds','Mantener modelo cargado (s)',0,600)]:self.field(card,path,title,limits=(low,high))
         self.field(card,'desktop.model_use_gpu','Usar GPU para el modelo')
@@ -235,20 +287,26 @@ class SettingsPanel(QWidget):
         for path in list(self.extra):
             if self.extra[path]==get(submitted,path):self.extra.pop(path)
         if self.avatar==submitted['studio']['avatar']:self.avatar_initial=copy.deepcopy(self.avatar);self.avatar_touched=False
+        self.risk_save_button.setEnabled(True);self.refresh_risk_preview(force=True)
 
     def persist_visual(self):
         if not hasattr(self,'autosave_timer'):return
         self.autosave_timer.stop();draft=self.draft();target=copy.deepcopy(self.controller.cfg);target['studio']=draft['studio']
-        for key in ('performance_profile','memory_budget_mb','model_context_tokens','model_keep_alive_seconds','model_use_gpu'):target['desktop'][key]=draft['desktop'][key]
-        target.dirty_paths={p for p in draft.dirty_paths if p.startswith('studio.') or p in ('desktop.performance_profile','desktop.memory_budget_mb','desktop.model_context_tokens','desktop.model_keep_alive_seconds','desktop.model_use_gpu')}
+        for key in ('performance_profile','adaptive_resources','memory_budget_mb','model_context_tokens','model_keep_alive_seconds','model_use_gpu'):target['desktop'][key]=draft['desktop'][key]
+        target.dirty_paths={p for p in draft.dirty_paths if p.startswith('studio.') or p in ('desktop.performance_profile','desktop.adaptive_resources','desktop.memory_budget_mb','desktop.model_context_tokens','desktop.model_keep_alive_seconds','desktop.model_use_gpu')}
         if target!=self.controller.cfg or target.dirty_paths:self.controller.save(target)
 
     def schedule_preview(self,*args):
         if hasattr(self,'preview_timer'):self.preview_timer.start()
         if hasattr(self,'autosave_timer'):self.autosave_timer.start()
     def preview(self):
-        try:draft=self.draft();self.window.apply_visual(draft['studio'],draft['desktop'])
+        try:
+            draft=self.draft();self.window.apply_visual(draft['studio'],draft['desktop'])
         except (ValueError,TypeError,KeyError):pass
+    def refresh_resources_preview(self,desktop):
+        from resource_optimizer import effective_desktop
+        actual=effective_desktop(desktop)
+        self.effective_profile.setText('Configuración efectiva: '+actual['performance_profile']+' · '+str(actual['model_context_tokens'])+' de contexto · '+('GPU permitida' if actual['model_use_gpu'] else 'CPU, sin GPU del modelo')+'. Con el ajuste automático activo prevalece esta configuración sobre las preferencias manuales. Las cotizaciones y órdenes mantienen su frecuencia.')
     def choose_color(self,path):
         color=QColorDialog.getColor(QColor(self.fields[path][1]()),self)
         if color.isValid():self.fields[path][0].setValue(color.name())

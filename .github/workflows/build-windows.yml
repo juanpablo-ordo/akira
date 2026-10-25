@@ -1,11 +1,11 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.4.8 Studio Rev13 · cambio de cuentas MT5 · servidor y terminal comprobados · ${{ github.ref_name }}
+run-name: AKIRA 16.4.9 Studio Rev14 · riesgo y presupuesto claros · recursos Dell 7280 · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - akira-studio-rev13-cuentas-20261023
+      - akira-studio-rev14-riesgo-dell-20261025
 
 permissions:
   contents: read
@@ -53,7 +53,7 @@ jobs:
           python -m installer.check_tk_runtime --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
           if ($LASTEXITCODE -ne 0) { throw 'La biblioteca gráfica de Python está incompleta o no carga. Revisa TK_RUNTIME.json.' }
 
-      - name: Verificar que se incorporo REV13 antes de construir el instalador
+      - name: Verificar que se incorporo REV14 antes de construir el instalador
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -61,29 +61,29 @@ jobs:
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
                         'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
                         'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
-                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','public_derivatives.py','compact_review.py','qa_sources_rev10.py','qa_review_rev10.py','qa_low_resource_rev7.py','installer/check_https.py','answer_grounding.py','runner_protection.py','conversation_intent.py','order_timing.py','qa_conversation_rev11.py','tests/test_studio_rev11_capital_chat_timing.py','mt5_connection.py','qa_mt5_accounts_rev13.py','qa_mt5_reconnect_rev12.py','tests/test_studio_rev12_mt5_reconnect.py','tests/test_studio_rev13_mt5_accounts.py')
+                        'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','public_derivatives.py','compact_review.py','qa_sources_rev10.py','qa_review_rev10.py','qa_low_resource_rev7.py','installer/check_https.py','answer_grounding.py','runner_protection.py','conversation_intent.py','order_timing.py','qa_conversation_rev11.py','tests/test_studio_rev11_capital_chat_timing.py','risk_limits.py','qa_risk_resources_rev14.py','qa_ui_cost_rev14.py','tests/test_studio_rev14_risk_resources.py','mt5_connection.py','qa_mt5_accounts_rev13.py','qa_mt5_reconnect_rev12.py','tests/test_studio_rev12_mt5_reconnect.py','tests/test_studio_rev13_mt5_accounts.py')
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) {
-              throw "Código REV13 incompleto: falta $file. No publicar un instalador antiguo."
+              throw "Código REV14 incompleto: falta $file. No publicar un instalador antiguo."
             }
           }
           $build = python -c "from akira_version import BUILD_ID; print(BUILD_ID)"
-          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_8_STUDIO_REV13') {
+          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_4_9_STUDIO_REV14') {
             throw "Identidad de compilación inesperada: $build"
           }
-          python -m py_compile mt5_connection.py qa_mt5_accounts_rev13.py qa_mt5_reconnect_rev12.py runtime.py answer_grounding.py runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
+          python -m py_compile risk_limits.py qa_risk_resources_rev14.py qa_ui_cost_rev14.py mt5_connection.py qa_mt5_accounts_rev13.py qa_mt5_reconnect_rev12.py runtime.py answer_grounding.py runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
           if ($LASTEXITCODE -ne 0) { throw 'Un archivo nuevo contiene errores de sintaxis.' }
           python -m installer.summarize_revision --manifest-only
           if ($LASTEXITCODE -ne 0) { throw 'Los archivos no coinciden con el manifiesto SHA256.' }
-          Write-Host 'Fuente Studio Rev13 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
+          Write-Host 'Fuente Studio Rev14 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
       - name: Comprobar primero reconexión MT5, runners, chat y recursos
         timeout-minutes: 5
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV13_TARGETED.xml
-          if ($LASTEXITCODE -ne 0) { throw 'Una regresión nueva de Rev13 falló; revisar REV13_TARGETED.xml.' }
+          python -u -m pytest -vv tests/test_studio_rev14_risk_resources.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV14_TARGETED.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Una regresión nueva de Rev14 falló; revisar REV14_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar
         shell: pwsh
@@ -102,6 +102,23 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa la prueba indicada y REGRESSION_TESTS.xml en los diagnósticos.' }
           python -c "from xml.etree import ElementTree as E; r=E.parse('diagnostics/REGRESSION_TESTS.xml').getroot(); n=len(r.findall('.//testcase/skipped')); print('Pruebas omitidas:',n); assert n==0, 'La regresión debe comprobar también todos los paneles gráficos'"
           if ($LASTEXITCODE -ne 0) { throw 'La regresión omitió comprobaciones; no se publica una validación parcial.' }
+
+      - name: Obtener referencia Rev13 para comparar la interfaz
+        uses: actions/checkout@v4
+        with:
+          ref: f68235dc283f617a2f25b7cb20080801ea708836
+          path: baseline_rev13
+          persist-credentials: false
+
+      - name: Comparar coste de interfaz con dos CPU y contenido recibido
+        shell: pwsh
+        run: |
+          python qa_ui_cost_rev14.py --source baseline_rev13 --report diagnostics/UI_BEFORE_REV14.json
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo medir la referencia de interfaz.' }
+          python qa_ui_cost_rev14.py --source . --report diagnostics/UI_AFTER_REV14.json
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo medir la interfaz nueva.' }
+          python qa_ui_cost_rev14.py --before diagnostics/UI_BEFORE_REV14.json --after diagnostics/UI_AFTER_REV14.json --report diagnostics/UI_COMPARISON_REV14.json
+          if ($LASTEXITCODE -ne 0) { throw 'La comparación de interfaz no pasó.' }
 
       - name: Incorporar reconocimiento visual local de sprites
         shell: pwsh
@@ -206,6 +223,13 @@ jobs:
           python qa_conversation_rev11.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_LOW_RESOURCE_REV11.json
           if ($LASTEXITCODE -ne 0) { throw 'La conversación o el rendimiento durante inferencia real no pasaron; revisar REAL_CHAT_LOW_RESOURCE_REV11.json.' }
 
+      - name: Probar IA real y ventana con política Dell 7280 de 8 GB
+        shell: pwsh
+        timeout-minutes: 15
+        run: |
+          python qa_conversation_rev11.py --dell-7280 --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_DELL_7280_REV14.json
+          if ($LASTEXITCODE -ne 0) { throw 'La conversación real bajo la política Dell no pasó; no publicar.' }
+
       - name: Empaquetar ejecutable con motor local (sin el modelo GGUF)
         shell: pwsh
         run: |
@@ -238,7 +262,7 @@ jobs:
           python -m installer.check_installed_ai --setup "$($setup.FullName)" --root "$target" --report diagnostics/INSTALLED_LOCAL_AI.json
           if ($LASTEXITCODE -ne 0) { throw 'La instalación real o la IA instalada no pasaron la prueba; no se publica' }
 
-      - name: Resumir comprobaciones reales y verificar integridad de Rev13
+      - name: Resumir comprobaciones reales y verificar integridad de Rev14
         shell: pwsh
         run: |
           python -m installer.summarize_revision --diagnostics diagnostics
@@ -248,7 +272,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.4.8-Studio-Rev13-cambio-cuentas-MT5-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.4.9-Studio-Rev14-riesgo-y-Dell-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7
