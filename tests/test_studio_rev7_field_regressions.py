@@ -132,7 +132,11 @@ class QtFieldTests(unittest.TestCase):
                 self.assertEqual(avatar._stable_dimensions,(avatar.width()-10,avatar.height()-10));self.assertEqual(avatar.selected.id,self.window.director.selected.id)
         finally:avatar.close();avatar.deleteLater();self.app.processEvents()
     def test_energy_saving_stops_decorative_refresh_and_keeps_financial_poll_setting(self):
-        before=self.window.cfg['poll_seconds'];self.window.cfg['desktop']['performance_profile']='Ahorro de energía';self.window.apply_visual(self.window.cfg['studio']);self.assertGreaterEqual(self.window._render_interval,1);self.assertEqual(self.window.cfg['poll_seconds'],before)
+        from studio_widgets import SignalWave
+        before=self.window.cfg['poll_seconds'];self.window.cfg['desktop']['performance_profile']='Ahorro de energía';self.window.apply_visual(self.window.cfg['studio'])
+        # Data can update promptly while decorative animation stays asleep.
+        self.assertTrue(self.window._saving_ui);self.assertEqual(self.window.cfg['poll_seconds'],before)
+        for wave in self.window.findChildren(SignalWave):self.assertTrue(wave.saving);self.assertFalse(wave.timer.isActive())
         self.window.director.loading=False;self.window.director._next_blink=time.monotonic()+3;self.window.animate();self.assertGreaterEqual(self.window.animation_timer.interval(),400)
     def test_minimized_window_keeps_latest_snapshot_without_rendering_hidden_pages(self):
         self.window.showMinimized();self.app.processEvents();self.window._snapshot_pending={'connected':True};render=Mock();self.window.render=render;self.window.poll();render.assert_not_called();self.assertIsNotNone(self.window._snapshot_pending)

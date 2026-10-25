@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 
 
-def run(exe, model, report):
+def run(exe, model, report, dell_7280=False):
     import psutil
     from PySide6.QtWidgets import QApplication
     from desktop_qt import StudioWindow
@@ -33,7 +33,7 @@ def run(exe, model, report):
     app=QApplication.instance() or QApplication([])
     stop=threading.Event();done=threading.Event();window=None;engine=None
     market_thread=None;chat_thread=None;actor_errors=[];cycles=[];fresh=[]
-    cpu={};peak_mb=0;started=time.monotonic();_qa_temp=None
+    cpu={};peak_mb=0;started=time.monotonic();_qa_temp=None;hardware_patch=None
 
     def sample():
         nonlocal peak_mb
@@ -54,10 +54,15 @@ def run(exe, model, report):
         peak_mb=max(peak_mb,memory/1048576)
 
     try:
+        if dell_7280:
+            from unittest.mock import patch
+            from qa_risk_resources_rev14 import DELL_7280
+            hardware_patch=patch('resource_optimizer.desktop_hardware',return_value=DELL_7280);hardware_patch.start()
+            result['simulated_hardware']=dict(DELL_7280);result['real_laptop_tested']=False
         _qa_temp=tempfile.TemporaryDirectory(prefix='AKIRA_REAL_REV11_');temporary=_qa_temp.name
         root=Path(temporary);cfg=load_config(DEFAULT)
         cfg['mode']='observe'
-        cfg['desktop'].update(profile_budget('Ahorro de energía'),performance_profile='Ahorro de energía')
+        if not dell_7280:cfg['desktop'].update(profile_budget('Ahorro de energía'),performance_profile='Ahorro de energía')
         cfg['assistant'].update(local_runtime_enabled=True,local_runtime_exe=str(Path(exe).resolve()),
             local_runtime_model=str(Path(model).resolve()),
             local_endpoint='http://127.0.0.1:18996/v1/chat/completions',
@@ -65,6 +70,10 @@ def run(exe, model, report):
             self_review=False,cloud=False)
         save_config(cfg,root/'akira_config.json')
         window=StudioWindow(root,preview=True,start_actor=False)
+        if dell_7280:
+            from akira_model_runtime import hardware_profile
+            window.controller.assistant._managed_model.profile=hardware_profile(8,0,4)
+            result['effective_model_policy']=window.controller.assistant._managed_model.desktop_policy(cfg['desktop'])
         window.resize(1366,768);window.show();window.navigate(3)
         clock=Clock();clock.now=1792407600
         api=FakeMT5(clock);gateway=Gateway(api,cfg,Journal(root/'bench.json'),Reporter(root/'bench-log',console=False),clock)
@@ -159,6 +168,7 @@ def run(exe, model, report):
             window.close();app.processEvents()
         process.cpu_affinity(previous)
         if _qa_temp:_qa_temp.cleanup()
+        if hardware_patch:hardware_patch.stop()
         report.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     return result
 
@@ -166,5 +176,6 @@ def run(exe, model, report):
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--exe',required=True);parser.add_argument('--model',required=True);parser.add_argument('--report',required=True)
-    args=parser.parse_args();out=run(args.exe,args.model,args.report)
+    parser.add_argument('--dell-7280',action='store_true',help='Model an 8 GB, 2 physical / 4 logical core laptop; still restrict execution to two logical CPUs.')
+    args=parser.parse_args();out=run(args.exe,args.model,args.report,dell_7280=args.dell_7280)
     print(json.dumps(out,ensure_ascii=False,indent=2));raise SystemExit(0 if out['status']=='PASSED' else 1)

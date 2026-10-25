@@ -2,12 +2,15 @@
 def security_text(snapshot,cfg):
     account=snapshot.get('account') or {};ledger=snapshot.get('portfolio_risk') or {};management=cfg['management']
     def n(v):return f'{v:,.2f}' if isinstance(v,(int,float)) else 'sin dato'
+    daily_money=float(cfg['risk'].get('daily_loss_money',0));daily_pct=float(cfg['risk'].get('daily_loss_pct',0))
+    daily=('Tope en dinero: '+n(daily_money)+' '+str(account.get('currency') or 'USD') if daily_money>0 else 'Tope en dinero desactivado')
+    daily+='; '+('tope porcentual: '+n(daily_pct)+'%' if daily_pct>0 else 'tope porcentual desactivado')+'.'
     rows=['RIESGO Y EJECUCIÓN',
-      'Máximo efectivo por operación: '+n(snapshot.get('trade_risk_cap'))+' USD (menor entre cap monetario y porcentaje del patrimonio).',
+      'Máximo efectivo por operación: '+n(snapshot.get('trade_risk_cap'))+' USD (se aplican el tope en dinero y el porcentaje del patrimonio).',
       'Riesgo reservado: '+n(ledger.get('reserved_usd'))+' USD. Capacidad conjunta libre: '+n(ledger.get('available_usd'))+' USD.',
       'Margen libre MT5: '+n(account.get('margin_free'))+' '+str(account.get('currency',''))+'. Margen mínimo: '+n(cfg['risk']['minimum_margin_level_pct'])+'%.',
-      'Resultado neto del día: '+n(account.get('daily_net'))+'. Límites diarios configurados: '+str({k:v for k,v in cfg['risk'].items() if 'daily' in k or 'day_' in k}),
-      'SL define invalidación estructural; el lote se calcula con order_calc_profit, costes y margen del broker.',
+      'Resultado neto del día: '+n(account.get('daily_net'))+'. '+daily,
+      'La protección de precio (SL) sigue la estructura del mercado. El tamaño de la orden se calcula con los precios, costes y reglas reales del bróker.',
       'Nunca se estrecha el SL para ocultar un exceso de riesgo. Un tick antiguo, riesgo ocupado, geometría inválida o rechazo MT5 impiden el envío.',
       'Pendientes propias: se comparan con alternativas; solicitudes inciertas se concilian y no se duplican.',
       'Protección de posiciones: pivote M15 confirmado, colchón '+n(management['trail_atr'])+' ATR; umbral de protección '+n(management['breakeven_at_r'])+' R.',

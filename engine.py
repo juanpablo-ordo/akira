@@ -1158,6 +1158,8 @@ class Engine:
     def view(self):
         snap=self.g.snapshot();a=snap.account;evaluation={};ledger=self.g.reservation_ledger(snap,evaluation=evaluation)
         account={k:getattr(a,k,None) for k in ('login','server','balance','equity','margin','margin_free','currency')}
+        from risk_limits import configured_limits
+        self._risk_limits=configured_limits(self.cfg,account)
         account['floating']=sum(float(getattr(p,'profit',0))+float(getattr(p,'swap',0)) for p in snap.positions)
         from datetime import datetime,timezone
         today=datetime.fromtimestamp(self.g.clock(),timezone.utc).replace(hour=0,minute=0,second=0,microsecond=0).timestamp()
@@ -1212,7 +1214,7 @@ class Engine:
                 'position_closures':self.g.closure_monitor.rows(),
                 'position_management':{str(p.ticket):copy.deepcopy(self.g.journal.data['positions'].get(str(p.ticket),{})) for p in snap.positions if self.g.owned(p)},
                 'risk_cap':ledger['cap_usd'],'trade_risk_cap':self.g.trade_cap(snap),'reserved_risk':ledger['reserved_usd'],
-                'portfolio_risk':ledger,
+                'portfolio_risk':ledger,'risk_limits':self._risk_limits,
                 'selection_evidence':self.planner.selection_summary,
                 'selection_configuration':self.verification_configuration(),
                 'quality_study':self.planner.research_context.get('quality_study',{}),

@@ -272,22 +272,12 @@ class Gateway:
         return self.history
 
     def total_cap(self,snap):
-        r=self.cfg['risk'];capital=max(0.0,min(float(snap.account.equity),float(snap.account.balance)))
-        cap=capital*float(r['portfolio_capital_pct'])/100
-        if float(r['portfolio_money_cap'])>0:cap=min(cap,float(r['portfolio_money_cap']))
-        return cap
+        from risk_limits import portfolio_cap
+        return portfolio_cap(self.cfg['risk'],snap.account.balance,snap.account.equity)
 
     def trade_cap(self,snap,*unused):
-        r=self.cfg['risk']
-        equity=float(snap.account.equity)
-        base=min(float(r['max_trade_money']),equity*float(r['max_trade_pct'])/100)
-        # SENTINEL: no subir el riesgo a escondidas. Este margen extra existe solo
-        # si el usuario activa explícitamente la casilla de lote mínimo estructural.
-        if not bool(r.get('min_lot_structural_override_enabled',False)):
-            return base
-        pct=float(r.get('min_lot_structural_override_max_pct',r['max_trade_pct']))
-        money=float(r.get('min_lot_structural_override_money_cap',r['max_trade_money']))
-        return max(base,min(money,equity*pct/100.0))
+        from risk_limits import trade_cap
+        return trade_cap(self.cfg['risk'],snap.account.equity)
 
     def entry_cap(self,plan,snap):
         from runner_protection import entry_cap

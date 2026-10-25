@@ -102,11 +102,14 @@ class Metric(Card):
         self.title.hide();self.body.removeItem(self.heading)
         line=QHBoxLayout();line.setSpacing(12);self.body.addLayout(line)
         self.metric_color=color;self.symbol=QLabel();self.symbol.setFixedWidth(40);self.symbol.setAlignment(Qt.AlignmentFlag.AlignCenter);self.symbol.setPixmap(icon(glyph,color,32).pixmap(32,32));line.addWidget(self.symbol)
-        values=QVBoxLayout();values.setSpacing(1);self.name_label=label(title,'metricName');values.addWidget(self.name_label)
+        values=QVBoxLayout();values.setSpacing(1);self.name_label=label(title,'metricName');self.name_row=QHBoxLayout();self.name_row.addWidget(self.name_label,1);values.addLayout(self.name_row)
         self.value=label('—','metric',color);values.addWidget(self.value)
         self.caption=label('','muted');values.addWidget(self.caption);line.addLayout(values,1)
         self.value.setWordWrap(True);self.caption.setWordWrap(True)
         self.setMinimumHeight(90);self.setMaximumHeight(115)
+    def set_action(self,title,callback):
+        action=QPushButton(title);action.setMinimumHeight(20);action.setMaximumHeight(22);action.setCursor(Qt.CursorShape.PointingHandCursor)
+        action.setStyleSheet('font-size:11px;padding:1px 5px;');action.clicked.connect(callback);self.name_row.addWidget(action);return action
     def paintEvent(self,event):
         super().paintEvent(event);p=QPainter(self);color=QColor(self.metric_color);color.setAlpha(24);gradient=QLinearGradient(0,0,65,self.height());gradient.setColorAt(0,color);color.setAlpha(1);gradient.setColorAt(1,color);p.fillRect(QRectF(1,1,62,max(1,self.height()-2)),gradient);p.setPen(QPen(QColor('#15415d'),.7));p.drawLine(64,1,64,self.height()-1)
 
@@ -140,7 +143,8 @@ class DataTable(QTableWidget):
         self._display_signature=signature
         selected=self.selected_key();scroll=self.verticalScrollBar().value();top=self.rowAt(0);anchor=self.keys[top] if 0<=top<len(self.keys) else None;offset=self.rowViewportPosition(top) if top>=0 else 0;self.blockSignals(True)
         desired=[str(k) for k,_,_ in rows]
-        self.setUpdatesEnabled(False)
+        structural=desired!=self.keys
+        if structural:self.setUpdatesEnabled(False)
         try:
             if desired!=self.keys:
                 self.setRowCount(len(rows));self.keys=desired
@@ -152,12 +156,14 @@ class DataTable(QTableWidget):
                     if item.text()!=text:
                         item.setText(text);item.setToolTip(text)
                         color=INK['green'] if text.startswith(('BUY','DISPONIBLE','CONFIRMAD','ACTIVO')) else INK['pink'] if text.startswith(('SELL','ERROR','RECHAZ','DESCART')) else INK['amber'] if text.startswith(('ESPER','EN REVIS','SOLO','NO DISPON')) else INK['text']
-                        item.setForeground(QColor(color))
-            if selected in self.keys:self.selectRow(self.keys.index(selected))
+                        if item.foreground().color()!=QColor(color):item.setForeground(QColor(color))
+            if selected in self.keys and self.currentRow()!=self.keys.index(selected):self.selectRow(self.keys.index(selected))
             if anchor in self.keys:
                 scroll=self.verticalScrollBar().value()+self.rowViewportPosition(self.keys.index(anchor))-offset
             self.verticalScrollBar().setValue(scroll)
-        finally:self.setUpdatesEnabled(True);self.blockSignals(False)
+        finally:
+            if structural:self.setUpdatesEnabled(True)
+            self.blockSignals(False)
 
 class ActivityDelegate(QStyledItemDelegate):
     def paint(self,painter,option,index):
@@ -193,21 +199,40 @@ class ActivityFeed(DataTable):
 
 class CandleChart(QWidget):
     def __init__(self,parent=None):
-        super().__init__(parent);self.bars=[];self.levels={};self._signature=None
+        super().__init__(parent);self.bars=[];self.levels={};self._signature=None;self._valid_bars=[]
+        self._chart_cache=None;self._cache_geometry=None;self._raster_count=0
+        self._resize_plot=QTimer(self);self._resize_plot.setSingleShot(True);self._resize_plot.setInterval(120);self._resize_plot.timeout.connect(self.finish_resize)
         self.setMinimumHeight(95);self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
     def set_data(self,bars,levels=None):
-        bars=list(bars or [])[-95:];signature=repr((bars,levels))
-        if signature!=self._signature:self.bars=bars;self.levels=levels or {};self._signature=signature;self.update()
-    def paintEvent(self,event):
-        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect=QRectF(self.rect()).adjusted(3,3,-64,-18);p.setPen(QPen(QColor('#10334b'),.6))
-        for n in range(1,5):p.drawLine(QPointF(rect.left(),rect.top()+n*rect.height()/5),QPointF(rect.right(),rect.top()+n*rect.height()/5))
-        valid=[]
-        for row in self.bars:
+        bars=list(bars or [])[-95:];valid=[]
+        for row in bars:
             try:
                 values=tuple(float(row.get(key,0)) for key in ('open','high','low','close'))
                 if all(math.isfinite(v) for v in values) and values[1]>=values[2]:valid.append(values)
             except (AttributeError,ValueError,TypeError):continue
+        levels=dict(levels or {});signature=(tuple(valid),tuple(sorted(levels.items())))
+        self.bars=bars
+        if signature!=self._signature:
+            self._valid_bars=valid;self.levels=levels;self._signature=signature;self._chart_cache=None;self.update()
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        if hasattr(self,'_resize_plot') and self._chart_cache is not None:self._resize_plot.start()
+    def finish_resize(self):
+        self._cache_geometry=None;self.update()
+    def paintEvent(self,event):
+        ratio=self.devicePixelRatioF();geometry=(self.width(),self.height(),ratio)
+        if self._chart_cache is None or (geometry!=self._cache_geometry and not self._resize_plot.isActive()):
+            image=QPixmap(max(1,math.ceil(self.width()*ratio)),max(1,math.ceil(self.height()*ratio)))
+            image.setDevicePixelRatio(ratio);image.fill(Qt.GlobalColor.transparent)
+            painter=QPainter(image);painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            self._draw_plot(painter);painter.end();self._chart_cache=image;self._cache_geometry=geometry;self._raster_count+=1
+        painter=QPainter(self)
+        if self._cache_geometry==geometry:painter.drawPixmap(0,0,self._chart_cache)
+        else:painter.drawPixmap(QRectF(self.rect()),self._chart_cache,QRectF(self._chart_cache.rect()))
+    def _draw_plot(self,p):
+        rect=QRectF(self.rect()).adjusted(3,3,-64,-18);p.setPen(QPen(QColor('#10334b'),.6))
+        for n in range(1,5):p.drawLine(QPointF(rect.left(),rect.top()+n*rect.height()/5),QPointF(rect.right(),rect.top()+n*rect.height()/5))
+        valid=self._valid_bars
         if not valid:p.setPen(QColor(INK['muted']));p.drawText(rect,Qt.AlignmentFlag.AlignCenter,'—');return
         low=min(b[2] for b in valid);high=max(b[1] for b in valid);span=max(1e-8,high-low);low-=span*.08;span*=1.16
         y=lambda value:rect.bottom()-(value-low)/span*rect.height();step=rect.width()/max(1,len(valid))

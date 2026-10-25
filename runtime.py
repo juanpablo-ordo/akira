@@ -30,6 +30,8 @@ def _mt5_api():
 
 
 def run_session(cfg,root,log,stop,commands,publish,preview=False):
+    from resource_optimizer import effective_desktop
+    cfg['desktop']=effective_desktop(cfg.get('desktop'))
     root=Path(root);api=None;lock=None;context=None;engine=None;bound_identity=None
     started_utc=time.time();stage='INICIANDO';publish_callback=publish
     reconnect=False;paused=False;network_available=True;failures=0
@@ -65,6 +67,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
         if action=='apply_settings':
             from settings_effects import validate_form
             saved=validate_form(cmd['config'])
+            saved['desktop']=effective_desktop(saved.get('desktop'))
             if before!=target_signature(saved) and saved['mode']=='trade':
                 current=api.account_info() if not preview else None
                 if current is None or account_identity(current)!=bound_identity or not confirmation_matches(cmd.get('authorized_identity'),current):

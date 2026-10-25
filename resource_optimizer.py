@@ -5,6 +5,30 @@ Windows kernel guarantee. The user sees this distinction in the optimizer.
 """
 from __future__ import annotations
 import math
+from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
+def desktop_hardware():
+    try:
+        import psutil
+        return {'ram_gb':psutil.virtual_memory().total/1073741824,
+            'physical_cores':psutil.cpu_count(logical=False) or 0,
+            'logical_cores':psutil.cpu_count() or 1}
+    except (ImportError,OSError):return {'ram_gb':0,'physical_cores':0,'logical_cores':0}
+
+
+def effective_desktop(desktop,hardware=None):
+    result=dict(desktop or {});hw=desktop_hardware() if hardware is None else hardware
+    light=(0<float(hw.get('ram_gb',0))<=9 and
+        (0<int(hw.get('physical_cores',0))<=2 or 0<int(hw.get('logical_cores',0))<=4)
+        and not hw.get('dedicated_gpu',False))
+    if result.get('adaptive_resources',True) and light:
+        result.update(performance_profile='Ahorro de energía',model_use_gpu=False,
+            memory_budget_mb=min(int(result.get('memory_budget_mb',3072)),3072),
+            model_context_tokens=min(int(result.get('model_context_tokens',2048)),2048),
+            model_keep_alive_seconds=0)
+    return result
 
 PROFILES = {
     'Rendimiento': {'poll_ms': 120, 'render_seconds': .75, 'assistant_seconds': 1.4, 'chart_resize_ms': 150, 'target_fps': 12, 'avatar_ms': 200},
@@ -35,17 +59,17 @@ def resolve_profile(value):
     return PROFILES.get(str(value), PROFILES['Equilibrado'])
 
 def get_intervals(config):
-    return dict(resolve_profile((config.get('desktop') or {}).get('performance_profile', 'Equilibrado')))
+    return dict(resolve_profile(effective_desktop(config.get('desktop')).get('performance_profile', 'Equilibrado')))
 
 def ui_poll_ms(config, hidden=False, interactive=False):
     if interactive:return 80
     if hidden:return 750
     return {'Ahorro de energía':250,'Equilibrado':120,'Rendimiento':80}.get(
-        (config.get('desktop') or {}).get('performance_profile'),120)
+        effective_desktop(config.get('desktop')).get('performance_profile'),120)
 
 
 def config_limits(config):
-    source = (config.get('desktop') or {}) if isinstance(config, dict) else {}
+    source = effective_desktop(config.get('desktop')) if isinstance(config, dict) else {}
     limits = dict(DEFAULTS)
     for field, (low, high) in LIMITS.items():
         try:
