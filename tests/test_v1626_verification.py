@@ -57,7 +57,9 @@ class RecoveryTests(unittest.TestCase):
         self.assertNotIn('[IO.File]::Replace($tmp,$path,$null)',text)
         self.assertIn('-SelfTestProgress',(root/'INSTALL_AKIRA.ps1').read_text(encoding='utf-8-sig'))
         if sys.platform=='win32':
-            r=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(script),'-SelfTestProgress'],capture_output=True,text=True,encoding='utf-8',timeout=20)
+            # Include cold Windows PowerShell/Defender startup on shared runners;
+            # this checks real atomic writes and UTF-8, not shell startup speed.
+            r=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(script),'-SelfTestProgress'],capture_output=True,text=True,encoding='utf-8',timeout=60)
             self.assertEqual(r.returncode,0,r.stdout+r.stderr);self.assertIn('"status":"PASSED"',r.stdout)
 
 class EvidenceTests(PendingCase,unittest.TestCase):

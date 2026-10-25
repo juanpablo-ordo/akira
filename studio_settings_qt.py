@@ -132,7 +132,7 @@ class SettingsPanel(QWidget):
         self.field(card,'risk.max_trade_pct','Tope por orden sobre el patrimonio',limits=(0,100),help='Con 40 USD de patrimonio, 5% equivale a 2 USD. La vista previa muestra cuánto permiten juntos tus dos topes.')
         card=self.card(1,'PRESUPUESTO PARA TODAS LAS ÓRDENES','wallet')
         self.field(card,'risk.portfolio_capital_pct','Parte del capital disponible para riesgo',limits=(0,100),help='Es el límite conjunto de pendientes y posiciones. Se calcula sobre el menor valor entre balance y patrimonio.')
-        self.field(card,'risk.portfolio_money_cap','Tope adicional del presupuesto en dinero',limits=(0,1e8),help='Con 0 se usa solo el porcentaje de arriba. Con otro importe se aplica el menor de ambos. La barra de uso aumenta cuando MT5 confirma riesgo reservado, no por subir este límite.')
+        self.field(card,'risk.portfolio_money_cap','Tope adicional del presupuesto en dinero',limits=(0,1e8),help='Con 0 se usa solo el porcentaje de arriba. Con otro importe se aplica el menor de ambos. La barra de uso mide las reservas, incluidas las solicitudes provisionales, no cuánto subas este límite.')
         card=self.card(1,'PÉRDIDA DEL DÍA Y MARGEN','shield')
         self.field(card,'risk.daily_loss_money','Pérdida máxima del día en dinero',limits=(0,1e8),help='Al alcanzar este importe se pausan nuevas entradas. Con 0 este tope en dinero queda desactivado; el porcentaje sigue aplicando si es mayor que 0.')
         self.field(card,'risk.daily_loss_pct','Pérdida máxima del día en porcentaje',limits=(0,100),help='Con 0 este tope porcentual queda desactivado. Se conserva la protección de posiciones existentes.')
@@ -143,6 +143,9 @@ class SettingsPanel(QWidget):
         self.field(card,'runner.loss_cooldown_seconds','Pausa tras pérdida de runner (segundos)',limits=(60,86400),help='Solo tras un cierre propio confirmado por MT5. La pausa afecta nuevas runners del mismo activo; las pendientes y la protección siguen activas.')
         self.field(card,'runner.loss_budget_trades','Tope de pérdidas runner en 24 h: múltiplo del límite general',limits=(.25,3),help='Con 1 y un límite general de 2 USD, perder 2 USD entre runners de BTC y oro pausa nuevas runners. Las ganancias no borran esas pérdidas del contador.')
         self.field(card,'runner.allow_size_boost','Permitir aumentar lote de runners por puntuación',help='Desactivado por defecto. Una puntuación técnica alta no demuestra una mayor probabilidad de ganar.')
+        card=self.card(1,'GESTIÓN DE RUNNERS','analysis')
+        self.field(card,'management.protect_progress','Proteger el avance aunque falte un pivote M15',help='Al alcanzar el umbral R configurado, solicita un SL que cubra costes estimados. Afecta runners directas y pendientes activadas gestionadas como runners; conserva el TP. Respeta la espera mínima y los límites del bróker. No garantiza el precio de ejecución ni elimina pérdidas por saltos de precio.')
+        for path,title in [('management.breakeven_at_r','Equilibrio a partir de R'),('management.trail_at_r','Trailing a partir de R'),('management.trail_atr','Distancia de trailing (ATR)'),('management.runner_structure_only','Gestión estructural de runners'),('management.pending_fills_as_runners','Gestionar pendientes activadas como runners')]:self.field(card,path,title)
         self.risk_paths=set(self.fields)-before
         for path in self.risk_paths:
             widget=self.fields[path][0];signal=widget.toggled if isinstance(widget,QCheckBox) else widget.valueChanged
@@ -169,9 +172,6 @@ class SettingsPanel(QWidget):
         changed=any(self.fields[p][1]()!=get(self.controller.cfg,p) for p in self.risk_paths)
         text+='\n\nCambios sin guardar. Pulsa Guardar límites de riesgo.' if changed else '\n\n'+data['state']
         self.risk_preview.setText(text)
-        card=self.card(1,'GESTIÓN DE RUNNERS','analysis')
-        self.field(card,'management.protect_progress','Proteger el avance aunque falte un pivote M15',help='Al alcanzar el umbral R configurado, solicita un SL que cubra costes estimados. Afecta runners directas y pendientes activadas gestionadas como runners; conserva el TP. Respeta la espera mínima y los límites del bróker. No garantiza el precio de ejecución ni elimina pérdidas por saltos de precio.')
-        for path,title in [('management.breakeven_at_r','Equilibrio a partir de R'),('management.trail_at_r','Trailing a partir de R'),('management.trail_atr','Distancia de trailing (ATR)'),('management.runner_structure_only','Gestión estructural de runners'),('management.pending_fills_as_runners','Gestionar pendientes activadas como runners')]:self.field(card,path,title)
     def ai_voice(self):
         card=self.card(2,'IDIOMAS DEL PROGRAMA','chat')
         names={'auto':'Automático','es':'Español','en':'English','pt':'Português','fr':'Français','de':'Deutsch','it':'Italiano','ja':'日本語','zh':'中文','ko':'한국어','ar':'العربية','ru':'Русский','hi':'हिन्दी','tr':'Türkçe','id':'Bahasa Indonesia','vi':'Tiếng Việt','nl':'Nederlands','pl':'Polski','uk':'Українська'}

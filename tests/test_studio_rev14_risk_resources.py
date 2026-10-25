@@ -128,6 +128,17 @@ class BudgetWindowTests(unittest.TestCase):
             window=self.window(tmp);widget=window.settings_panel.fields['risk.max_trade_money'][0]
             widget.setValue(1.375)
             self.assertAlmostEqual(widget.value(),1.375);self.assertIn('1.375',widget.text());self.assertNotIn('1.3750',widget.text())
+    def test_risk_preview_does_not_add_controls_or_reset_runner_edits(self):
+        from PySide6.QtWidgets import QWidget
+        with tempfile.TemporaryDirectory() as tmp:
+            window=self.window(tmp);panel=window.settings_panel
+            controls=len(panel.findChildren(QWidget));widget=panel.fields['management.breakeven_at_r'][0]
+            widget.setValue(.75)
+            for _ in range(40):panel.refresh_risk_preview(force=True)
+            self.assertEqual(len(panel.findChildren(QWidget)),controls)
+            self.assertIs(panel.fields['management.breakeven_at_r'][0],widget)
+            self.assertEqual(widget.value(),.75);self.assertEqual(panel.risk_draft()['management']['breakeven_at_r'],.75)
+            self.assertIn('management.breakeven_at_r',panel.risk_draft().dirty_paths)
     def test_saved_risk_updates_main_window_before_another_market_snapshot(self):
         with tempfile.TemporaryDirectory() as tmp:
             window=self.window(tmp);window.settings_panel.fields['risk.max_trade_money'][0].setValue(5)

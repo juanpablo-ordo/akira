@@ -7,7 +7,7 @@ DELL_7280={'ram_gb':8,'physical_cores':2,'logical_cores':4}
 
 
 def run_check():
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication,QWidget
     from desktop_qt import StudioWindow
     from settings import DEFAULT,load_config,save_config
     from tests.fake_mt5 import Clock,FakeMT5
@@ -50,10 +50,12 @@ def run_check():
                 checks['edit_preview_explains_unsaved_limits']='2.50' in panel.risk_preview.text() and 'sin guardar' in panel.risk_preview.text()
                 # An unrelated unsaved field is not part of the risk transaction.
                 old_voice=controller.cfg['voice']['rate'];panel.fields['voice.rate'][0].setValue(137)
+                controls=len(panel.findChildren(QWidget))
+                for _ in range(10):panel.refresh_risk_preview(force=True)
                 with patch.object(window,'apply_visual',wraps=window.apply_visual) as visual,patch.object(window,'set_avatar',wraps=window.set_avatar) as avatar:
                     window.save_risk_limits()
                     wait_for(lambda:not controller._jobs and controller.view.get('risk_limits',{}).get('portfolio')==5)
-                    checks['risk_save_does_not_rebuild_appearance_or_avatar']=not visual.called and not avatar.called
+                    checks['risk_save_does_not_rebuild_appearance_or_avatar']=not visual.called and not avatar.called and len(panel.findChildren(QWidget))==controls
                 checks['save_reaches_financial_actor']=controller.view['risk_limits']['per_trade']==2.5 and controller.view['risk_limits']['runner']==1.25
                 checks['save_keeps_other_form_edits']=controller.cfg['voice']['rate']==old_voice and panel.fields['voice.rate'][1]()==137
                 window.navigate(2);window.render(controller.view)
