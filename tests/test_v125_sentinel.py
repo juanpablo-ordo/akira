@@ -17,7 +17,7 @@ from tests.fixtures import PendingCase
 class SentinelV125EngineTests(PendingCase, unittest.TestCase):
     def test_schema_build_and_safe_risk_override_defaults(self):
         self.assertEqual(self.cfg['schema_version'], 1600)
-        self.assertEqual(BUILD_ID, 'AKIRA_16_5_0_STUDIO_REV15')
+        self.assertEqual(BUILD_ID, 'AKIRA_16_5_1_STUDIO_REV16')
         self.assertTrue(self.cfg['execution']['always_show_dual_scenarios'])
         self.assertFalse(self.cfg['risk']['min_lot_structural_override_enabled'])
         self.assertLessEqual(self.cfg['symbol_profiles']['BTCUSDm']['pending_hard_max_rr'], 4.4)
@@ -85,9 +85,10 @@ class SentinelV125AssistantTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.cfg = optional_ollama_fixture(load_config(DEFAULT))
 
-    def test_short_entity_followup_forces_research(self):
-        self.assertTrue(AkiraAssistant._should_research_fact('hbo'))
-        self.assertTrue(AkiraAssistant._should_research_fact('DC Studios'))
+    def test_short_topics_do_not_force_unsolicited_research(self):
+        self.assertFalse(AkiraAssistant._should_research_fact('hbo'))
+        self.assertFalse(AkiraAssistant._should_research_fact('DC Studios'))
+        self.assertTrue(AkiraAssistant._should_research_fact('Busca novedades actuales de HBO'))
         self.assertFalse(AkiraAssistant._should_research_fact('hola'))
 
     def test_fresh_question_refuses_stale_model_memory_when_sources_are_insufficient(self):

@@ -18,17 +18,20 @@ def needs_research(message):
     from conversation_intent import is_personal_conversation
     text=folded(message)
     if is_personal_conversation(message):return False
+    explicit=bool(re.search(r'https?://|\b(?:busca|buscar|investiga|investigar|fuentes?|noticias?|'
+        r'actualizad\w*|reciente\w*|ultima\w*|ultimo\w*|documentacion|youtube|video|'
+        r'medicament\w*|diagnostic\w*|legislacion|leyes|invertir|inversiones)\b',text))
+    creative=bool(re.search(r'\b(?:una historia|un cuento|un relato|historia (?:corta|inventada|ficticia))\b',text))
+    factual_story=bool(re.search(r'\b(?:historia real|hechos reales)\b',text))
+    if creative and not explicit and not factual_story:return False
     if needs_web_verification(message):return True
     # A conceptual explanation differs from a specific external occurrence:
     # "cómo funciona RAM" is stable knowledge; "quién inventó..." needs sources.
     if re.search(r'\b(?:uso|utilizo|invento|descubrio|fundo|dirigio|escribio|publico|protagonizo|interpreto|nacio|murio)\b',text) and re.match(r'^[¿? ]*(?:que|quien|cual|cuando|donde|en que)\b',text):return True
-    if re.search(r'\bhistoria\b',text):return True
-    words=re.findall(r'[^\W\d_]+',text)
-    conversational={'hola','holi','hello','hey','gracias','ok','okay','si','no','adios','akira','que','como','cual','por','y','tu','dime','explica','continua'}
-    if 1<=len(words)<=3 and not re.search(r'[\d+*/^=]',text) and not any(w in conversational for w in words):return True
-    return bool(re.search(r'https?://|\b(?:busca|buscar|investiga|investigar|fuentes?|noticias?|'
-        r'actualizad\w*|reciente\w*|ultima\w*|ultimo\w*|documentacion|youtube|video|'
-        r'medicament\w*|diagnostic\w*|legislacion|leyes|invertir|inversiones)\b',text))
+    if re.search(r'\bhistoria\b',text) and text.strip(' ¿?.!')!='historia':return True
+    # A short topic is still conversation. Its word count says nothing about
+    # whether it requires current information or an Internet lookup.
+    return explicit
 
 
 _FAILED_HISTORY=('la ia conversacional local todavia no respondio',
@@ -120,3 +123,20 @@ def failure_text(error):
     if isinstance(error,TimeoutError):return 'Esta respuesta tardó demasiado y se detuvo. Tu pregunta está guardada; pulsa Reintentar para volver a generar la respuesta.'
     if isinstance(error,FileNotFoundError):return 'Falta un componente de la IA local. Pulsa Reparar asistente para recuperar el motor y el modelo incluidos.'
     return 'La IA local no consiguió completar esta respuesta. Tu pregunta está guardada. Puedes reintentar o usar Reparar asistente para comprobar el motor.'
+
+
+def activity_presentation(state,model_status,view,received_at,chat_busy=False,now=None):
+    """Overall activity uses received engine updates, not a permanently idle LLM."""
+    shown=presentation(state,model_status,chat_busy)
+    if chat_busy or (state or {}).get('active') or (state or {}).get('phase')=='ERROR':return shown
+    view=view or {}
+    if not view.get('connected'):return shown
+    if view.get('paused'):return {'label':'Gestión pausada · chat disponible','expression':'waiting','loading':False}
+    now=time.monotonic() if now is None else now
+    if not received_at or now-received_at>3:return {'label':'Esperando datos de MT5','expression':'waiting','loading':False}
+    symbols=[symbol for symbol,row in (view.get('symbols') or {}).items() if row.get('checked_at')]
+    if not symbols:return {'label':'Preparando el análisis','expression':'thinking','loading':False}
+    names=['BTC' if s.upper().startswith('BTC') else 'oro' if s.upper().startswith('XAU') else s for s in symbols]
+    text='Analizando '+' y '.join(names)
+    if (model_status or {}).get('phase') in ('FAILED','ERROR','MISSING'):text+=' · IA por revisar'
+    return {'label':text,'expression':'analyzing','loading':False}

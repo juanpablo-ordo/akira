@@ -13,6 +13,7 @@ from studio_editors import ChoiceBox
 from studio_background import BackgroundSurface
 from studio_translations import Translator
 from studio_controller import StudioController
+from studio_interaction import FlowLayout,WheelGuard
 
 NAV=('TRADING','PENDIENTES','CUENTA','ANÁLISIS','FUENTES','CHAT','AJUSTES','TERMINAL')
 DETAILS=('Visión general del sistema y actividad en tiempo real','Gestión de órdenes pendientes y oportunidades del mercado','Cuenta, posiciones y control de riesgo','Lectura del mercado, confluencias y decisiones','Contenido realmente recibido y utilizado','Conversaciones, memoria y llamada','Personaliza el comportamiento y la apariencia','Registros, diagnóstico e informes')
@@ -120,6 +121,7 @@ class StudioWindow(QMainWindow):
         self.mt5_use_open=self.btn('USAR CUENTA ABIERTA',lambda:self.settings_panel.use_open_account());connection_row.addWidget(self.mt5_use_open)
         self.book=QStackedWidget();main_box.addWidget(self.book,1)
         self.tables=[];self.pages=[];self.build_home();self.build_pending();self.build_account();self.build_analysis();self.build_sources();self.build_chat();self.build_settings();self.build_terminal()
+        self.wheel_guard=WheelGuard(self);self.wheel_guard.watch(self)
         self.statusBar().hide();self.apply_visual(self.cfg['studio']);self.navigate(0);self.render({})
         self.poll_timer=QTimer(self);self.poll_timer.setInterval(80);self.poll_timer.timeout.connect(self.poll);self.poll_timer.start()
         self.animation_timer=QTimer(self);self.animation_timer.setInterval(80);self.animation_timer.timeout.connect(self.animate);self.animation_timer.start()
@@ -182,7 +184,7 @@ class StudioWindow(QMainWindow):
         self.metrics={}
         for key,title,glyph,color,caption in [('balance','BALANCE','wallet','#e8f3ff','Capital actual'),('equity','PATRIMONIO','layers','#00ddff','Valor total'),('floating','FLOTANTE','chart','#00e8b5','Ganancia / pérdida'),('daily_net','P/L DEL DÍA','chart','#ff2585','Resultado de hoy'),('reserved_risk','RIESGO','shield','#ffc548','Riesgo reservado'),('cycle_ms','CICLO','bolt','#00ddff','Tiempo del motor')]:
             metric=Metric(self.text(title),glyph,color);self.tr.bind(metric.caption,caption);row.addWidget(metric,0,len(self.metrics));self.metrics[key]=metric
-        self.metrics['reserved_risk'].name_label.setText('RIESGO EN USO')
+        self.metrics['reserved_risk'].name_label.setText('RIESGO POR ORDEN')
         self.risk_adjust=self.metrics['reserved_risk'].set_action('AJUSTAR',lambda:self.open_settings(1))
         layout.addWidget(self.metrics_widget)
 
@@ -276,14 +278,15 @@ class StudioWindow(QMainWindow):
         card=self.card('CONVERSACIONES','chat');card.body.addWidget(self.btn('NUEVO CHAT',self.new_chat,'primary','chat'));self.chat_list=QListWidget();self.chat_list.itemClicked.connect(self.select_chat);card.body.addWidget(self.chat_list,1)
         self.chat_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu);self.chat_list.customContextMenuRequested.connect(self.chat_menu)
         row=QHBoxLayout();row.addWidget(self.btn('MEMORIA',self.open_memories));row.addWidget(self.btn('PAPELERA',self.open_chat_trash));card.body.addLayout(row);left.addWidget(card,1)
-        chat=self.card('CHAT CON AKIRA','chat');self.chat_card=chat;self.chat_status=label('','muted');chat.heading.addWidget(self.chat_status)
+        chat=self.card('CHAT CON AKIRA','chat');self.chat_card=chat;self.chat_status=label('','muted');self.chat_status.setWordWrap(True);chat.body.addWidget(self.chat_status)
         self.chat_view=QTextBrowser();self.chat_view.setOpenExternalLinks(True);chat.body.addWidget(self.chat_view,1)
         self.chat_progress=label('','muted');self.chat_progress.setWordWrap(True);chat.body.addWidget(self.chat_progress)
-        row=QHBoxLayout();self.chat_entry=QLineEdit();self.chat_entry.setPlaceholderText(self.text('Escribe tu mensaje…'));self.chat_entry.returnPressed.connect(self.send_chat);self.chat_entry.textEdited.connect(self.typing);row.addWidget(self.chat_entry,1)
+        self.chat_entry=QLineEdit();self.chat_entry.setPlaceholderText(self.text('Escribe tu mensaje…'));self.chat_entry.returnPressed.connect(self.send_chat);self.chat_entry.textEdited.connect(self.typing);chat.body.addWidget(self.chat_entry)
+        row=FlowLayout()
         self.chat_retry=self.btn('REINTENTAR',self.retry_chat,'','refresh');self.chat_retry.hide();row.addWidget(self.chat_retry)
         self.chat_continue=self.btn('CONTINUAR',self.continue_chat);self.chat_continue.hide();row.addWidget(self.chat_continue)
         self.chat_send=self.btn('ENVIAR',self.send_chat,'primary','send');row.addWidget(self.chat_send);row.addWidget(self.btn('LLAMAR',self.open_call,'','phone'));row.addWidget(self.btn('DETENER',self.controller.cancel_chat));chat.body.addLayout(row)
-        row=QHBoxLayout();row.addWidget(self.btn('ADJUNTAR',self.attach_file,'','file'));self.cloud_choice=QCheckBox('OpenAI opcional');self.cloud_choice.setChecked(False);row.addWidget(self.cloud_choice);row.addStretch();self.repair_button=self.btn('REPARAR ASISTENTE',lambda:self.controller.repair_ai());row.addWidget(self.repair_button);row.addWidget(self.btn('MOTIVO Y REGISTRO',self.show_model_log));chat.body.addLayout(row);right.addWidget(chat,1)
+        row=FlowLayout();row.addWidget(self.btn('ADJUNTAR',self.attach_file,'','file'));self.cloud_choice=QCheckBox('OpenAI opcional');self.cloud_choice.setChecked(False);row.addWidget(self.cloud_choice);self.repair_button=self.btn('REPARAR ASISTENTE',lambda:self.controller.repair_ai());row.addWidget(self.repair_button);row.addWidget(self.btn('MOTIVO Y REGISTRO',self.show_model_log));chat.body.addLayout(row);right.addWidget(chat,1)
 
     def build_settings(self):
         _,layout=self.page();from studio_settings_qt import SettingsPanel
@@ -310,7 +313,7 @@ class StudioWindow(QMainWindow):
         self.page_description.setVisible(self.width()>1450)
         self.metrics_widget.setVisible(self.page_index in (0,2,3))
         scale=int(getattr(self,'_visual_studio',self.cfg['studio']).get('font_scale',100))/100
-        columns=3 if self.width()<1450*scale else 6
+        columns=2 if self.width()<1100*scale else 3 if self.width()<1650*scale else 6
         if columns!=self._metric_columns:
             for i,metric in enumerate(self.metrics.values()):self.metrics_layout.removeWidget(metric);self.metrics_layout.addWidget(metric,i//columns,i%columns)
             self._metric_columns=columns
@@ -323,6 +326,9 @@ class StudioWindow(QMainWindow):
     def resizeEvent(self,event):
         super().resizeEvent(event)
         if hasattr(self,'metrics_widget'):self.responsive()
+    def wheelEvent(self,event):
+        if hasattr(self,'wheel_guard') and self.wheel_guard.send(self.book.currentWidget(),event):return
+        super().wheelEvent(event)
     def showEvent(self,event):
         super().showEvent(event)
         if self.windowHandle() and not getattr(self,'_monitor_hook',False):
@@ -370,7 +376,7 @@ class StudioWindow(QMainWindow):
         self.page_title.setText(self.text(NAV[self.page_index]));self.page_description.setText(self.text(DETAILS[self.page_index]))
         for table in self.tables:table.setHorizontalHeaderLabels([self.text(t) for t in table.columns])
         self.settings_panel.retranslate()
-        for key,title in [('balance','BALANCE'),('equity','PATRIMONIO'),('floating','FLOTANTE'),('daily_net','P/L DEL DÍA'),('reserved_risk','RIESGO EN USO'),('cycle_ms','CICLO')]:self.metrics[key].name_label.setText(self.text(title))
+        for key,title in [('balance','BALANCE'),('equity','PATRIMONIO'),('floating','FLOTANTE'),('daily_net','P/L DEL DÍA'),('reserved_risk','RIESGO POR ORDEN'),('cycle_ms','CICLO')]:self.metrics[key].name_label.setText(self.text(title))
     def set_avatar(self,config):
         from akira_expressions import get_catalog
         from akira_studio import UserCatalog
@@ -411,18 +417,24 @@ class StudioWindow(QMainWindow):
         self.sync_chat_activity()
 
     def sync_chat_activity(self):
-        from conversation_core import presentation
+        from conversation_core import presentation,activity_presentation
         state=self.controller.assistant.conversation.snapshot();busy=self.controller.chat_busy
         shown=presentation(state,self._model_status,busy);self.chat_status.setText(self.text(shown['label']))
-        self.ai_label.setText('● '+self.text(shown['label']));self.ai_label.setToolTip(self.text('Estado de la conversación. Motivo y registro muestra el diagnóstico de la IA.'))
+        activity=activity_presentation(state,self._model_status,self.controller.view,getattr(self.controller,'last_snapshot_at',0),busy)
+        self.ai_label.setText('● '+self.text(activity['label']));self.ai_label.setToolTip(self.text('Actividad del motor y de la conversación. Estado del chat: ')+self.text(shown['label']))
         if busy or state.get('active'):
+            self._conversation_progress=True
             self.director.interaction(True);self.director.busy(shown['loading']);self.director.publish(shown['expression'],'conversación')
             if state.get('started') and shown['loading']:self.chat_progress.setText(shown['label']+' · '+str(max(0,round(time.monotonic()-state['started'])))+' s')
+            elif not shown['loading']:self.chat_progress.setText('')
             self.chat_retry.hide()
             self.chat_continue.hide()
-        elif time.monotonic()>=getattr(self,'_avatar_reaction_until',0):
-            self.director.interaction(False);self.director.busy(False)
-            if state.get('phase')=='ERROR':self.director.publish('alert','respuesta interrumpida')
+        else:
+            if getattr(self,'_conversation_progress',False):self.chat_progress.setText('');self._conversation_progress=False
+            if time.monotonic()>=getattr(self,'_avatar_reaction_until',0):
+                self.director.interaction(False);self.director.busy(False)
+                if state.get('phase')=='ERROR':self.director.publish('alert','respuesta interrumpida')
+                elif activity['expression']=='waiting':self.director.publish('waiting','estado del motor')
 
     def handle_event(self,event):
         kind,data=event['kind'],event['data']
@@ -554,10 +566,13 @@ class StudioWindow(QMainWindow):
     def render_budget(self,view=None):
         view=view if view is not None else self.controller.view
         data=risk_dashboard(view,self.cfg,self.private)
-        self.metrics['reserved_risk'].caption.setText(data['caption'])
-        self.metrics['reserved_risk'].setToolTip('El valor grande es el riesgo reservado en órdenes y posiciones. Los límites configurados aparecen debajo. Ajustar abre los controles de riesgo.')
+        self.metrics['reserved_risk'].value.setText(data['metric_value'])
+        self.metrics['reserved_risk'].caption.setText(data['metric_caption'])
+        self.metrics['reserved_risk'].setToolTip('Límite efectivo de pérdida por orden. Debajo aparecen el riesgo ya reservado y el presupuesto conjunto. Ajustar abre los controles guardables de esta cuenta.')
         self.budget_config.setText(data['configured']);self.budget_text.setText(data['usage']);self.budget_status.setText(data['state'])
         self.budget_limit_bar.setValue(data['budget_pct']);self.budget_bar.setValue(data['used_pct'])
+        self.budget_limit_bar.setEnabled(data['ready']);self.budget_bar.setEnabled(data['ready'])
+        self.budget_limit_bar.setFormat(data['budget_format']);self.budget_bar.setFormat(data['usage_format'])
         empty=bool(view.get('connected')) and not view.get('orders') and not view.get('positions')
         self.budget_activity.setVisible(empty);self.budget_reasons.setVisible(empty)
         if empty:

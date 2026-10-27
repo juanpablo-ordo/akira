@@ -1,5 +1,5 @@
 #define AppName "AKIRA"
-#define AppVersion "16.5.0"
+#define AppVersion "16.5.1"
 #define LocalAIModelPath GetEnv("AKIRA_MODEL_PATH")
 #define LocalAIModelSHA256 "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5"
 #if LocalAIModelPath == ""
@@ -17,7 +17,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\dist_installer
-OutputBaseFilename=AKIRA_16_5_0_STUDIO_REV15_IA_INCLUIDA
+OutputBaseFilename=AKIRA_16_5_1_STUDIO_REV16_IA_INCLUIDA
 UninstallDisplayIcon={app}\AKIRA.exe
 SetupIconFile=..\assets\akira.ico
 WizardImageFile=..\assets\installer_left.bmp
@@ -33,7 +33,7 @@ UsePreviousAppDir=no
 CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
-VersionInfoVersion=16.5.0.0
+VersionInfoVersion=16.5.1.0
 VersionInfoDescription=AKIRA - Instalador de Windows
 
 [Languages]
@@ -46,14 +46,14 @@ Source: "..\native\AKIRA\*"; DestDir: "{app}"; Excludes: "local_ai\models\*"; Fl
 Source: "{#LocalAIModelPath}"; DestDir: "{app}\local_ai\models"; DestName: "Qwen3-4B-Q4_K_M.gguf"; Flags: ignoreversion nocompression; Hash: "{#LocalAIModelSHA256}"
 
 [Icons]
-Name: "{autoprograms}\AKIRA"; Filename: "{app}\AKIRA.exe"; IconFilename: "{app}\AKIRA.exe"
-Name: "{autodesktop}\AKIRA"; Filename: "{app}\AKIRA.exe"; Tasks: desktopicon
+Name: "{autoprograms}\AKIRA"; Filename: "{app}\AKIRA.exe"; Parameters: "{code:GetUserDataArguments}"; IconFilename: "{app}\AKIRA.exe"
+Name: "{autodesktop}\AKIRA"; Filename: "{app}\AKIRA.exe"; Parameters: "{code:GetUserDataArguments}"; Check: ShouldWriteDesktopShortcut
 
 [Tasks]
 Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; GroupDescription: "Accesos directos"; Flags: checkedonce
 
 [Run]
-Filename: "{app}\AKIRA.exe"; Description: "Iniciar AKIRA"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\AKIRA.exe"; Parameters: "{code:GetUserDataArguments}"; Description: "Iniciar AKIRA"; Flags: postinstall nowait skipifsilent
 
 [Code]
 const
@@ -62,6 +62,59 @@ const
 var
   EraseUserData: Boolean;
   UninstallCloseCode: Integer;
+  UserDataArguments: String;
+
+function ValidUserDataArguments(Arguments: String): String;
+var
+  DataRoot: String;
+begin
+  Result := '';
+  Arguments := Trim(Arguments);
+  if (Length(Arguments) > 13) and (Copy(Arguments, 1, 12) = '--app-root "') and (Copy(Arguments, Length(Arguments), 1) = '"') then
+  begin
+    DataRoot := Copy(Arguments, 13, Length(Arguments) - 13);
+    if (Pos('"', DataRoot) = 0) and FileExists(DataRoot + '\akira_config.json') then
+      Result := Arguments;
+  end;
+end;
+
+procedure InitializeWizard();
+var
+  Shell, Link: Variant;
+  LinkName, Arguments: String;
+begin
+  UserDataArguments := ValidUserDataArguments(GetPreviousData('UserDataArguments', ''));
+  LinkName := ExpandConstant('{autodesktop}\AKIRA.lnk');
+  if not FileExists(LinkName) then
+    LinkName := ExpandConstant('{autoprograms}\AKIRA.lnk');
+  if FileExists(LinkName) then
+  begin
+    try
+      Shell := CreateOleObject('WScript.Shell');
+      Link := Shell.CreateShortcut(LinkName);
+      Arguments := Link.Arguments;
+      if ValidUserDataArguments(Arguments) <> '' then
+        UserDataArguments := ValidUserDataArguments(Arguments);
+    except
+      RaiseException('No se pudo leer el acceso anterior de AKIRA. Cierra AKIRA y vuelve a intentar la actualización. Los ajustes anteriores se conservan.');
+    end;
+  end;
+end;
+
+procedure RegisterPreviousData(PreviousDataKey: Integer);
+begin
+  SetPreviousData(PreviousDataKey, 'UserDataArguments', UserDataArguments);
+end;
+
+function GetUserDataArguments(Param: String): String;
+begin
+  Result := UserDataArguments;
+end;
+
+function ShouldWriteDesktopShortcut(): Boolean;
+begin
+  Result := WizardIsTaskSelected('desktopicon') or FileExists(ExpandConstant('{autodesktop}\AKIRA.lnk'));
+end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin

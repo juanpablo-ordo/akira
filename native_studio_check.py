@@ -5,7 +5,7 @@ import copy,json,tempfile,time
 
 STUDIO_CHECK_VERSION=1
 REQUIRED=('eight_pages','real_records','privacy','stable_selection','responsive','shared_avatar',
-          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests','per_asset_activity','mt5_reconnect','mt5_account_switch','risk_budget_resources','conversation_lifecycle')
+          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests','per_asset_activity','mt5_reconnect','mt5_account_switch','risk_budget_resources','conversation_lifecycle','user_request_flow')
 
 def settle(app,seconds=.03):
     until=time.monotonic()+seconds
@@ -49,7 +49,7 @@ def run_studio_check(screenshot_dir=None):
             window.private=True;window.render(view);checks['privacy']='••••' in window.metrics['balance'].value.text() and str(view['account']['login']) not in window.account_badge.text()
             window.private=False;window.render(view);checks['privacy']=checks['privacy'] and '100' in window.metrics['balance'].value.text()
             window.navigate(1);settle(app);window.pending_table.selectRow(0);key=window.pending_table.selected_key();window.render_pending();checks['stable_selection']=key is not None and key==window.pending_table.selected_key()
-            window.resize(1024,768);settle(app);checks['responsive']=window._metric_columns==3 and window.pending_split.orientation().name=='Vertical' and window.nav[-1].isEnabled()
+            window.resize(1024,768);settle(app);checks['responsive']=window._metric_columns==2 and window.pending_split.orientation().name=='Vertical' and window.nav[-1].isEnabled()
             window.director.publish('thinking','check',force=True);checks['shared_avatar']=all(a.director is window.director and a.selected.id==window.director.selected.id for a in window.avatars)
             checks['no_expression_gallery']=not any('108' in b.text() or 'expresiones' in b.text().lower() for b in window.findChildren(QPushButton))
             image=root/'background.png';Image.new('RGB',(180,120),'#e03472').save(image)
@@ -69,8 +69,10 @@ def run_studio_check(screenshot_dir=None):
             risk=check_risk();checks['risk_budget_resources']=risk['status']=='PASSED'
             from qa_chat_lifecycle_rev15 import run_check as check_chat
             chat=check_chat();checks['conversation_lifecycle']=chat['status']=='PASSED'
+            from qa_user_flow_rev16 import run_check as check_user_flow
+            user_flow=check_user_flow();checks['user_request_flow']=user_flow['status']=='PASSED'
             result={'version':STUDIO_CHECK_VERSION,'status':'PASSED','data':'SYNTHETIC','broker':'FakeMT5',
-                'mt5_reconnect_details':reconnect,'mt5_account_switch_details':accounts,'risk_budget_resources_details':risk,'conversation_lifecycle_details':chat,**{k:bool(v) for k,v in checks.items()}}
+                'mt5_reconnect_details':reconnect,'mt5_account_switch_details':accounts,'risk_budget_resources_details':risk,'conversation_lifecycle_details':chat,'user_request_flow_details':user_flow,**{k:bool(v) for k,v in checks.items()}}
             require_studio_check({'studio_check':result});return result
         finally:
             if engine:engine.close()

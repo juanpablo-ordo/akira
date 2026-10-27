@@ -147,7 +147,7 @@ class BudgetWindowTests(unittest.TestCase):
                 while window.controller._jobs and time.monotonic()<end:self.app.processEvents();time.sleep(.01)
                 for event in window.controller.poll():window.handle_event(event)
                 self.assertFalse(window.controller._jobs);style.assert_not_called();avatar.assert_not_called()
-            self.assertIn('5.00',window.metrics['reserved_risk'].caption.text());self.assertEqual(window.budget_bar.value(),0)
+            self.assertIn('5.00',window.metrics['reserved_risk'].value.text());self.assertEqual(window.budget_bar.value(),0)
             self.assertEqual(load_config(Path(tmp)/'akira_config.json')['risk']['max_trade_money'],5)
     def test_source_text_is_rebuilt_when_content_changes_and_not_for_ages(self):
         with tempfile.TemporaryDirectory() as tmp:

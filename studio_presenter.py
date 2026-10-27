@@ -73,7 +73,9 @@ def risk_dashboard(view,config,private=False):
     used=float(ledger.get('reserved_usd',view.get('reserved_risk',0)) or 0)
     if not limits['ready']:
         return {'ready':False,'state':state,'limits':limits,'configured':'Tus límites están guardados. Conecta MT5 para calcular los importes de esta cuenta.',
-            'usage':'Esperando órdenes y posiciones de MT5.','caption':'Límites guardados · conecta MT5','budget_pct':0,'used_pct':0}
+            'usage':'Esperando órdenes y posiciones de MT5.','caption':'Límites guardados · conecta MT5',
+            'metric_value':'••••••' if private else '—','metric_caption':'Importe pendiente de conectar MT5',
+            'budget_format':'Esperando datos de la cuenta','usage_format':'Esperando datos de la cuenta','budget_pct':0,'used_pct':0}
     cap=limits['portfolio'];available=max(0,cap-used)
     count=int(ledger.get('pending_orders',len(view.get('orders') or [])))+int(ledger.get('positions',len(view.get('positions') or [])))
     provisional=bool(ledger.get('unconfirmed_requests')) or not ledger.get('risk_known',True)
@@ -82,6 +84,10 @@ def risk_dashboard(view,config,private=False):
     configured=(f"Por orden: hasta {money(limits['per_trade'])}\nElegiste {money(limits['trade_money'])} y {limits['trade_pct']:g}% del patrimonio."
         f"\nRunner directo: hasta {money(limits['runner'])}\nPresupuesto conjunto: {money(cap)}"
         f"\nElegiste {limits['portfolio_pct']:g}% del capital y {total_choice}. Se usa el menor límite aplicable.")
+    if limits['per_trade']<=0:configured+='\nEl límite por orden es cero: los topes en dinero y porcentaje deben ser mayores que cero para habilitar riesgo.'
+    elif not limits.get('override'):
+        binding='el tope en dinero' if limits['trade_money']<=limits['equity']*limits['trade_pct']/100 else 'el porcentaje del patrimonio'
+        configured+='\nEn esta cuenta manda '+binding+' para el límite por orden.'
     if limits.get('override'):configured+='\nEl permiso extra para el lote mínimo estructural está incluido en el tope por orden.'
     usage=f"En uso: {money(used)}\nDisponible para nuevas órdenes: {money(available)}\n{usage_note}"
     if used>cap:usage+='\nEl riesgo reservado supera el límite guardado; no queda presupuesto para nuevas entradas.'
@@ -89,7 +95,11 @@ def risk_dashboard(view,config,private=False):
         configured='Límites ocultos. Pulsa el ojo de la cuenta para ver los importes.'
         usage=usage_note;caption='Límites ocultos · Ajustar riesgo'
     else:caption=f"Por orden: {money(limits['per_trade'])}\nConjunto: {money(cap)}"
+    metric_caption='Importes ocultos · Ajustar límites' if private else f"En uso: {money(used)}\nConjunto: {money(cap)}"
     return {'ready':True,'state':state,'limits':limits,'configured':configured,'usage':usage,'caption':caption,
+        'metric_value':'••••••' if private else money(limits['per_trade']),'metric_caption':metric_caption,
+        'budget_format':'%p% del capital habilitado' if private else money(cap)+' · %p% del capital',
+        'usage_format':'%p% del presupuesto en uso' if private else money(used)+' en uso · %p% del presupuesto',
         'budget_pct':round(limits['portfolio_capital_pct']),
         'used_pct':min(100,max(0,round(used/cap*100))) if cap>0 else 100 if used>0 else 0}
 
