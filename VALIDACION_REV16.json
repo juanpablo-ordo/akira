@@ -1,12 +1,1345 @@
 {
   "build": "AKIRA_16_5_1_STUDIO_REV16",
-  "status": "WINDOWS_PENDING",
-  "pytest_tests_collected": 1551,
-  "unittest_tests_collected": 1548,
+  "status": "PASSED",
+  "revision_date": "2026-10-26",
+  "verified_at": "2026-10-27T07:52:19.011Z",
+  "source_commit": "101dbfd17ca953758d439bed2ff484b6ef96f590",
+  "source_tree": "d36610521c8803b0cc1cdb4613348936042c807e",
+  "pull_request": "https://github.com/juanpablo-ordo/akira/pull/6",
+  "workflow_url": "https://github.com/juanpablo-ordo/akira/actions/runs/40464092340",
+  "request_scope": [
+    "Riesgo, presupuesto, persistencia, rueda/touchpad y adaptación de la interfaz.",
+    "Conversación general con contexto y estados reales de actividad."
+  ],
+  "pytest_tests": 1551,
+  "pytest_subtests": 195,
+  "pytest_seconds": 437.83,
+  "skipped": 0,
   "new_tests": 20,
-  "required_real_model_scenarios": 15,
-  "required_reports": 20,
+  "model": {
+    "name": "Qwen3-4B-Q4_K_M.gguf",
+    "pretrained": true,
+    "trained_from_scratch": false,
+    "runtime": "llama.cpp b10355",
+    "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5"
+  },
+  "installer_artifact": {
+    "id": 12718016406,
+    "name": "AKIRA-16.5.1-Studio-Rev16-riesgo-chat-instalador-Windows-IA-INCLUIDA",
+    "size_in_bytes": 2866966291,
+    "digest": "sha256:c3bccac1a78715223c4ebfa849e5f0d6ad0bea5d9d9ba845df84576b2ca23b79",
+    "digest_scope": "GitHub artifact ZIP",
+    "expired": false,
+    "created_at": "2026-10-27T07:46:56Z",
+    "expires_at": "2026-11-03T07:46:30Z"
+  },
+  "installer_download_url": "https://github.com/juanpablo-ordo/akira/actions/runs/40464092340/artifacts/12718016406",
+  "evidence": {
+    "status": "PASSED",
+    "build": "AKIRA_16_5_1_STUDIO_REV16",
+    "source_commit": "101dbfd17ca953758d439bed2ff484b6ef96f590",
+    "workflow_run_id": "40464092340",
+    "manifest_entries_verified": 450,
+    "regressions": {
+      "xml_testcases": 1551,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "real_conversation_and_load": {
+      "status": "PASSED",
+      "build": "AKIRA_16_5_1_STUDIO_REV16",
+      "live_account_used": false,
+      "market_data": "SYNTHETIC FakeMT5",
+      "conversation_model": "REAL bundled GGUF",
+      "internet_requests_enabled": false,
+      "logical_cpus": 2,
+      "scenarios": [
+        {
+          "name": "identity",
+          "question": "¿Quién eres?",
+          "answer": "Soy AKIRA, tu asistente. Podemos conversar, investigar y revisar juntos lo que está pasando en el programa.",
+          "seconds": 0.125,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "presence_typo",
+          "question": "¿Me escuhas, Akira?",
+          "answer": "Aquí estoy, te leo. Puedes hablarme directamente y seguir el tema que llevábamos.",
+          "seconds": 0.047,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "capabilities",
+          "question": "Oye Akira, ¿qué puedes hacer?",
+          "answer": "Puedo conversar contigo, explicar temas, ayudarte a escribir, investigar fuentes y revisar el estado de Akira. Las operaciones pasan por el motor y sus controles de riesgo; hablar conmigo no coloca órdenes por sí solo.",
+          "seconds": 0.062,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "science_capability",
+          "question": "sabes de ciencia?",
+          "answer": "Sí, podemos hablar de ese tema. Puedo explicártelo paso a paso o ayudarte con una duda concreta. ¿Qué te gustaría saber?",
+          "seconds": 0.047,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "new_topic_typo",
+          "question": "Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?",
+          "answer": "La RAM es temporal y se borra al apagar, mientras que el disco es permanente y almacena datos a largo plazo. La RAM es rápida para procesar datos, pero el disco guarda información incluso sin conexión.",
+          "seconds": 68.266,
+          "first_visible_seconds": 56.656,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 5584
+        },
+        {
+          "name": "followup",
+          "question": "¿Cuál pierde los datos cuando apago la computadora?",
+          "answer": "La RAM pierde los datos al apagar la computadora. El disco duro o SSD mantiene la información incluso cuando el equipo está apagado.",
+          "seconds": 18.281,
+          "first_visible_seconds": 10.171,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 5584
+        },
+        {
+          "name": "personal_conversation",
+          "question": "Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?",
+          "answer": "Puedes respirar profundamente, concentrarte en el momento presente y recordar que la entrevista es una oportunidad. Si te sientes ansioso, haz una pausa y vuelve a empezar con calma.",
+          "seconds": 21.453,
+          "first_visible_seconds": 9.328,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 5584
+        }
+      ],
+      "expected_scenarios": [
+        "identity",
+        "presence_typo",
+        "capabilities",
+        "science_capability",
+        "new_topic_typo",
+        "followup",
+        "personal_conversation"
+      ],
+      "model_effective_parameters": {
+        "owned_pid": 5584,
+        "context_tokens": 2048,
+        "gpu_layers": 0,
+        "cpu_threads": 1,
+        "pending_reload": false
+      },
+      "model_command_limits": {
+        "--threads": "1",
+        "--threads-batch": "1",
+        "--poll": "0",
+        "--poll-batch": "0",
+        "--ctx-size": "2048",
+        "--n-gpu-layers": "0",
+        "--load-mode": "none",
+        "--cache-ram": "0",
+        "--flash-attn": "on",
+        "--cache-type-k": "q8_0",
+        "--cache-type-v": "q8_0"
+      },
+      "wall_seconds": 108.297,
+      "cpu_seconds_app_and_owned_model": 143.406,
+      "cpu_percent_of_available_cpus": 66.21,
+      "peak_app_and_model_mb": 2762.9,
+      "memory_peak_limit_mb": 3200,
+      "ui_delay_p95_ms": 30,
+      "engine_cycle_p95_ms": 28.4,
+      "engine_cycles": 521,
+      "fresh_quote_cycles": 521,
+      "actor_errors": []
+    },
+    "frozen_without_text_inference": {
+      "build": "AKIRA_16_5_1_STUDIO_REV16",
+      "data": "SYNTHETIC",
+      "broker": "FakeMT5",
+      "live_account_used": false,
+      "logical_cores_available": 2,
+      "profiles": {
+        "Equilibrado": {
+          "cpu_seconds": 0.844,
+          "wall_seconds": 8,
+          "cpu_percent_of_two_cores": 5.27,
+          "ui_delay_p95_ms": 21,
+          "engine_cycle_p95_ms": 19.1,
+          "engine_cycles": 39,
+          "fresh_quote_cycles": 39,
+          "rss_mb": 165.4,
+          "financial_poll_seconds": 0.2
+        },
+        "Ahorro de energía": {
+          "cpu_seconds": 0.922,
+          "wall_seconds": 8,
+          "cpu_percent_of_two_cores": 5.76,
+          "ui_delay_p95_ms": 16,
+          "engine_cycle_p95_ms": 25.3,
+          "engine_cycles": 39,
+          "fresh_quote_cycles": 39,
+          "rss_mb": 165.9,
+          "financial_poll_seconds": 0.2
+        },
+        "minimized": {
+          "cpu_seconds": 0.859,
+          "wall_seconds": 8,
+          "cpu_percent_of_two_cores": 5.37,
+          "ui_delay_p95_ms": 16,
+          "engine_cycle_p95_ms": 38.8,
+          "engine_cycles": 39,
+          "fresh_quote_cycles": 39,
+          "rss_mb": 166,
+          "financial_poll_seconds": 0.2
+        }
+      },
+      "workload": {
+        "research_references": 100,
+        "research_chars_each": 6000,
+        "news_items": 80,
+        "text_inference_running": false,
+        "network_requests_running": false
+      },
+      "status": "PASSED"
+    },
+    "reports": {
+      "SOURCE_SELF_CHECK": {
+        "status": "PASSED",
+        "sha256": "7f5007a0b335a53c90974de5ca8f2c4766ecf914df3ae6cd849d1e3e6351bf44",
+        "bytes": 12342
+      },
+      "NATIVE_APPLICATION": {
+        "status": "PASSED",
+        "sha256": "13641351238d0c24a8308fb00d3f827f459bb2922c2e7e068e62ed06a22e747a",
+        "bytes": 13408
+      },
+      "NATIVE_FIRST_RUN": {
+        "status": "PASSED",
+        "sha256": "5e939b1d1d7713251489daa2f15a0812b78848d2d9c0b82d3a3d818b7942dc98",
+        "bytes": 99
+      },
+      "SPRITE_AI_SOURCE": {
+        "status": "PASSED",
+        "sha256": "c2ae89634d56653f74ad7c891ebc00d06ca4a46ce32b3684f1438e2abe42425c",
+        "bytes": 615
+      },
+      "SPRITE_AI_FROZEN": {
+        "status": "PASSED",
+        "sha256": "c2ae89634d56653f74ad7c891ebc00d06ca4a46ce32b3684f1438e2abe42425c",
+        "bytes": 615
+      },
+      "HTTPS_SOURCE_REV10": {
+        "status": "PASSED",
+        "sha256": "0ca4c383efdd5c302f4e44fadc163d49062a93777c38809f1682297798a73c2d",
+        "bytes": 408
+      },
+      "HTTPS_FROZEN_REV10": {
+        "status": "PASSED",
+        "sha256": "0ca4c383efdd5c302f4e44fadc163d49062a93777c38809f1682297798a73c2d",
+        "bytes": 408
+      },
+      "LOW_RESOURCE_FROZEN_REV10": {
+        "status": "PASSED",
+        "sha256": "9fa638493e8d3f95be69a7447d571e22a7a7338d940f856230198baa4cc810cf",
+        "bytes": 1350
+      },
+      "PUBLIC_SOURCES_SOURCE_REV10": {
+        "status": "PASSED",
+        "sha256": "d691db9040cfdb60724f950ea5b37e80f35633e6e178bd2e943e80bfceb7787f",
+        "bytes": 2008
+      },
+      "PUBLIC_SOURCES_FROZEN_REV10": {
+        "status": "PASSED",
+        "sha256": "e43ab09da439924c86df3dcdd46a4e6184d330190a0d1149c407d91611908a14",
+        "bytes": 2006
+      },
+      "LOCAL_AI_SCENARIOS": {
+        "status": "PASSED",
+        "sha256": "13fb85ee5d7e3f1d5dc32371fcbe4ee9cfcfb3d4cd9c74f4cc2934aeb964562e",
+        "bytes": 482
+      },
+      "REAL_REVIEW_REV10": {
+        "status": "PASSED",
+        "sha256": "e036007d3662b5d6661d9417feac2d690052c663cb9603896c8317ccd3645294",
+        "bytes": 9678
+      },
+      "REAL_CONVERSATION_REV6_WINDOWS": {
+        "status": "PASSED",
+        "sha256": "5cbb3c78a5dd742ca7a9a2d54a1baf5e71cd6f83c33be6ad274d01ca6ecbfa13",
+        "bytes": 1941
+      },
+      "REAL_CHAT_LOW_RESOURCE_REV11": {
+        "status": "PASSED",
+        "sha256": "7e5a7cee6a14ac1f198e1b966d9fe0f57c38d39c86d10d242ba5801abb100216",
+        "bytes": 4596
+      },
+      "REAL_CHAT_DELL_7280_REV14": {
+        "status": "PASSED",
+        "sha256": "8badfb398eb928cd5aa71187dcd66cc324eadee510e65aaf87f1208bdce502e7",
+        "bytes": 5616
+      },
+      "UI_COMPARISON_REV14": {
+        "status": "PASSED",
+        "sha256": "0aa8f53e8de1ccac5b0ac62a235f9cb727e2f7e530ec903931e8bebfb7723b5b",
+        "bytes": 2127
+      },
+      "REAL_CHAT_REV15": {
+        "status": "PASSED",
+        "sha256": "27b442b99863095c9c543f2764fe5a69fd98d1debaf2aadf5ad7aea183063d6d",
+        "bytes": 7859
+      },
+      "REAL_CHAT_REV16": {
+        "status": "PASSED",
+        "sha256": "f9d95a12333393d0bf1521fc046133a4079f62d8d4c33199ef8548fef3c4f065",
+        "bytes": 6328
+      },
+      "INSTALLED_LOCAL_AI": {
+        "status": "PASSED",
+        "sha256": "dc093d3a7f07a1e47f3ce5cc469ee28643da547f7945536ceaf6c88fb94038de",
+        "bytes": 516
+      },
+      "UPGRADE_REV16": {
+        "status": "PASSED",
+        "sha256": "6f741f30c65244e8b8f0a121fbb94e9a063eb44316abee5f43a4d4fd1960bc64",
+        "bytes": 1242
+      }
+    },
+    "live_account_used": false,
+    "user_attachments_reviewed": false,
+    "profitability_verified": false,
+    "mt5_reconnect": {
+      "source": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "broker": "FakeMT5",
+        "engine": "production Engine and run_session",
+        "native_mt5_library_version": "5.0.6180",
+        "live_account_used": false,
+        "native_mt5_login_tested": false,
+        "checks": {
+          "first_connection_to_demo": true,
+          "shutdown_before_reopen": true,
+          "saved_target_on_restart": true,
+          "fresh_account_and_both_assets": true,
+          "lost_broker_cannot_claim_ready": true,
+          "recover_without_restarting_ui": true,
+          "timeout_recovery": true,
+          "wrong_account_rejected": true,
+          "preferences_unchanged": true,
+          "no_broker_orders": true,
+          "single_mt5_owner": true
+        }
+      },
+      "frozen": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "broker": "FakeMT5",
+        "engine": "production Engine and run_session",
+        "native_mt5_library_version": "5.0.6180",
+        "live_account_used": false,
+        "native_mt5_login_tested": false,
+        "checks": {
+          "first_connection_to_demo": true,
+          "shutdown_before_reopen": true,
+          "saved_target_on_restart": true,
+          "fresh_account_and_both_assets": true,
+          "lost_broker_cannot_claim_ready": true,
+          "recover_without_restarting_ui": true,
+          "timeout_recovery": true,
+          "wrong_account_rejected": true,
+          "preferences_unchanged": true,
+          "no_broker_orders": true,
+          "single_mt5_owner": true
+        }
+      }
+    },
+    "mt5_account_switch": {
+      "source": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "broker": "FakeMT5",
+        "engine": "production StudioController, Engine and run_session",
+        "live_account_used": false,
+        "native_mt5_login_tested": false,
+        "checks": {
+          "initial_account_verified": true,
+          "manual_switch_cannot_reuse_old_authorization": true,
+          "adopt_another_number_without_restarting": true,
+          "fresh_engine_reads_both_assets": true,
+          "same_number_different_server_is_adopted": true,
+          "preferences_and_risk_preserved": true,
+          "separate_account_journals": true,
+          "new_account_survives_restart": true,
+          "running_terminal_can_replace_old_path": true,
+          "automatic_detection_is_not_pinned_to_previous_terminal": true,
+          "never_forces_remembered_login_or_server": true,
+          "no_credentials_in_connection_metadata": true,
+          "single_mt5_owner": true,
+          "no_broker_orders": true
+        }
+      },
+      "frozen": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "broker": "FakeMT5",
+        "engine": "production StudioController, Engine and run_session",
+        "live_account_used": false,
+        "native_mt5_login_tested": false,
+        "checks": {
+          "initial_account_verified": true,
+          "manual_switch_cannot_reuse_old_authorization": true,
+          "adopt_another_number_without_restarting": true,
+          "fresh_engine_reads_both_assets": true,
+          "same_number_different_server_is_adopted": true,
+          "preferences_and_risk_preserved": true,
+          "separate_account_journals": true,
+          "new_account_survives_restart": true,
+          "running_terminal_can_replace_old_path": true,
+          "automatic_detection_is_not_pinned_to_previous_terminal": true,
+          "never_forces_remembered_login_or_server": true,
+          "no_credentials_in_connection_metadata": true,
+          "single_mt5_owner": true,
+          "no_broker_orders": true
+        }
+      }
+    },
+    "risk_budget_resources": {
+      "source": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "checks": {
+          "screenshot_values_preserved": true,
+          "configured_budget_is_distinct_from_empty_usage": true,
+          "effective_limit_matches_account": true,
+          "raw_limits_are_visible": true,
+          "edit_preview_explains_unsaved_limits": true,
+          "risk_save_does_not_rebuild_appearance_or_avatar": true,
+          "save_reaches_financial_actor": true,
+          "save_keeps_other_form_edits": true,
+          "main_window_updates_saved_limits": true,
+          "applied_state_is_confirmed": true,
+          "usage_changes_only_with_broker_reservations": true,
+          "limits_survive_reload": true,
+          "unchanged_chart_repaints_use_cached_image": true,
+          "hidden_source_documents_are_not_built": true,
+          "automatic_laptop_profile_is_effective": true,
+          "laptop_model_has_one_thread_small_context_and_no_gpu": true,
+          "one_actor_owns_mt5": true,
+          "no_broker_orders_sent": true,
+          "actor_stops_cleanly": true
+        },
+        "broker": "FakeMT5",
+        "live_account_used": false,
+        "hardware_policy": "Dell Latitude 7280 class: simulated 8 GB, 2 physical / 4 logical cores",
+        "real_laptop_tested": false,
+        "real_model_in_this_check": false
+      },
+      "frozen": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "checks": {
+          "screenshot_values_preserved": true,
+          "configured_budget_is_distinct_from_empty_usage": true,
+          "effective_limit_matches_account": true,
+          "raw_limits_are_visible": true,
+          "edit_preview_explains_unsaved_limits": true,
+          "risk_save_does_not_rebuild_appearance_or_avatar": true,
+          "save_reaches_financial_actor": true,
+          "save_keeps_other_form_edits": true,
+          "main_window_updates_saved_limits": true,
+          "applied_state_is_confirmed": true,
+          "usage_changes_only_with_broker_reservations": true,
+          "limits_survive_reload": true,
+          "unchanged_chart_repaints_use_cached_image": true,
+          "hidden_source_documents_are_not_built": true,
+          "automatic_laptop_profile_is_effective": true,
+          "laptop_model_has_one_thread_small_context_and_no_gpu": true,
+          "one_actor_owns_mt5": true,
+          "no_broker_orders_sent": true,
+          "actor_stops_cleanly": true
+        },
+        "broker": "FakeMT5",
+        "live_account_used": false,
+        "hardware_policy": "Dell Latitude 7280 class: simulated 8 GB, 2 physical / 4 logical cores",
+        "real_laptop_tested": false,
+        "real_model_in_this_check": false
+      }
+    },
+    "dell_model_load": {
+      "status": "PASSED",
+      "build": "AKIRA_16_5_1_STUDIO_REV16",
+      "live_account_used": false,
+      "market_data": "SYNTHETIC FakeMT5",
+      "conversation_model": "REAL bundled GGUF",
+      "internet_requests_enabled": false,
+      "logical_cpus": 2,
+      "scenarios": [
+        {
+          "name": "identity",
+          "question": "¿Quién eres?",
+          "answer": "Soy AKIRA, tu asistente. Podemos conversar, investigar y revisar juntos lo que está pasando en el programa.",
+          "seconds": 0.141,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "presence_typo",
+          "question": "¿Me escuhas, Akira?",
+          "answer": "Aquí estoy, te leo. Puedes hablarme directamente y seguir el tema que llevábamos.",
+          "seconds": 0.047,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "capabilities",
+          "question": "Oye Akira, ¿qué puedes hacer?",
+          "answer": "Puedo conversar contigo, explicar temas, ayudarte a escribir, investigar fuentes y revisar el estado de Akira. Las operaciones pasan por el motor y sus controles de riesgo; hablar conmigo no coloca órdenes por sí solo.",
+          "seconds": 0.062,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "science_capability",
+          "question": "sabes de ciencia?",
+          "answer": "Sí, podemos hablar de ese tema. Puedo explicártelo paso a paso o ayudarte con una duda concreta. ¿Qué te gustaría saber?",
+          "seconds": 0.047,
+          "first_visible_seconds": null,
+          "origin": "direct",
+          "completion": {},
+          "owned_model_pid": null
+        },
+        {
+          "name": "new_topic_typo",
+          "question": "Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?",
+          "answer": "La RAM es temporal y se borra al apagar, mientras que el disco es permanente y almacena datos a largo plazo. La RAM es rápida para procesar datos, pero el disco guarda información incluso cuando no estás usando la computadora.",
+          "seconds": 70.407,
+          "first_visible_seconds": 57.157,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 752
+        },
+        {
+          "name": "followup",
+          "question": "¿Cuál pierde los datos cuando apago la computadora?",
+          "answer": "La RAM pierde los datos cuando apagas la computadora. El disco duro o SSD mantiene los datos incluso después de apagarla.",
+          "seconds": 18.75,
+          "first_visible_seconds": 10.984,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 752
+        },
+        {
+          "name": "personal_conversation",
+          "question": "Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?",
+          "answer": "Puedes respirar profundamente, enfocarte en lo que sabes y recordar que la entrevista es un momento de oportunidad, no de presión. Si te sientes nervioso, haz una pausa y vuelve a empezar con calma.",
+          "seconds": 23.906,
+          "first_visible_seconds": 9.015,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 752
+        }
+      ],
+      "simulated_hardware": {
+        "ram_gb": 8,
+        "physical_cores": 2,
+        "logical_cores": 4
+      },
+      "real_laptop_tested": false,
+      "effective_model_policy": {
+        "width": 1580,
+        "height": 940,
+        "book": true,
+        "vtuber_3d": false,
+        "target_fps": 12,
+        "terminal_heartbeat_seconds": 0.5,
+        "notifications": true,
+        "notify_deep_analysis": true,
+        "notify_pending_change": true,
+        "notify_chat_research_progress": true,
+        "toast_seconds": 6,
+        "friendly_ui": true,
+        "chat_research_animation": true,
+        "chat_elapsed_timer": true,
+        "chat_stop_button": true,
+        "notification_sound": true,
+        "notification_popup": true,
+        "privacy": true,
+        "visibility_preference_saved": true,
+        "performance_profile": "Ahorro de energía",
+        "adaptive_resources": true,
+        "memory_budget_mb": 3072,
+        "model_context_tokens": 2048,
+        "model_keep_alive_seconds": 0,
+        "model_use_gpu": false,
+        "pause_hidden_animations": true
+      },
+      "expected_scenarios": [
+        "identity",
+        "presence_typo",
+        "capabilities",
+        "science_capability",
+        "new_topic_typo",
+        "followup",
+        "personal_conversation"
+      ],
+      "model_effective_parameters": {
+        "owned_pid": 752,
+        "context_tokens": 2048,
+        "gpu_layers": 0,
+        "cpu_threads": 1,
+        "pending_reload": false
+      },
+      "model_command_limits": {
+        "--threads": "1",
+        "--threads-batch": "1",
+        "--poll": "0",
+        "--poll-batch": "0",
+        "--ctx-size": "2048",
+        "--n-gpu-layers": "0",
+        "--load-mode": "none",
+        "--cache-ram": "0",
+        "--flash-attn": "on",
+        "--cache-type-k": "q8_0",
+        "--cache-type-v": "q8_0"
+      },
+      "wall_seconds": 113.375,
+      "cpu_seconds_app_and_owned_model": 151.703,
+      "cpu_percent_of_available_cpus": 66.9,
+      "peak_app_and_model_mb": 2768.5,
+      "memory_peak_limit_mb": 3200,
+      "ui_delay_p95_ms": 30,
+      "engine_cycle_p95_ms": 28.5,
+      "engine_cycles": 547,
+      "fresh_quote_cycles": 547,
+      "actor_errors": []
+    },
+    "ui_comparison": {
+      "status": "PASSED",
+      "scope": "UI-only synthetic workload; not a measurement on the physical Dell laptop",
+      "before": {
+        "build": "AKIRA_16_4_8_STUDIO_REV13",
+        "broker": "FakeMT5",
+        "live_account_used": false,
+        "logical_cpus": 2,
+        "workload": {
+          "news_items": 80,
+          "sources": 80,
+          "text_characters_per_item": 3200,
+          "network": false,
+          "inference": false
+        },
+        "pages": {
+          "trading": {
+            "median_ms": 2.646,
+            "p95_ms": 13.187
+          },
+          "account": {
+            "median_ms": 2.572,
+            "p95_ms": 8.615
+          },
+          "analysis": {
+            "median_ms": 41.593,
+            "p95_ms": 46.479
+          },
+          "sources": {
+            "median_ms": 43.215,
+            "p95_ms": 44.784
+          },
+          "settings": {
+            "median_ms": 1.981,
+            "p95_ms": 8.249
+          }
+        },
+        "forced_full_window_repaint": {
+          "median_ms": 11.231,
+          "p95_ms": 11.893
+        },
+        "resize_events": {
+          "median_ms": 59.347,
+          "p95_ms": 90.25
+        },
+        "status": "PASSED"
+      },
+      "after": {
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "broker": "FakeMT5",
+        "live_account_used": false,
+        "logical_cpus": 2,
+        "workload": {
+          "news_items": 80,
+          "sources": 80,
+          "text_characters_per_item": 3200,
+          "network": false,
+          "inference": false
+        },
+        "pages": {
+          "trading": {
+            "median_ms": 3.24,
+            "p95_ms": 13.191
+          },
+          "account": {
+            "median_ms": 3.29,
+            "p95_ms": 3.913
+          },
+          "analysis": {
+            "median_ms": 6.439,
+            "p95_ms": 9.677
+          },
+          "sources": {
+            "median_ms": 4.907,
+            "p95_ms": 12.926
+          },
+          "settings": {
+            "median_ms": 0.223,
+            "p95_ms": 3.92
+          }
+        },
+        "forced_full_window_repaint": {
+          "median_ms": 10.763,
+          "p95_ms": 11.254
+        },
+        "resize_events": {
+          "median_ms": 64.46,
+          "p95_ms": 92.626
+        },
+        "status": "PASSED"
+      },
+      "analysis_median_reduction_pct": 84.52,
+      "sources_median_reduction_pct": 88.65
+    },
+    "conversation_lifecycle": {
+      "source": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "checks": {
+          "loading_is_visible": true,
+          "thinking_is_visible": true,
+          "stream_overrides_idle": true,
+          "current_question_stays_visible": true,
+          "answer_is_recorded": true,
+          "failure_has_a_retry_action": true,
+          "failure_does_not_paste_headlines": true,
+          "retry_uses_the_same_question": true,
+          "retry_produces_a_new_response": true,
+          "no_broker_actor": true
+        },
+        "transport": "EXPLICIT SYNTHETIC STUB",
+        "real_model_in_this_check": false,
+        "live_account_used": false
+      },
+      "frozen": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "checks": {
+          "loading_is_visible": true,
+          "thinking_is_visible": true,
+          "stream_overrides_idle": true,
+          "current_question_stays_visible": true,
+          "answer_is_recorded": true,
+          "failure_has_a_retry_action": true,
+          "failure_does_not_paste_headlines": true,
+          "retry_uses_the_same_question": true,
+          "retry_produces_a_new_response": true,
+          "no_broker_actor": true
+        },
+        "transport": "EXPLICIT SYNTHETIC STUB",
+        "real_model_in_this_check": false,
+        "live_account_used": false
+      }
+    },
+    "rebuilt_conversation": {
+      "status": "PASSED",
+      "build": "AKIRA_16_5_1_STUDIO_REV16",
+      "live_account_used": false,
+      "market_data": "SYNTHETIC FakeMT5",
+      "conversation_model": "REAL bundled GGUF",
+      "internet_requests_enabled": false,
+      "logical_cpus": 2,
+      "scenarios": [
+        {
+          "name": "science_recording",
+          "question": "que piensas de la ciencia",
+          "answer": "La ciencia es fundamental para entender el mundo y resolver problemas. Es un proceso de exploración basado en evidencia y razonamiento. Aporta conocimientos que mejoran la vida y avanzan el conocimiento humano.",
+          "seconds": 39.313,
+          "first_visible_seconds": 28.953,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "math_recording",
+          "question": "dime cual es la formula mas elegante de las matematicas",
+          "answer": "La fórmula más elegante es la ecuación de Euler: e^(iπ) + 1 = 0. Combina números básicos con operaciones fundamentales, mostrando una relación profunda entre conceptos aparentemente distintos. Su simplicidad y belleza reflejan la armonía de las matemáticas.",
+          "seconds": 25.578,
+          "first_visible_seconds": 8.547,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "euler_explanation",
+          "question": "Explícame qué significa e^(i*pi)+1=0.",
+          "answer": "La fórmula e^(iπ) + 1 = 0 une cinco constantes matemáticas básicas: e, i, π, 1 y 0. e es la base de los logaritmos naturales, i es la unidad imaginaria, π es la razón entre la circunferencia y el diámetro de un círculo. La fórmula muestra una relación profunda y sorprendente entre estos conceptos, demostrando que la unidad imaginaria multiplicada por π y elevada a e da -1. Es un ejemplo de la elegancia y simplicidad de las matemáticas.",
+          "seconds": 44.953,
+          "first_visible_seconds": 12.125,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "euler_followup",
+          "question": "¿Qué representa la i en esa fórmula?",
+          "answer": "La i representa la unidad imaginaria, definida como la raíz cuadrada de -1. En la fórmula e^(iπ) + 1 = 0, i permite trabajar con números complejos, extendiendo los números reales al plano complejo. Esta unidad es fundamental en campos como la física y la ingeniería.",
+          "seconds": 39.437,
+          "first_visible_seconds": 20.734,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "arithmetic_topic_change",
+          "question": "Cambiemos de tema: tengo 17 manzanas y regalo 5. ¿Cuántas me quedan?",
+          "answer": "Te quedan 12 manzanas. 17 menos 5 es 12.",
+          "seconds": 8.485,
+          "first_visible_seconds": 3.875,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "arithmetic_correction",
+          "question": "Eso no te pregunté. Quería saber cuántas me quedan, sin hablar de ciencia.",
+          "answer": "Te quedan 12 manzanas. Regalar 5 de 17 deja 12.",
+          "seconds": 15.265,
+          "first_visible_seconds": 10,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "new_topic_typo",
+          "question": "Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?",
+          "answer": "La RAM es memoria temporal que guarda lo que estás haciendo, pero se borra cuando apagas la computadora. El disco es de almacenamiento a largo plazo, donde se guardan los archivos y los programas, y se mantiene incluso después de apagar.",
+          "seconds": 28.61,
+          "first_visible_seconds": 15.579,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "ram_followup",
+          "question": "¿Cuál pierde los datos cuando apago la computadora?",
+          "answer": "La RAM pierde los datos cuando apagas la computadora. El disco duro o SSD mantiene los archivos incluso después de apagar.",
+          "seconds": 17,
+          "first_visible_seconds": 10.047,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        },
+        {
+          "name": "personal_conversation",
+          "question": "Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?",
+          "answer": "Respira profundamente y enfócate en lo que puedes controlar. Recuerda que la entrevista es una oportunidad, no un juicio. Si te sientes nervioso, haz una pausa y vuelve a empezar con calma.",
+          "seconds": 21.422,
+          "first_visible_seconds": 8.156,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 1128
+        }
+      ],
+      "simulated_hardware": {
+        "ram_gb": 8,
+        "physical_cores": 2,
+        "logical_cores": 4
+      },
+      "real_laptop_tested": false,
+      "effective_model_policy": {
+        "width": 1580,
+        "height": 940,
+        "book": true,
+        "vtuber_3d": false,
+        "target_fps": 12,
+        "terminal_heartbeat_seconds": 0.5,
+        "notifications": true,
+        "notify_deep_analysis": true,
+        "notify_pending_change": true,
+        "notify_chat_research_progress": true,
+        "toast_seconds": 6,
+        "friendly_ui": true,
+        "chat_research_animation": true,
+        "chat_elapsed_timer": true,
+        "chat_stop_button": true,
+        "notification_sound": true,
+        "notification_popup": true,
+        "privacy": true,
+        "visibility_preference_saved": true,
+        "performance_profile": "Ahorro de energía",
+        "adaptive_resources": true,
+        "memory_budget_mb": 3072,
+        "model_context_tokens": 2048,
+        "model_keep_alive_seconds": 0,
+        "model_use_gpu": false,
+        "pause_hidden_animations": true
+      },
+      "all_scenarios_require_model_generation": true,
+      "expected_scenarios": [
+        "science_recording",
+        "math_recording",
+        "euler_explanation",
+        "euler_followup",
+        "arithmetic_topic_change",
+        "arithmetic_correction",
+        "new_topic_typo",
+        "ram_followup",
+        "personal_conversation"
+      ],
+      "model_effective_parameters": {
+        "owned_pid": 1128,
+        "context_tokens": 2048,
+        "gpu_layers": 0,
+        "cpu_threads": 1,
+        "pending_reload": false
+      },
+      "model_command_limits": {
+        "--threads": "1",
+        "--threads-batch": "1",
+        "--poll": "0",
+        "--poll-batch": "0",
+        "--ctx-size": "2048",
+        "--n-gpu-layers": "0",
+        "--load-mode": "none",
+        "--cache-ram": "0",
+        "--flash-attn": "on",
+        "--cache-type-k": "q8_0",
+        "--cache-type-v": "q8_0"
+      },
+      "wall_seconds": 240.063,
+      "cpu_seconds_app_and_owned_model": 320.875,
+      "cpu_percent_of_available_cpus": 66.83,
+      "peak_app_and_model_mb": 2765.5,
+      "memory_peak_limit_mb": 3200,
+      "ui_delay_p95_ms": 30,
+      "engine_cycle_p95_ms": 28.4,
+      "engine_cycles": 1163,
+      "fresh_quote_cycles": 1163,
+      "actor_errors": []
+    },
+    "user_request_flow": {
+      "source": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "checks": {
+          "main_number_is_the_configured_order_limit": true,
+          "zero_exposure_is_separate": true,
+          "adjust_button_opens_risk_controls": true,
+          "wheel_scrolls_without_changing_focused_risk": true,
+          "touchpad_scrolls_without_changing_risk": true,
+          "preview_tracks_typed_values": true,
+          "risk_save_remains_visible_while_scrolling": true,
+          "clicked_save_applies_to_actor": true,
+          "main_number_changes_after_save": true,
+          "budget_shows_limit_and_usage": true,
+          "motor_confirms_application": true,
+          "active_market_is_not_presented_as_idle": true,
+          "chat_takes_precedence_over_market": true,
+          "thinking_text_clears_after_conversation": true,
+          "scroll_does_not_change_performance_budget": true,
+          "new_chat_text_preserves_user_scroll": true,
+          "chat_fits_900": true,
+          "chat_fits_1024": true,
+          "chat_fits_1366": true,
+          "first_actor_stops_before_reopen": true,
+          "limits_survive_reopening": true,
+          "controls_survive_reopening": true,
+          "no_broker_order_was_sent": true,
+          "last_actor_stops": true
+        },
+        "broker": "SYNTHETIC FakeMT5",
+        "real_model_in_this_check": false,
+        "live_account_used": false,
+        "real_laptop_tested": false,
+        "input": "QtTest mouse and keyboard; QWheelEvent angle and pixel deltas"
+      },
+      "frozen": {
+        "status": "PASSED",
+        "build": "AKIRA_16_5_1_STUDIO_REV16",
+        "checks": {
+          "main_number_is_the_configured_order_limit": true,
+          "zero_exposure_is_separate": true,
+          "adjust_button_opens_risk_controls": true,
+          "wheel_scrolls_without_changing_focused_risk": true,
+          "touchpad_scrolls_without_changing_risk": true,
+          "preview_tracks_typed_values": true,
+          "risk_save_remains_visible_while_scrolling": true,
+          "clicked_save_applies_to_actor": true,
+          "main_number_changes_after_save": true,
+          "budget_shows_limit_and_usage": true,
+          "motor_confirms_application": true,
+          "active_market_is_not_presented_as_idle": true,
+          "chat_takes_precedence_over_market": true,
+          "thinking_text_clears_after_conversation": true,
+          "scroll_does_not_change_performance_budget": true,
+          "new_chat_text_preserves_user_scroll": true,
+          "chat_fits_900": true,
+          "chat_fits_1024": true,
+          "chat_fits_1366": true,
+          "first_actor_stops_before_reopen": true,
+          "limits_survive_reopening": true,
+          "controls_survive_reopening": true,
+          "no_broker_order_was_sent": true,
+          "last_actor_stops": true
+        },
+        "broker": "SYNTHETIC FakeMT5",
+        "real_model_in_this_check": false,
+        "live_account_used": false,
+        "real_laptop_tested": false,
+        "input": "QtTest mouse and keyboard; QWheelEvent angle and pixel deltas"
+      }
+    },
+    "ordinary_conversation": {
+      "status": "PASSED",
+      "build": "AKIRA_16_5_1_STUDIO_REV16",
+      "live_account_used": false,
+      "market_data": "SYNTHETIC FakeMT5",
+      "conversation_model": "REAL bundled GGUF",
+      "internet_requests_enabled": false,
+      "logical_cpus": 2,
+      "scenarios": [
+        {
+          "name": "short_art",
+          "question": "pintura al óleo",
+          "answer": "La pintura al óleo es una técnica tradicional que utiliza aceite como medio de disolución para los pigmentos. Se aplica con pincel en una superficie preparada, permitiendo una gran versatilidad en texturas y colores. Es ampliamente utilizada en el arte contemporáneo por su durabilidad y expresividad.",
+          "seconds": 45.469,
+          "first_visible_seconds": 28.985,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 8784
+        },
+        {
+          "name": "short_followup",
+          "question": "¿Me das un ejemplo?",
+          "answer": "La técnica de la pintura al óleo implica mezclar pigmentos con un medio de disolución, como aceite de linaza. Por ejemplo, se puede crear un cuadro representando un paisaje utilizando tonalidades cálidas para el atardecer y frescas para el cielo. El proceso incluye aplicar capas de pigmento en una superficie preparada, permitiendo una gran variedad de texturas y efectos.",
+          "seconds": 32.344,
+          "first_visible_seconds": 10.578,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 8784
+        },
+        {
+          "name": "simplify_typos",
+          "question": "No te entendi, esplicalo mas facil",
+          "answer": "La pintura al óleo es cuando se usan pigmentos mezclados con aceite para dibujar o pintar. Se aplica con un pincel en una superficie, como una tela o una pared. Permite crear colores brillantes y texturas distintas. Es una técnica antigua pero muy usada hoy en día.",
+          "seconds": 31.719,
+          "first_visible_seconds": 14.156,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 8784
+        },
+        {
+          "name": "short_story",
+          "question": "cuéntame algo bonito",
+          "answer": "La pintura al óleo es una forma hermosa de expresar ideas y emociones. Con ella, los artistas pueden crear imágenes vibrantes y duraderas, que transmiten historia, sentimiento y belleza. Es una forma antigua pero siempre actual, que sigue inspirando a millones de personas.",
+          "seconds": 28.218,
+          "first_visible_seconds": 12.093,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 8784
+        },
+        {
+          "name": "creative_story",
+          "question": "Cuéntame una historia corta de un perro.",
+          "answer": "Un perro llamado Max vivía en una pequeña casa con su dueño, Ana. Un día, mientras jugaba con un peluche, Max se cayó y se lastimó. Ana lo ayudó y le dio pastel. Max se sintió bien y se alegró. La historia terminó con Max y Ana felices, recordando que los perros son amigos leales.",
+          "seconds": 34.297,
+          "first_visible_seconds": 12.5,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 8784
+        },
+        {
+          "name": "short_science",
+          "question": "astronomía",
+          "answer": "La astronomía es la ciencia que estudia los astros, como estrellas, planetas y galaxias. Usa telescopios y cálculos para entender el universo. Por ejemplo, observa cómo se mueven los planetas y descubre nuevas estrellas. Es una disciplina que combina ciencia y curiosidad.",
+          "seconds": 33.938,
+          "first_visible_seconds": 14.36,
+          "origin": "model",
+          "completion": {
+            "backend": "llama.cpp",
+            "finish_reason": "stop",
+            "truncated": false
+          },
+          "owned_model_pid": 8784
+        }
+      ],
+      "simulated_hardware": {
+        "ram_gb": 8,
+        "physical_cores": 2,
+        "logical_cores": 4
+      },
+      "real_laptop_tested": false,
+      "effective_model_policy": {
+        "width": 1580,
+        "height": 940,
+        "book": true,
+        "vtuber_3d": false,
+        "target_fps": 12,
+        "terminal_heartbeat_seconds": 0.5,
+        "notifications": true,
+        "notify_deep_analysis": true,
+        "notify_pending_change": true,
+        "notify_chat_research_progress": true,
+        "toast_seconds": 6,
+        "friendly_ui": true,
+        "chat_research_animation": true,
+        "chat_elapsed_timer": true,
+        "chat_stop_button": true,
+        "notification_sound": true,
+        "notification_popup": true,
+        "privacy": true,
+        "visibility_preference_saved": true,
+        "performance_profile": "Ahorro de energía",
+        "adaptive_resources": true,
+        "memory_budget_mb": 3072,
+        "model_context_tokens": 2048,
+        "model_keep_alive_seconds": 0,
+        "model_use_gpu": false,
+        "pause_hidden_animations": true
+      },
+      "all_scenarios_require_model_generation": true,
+      "scenario_group": "short_general_conversation",
+      "expected_scenarios": [
+        "short_art",
+        "short_followup",
+        "simplify_typos",
+        "short_story",
+        "creative_story",
+        "short_science"
+      ],
+      "model_effective_parameters": {
+        "owned_pid": 8784,
+        "context_tokens": 2048,
+        "gpu_layers": 0,
+        "cpu_threads": 1,
+        "pending_reload": false
+      },
+      "model_command_limits": {
+        "--threads": "1",
+        "--threads-batch": "1",
+        "--poll": "0",
+        "--poll-batch": "0",
+        "--ctx-size": "2048",
+        "--n-gpu-layers": "0",
+        "--load-mode": "none",
+        "--cache-ram": "0",
+        "--flash-attn": "on",
+        "--cache-type-k": "q8_0",
+        "--cache-type-v": "q8_0"
+      },
+      "wall_seconds": 205.985,
+      "cpu_seconds_app_and_owned_model": 272.234,
+      "cpu_percent_of_available_cpus": 66.08,
+      "peak_app_and_model_mb": 2765.2,
+      "memory_peak_limit_mb": 3200,
+      "ui_delay_p95_ms": 30,
+      "engine_cycle_p95_ms": 28.1,
+      "engine_cycles": 995,
+      "fresh_quote_cycles": 995,
+      "actor_errors": []
+    },
+    "installer_upgrade": {
+      "status": "PASSED",
+      "build": "AKIRA_16_5_1_STUDIO_REV16",
+      "checks": {
+        "previous_source_commit_verified": true,
+        "previous_source_manifest_verified": true,
+        "previous_installer_is_rev15": true,
+        "canonical_shortcut_targets_new_executable": true,
+        "canonical_shortcut_keeps_data_arguments": true,
+        "canonical_start_menu_keeps_executable_and_data": true,
+        "canonical_actual_application_reads_same_data": true,
+        "canonical_configuration_chat_and_background_unchanged": true,
+        "canonical_no_broker_or_model_started": true,
+        "legacy_argument_shortcut_targets_new_executable": true,
+        "legacy_argument_shortcut_keeps_data_arguments": true,
+        "legacy_argument_start_menu_keeps_executable_and_data": true,
+        "legacy_argument_actual_application_reads_same_data": true,
+        "legacy_argument_configuration_chat_and_background_unchanged": true,
+        "legacy_argument_no_broker_or_model_started": true,
+        "bundled_model_and_components_survive_upgrade": true
+      },
+      "previous_version": "16.5.0 Studio Rev15",
+      "previous_source_commit": "6269a70b6373a5f986b7987f5a6c69053cf7e256",
+      "live_account_used": false,
+      "private_application_data": true,
+      "model_downloaded_by_check": false
+    }
+  },
+  "local_ui_runtime_measurements": {
+    "before": {
+      "build": "AKIRA_16_5_0_STUDIO_REV15",
+      "scope": "Linux offscreen Qt plus synthetic BTC/XAU engine; no inference or external sources",
+      "logical_cpus": 2,
+      "real_laptop_tested": false,
+      "phases": {
+        "visible_analysis": {
+          "wall_seconds": 7.002,
+          "cpu_seconds": 0.65,
+          "cpu_percent_of_two_available_cpus": 4.64,
+          "ui_p95_ms": 4.061,
+          "resize_p95_ms": null,
+          "rss_mb": 147.4
+        },
+        "resizing_analysis": {
+          "wall_seconds": 7.007,
+          "cpu_seconds": 1.08,
+          "cpu_percent_of_two_available_cpus": 7.71,
+          "ui_p95_ms": 9.132,
+          "resize_p95_ms": 31.42,
+          "rss_mb": 147.1
+        }
+      },
+      "actor_errors": [],
+      "broker_requests": 0,
+      "engine_cycle_p95_ms": 18.9
+    },
+    "after": {
+      "build": "AKIRA_16_5_1_STUDIO_REV16",
+      "scope": "Linux offscreen Qt plus synthetic BTC/XAU engine; no inference or external sources",
+      "logical_cpus": 2,
+      "real_laptop_tested": false,
+      "phases": {
+        "visible_analysis": {
+          "wall_seconds": 7,
+          "cpu_seconds": 0.55,
+          "cpu_percent_of_two_available_cpus": 3.93,
+          "ui_p95_ms": 3.396,
+          "resize_p95_ms": null,
+          "rss_mb": 147.3
+        },
+        "resizing_analysis": {
+          "wall_seconds": 7.01,
+          "cpu_seconds": 1.17,
+          "cpu_percent_of_two_available_cpus": 8.35,
+          "ui_p95_ms": 6.102,
+          "resize_p95_ms": 39.704,
+          "rss_mb": 147
+        }
+      },
+      "actor_errors": [],
+      "broker_requests": 0,
+      "engine_cycle_p95_ms": 16.6
+    }
+  },
+  "local_measurement_source": "d0552d895185adfa730faf130178e3f5aaa5e5a8",
   "real_laptop_tested": false,
   "live_account_used": false,
-  "profitability_verified": false
+  "profitability_verified": false,
+  "known_limits": [
+    "La Dell física no se ha probado: se aplicó su política de 8 GB con dos CPU disponibles en Windows CI.",
+    "La inferencia local sigue siendo costosa: en la prueba Dell usó 66.9% de las dos CPU disponibles, alcanzó 2768.5 MiB junto con la aplicación y tardó 57.157 s en empezar la primera respuesta generada. No acredita conversación instantánea ni menor consumo en la laptop real.",
+    "La prueba comparativa de redimensionado midió p95 92.626 ms; no acredita una mejora frente a Rev13 en ese punto.",
+    "Las 15 respuestas prueban generación real, contexto y finalización, no exactitud universal. En euler_explanation una frase invierte verbalmente base y exponente aunque la fórmula y la identificación de los símbolos son correctas. Se conserva la respuesta íntegra para revisión.",
+    "Se usa Qwen3 previamente entrenado; no se han entrenado pesos de un modelo fundacional desde cero.",
+    "Las comprobaciones de operaciones usan FakeMT5. No se usó una cuenta real ni se comprobó rentabilidad.",
+    "El instalador de GitHub Actions requiere acceso al repositorio y caduca el 2026-11-03T07:46:30Z."
+  ]
 }

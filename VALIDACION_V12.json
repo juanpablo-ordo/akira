@@ -2,10 +2,13 @@
   "build": "AKIRA_16_5_1_STUDIO_REV16",
   "tests": 1548,
   "pytest_tests": 1551,
-  "status": "WINDOWS_PENDING",
-  "date": "2026-10-26",
+  "status": "PASSED",
+  "date": "2026-10-27",
   "skipped": 0,
-  "scope": "Colección de pruebas para la revisión; la aceptación requiere los informes Windows de Rev16. No certifica rentabilidad.",
+  "scope": "Regresiones completas en Windows; los contadores de unittest y pytest son métodos de colección distintos. No certifica exactitud universal del modelo, hardware físico ni rentabilidad.",
   "notes_file": "ACEPTACION_REV16.md",
-  "evidence_file": "VALIDACION_REV16.json"
+  "evidence_file": "VALIDACION_REV16.json",
+  "pytest_subtests": 195,
+  "source_commit": "101dbfd17ca953758d439bed2ff484b6ef96f590",
+  "workflow_run": 40464092340
 }
