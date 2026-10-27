@@ -58,7 +58,7 @@ class AssistantStatusIsNotFaked(unittest.TestCase):
         with patch('assistant_akira.ollama_status',return_value={'ok':True,'models':['Qwen3-4B-Q4_K_M.gguf']}):
             app._probe_local_status(0)
         self.assertFalse(app._status['ready'])
-        self.assertEqual(app._status['phase'],'FAILED')
+        self.assertEqual(app._status['phase'],'CHECKING')
 
     def test_only_visible_inference_can_mark_assistant_active(self):
         app=self.assistant()

@@ -965,18 +965,28 @@ class AkiraAssistant:
         routing=self.dialogue.resolve(message,self.history)
         trading=self._is_trading_question(research_query)
         from conversation_core import needs_research,messages_for
-        if not trading and not needs_research(message) and not (routing.get('contextual') and needs_research(research_query)):
-            prompts=messages_for(message,self.dialogue.history(self.history),snapshot.get('conversation_memory'),
+        deep=bool(re.search(r'\b(?:a fondo|investigaci[oó]n profunda|an[aá]lisis exhaustivo|revisi[oó]n profunda|investiga todo)\b',message,re.I))
+        file_request=bool(re.search(r'\b(?:crea|guarda|escribe|genera|modifica|edita|lee|abre)\b.*\b(?:archivo|documento|word|proyecto|zip|c[oó]digo)\b',message,re.I))
+        if not (trading or deep or file_request) and not needs_research(message) and not (routing.get('contextual') and needs_research(research_query)):
+            model=self.startup.conversation_model(available,endpoint)
+            current=('Antes pregunté: '+research_query+'\nAhora reclamo: '+message+'\nResponde a mi pregunta anterior con el contexto disponible; no definas la frase del reclamo.' if routing.get('repair') else message)
+            prompts=messages_for(current,self.dialogue.history(self.history),snapshot.get('conversation_memory'),
                 brand=(self.cfg.get('studio') or {}).get('brand_name','AKIRA'),language=(self.cfg.get('studio') or {}).get('language_chat','auto'))
             self._progress('PENSANDO','Preparando una respuesta a tu pregunta')
             timeout=max(120 if self._managed_model.desktop_policy(self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía' else 75,float(cfg.get('fast_chat_timeout_seconds',75)))
             from akira_local_ai import completion_info,clear_completion_info
             clear_completion_info()
+            deadline=time.monotonic()+timeout
             text=ollama_agent(prompts,[],self._execute_local_tool,model=model,endpoint=endpoint,
                 timeout=timeout,total_timeout=timeout,
                 max_rounds=1,reasoning=False,cancel_event=self._cancel_event,
                 options={'num_predict':480 if re.search(r'detall|paso a paso|demostraci[oó]n|extens',message,re.I) else 200,'temperature':.2},context_char_budget=9000)
             if not isinstance(text,str) or not text.strip():raise RuntimeError('El modelo no produjo texto visible')
+            if routing.get('repair') and re.search(r'(?i)(?:la frase|la expresi[oó]n|el mensaje).{0,80}(?:sugiere|significa|se refiere)',text):
+                if time.monotonic()>=deadline-1:raise TimeoutError('No terminó la corrección de contexto')
+                text=ollama_chat(prompts+[{'role':'assistant','content':text},{'role':'user','content':'Responde a la pregunta original: '+research_query}],
+                    model=model,endpoint=endpoint,timeout=max(.5,min(30,deadline-time.monotonic())),think=False,cancel_event=self._cancel_event,
+                    options={'num_predict':200,'temperature':0})
             self._last_response_kind='model';self.conversation.update('READY','Respuesta generada por el modelo local',generated=True,backend='llama.cpp')
             self._last_completion=completion_info()
             self._remember_turn(message,text);return text

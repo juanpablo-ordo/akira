@@ -19,6 +19,13 @@ def needs_research(message):
     text=folded(message)
     if is_personal_conversation(message):return False
     if needs_web_verification(message):return True
+    # A conceptual explanation differs from a specific external occurrence:
+    # "cómo funciona RAM" is stable knowledge; "quién inventó..." needs sources.
+    if re.search(r'\b(?:uso|utilizo|invento|descubrio|fundo|dirigio|escribio|publico|protagonizo|interpreto|nacio|murio)\b',text) and re.match(r'^[¿? ]*(?:que|quien|cual|cuando|donde|en que)\b',text):return True
+    if re.search(r'\bhistoria\b',text):return True
+    words=re.findall(r'[^\W\d_]+',text)
+    conversational={'hola','holi','hello','hey','gracias','ok','okay','si','no','adios','akira','que','como','cual','por','y','tu','dime','explica','continua'}
+    if 1<=len(words)<=3 and not re.search(r'[\d+*/^=]',text) and not any(w in conversational for w in words):return True
     return bool(re.search(r'https?://|\b(?:busca|buscar|investiga|investigar|fuentes?|noticias?|'
         r'actualizad\w*|reciente\w*|ultima\w*|ultimo\w*|documentacion|youtube|video|'
         r'medicament\w*|diagnostic\w*|legislacion|leyes|invertir|inversiones)\b',text))

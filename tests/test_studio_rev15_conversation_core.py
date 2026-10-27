@@ -24,6 +24,9 @@ class ConversationPolicy(unittest.TestCase):
         self.assertTrue(needs_research('¿Qué anunció Xbox hoy?'))
     def test_science_followup_is_not_a_news_search(self):
         self.assertFalse(needs_research('¿Por qué es útil ese método?'))
+    def test_specific_external_occurrences_keep_source_verification(self):
+        self.assertTrue(needs_research('¿Qué sustancia usó el personaje en esa escena?'))
+        self.assertFalse(needs_research('¿Cómo funciona la memoria RAM?'))
     def test_current_question_and_numbers_are_never_cut(self):
         text='No ejecutes órdenes. Explica por qué −1 y 0.01 son diferentes. '+'α'*12000
         self.assertEqual(messages_for(text)[-1],{'role':'user','content':text})

@@ -413,8 +413,8 @@ class StudioWindow(QMainWindow):
     def sync_chat_activity(self):
         from conversation_core import presentation
         state=self.controller.assistant.conversation.snapshot();busy=self.controller.chat_busy
-        shown=presentation(state,self._model_status,busy);self.chat_status.setText(shown['label'])
-        self.ai_label.setText('● '+shown['label']);self.ai_label.setToolTip('Estado de la conversación. Motivo y registro muestra el diagnóstico de la IA.')
+        shown=presentation(state,self._model_status,busy);self.chat_status.setText(self.text(shown['label']))
+        self.ai_label.setText('● '+self.text(shown['label']));self.ai_label.setToolTip(self.text('Estado de la conversación. Motivo y registro muestra el diagnóstico de la IA.'))
         if busy or state.get('active'):
             self.director.interaction(True);self.director.busy(shown['loading']);self.director.publish(shown['expression'],'conversación')
             if state.get('started') and shown['loading']:self.chat_progress.setText(shown['label']+' · '+str(max(0,round(time.monotonic()-state['started'])))+' s')

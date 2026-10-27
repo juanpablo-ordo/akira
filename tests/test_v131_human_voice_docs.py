@@ -10,7 +10,7 @@ from execution import Gateway
 
 class Astra131Tests(unittest.TestCase):
     def test_version_and_optimized_intervals(self):
-        self.assertIn('16_4',BUILD_ID)
+        self.assertEqual(BUILD_ID,'AKIRA_16_5_0_STUDIO_REV15')
         c=load_config(DEFAULT)
         self.assertGreaterEqual(c['execution']['rapid_parameter_map_refresh_seconds'],.15)
         self.assertGreaterEqual(c['poll_seconds'],.15)
