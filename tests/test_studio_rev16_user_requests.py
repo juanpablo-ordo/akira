@@ -76,5 +76,19 @@ class InstallationIdentityTests(unittest.TestCase):
             self.assertEqual(data['application_data_root'],str(root.resolve()));self.assertEqual(data['preferences']['risk']['max_trade_money'],3.5)
             self.assertNotIn('FIXTURE_PRIVATE',text);self.assertFalse(data['broker_started']);self.assertFalse(data['model_started'])
 
+class ReadableFormulaTests(unittest.TestCase):
+    def test_actual_windows_formula_uses_readable_symbols(self):
+        from studio_presenter import rich_text
+        text=rich_text(r'La fórmula $ e^{i\pi} + 1 = 0 $ une $ e $, $ i $ y $ \pi $.')
+        self.assertIn('e^(iπ) + 1 = 0',text);self.assertNotIn('$',text);self.assertNotIn(r'\pi',text)
+    def test_money_and_source_urls_keep_their_dollar_signs(self):
+        from studio_presenter import rich_text
+        text=rich_text('Presupuesto $10 y coste $2.50. [Fuente](https://example.com/a?x=$value)')
+        self.assertIn('$10',text);self.assertIn('$2.50',text);self.assertIn('https://example.com/a?x=$value',text)
+    def test_fraction_and_root_stay_inert_text(self):
+        from studio_presenter import rich_text
+        text=rich_text(r'$\frac{1}{\sqrt{x}}$ <script>alert(1)</script>')
+        self.assertIn('(1)/(√(x))',text);self.assertNotIn('<script>',text)
+
 
 if __name__=='__main__':unittest.main()

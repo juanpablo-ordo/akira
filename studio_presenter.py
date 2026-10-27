@@ -17,6 +17,27 @@ def source_name(url):
     host=(urlsplit(url).hostname or 'Fuente').removeprefix('www.')
     return {'news.xbox.com':'Xbox Wire','youtube.com':'YouTube','youtu.be':'YouTube','coinglass.com':'CoinGlass','reuters.com':'Reuters'}.get(host,host)
 
+def readable_math(text):
+    """Render common generated math as inert text; leave currency untouched."""
+    if '$' not in text and r'\(' not in text and r'\[' not in text:return text
+    symbols={'pi':'π','theta':'θ','alpha':'α','beta':'β','gamma':'γ','Delta':'Δ','sigma':'σ',
+        'lambda':'λ','infty':'∞','cdot':'·','times':'×','leq':'≤','geq':'≥','neq':'≠','pm':'±','to':'→','sum':'Σ','int':'∫'}
+    def convert(match):
+        value=next(v for v in match.groups() if v is not None)
+        if not re.search(r'[\\=^_{}]|^\s*[A-Za-zπθφ]\s*$',value):return match.group(0)
+        value=re.sub(r'\\(?:left|right)\b','',value)
+        value=re.sub(r'\\(?:mathrm|text|operatorname)\{([^{}]*)\}',r'\1',value)
+        value=re.sub(r'\\([A-Za-z]+)\b',lambda m:symbols.get(m[1],m[0]),value)
+        for _ in range(8):
+            before=value
+            value=re.sub(r'\\sqrt\{([^{}]*)\}',r'√(\1)',value)
+            value=re.sub(r'\\frac\{([^{}]*)\}\{([^{}]*)\}',r'(\1)/(\2)',value)
+            value=re.sub(r'([\^_])\{([^{}]*)\}',r'\1(\2)',value)
+            if value==before:break
+        value=re.sub(r'\\[,;!]',' ',value)
+        return value.strip()
+    return re.sub(r'(?<!\\)\$\$([\s\S]*?)\$\$|(?<!\\)\$([^$\n]+)\$|\\\((.*?)\\\)|\\\[([\s\S]*?)\\\]',convert,text)
+
 def rich_text(value):
     links=[]
     def link(title,url):
@@ -24,7 +45,7 @@ def rich_text(value):
         links.append('<a style="color:#00ddff" href="'+html.escape(url,quote=True)+'">'+html.escape(title)+'</a>');return '\x00'+str(len(links)-1)+'\x00'
     text=re.sub(r'\[([^\]\n]+)\]\((https?://[^\s)]+)\)',lambda m:link(m[1],m[2]),str(value or ''))
     text=re.sub(r'https?://[^\s<>\x00]+',lambda m:link(source_name(m[0].rstrip('.,;')),m[0].rstrip('.,;')),text)
-    text=html.escape(human(text)).replace('\n','<br>');text=re.sub(r'\*\*([^*]+)\*\*',r'<b>\1</b>',text)
+    text=html.escape(human(readable_math(text))).replace('\n','<br>');text=re.sub(r'\*\*([^*]+)\*\*',r'<b>\1</b>',text)
     for i,item in enumerate(links):text=text.replace('\x00'+str(i)+'\x00',item)
     return text
 

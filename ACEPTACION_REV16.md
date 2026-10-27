@@ -12,7 +12,7 @@ La rueda y el touchpad desplazan la página sobre controles numéricos y selecto
 
 Los temas breves y las peticiones creativas dejan de convertirse por longitud en búsquedas de noticias. Se conservan investigación explícita, hechos actuales y hechos históricos concretos. La prueba del modelo exige las nueve respuestas de Rev15 más seis de temas cortos, seguimiento, simplificación, errores de escritura y una historia.
 
-El estado lateral usa actualizaciones recibidas del motor para mostrar análisis activo de BTC y oro, espera de datos o pausa. El chat activo tiene precedencia. Una avería de la IA permanece visible. El texto de Pensando se retira al responder o terminar.
+El estado lateral usa actualizaciones recibidas del motor para mostrar análisis activo de BTC y oro, espera de datos o pausa. El chat activo tiene precedencia. Una avería de la IA permanece visible. El texto de Pensando se retira al responder o terminar. Las explicaciones de fórmulas identifican sus símbolos; la presentación convierte la notación matemática habitual a texto legible sin alterar importes ni enlaces.
 
 ## Actualización de una instalación existente
 
