@@ -378,6 +378,7 @@ def load_config(path):
     if type(cfg['sizing']['scale_pending']) is not bool:raise ValueError('Escalado de pendientes debe ser booleano')
     if type(cfg['assistant'].get('local_runtime_enabled')) is not bool:raise ValueError('IA local gestionada debe ser booleana')
     if not 0<=int(cfg['assistant'].get('local_runtime_idle_seconds',30))<=900:raise ValueError('Tiempo de liberación de IA debe ser 0–900 s')
+    if type(cfg['assistant'].get('chat_warm_seconds',30)) is not int or not 0<=cfg['assistant'].get('chat_warm_seconds',30)<=60:raise ValueError('Espera de conversación debe ser un entero de 0 a 60 segundos')
     if type(cfg['pending'].get('auto_replace_valid_pending')) is not bool:raise ValueError('Sustitución automática de pendientes debe ser booleano')
     if not 1<=cfg['runner']['m5_signal_max_age_seconds']<=600:raise ValueError('Ventana del retest M5 debe ser 1–600 segundos')
     if not .4<=cfg['runner']['m5_min_body_fraction']<=1:raise ValueError('Cuerpo mínimo M5 debe estar entre 0.4 y 1')

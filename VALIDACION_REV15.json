@@ -1,0 +1,11 @@
+{
+  "build": "AKIRA_16_5_0_STUDIO_REV15",
+  "status": "WINDOWS_PENDING",
+  "pytest_tests_collected": 1531,
+  "unittest_tests_collected": 1528,
+  "new_conversation_tests": 38,
+  "required_real_model_scenarios": 9,
+  "real_laptop_tested": false,
+  "live_account_used": false,
+  "profitability_verified": false
+}

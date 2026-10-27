@@ -74,6 +74,7 @@ class ManagedLlamaProcess:
         self.log_path=Path(log_root)/'logs'/'IA_LOCAL.log' if log_root is not None else None
         self.path_resolution={}
         self._launch_command=None;self._requested_command=None
+        self._warm_until=0
 
     def _paths(self):
         exe_value=str(self.settings.get('local_runtime_exe') or '').strip()
@@ -158,6 +159,7 @@ class ManagedLlamaProcess:
         proc=self.proc
         if proc is None:return
         self.proc=None
+        self._warm_until=0
         if proc.poll() is None:
             try:proc.terminate();proc.wait(timeout=4)
             except (OSError,subprocess.TimeoutExpired):
@@ -211,9 +213,16 @@ class ManagedLlamaProcess:
                 idle=int(getattr(self,'_idle_override',self.settings.get('local_runtime_idle_seconds',self.profile['idle_unload_seconds'])))
                 idle=max(0,min(900,idle))
                 pending=self._launch_command is not None and self._requested_command is not None and self._launch_command!=self._requested_command
-                if not self.active and (pending or self.clock()-self.last_use>=idle):
+                if not self.active and (pending or self.clock()>=self._warm_until and self.clock()-self.last_use>=idle):
                     self._terminate_own()
                     return
+
+    def keep_warm(self,seconds=30):
+        """A short conversation lease; never changes saved memory/risk preferences."""
+        with self.lock:
+            if self._closed or self.proc is None or self.proc.poll() is not None:return False
+            self._warm_until=self.clock()+max(0,min(60,int(seconds)))
+            return True
 
     @contextmanager
     def session(self,endpoint,desktop=None,cancel_event=None):

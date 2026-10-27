@@ -175,12 +175,23 @@ class StudioController:
         message=str(message).strip()
         if not message or self.chat_busy:return False
         self.chat_busy=True;self.assistant.reset_cancel();snapshot={**self.view,'network_available':self.online if self.online is not None else self.view.get('network_available',True)}
+        self.last_chat_message=message
         cid=self.assistant.chats.active
         def run():
             try:
                 answer=self.assistant.reply(message,snapshot,use_cloud=bool(use_cloud))
-                self.emit('chat_reply',{'text':answer,'chat':cid})
-            except Exception as error:self.emit('chat_reply',{'text':'No pude terminar esta respuesta: '+safe_text(error),'chat':cid,'error':True})
+                self.emit('chat_reply',{'text':answer,'chat':cid,'error':bool(getattr(self.assistant,'_last_response_error','')),
+                    'origin':getattr(self.assistant,'_last_response_kind','direct'),
+                    'truncated':bool(getattr(self.assistant,'_last_completion',{}).get('truncated'))})
+            except Exception as error:
+                from conversation_core import failure_text
+                answer=failure_text(error)
+                try:
+                    rows=self.assistant.chats.history(limit=2,cid=cid)
+                    if not rows or rows[-1]!={'role':'user','text':message}:self.assistant.chats.append('user',message,cid)
+                    self.assistant.chats.append('assistant',answer,cid)
+                except Exception:pass
+                self.emit('chat_reply',{'text':answer,'chat':cid,'error':True})
             finally:self.chat_busy=False
         threading.Thread(target=run,name='AkiraInteractiveChat',daemon=True).start();return True
 

@@ -71,6 +71,8 @@ class AkiraAssistant:
         self._managed_model_boot_attempted=False
         self._model_inference_verified=False
         self._model_inference_error='La IA local todavía no ha respondido a una prueba.'
+        from conversation_core import ConversationState as ChatLifecycle
+        self.conversation=ChatLifecycle();self._last_response_kind='direct';self._last_response_error=''
         self._cancel_event=threading.Event()
         self._research_cache={}
         self._source_cache={};self._source_cache_lock=threading.Lock()
@@ -81,7 +83,9 @@ class AkiraAssistant:
 
     def _progress(self,stage,detail='',url=''):
         if self._cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
-        if not bool((self.cfg.get('assistant') or {}).get('show_research_trace',True)):
+        phase='RESPONDING' if stage=='RESPONDIENDO' else 'LOADING' if stage=='CARGANDO IA' else 'READY' if stage=='LISTO' else 'RESEARCHING' if any(x in str(stage) for x in ('INVESTIG','FUENTES','CONTRAST','BUSCANDO')) else 'THINKING'
+        self.conversation.update(phase,str(detail)[:200] if phase!='RESPONDING' else 'Generando tu respuesta')
+        if stage!='RESPONDIENDO' and not bool((self.cfg.get('assistant') or {}).get('show_research_trace',True)):
             return
         cb=self.progress_callback
         if cb is None:return
@@ -554,6 +558,8 @@ class AkiraAssistant:
         if not m:return False
         if is_casual(message) or is_personal_conversation(message) or is_operational(message) or is_technical_request(message):return False
         if needs_web_verification(m):return True
+        from conversation_core import needs_research
+        if not needs_research(message):return False
         # Programming/how-to/math should be answered directly unless the user asks
         # for docs/news/sources. Named factual questions benefit from corroboration.
         if re.search(r'\b(python|javascript|c\+\+|java|código|codigo|programa|programar|calculadora|funci[oó]n|error|bug|script|sql|html|css)\b',m):
@@ -933,12 +939,18 @@ class AkiraAssistant:
             raise ValueError('La IA gestionada requiere el endpoint local /v1/chat/completions, no Ollama')
         from local_inference import PRIORITY
         from akira_local_ai import visible_output
+        self._progress('CARGANDO IA','Preparando el modelo local para tu pregunta')
         with visible_output(lambda text:self._progress('RESPONDIENDO',text)),PRIORITY.interactive(),self._managed_model.session(endpoint,self.cfg.get('desktop') or {},cancel_event=self._cancel_event):
             response=self._local_llm_reply_impl(message,snapshot)
-            if str(response).strip():
+            if str(response).strip() and self._last_response_kind=='model':
                 self._model_inference_verified=True
                 self._model_inference_error=''
                 self._last_response_error=''
+                with self._status_lock:
+                    self._status_generation+=1;self._status_loading=False;self._status_due=time.monotonic()+5
+                    self._status={'ready':True,'phase':'READY','models':[str((self.cfg.get('assistant') or {}).get('local_model',''))],
+                        'detail':'El modelo local acaba de generar tu respuesta.'}
+                self._managed_model.keep_warm((self.cfg.get('assistant') or {}).get('chat_warm_seconds',30))
             return response
 
     def _local_llm_reply_impl(self,message,snapshot):
@@ -952,6 +964,32 @@ class AkiraAssistant:
         research_query=self._research_query(message)
         routing=self.dialogue.resolve(message,self.history)
         trading=self._is_trading_question(research_query)
+        from conversation_core import needs_research,messages_for
+        deep=bool(re.search(r'\b(?:a fondo|investigaci[oó]n profunda|an[aá]lisis exhaustivo|revisi[oó]n profunda|investiga todo)\b',message,re.I))
+        file_request=bool(re.search(r'\b(?:crea|guarda|escribe|genera|modifica|edita|lee|abre)\b.*\b(?:archivo|documento|word|proyecto|zip|c[oó]digo)\b',message,re.I))
+        if not (trading or deep or file_request) and not needs_research(message) and not (routing.get('contextual') and needs_research(research_query)):
+            model=self.startup.conversation_model(available,endpoint)
+            current=('Antes pregunté: '+research_query+'\nAhora reclamo: '+message+'\nResponde a mi pregunta anterior con el contexto disponible; no definas la frase del reclamo.' if routing.get('repair') else message)
+            prompts=messages_for(current,self.dialogue.history(self.history),snapshot.get('conversation_memory'),
+                brand=(self.cfg.get('studio') or {}).get('brand_name','AKIRA'),language=(self.cfg.get('studio') or {}).get('language_chat','auto'))
+            self._progress('PENSANDO','Preparando una respuesta a tu pregunta')
+            timeout=max(120 if self._managed_model.desktop_policy(self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía' else 75,float(cfg.get('fast_chat_timeout_seconds',75)))
+            from akira_local_ai import completion_info,clear_completion_info
+            clear_completion_info()
+            deadline=time.monotonic()+timeout
+            text=ollama_agent(prompts,[],self._execute_local_tool,model=model,endpoint=endpoint,
+                timeout=timeout,total_timeout=timeout,
+                max_rounds=1,reasoning=False,cancel_event=self._cancel_event,
+                options={'num_predict':480 if re.search(r'detall|paso a paso|demostraci[oó]n|extens',message,re.I) else 200,'temperature':.2},context_char_budget=9000)
+            if not isinstance(text,str) or not text.strip():raise RuntimeError('El modelo no produjo texto visible')
+            if routing.get('repair') and re.search(r'(?i)(?:la frase|la expresi[oó]n|el mensaje).{0,80}(?:sugiere|significa|se refiere)',text):
+                if time.monotonic()>=deadline-1:raise TimeoutError('No terminó la corrección de contexto')
+                text=ollama_chat(prompts+[{'role':'assistant','content':text},{'role':'user','content':'Responde a la pregunta original: '+research_query}],
+                    model=model,endpoint=endpoint,timeout=max(.5,min(30,deadline-time.monotonic())),think=False,cancel_event=self._cancel_event,
+                    options={'num_predict':200,'temperature':0})
+            self._last_response_kind='model';self.conversation.update('READY','Respuesta generada por el modelo local',generated=True,backend='llama.cpp')
+            self._last_completion=completion_info()
+            self._remember_turn(message,text);return text
         social=is_personal_conversation(message)
         fresh=needs_web_verification(research_query) and not (social or is_operational(research_query) or is_technical_request(research_query) or is_casual(research_query))
         formatting=bool(re.fullmatch(r'(?i)\s*(?:m[aá]s corto|m[aá]s largo)\s*[.!?]*',message))
@@ -1137,6 +1175,7 @@ class AkiraAssistant:
             options={'num_predict':2400 if deep else min(600 if trading else 256,int(cfg.get('fast_chat_max_tokens',1200))),
                      'temperature':0.0 if source_rows else .2,**memory_options},
             context_char_budget=context_budget)
+        self._last_response_kind='model';self.conversation.update('READY','Respuesta generada con las fuentes recibidas',generated=True,backend='llama.cpp')
         if self._cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         if routing['repair'] and time.monotonic()<inference_deadline-1 and re.search(r'(?i)(?:la frase|la expresi[oó]n|el mensaje).{0,80}(?:sugiere|significa|se refiere)',str(text)):
             self._progress('CORRIGIENDO CONTEXTO','Respondiendo a la pregunta anterior')
@@ -1163,7 +1202,7 @@ class AkiraAssistant:
         self._progress('LISTO',f'Respuesta sintetizada con {len(source_rows)} fuentes visibles' if source_rows else 'Respuesta sintetizada')
         self._remember_turn(message,text);return text
 
-    def _verify_local_generation(self,endpoint):
+    def _verify_local_generation(self,endpoint,cancel_event=None):
         """Require a real visible text completion before telling the GUI it is ready.
 
         Called in background workers only. /health and /v1/models by themselves are
@@ -1177,7 +1216,7 @@ class AkiraAssistant:
         text=chat([{'role':'system','content':'/no_think\nResponde en español, sin razonamiento interno.'},
                    {'role':'user','content':'Di hola en una frase breve.'}],
                   model=model,endpoint=endpoint,timeout=90,think=False,
-                  options={'num_predict':192,'temperature':0})
+                  options={'num_predict':192,'temperature':0},cancel_event=cancel_event)
         if not isinstance(text,str) or not text.strip():
             raise RuntimeError('La IA respondió sin texto visible.')
         self._model_inference_verified=True
@@ -1212,13 +1251,18 @@ class AkiraAssistant:
                          'models':[]}
                 else:
                     # The only boot probe is a full inference, not just /health.
-                    if (bool(cfg.get('local_runtime_start_on_launch',True)) and
-                            self.cfg.get('desktop',{}).get('performance_profile')!='Ahorro de energía' and not self._managed_model_boot_attempted):
+                    from local_inference import PRIORITY
+                    effective=self._managed_model.desktop_policy(self.cfg.get('desktop') or {})
+                    if (bool(cfg.get('local_runtime_start_on_launch',True)) and not PRIORITY.users and
+                            effective.get('performance_profile')!='Ahorro de energía' and not self._managed_model_boot_attempted):
                         self._managed_model_boot_attempted=True
                         try:
-                            with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
-                                self._verify_local_generation(endpoint)
+                            with PRIORITY.auxiliary() as cancel:
+                                with self._managed_model.session(endpoint,self.cfg.get('desktop') or {},cancel_event=cancel):
+                                    self._verify_local_generation(endpoint,cancel_event=cancel)
                         except Exception as exc:
+                            from local_inference import BackgroundDeferred
+                            if isinstance(exc,BackgroundDeferred):self._managed_model_boot_attempted=False
                             self._model_inference_verified=False
                             self._model_inference_error=type(exc).__name__+': '+str(exc)[:250]
                     remote=ollama_status(endpoint,force=True)
@@ -1233,7 +1277,7 @@ class AkiraAssistant:
                     else:
                         ready=bool(self._model_inference_verified)
                         row={'ready':ready,'mode':'LOCAL_PRIMARY' if ready else 'IA SIN VERIFICAR',
-                             'phase':'READY' if ready else 'FAILED',
+                             'phase':'READY' if ready else 'FAILED' if self._managed_model_boot_attempted else 'CHECKING',
                              'detail':'Respuesta real de Qwen verificada; IA local disponible.' if ready else
                                       'El motor se inició, pero NO generó una respuesta verificada: '+self._model_inference_error,
                              'models':remote.get('models') or []}
@@ -1296,6 +1340,7 @@ class AkiraAssistant:
                     self._repair_loading=False;self._status_due=0.0
                     self._status={**self._status,**result,'ready':bool(result.get('ready')),'repair_result':result,
                         'phase':result.get('phase','STARTING' if result.get('accepted') else 'FAILED')}
+                    if result.get('ready'):self.conversation.update('READY','IA reparada y comprobada',active=False,error=False,generated=True)
         with self._status_lock:
             if self._repair_loading:return {'accepted':True,'action':'SHARED'}
             self._status_generation+=1;generation=self._status_generation
@@ -1311,6 +1356,16 @@ class AkiraAssistant:
         return {'accepted':True,'action':'REQUESTED'}
 
     def reply(self,message,snapshot,use_cloud=True):
+        self.conversation.begin(message);self._last_response_kind='direct';self._last_response_error='';self._last_completion={}
+        try:return self._reply_turn(message,snapshot,use_cloud)
+        except Exception as error:
+            if not self.cancelled():self._last_response_error=type(error).__name__+': '+str(error)[:240]
+            raise
+        finally:
+            self.conversation.finish(error=bool(self._last_response_error))
+            if self.cancelled():self.conversation.update('CANCELLED','Respuesta detenida por ti',active=False)
+
+    def _reply_turn(self,message,snapshot,use_cloud=True):
         # Repair language only; keep explicit trade commands on their original path.
         if not self.is_trade_control_message(message):
             message,corrections=normalize_message(message)
@@ -1430,6 +1485,8 @@ class AkiraAssistant:
                     answer=self.cloud_reply(message,snapshot)
                     if needs_web_verification(message) and not trading and 'Fuentes web:' not in answer:
                         raise RuntimeError('respuesta actual sin citas web verificables')
+                    self._last_response_kind='cloud';self._last_response_error=''
+                    self.conversation.update('READY','Respuesta generada por la IA opcional',generated=True,backend='cloud')
                     return answer
                 except Exception as exc: cloud_error=str(exc)
             if not cfg.get('local_primary',True) and cfg.get('local_fallback',True):
@@ -1459,27 +1516,9 @@ class AkiraAssistant:
                     if answer:return answer+'\n\nRespuesta tomada directamente de las fuentes; el modelo local no terminó esta consulta.'
                     return ('No pude completar la respuesta del modelo ni confirmar ese dato con fuentes pertinentes. '
                             'La pregunta era «'+str(message)[:220]+'». Puedes reintentar; no voy a sustituirla por resultados de otro tema.')
-                # Incluso una pregunta estable como la historia del ketchup merece
-                # una respuesta útil si ambas IA fallan y una fuente pública existe.
-                try:
-                    ctx=lookup_current_fact(message,timeout=6.0,limit=6)
-                    rows=[r for r in (ctx.get('results') or []) if r.get('text') and r.get('url')]
-                    if rows:
-                        # Even without a local/cloud LLM, never collapse research to a
-                        # single encyclopedia result. Show several independent excerpts
-                        # so the user can see what Akira actually found.
-                        parts=['🐾 La IA conversacional local todavía no respondió, pero investigué la web pública y encontré varias referencias:']
-                        for i,r in enumerate(rows[:4],1):
-                            title=' '.join(str(r.get('title') or 'Fuente').split())[:140]
-                            excerpt=' '.join(str(r.get('text') or '').split())[:420]
-                            parts.append(f'[{i}] {title}\n{excerpt}\n{r.get("url")}')
-                        return '\n\n'.join(parts)
-                except Exception:
-                    pass
-                details=' | '.join(x for x in (cloud_error,local_error) if x)
-                return ('🐾 No llegó una respuesta de IA. '+(details[:480] if details else 'La IA local todavía no está lista.')+
-                        '\nEl asistente local no completó este mensaje. Abre VER MOTIVO Y REGISTRO y pulsa '
-                        'REPARAR ASISTENTE para comprobar el motor incluido. El análisis MT5 mantiene su estado por separado.')
+                from conversation_core import failure_text
+                error=TimeoutError(local_error) if 'Timeout' in local_error else FileNotFoundError(local_error) if 'FileNotFound' in local_error else RuntimeError(local_error or cloud_error)
+                return failure_text(error)
             base=self.local_reply(message,snapshot)
             if cloud_error:
                 if '429' in cloud_error or 'credit' in cloud_error.lower():

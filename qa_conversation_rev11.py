@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 
 
-def run(exe, model, report, dell_7280=False):
+def run(exe, model, report, dell_7280=False, rebuilt=False):
     import psutil
     from PySide6.QtWidgets import QApplication
     from desktop_qt import StudioWindow
@@ -25,8 +25,14 @@ def run(exe, model, report, dell_7280=False):
     from akira_version import BUILD_ID
 
     report=Path(report);report.parent.mkdir(parents=True,exist_ok=True)
-    process=psutil.Process();previous=process.cpu_affinity();selected=previous[:2]
-    process.cpu_affinity(selected)
+    import os
+    # Some Linux executors expose a procfs from the outer PID namespace.
+    # /proc/self identifies this exact process, rather than a coincident PID.
+    kernel_pid=int(Path('/proc/self/stat').read_text().split()[0]) if os.name=='posix' and Path('/proc/self/stat').exists() else os.getpid()
+    process=psutil.Process(kernel_pid)
+    previous=sorted(os.sched_getaffinity(0)) if os.name=='posix' else process.cpu_affinity();selected=previous[:2]
+    if os.name=='posix':os.sched_setaffinity(0,selected)
+    else:process.cpu_affinity(selected)
     result={'status':'FAILED','build':BUILD_ID,'live_account_used':False,
         'market_data':'SYNTHETIC FakeMT5','conversation_model':'REAL bundled GGUF',
         'internet_requests_enabled':False,'logical_cpus':len(selected),'scenarios':[]}
@@ -41,8 +47,15 @@ def run(exe, model, report, dell_7280=False):
         if window:
             owned=window.controller.assistant._managed_model.proc
             if owned and owned.poll() is None:
-                try:procs.append(psutil.Process(owned.pid))
-                except psutil.Error:pass
+                try:
+                    candidate=psutil.Process(owned.pid)
+                    if candidate.ppid()==process.pid:procs.append(candidate)
+                    elif os.name=='posix':
+                        procs.extend(p for p in process.children() if p.exe()==str(Path(exe).resolve()))
+                except psutil.Error:
+                    if os.name=='posix':
+                        try:procs.extend(p for p in process.children() if p.exe()==str(Path(exe).resolve()))
+                        except psutil.Error:pass
         memory=0
         for proc in procs:
             try:
@@ -105,6 +118,19 @@ def run(exe, model, report, dell_7280=False):
                     ('followup','¿Cuál pierde los datos cuando apago la computadora?',lambda a:'ram' in a and any(w in a for w in ('pierde','perder','borra','volatil','volátil','apaga','apagado'))),
                     ('personal_conversation','Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?',lambda a:any(w in a for w in ('respir','practic','calm','pausa','tranquil')))
                 ]
+                if rebuilt:
+                    cases=[
+                        ('science_recording','que piensas de la ciencia',lambda a:'ciencia' in a and any(w in a for w in ('evidencia','conocimiento','método','metodo','investig','entender'))),
+                        ('math_recording','dime cual es la formula mas elegante de las matematicas',lambda a:any(w in a for w in ('euler','pitágoras','pitagoras','identidad','ecuación','ecuacion'))),
+                        ('euler_explanation','Explícame qué significa e^(i*pi)+1=0.',lambda a:any(w in a for w in ('euler','e^(i','e^{i')) and 'imaginari' in a and any(w in a for w in ('pi','π')) and '0' in a),
+                        ('euler_followup','¿Qué representa la i en esa fórmula?',lambda a:'imaginari' in a and any(w in a for w in ('-1','−1','menos uno'))),
+                        ('arithmetic_topic_change','Cambiemos de tema: tengo 17 manzanas y regalo 5. ¿Cuántas me quedan?',lambda a:'12' in a or 'doce' in a),
+                        ('arithmetic_correction','Eso no te pregunté. Quería saber cuántas me quedan, sin hablar de ciencia.',lambda a:'12' in a or 'doce' in a),
+                        ('new_topic_typo','Me esplicas la diferncia entre la memroia RAM y el disco de una compuadora?',lambda a:'ram' in a and any(w in a for w in ('disco','ssd','almacenamiento'))),
+                        ('ram_followup','¿Cuál pierde los datos cuando apago la computadora?',lambda a:'ram' in a and any(w in a for w in ('pierde','perder','borra','volatil','volátil','apaga','apagado'))),
+                        ('personal_conversation','Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?',lambda a:any(w in a for w in ('respir','practic','calm','pausa','tranquil')))
+                    ]
+                    result['all_scenarios_require_model_generation']=True
                 result['expected_scenarios']=[name for name,question,check in cases]
                 for name,question,check in cases:
                     if stop.is_set():raise RuntimeError('QA interrupted')
@@ -119,13 +145,21 @@ def run(exe, model, report, dell_7280=False):
                     window.controller.chat_busy=False
                     first=next((at-began for at,event in events if event.get('stage')=='RESPONDIENDO'),None)
                     row={'name':name,'question':question,'answer':answer,'seconds':round(time.monotonic()-began,3),
-                         'first_visible_seconds':round(first,3) if first is not None else None}
+                         'first_visible_seconds':round(first,3) if first is not None else None,
+                         'origin':getattr(bot,'_last_response_kind','unknown'),
+                         'completion':getattr(bot,'_last_completion',{}),
+                         'owned_model_pid':bot._managed_model.effective_parameters().get('owned_pid')}
                     result['scenarios'].append(row)
                     print(name+' '+str(row['seconds'])+'s '+answer[:180],flush=True)
                     if not check(answer.casefold()):raise AssertionError('Irrelevant answer: '+name)
+                    if rebuilt and (row['origin']!='model' or first is None or getattr(bot,'_last_response_error','')):
+                        raise AssertionError('A real model response was required: '+name)
+                    if rebuilt and (row['completion'].get('backend')!='llama.cpp' or row['completion'].get('truncated')):
+                        raise AssertionError('An actual, finished model completion was required: '+name)
                     if any(x in answer.casefold() for x in ('no llegó una respuesta de ia','no pude completar','motor de conversación no consiguió')):
                         raise AssertionError('Conversation fallback instead of a real answer: '+name)
                 result['model_effective_parameters']=bot._managed_model.effective_parameters()
+                if rebuilt and len({row['owned_model_pid'] for row in result['scenarios']})!=1:raise AssertionError('The interactive model restarted between conversation turns')
                 command=bot._managed_model._launch_command or []
                 result['model_command_limits']={key:command[command.index(key)+1] for key in
                     ('--threads','--threads-batch','--poll','--poll-batch','--ctx-size','--n-gpu-layers','--load-mode','--cache-ram','--flash-attn','--cache-type-k','--cache-type-v') if key in command}
@@ -166,7 +200,8 @@ def run(exe, model, report, dell_7280=False):
         if window:
             window.controller.assistant._managed_model.shutdown()
             window.close();app.processEvents()
-        process.cpu_affinity(previous)
+        if os.name=='posix':os.sched_setaffinity(0,previous)
+        else:process.cpu_affinity(previous)
         if _qa_temp:_qa_temp.cleanup()
         if hardware_patch:hardware_patch.stop()
         report.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')

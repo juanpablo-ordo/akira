@@ -33,7 +33,7 @@ def summarize(root, folder):
     names=('SOURCE_SELF_CHECK','NATIVE_APPLICATION','NATIVE_FIRST_RUN','SPRITE_AI_SOURCE',
         'SPRITE_AI_FROZEN','HTTPS_SOURCE_REV10','HTTPS_FROZEN_REV10','LOW_RESOURCE_FROZEN_REV10',
         'PUBLIC_SOURCES_SOURCE_REV10','PUBLIC_SOURCES_FROZEN_REV10','LOCAL_AI_SCENARIOS',
-        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','REAL_CHAT_DELL_7280_REV14','UI_COMPARISON_REV14','INSTALLED_LOCAL_AI')
+        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','REAL_CHAT_DELL_7280_REV14','UI_COMPARISON_REV14','REAL_CHAT_REV15','INSTALLED_LOCAL_AI')
     reports={}
     for name in names:
         path=folder/(name+'.json');raw=path.read_bytes();data=json.loads(raw)
@@ -67,8 +67,20 @@ def summarize(root, folder):
     result['risk_budget_resources']=risk
     result['dell_model_load']=json.loads((folder/'REAL_CHAT_DELL_7280_REV14.json').read_text(encoding='utf-8'))
     result['ui_comparison']=json.loads((folder/'UI_COMPARISON_REV14.json').read_text(encoding='utf-8'))
-    (folder/'VERIFICATION_REV14.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('AKIRA_REV14_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
+    chat={'source':source.get('studio_check',{}).get('conversation_lifecycle_details'),
+        'frozen':native.get('self_check',{}).get('studio_check',{}).get('conversation_lifecycle_details')}
+    for name,check in chat.items():
+        if not check or check.get('status')!='PASSED' or check.get('build')!=BUILD_ID or not all(check.get('checks',{}).values()):
+            raise RuntimeError('Conversation lifecycle not verified: '+name)
+    result['conversation_lifecycle']=chat
+    rebuilt=json.loads((folder/'REAL_CHAT_REV15.json').read_text(encoding='utf-8'))
+    if rebuilt.get('status')!='PASSED' or not rebuilt.get('all_scenarios_require_model_generation') or len(rebuilt.get('scenarios',[]))!=9:
+        raise RuntimeError('The nine real conversation answers were not verified')
+    if any(row.get('origin')!='model' or row.get('first_visible_seconds') is None or row.get('completion',{}).get('backend')!='llama.cpp' or row.get('completion',{}).get('truncated') for row in rebuilt['scenarios']):
+        raise RuntimeError('A canned, unobserved or incomplete answer cannot certify the new conversation')
+    result['rebuilt_conversation']=rebuilt
+    (folder/'VERIFICATION_REV15.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('AKIRA_REV15_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
 
 

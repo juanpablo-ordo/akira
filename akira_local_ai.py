@@ -16,6 +16,12 @@ _STATUS={"when":0.0,"ok":None,"detail":"no comprobado"}
 _STATUS_LOCK=threading.Lock()
 _CONTEXT=threading.local()
 
+def completion_info():
+    return dict(getattr(_CONTEXT,'completion',None) or {})
+
+def clear_completion_info():
+    _CONTEXT.completion={}
+
 @contextmanager
 def visible_output(callback):
     previous=getattr(_CONTEXT,'visible',None);_CONTEXT.visible=callback
@@ -85,7 +91,7 @@ def _post_direct_cancellable(url,payload,timeout,cancel_event):
         if response.status>=400:
             raise HTTPError(url,response.status,response.reason,response.headers,io.BytesIO(response.read(2000)))
         if payload.get('stream'):
-            content=[];total=0;last=0;finish=None
+            content=[];total=0;last=0;finish=None;terminal=False
             while True:
                 raw=response.readline()
                 if not raw:break
@@ -94,7 +100,7 @@ def _post_direct_cancellable(url,payload,timeout,cancel_event):
                 if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
                 if not raw.startswith(b'data:'):continue
                 data=raw[5:].strip()
-                if data==b'[DONE]':break
+                if data==b'[DONE]':terminal=True;break
                 choice=(json.loads(data).get('choices') or [{}])[0];delta=choice.get('delta') or {}
                 if delta.get('content'):content.append(str(delta['content']))
                 if choice.get('finish_reason'):finish=choice['finish_reason']
@@ -102,7 +108,8 @@ def _post_direct_cancellable(url,payload,timeout,cancel_event):
                 if callback and content and time.monotonic()-last>.08:callback(_clean(''.join(content)));last=time.monotonic()
             callback=getattr(_CONTEXT,'visible',None)
             if callback and content:callback(_clean(''.join(content)))
-            result={'choices':[{'message':{'role':'assistant','content':''.join(content)},'finish_reason':finish}]}
+            if not terminal and finish is None:raise RuntimeError('El flujo de respuesta de la IA se interrumpió antes de terminar')
+            result={'choices':[{'message':{'role':'assistant','content':''.join(content)},'finish_reason':finish or 'stop'}]}
         else:result=json.loads(response.read(8_000_000).decode('utf-8','replace'))
         if expired.is_set():raise TimeoutError('AKIRA agotó el tiempo total de inferencia')
         if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
@@ -196,6 +203,7 @@ def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_
                'content':str(m.get('content') or '')}
         mapped.append(m)
     payload={'model':model,'messages':mapped,'stream':False,
+             'cache_prompt':True,
              'temperature':float(opts.get('temperature',.2)),
              'top_p':float(opts.get('top_p',.90)),
              'max_tokens':int(opts.get('num_predict',3000)),
@@ -222,6 +230,8 @@ def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_
     message=choice.get('message') or {}
     result={'message':message,'done':choice.get('finish_reason') not in ('length',),
             'backend':'llama.cpp','finish_reason':choice.get('finish_reason')}
+    _CONTEXT.completion={'backend':'llama.cpp','finish_reason':choice.get('finish_reason'),
+        'truncated':choice.get('finish_reason')=='length'}
     if raw:return result
     if response_format is not None and not result['done']:
         raise RuntimeError('La respuesta estructurada del motor local quedó incompleta')

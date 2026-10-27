@@ -179,6 +179,7 @@ class SettingsPanel(QWidget):
         self.translation_status=label('','muted');self.translation_status.setWordWrap(True);card.body.addWidget(self.translation_status)
         note=label('Importa traducciones en un archivo .json con locale y translations. Ejemplo: {"locale":"es","translations":{"TRADING":"TRADING"}}. Las voces disponibles dependen del idioma.','muted');note.setWordWrap(True);card.body.addWidget(note);self.add_button(card,'IMPORTAR PAQUETE',self.choose_language)
         card=self.card(2,'IA LOCAL Y CONVERSACIÓN','chat')
+        self.field(card,'assistant.chat_warm_seconds','Conservar la IA entre mensajes (segundos)',limits=(0,60),help='Con 30 evita cargar otra vez el modelo si continúas conversando. Con 0 libera su memoria al terminar. No cambia el riesgo ni la frecuencia del motor.')
         for path,title in [('assistant.enabled','Asistente activado'),('assistant.allow_live_orders','Permitir solicitudes operativas explícitas del chat'),('assistant.local_runtime_enabled','Motor local incluido'),('assistant.cross_chat_memory','Usar memoria de otras conversaciones')]:
             if get(self.controller.cfg,path) is not None:self.field(card,path,title)
         note=label('Reparar comprueba archivos y una respuesta real. Si falta la IA incluida, intenta recuperarla con una descarga verificada de unos 2,5 GB. Espera el resultado antes de cerrar.','muted');note.setWordWrap(True);card.body.addWidget(note)

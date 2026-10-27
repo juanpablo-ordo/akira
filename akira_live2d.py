@@ -113,7 +113,7 @@ class AvatarDirector:
         self.listeners=weakref.WeakSet();self.sequence=0;self.expression='idle';self.context=''
         self.selected=catalog.choose('idle');self.next_variation=clock()+18
         self.playing=False;self.last_level=0;self.mouth_level=0
-        self.loading=False;self.online=True;self.blink_frame=None
+        self.loading=False;self.online=True;self.interacting=False;self.blink_frame=None
         self._blink_started=None;self._next_blink=clock()+random.uniform(3.0,5.5)
         self._resume_expression='idle';self._wake_until=0
 
@@ -122,7 +122,7 @@ class AvatarDirector:
 
     def publish(self,name,context='',force=False):
         name=str(name or 'idle');context=str(context or '')
-        if not self.online and name!='sleeping' and not force:return
+        if not self.online and not self.interacting and name!='sleeping' and not force:return
         if self.playing and not force:return
         if name==self.expression and context==self.context:return
         self.sequence+=1;self.expression=name;self.context=context
@@ -140,7 +140,7 @@ class AvatarDirector:
             if next_image is not None and next_image.id!=self.selected.id:
                 self.selected=next_image
                 for avatar in list(self.listeners):avatar._receive(self.expression,self.selected,False)
-        if self.playing or not self.online or self.expression.startswith('AKIRA_'):return
+        if self.playing or not (self.online or self.interacting) or self.expression.startswith('AKIRA_'):return
         # User-authored multi-frame animation; bounded updates, no MT5 calls.
         candidate=getattr(self.catalog,'next_in_sequence',None)
         if candidate is not None:
@@ -168,9 +168,13 @@ class AvatarDirector:
         self.online=bool(online);self.blink_frame=None;self._blink_started=None
         if not self.online:
             self._resume_expression='analyzing' if self.expression=='analyzing' else 'idle'
-            self.publish('sleeping','Sin Internet',force=True)
+            if not self.interacting:self.publish('sleeping','Sin Internet',force=True)
         else:
-            self.publish('waking','Conexión recuperada',force=True);self._wake_until=self.clock()+.55
+            if not self.interacting:self.publish('waking','Conexión recuperada',force=True);self._wake_until=self.clock()+.55
+
+    def interaction(self,active):
+        self.interacting=bool(active)
+        if not active and not self.online:self.publish('sleeping','Sin Internet',force=True)
 
     def playback(self,active):
         self.playing=bool(active);self.last_level=0;self.mouth_level=0

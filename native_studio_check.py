@@ -5,7 +5,7 @@ import copy,json,tempfile,time
 
 STUDIO_CHECK_VERSION=1
 REQUIRED=('eight_pages','real_records','privacy','stable_selection','responsive','shared_avatar',
-          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests','per_asset_activity','mt5_reconnect','mt5_account_switch','risk_budget_resources')
+          'no_expression_gallery','global_wallpaper','live_theme','language_switch','event_loop','no_broker_requests','per_asset_activity','mt5_reconnect','mt5_account_switch','risk_budget_resources','conversation_lifecycle')
 
 def settle(app,seconds=.03):
     until=time.monotonic()+seconds
@@ -67,8 +67,10 @@ def run_studio_check(screenshot_dir=None):
             accounts=check_accounts();checks['mt5_account_switch']=accounts['status']=='PASSED'
             from qa_risk_resources_rev14 import run_check as check_risk
             risk=check_risk();checks['risk_budget_resources']=risk['status']=='PASSED'
+            from qa_chat_lifecycle_rev15 import run_check as check_chat
+            chat=check_chat();checks['conversation_lifecycle']=chat['status']=='PASSED'
             result={'version':STUDIO_CHECK_VERSION,'status':'PASSED','data':'SYNTHETIC','broker':'FakeMT5',
-                'mt5_reconnect_details':reconnect,'mt5_account_switch_details':accounts,'risk_budget_resources_details':risk,**{k:bool(v) for k,v in checks.items()}}
+                'mt5_reconnect_details':reconnect,'mt5_account_switch_details':accounts,'risk_budget_resources_details':risk,'conversation_lifecycle_details':chat,**{k:bool(v) for k,v in checks.items()}}
             require_studio_check({'studio_check':result});return result
         finally:
             if engine:engine.close()
