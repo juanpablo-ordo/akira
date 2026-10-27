@@ -288,7 +288,7 @@ class AvatarWidget(QWidget):
             blink=next((item for item in director.catalog.entries if item.state=='blink'),None)
             if blink:entry=blink
         if not hasattr(self.selected,'path'):
-            state=15 if not director.online else 14 if self.name=='waking' else int(time.monotonic()*8)%8 if director.loading else 10 if director.blink_frame==2 else 9 if director.blink_frame is not None else 12 if self.name=='listening' else (13 if director.mouth_level>.035 else 8) if director.playing else 8 if self.name in ('idle','waiting') else None
+            state=15 if not director.online and not director.interacting else 14 if self.name=='waking' else int(time.monotonic()*8)%8 if director.loading else 10 if director.blink_frame==2 else 9 if director.blink_frame is not None else 12 if self.name=='listening' else (13 if director.mouth_level>.035 else 8) if director.playing else 8 if self.name in ('idle','waiting') else None
         key=(entry.id if state is None else 'motion',state,width,height)
         if key not in self.cache:
             image=self.states.image(state,width,height) if state is not None else director.catalog.image(entry,width,height)

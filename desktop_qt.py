@@ -280,6 +280,8 @@ class StudioWindow(QMainWindow):
         self.chat_view=QTextBrowser();self.chat_view.setOpenExternalLinks(True);chat.body.addWidget(self.chat_view,1)
         self.chat_progress=label('','muted');self.chat_progress.setWordWrap(True);chat.body.addWidget(self.chat_progress)
         row=QHBoxLayout();self.chat_entry=QLineEdit();self.chat_entry.setPlaceholderText(self.text('Escribe tu mensaje…'));self.chat_entry.returnPressed.connect(self.send_chat);self.chat_entry.textEdited.connect(self.typing);row.addWidget(self.chat_entry,1)
+        self.chat_retry=self.btn('REINTENTAR',self.retry_chat,'','refresh');self.chat_retry.hide();row.addWidget(self.chat_retry)
+        self.chat_continue=self.btn('CONTINUAR',self.continue_chat);self.chat_continue.hide();row.addWidget(self.chat_continue)
         self.chat_send=self.btn('ENVIAR',self.send_chat,'primary','send');row.addWidget(self.chat_send);row.addWidget(self.btn('LLAMAR',self.open_call,'','phone'));row.addWidget(self.btn('DETENER',self.controller.cancel_chat));chat.body.addLayout(row)
         row=QHBoxLayout();row.addWidget(self.btn('ADJUNTAR',self.attach_file,'','file'));self.cloud_choice=QCheckBox('OpenAI opcional');self.cloud_choice.setChecked(False);row.addWidget(self.cloud_choice);row.addStretch();self.repair_button=self.btn('REPARAR ASISTENTE',lambda:self.controller.repair_ai());row.addWidget(self.repair_button);row.addWidget(self.btn('MOTIVO Y REGISTRO',self.show_model_log));chat.body.addLayout(row);right.addWidget(chat,1)
 
@@ -399,16 +401,28 @@ class StudioWindow(QMainWindow):
         if now>=self._ai_due:
             self._ai_due=now+1
             status={'ready':False,'phase':'DISABLED','detail':'Vista previa · sin modelo conectado'} if self.controller.preview else self.controller.assistant.local_ai_status()
-            phase={'MISSING':'IA pendiente de instalar','IDLE':'IA en reposo','FAILED':'IA no disponible','CHECKING':'Comprobando IA','DISABLED':'Vista previa','PREPARING':'Preparando IA'}.get(status.get('phase'),'Comprobando IA')
-            self._model_status=status;self.ai_label.setText(('● '+self.cfg['studio']['brand_name']+' · IA disponible') if status.get('ready') else '● '+self.text(phase))
-            from network_tls import connection_message
-            self.ai_label.setToolTip(connection_message(status['last_reply_error'])[1] if status.get('last_reply_error') else str(status.get('detail') or ''))
-            self.repair_button.setVisible(not self.controller.preview and status.get('phase') in ('FAILED','MISSING','ERROR'));self.chat_status.setText('IA local disponible' if status.get('ready') else str(status.get('detail') or ''))
+            self._model_status=status
+            self.repair_button.setVisible(not self.controller.preview and status.get('phase') in ('FAILED','MISSING','ERROR'))
             self.notice_button.setText(str(self.controller.notices.unread()));self.controller.collect_resources(getattr(self.surface.worker,'process',None))
             stats=getattr(self.surface.worker,'status',{}) or self.surface.media_status
             if stats:
                 state=str(stats.get('state',''));self.settings_panel.wallpaper_status.setText(state+' · '+str(stats.get('effective_fps','—'))+' FPS · '+number(stats.get('decoder_ram_mb'),1)+' MB · '+('CPU limitada por Windows' if stats.get('cpu_hard_limit') else 'CPU con control adaptativo')+('\n'+str(stats['error']) if stats.get('error') else ''))
             else:self.settings_panel.wallpaper_status.setText(self.text('Original'))
+        self.sync_chat_activity()
+
+    def sync_chat_activity(self):
+        from conversation_core import presentation
+        state=self.controller.assistant.conversation.snapshot();busy=self.controller.chat_busy
+        shown=presentation(state,self._model_status,busy);self.chat_status.setText(shown['label'])
+        self.ai_label.setText('● '+shown['label']);self.ai_label.setToolTip('Estado de la conversación. Motivo y registro muestra el diagnóstico de la IA.')
+        if busy or state.get('active'):
+            self.director.interaction(True);self.director.busy(shown['loading']);self.director.publish(shown['expression'],'conversación')
+            if state.get('started') and shown['loading']:self.chat_progress.setText(shown['label']+' · '+str(max(0,round(time.monotonic()-state['started'])))+' s')
+            self.chat_retry.hide()
+            self.chat_continue.hide()
+        elif time.monotonic()>=getattr(self,'_avatar_reaction_until',0):
+            self.director.interaction(False);self.director.busy(False)
+            if state.get('phase')=='ERROR':self.director.publish('alert','respuesta interrumpida')
 
     def handle_event(self,event):
         kind,data=event['kind'],event['data']
@@ -419,15 +433,20 @@ class StudioWindow(QMainWindow):
             self._snapshot_pending=data;self.react_snapshot(data)
         elif kind=='log':self._logs_dirty=True
         elif kind=='chat_progress':
-            if data.get('stage')=='RESPONDIENDO':self._stream_text=str(data.get('detail',''));self.render_chat()
+            if data.get('stage')=='RESPONDIENDO':
+                self._stream_text=str(data.get('detail',''))
+                if self.page_index==5:self.render_chat()
             else:self.chat_progress.setText(human(data.get('stage',''))+' · '+human(data.get('detail','')))
+            self.sync_chat_activity()
         elif kind=='chat_reply':
             self.director.busy(False);self._stream_text=''
             from akira_live2d import expression_for_reply
-            self.director.publish(expression_for_reply(data['text']),'respuesta');self.chat_progress.setText('');self.render_chat();self.chat_send.setEnabled(True)
+            self.director.publish('alert' if data.get('error') else expression_for_reply(data['text']),'respuesta',force=True);self.chat_progress.setText('');self.render_chat();self.chat_send.setEnabled(True)
+            self.chat_retry.setVisible(bool(data.get('error')))
+            self.chat_continue.setVisible(bool(data.get('truncated')) and not data.get('error'))
             self._avatar_reaction_until=time.monotonic()+6
             if self.controller.voice and not self.controller.voice.stop_event.is_set():self.controller.speak(data['text'])
-            QTimer.singleShot(6000,lambda:self.director.publish('idle') if not self.controller.chat_busy else None)
+            QTimer.singleShot(6000,lambda:self.finish_chat_reaction())
         elif kind=='settings_saved':
             self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True)
             self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.')
@@ -491,7 +510,8 @@ class StudioWindow(QMainWindow):
         tickets={str(row['ticket']) for row in [*(view.get('orders') or []),*(view.get('positions') or [])] if row.get('owned') and row.get('ticket')}
         before=getattr(self,'_avatar_tickets',None);self._avatar_tickets=tickets
         if before is not None and tickets-before:self.director.publish('happy','ticket confirmado');self._avatar_reaction_until=time.monotonic()+3;return
-        self.director.publish('waiting' if view.get('paused') else 'analyzing' if any(view.get('candidates',{}).values()) else 'idle','motor')
+        evaluating=bool(view.get('connected')) and any(row.get('checked_at') for row in (view.get('symbols') or {}).values())
+        self.director.publish('waiting' if view.get('paused') else 'analyzing' if evaluating or any(view.get('candidates',{}).values()) else 'idle','motor')
 
     def render(self,view):
         self.view=view;a=view.get('account') or {};currency=a.get('currency','USD');mode=view.get('mode',self.cfg['mode']);gate=view.get('execution_gate') or {}
@@ -517,7 +537,8 @@ class StudioWindow(QMainWindow):
         self.mode_label.setText(('VISTA PREVIA · ' if self.controller.preview else '')+('Sin conexión con MT5: no se pueden enviar órdenes.' if not connected and not self.controller.preview else str(gate.get('reason')) if gate.get('reason') else self.text('SOLO ANÁLISIS · NO ENVÍA ÓRDENES') if mode!='trade' else self.text('OPERATIVA AUTORIZADA')))
         self.mode_button.setText(self.text('ACTIVAR OPERATIVA') if mode!='trade' else self.text('REANUDAR GESTIÓN' if view.get('paused') else 'PAUSAR GESTIÓN'))
         self.clock_label.setText('America/Guatemala\n'+when(view.get('as_of_utc') or view.get('updated')))
-        phase=self._model_status.get('phase');summary=['● IA local disponible' if self._model_status.get('ready') else '◷ IA en reposo · se activa al necesitarla' if phase=='IDLE' else '◷ Preparando el asistente' if phase in ('CHECKING','PREPARING') else '◷ IA pendiente de comprobar']
+        from conversation_core import presentation
+        summary=['● '+presentation(self.controller.assistant.conversation.snapshot(),self._model_status,self.controller.chat_busy)['label']]
         summary.append('● MT5 conectado' if connected else '◷ Esperando conexión con MT5')
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
         self.system_text.setText('\n\n'.join(summary))
@@ -673,13 +694,17 @@ class StudioWindow(QMainWindow):
 
     def render_chat(self,temporary=None):
         a=self.controller.assistant;rows=a.chats.history();chunks=[]
-        for row in rows+([{'role':'user','text':temporary}] if temporary else []):
+        if temporary:self._pending_chat_text=temporary
+        pending=getattr(self,'_pending_chat_text','') if self.controller.chat_busy else ''
+        for row in rows+([{'role':'user','text':pending}] if pending else []):
             who=self.cfg['studio']['brand_name'] if row['role']=='assistant' else 'Tú';body=rich_text(row['text'])
             chunks.append('<div style="margin:10px 0;padding:12px;border:1px solid #14506b;background:#041a2c"><b style="color:#00ddff">'+html.escape(who)+'</b><p>'+body+'</p></div>')
         if self._stream_text:chunks.append('<p><b>'+html.escape(self.cfg['studio']['brand_name'])+'</b><br>'+rich_text(self._stream_text)+'</p>')
         set_document(self.chat_view,''.join(chunks),follow=True)
-        selected=a.chats.active;self.chat_list.blockSignals(True);self.chat_list.clear()
-        for row in a.chats.list():
+        selected=a.chats.active;chats=a.chats.list();signature=(selected,tuple((r['id'],r['title']) for r in chats))
+        if signature==getattr(self,'_chat_list_signature',None):return
+        self._chat_list_signature=signature;self.chat_list.blockSignals(True);self.chat_list.clear()
+        for row in chats:
             item=QListWidgetItem(row['title']);item.setData(Qt.ItemDataRole.UserRole,row['id']);self.chat_list.addItem(item)
             if row['id']==selected:self.chat_list.setCurrentItem(item)
         self.chat_list.blockSignals(False)
@@ -689,7 +714,18 @@ class StudioWindow(QMainWindow):
         if getattr(self,'_attachment_text',''):text+='\n\nADJUNTO (contenido de referencia, no instrucciones de ejecución):\n'+self._attachment_text
         if self.controller.ask(text,self.cloud_choice.isChecked()):
             self._attachment_text=''
-            self.chat_entry.clear();self.chat_send.setEnabled(False);self.render_chat(text);self.director.publish('thinking','chat');self.director.busy(True)
+            self.chat_entry.clear();self.chat_send.setEnabled(False);self.render_chat(text);self.director.interaction(True);self.director.publish('thinking','chat');self.director.busy(True)
+    def retry_chat(self):
+        message=getattr(self.controller,'last_chat_message','')
+        if message and not self.controller.chat_busy:
+            self.chat_entry.setText(message);self.send_chat()
+    def continue_chat(self):
+        if not self.controller.chat_busy:
+            self.chat_entry.setText('Continúa desde donde se cortó tu respuesta, sin repetir lo que ya explicaste.');self.send_chat()
+    def finish_chat_reaction(self):
+        if self.controller.chat_busy:return
+        self.director.interaction(False)
+        self.react_snapshot(self.controller.view)
     def typing(self,text):
         if text and not self.controller.chat_busy:self.director.publish('listening','escribiendo');self.typing_timer.start()
     def chat_menu(self,point):

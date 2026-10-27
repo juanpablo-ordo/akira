@@ -405,7 +405,8 @@
     "local_runtime_exe": "local_ai/bin/llama-server.exe",
     "local_runtime_model": "local_ai/models/Qwen3-4B-Q4_K_M.gguf",
     "local_runtime_idle_seconds": 60,
-    "local_runtime_start_on_launch": true
+    "local_runtime_start_on_launch": true,
+    "chat_warm_seconds": 30
   },
   "desktop": {
     "width": 1580,
