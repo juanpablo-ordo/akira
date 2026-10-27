@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 
 
-def run(exe, model, report, dell_7280=False, rebuilt=False):
+def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False):
     import psutil
     from PySide6.QtWidgets import QApplication
     from desktop_qt import StudioWindow
@@ -131,6 +131,16 @@ def run(exe, model, report, dell_7280=False, rebuilt=False):
                         ('personal_conversation','Hoy me siento nervioso por una entrevista. ¿Qué puedo hacer para calmarme?',lambda a:any(w in a for w in ('respir','practic','calm','pausa','tranquil')))
                     ]
                     result['all_scenarios_require_model_generation']=True
+                if general_topics:
+                    cases=[
+                        ('short_art','pintura al óleo',lambda a:any(w in a for w in ('pint','óleo','oleo','lienzo'))),
+                        ('short_followup','¿Me das un ejemplo?',lambda a:any(w in a for w in ('pint','óleo','oleo','lienzo','color'))),
+                        ('simplify_typos','No te entendi, esplicalo mas facil',lambda a:any(w in a for w in ('pint','óleo','oleo','lienzo','color'))),
+                        ('short_story','cuéntame algo bonito',lambda a:len(a.split())>=8),
+                        ('creative_story','Cuéntame una historia corta de un perro.',lambda a:'perr' in a and len(a.split())>=12),
+                        ('short_science','astronomía',lambda a:any(w in a for w in ('universo','estrella','planeta','cosmos','cielo','celeste')))
+                    ]
+                    result['scenario_group']='short_general_conversation'
                 result['expected_scenarios']=[name for name,question,check in cases]
                 for name,question,check in cases:
                     if stop.is_set():raise RuntimeError('QA interrupted')

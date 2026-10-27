@@ -1,13 +1,11 @@
-# AKIRA 16.5.0 · Studio Rev15
+# AKIRA 16.5.1 · Studio Rev16
 
-[Descargar instalador con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/40429806688/artifacts/12703191127) · [Comprobación Windows](https://github.com/juanpablo-ordo/akira/actions/runs/40429806688)
+Esta revisión responde a las dos solicitudes de riesgo/persistencia/fluidez y conversación/actividad. Está en verificación; aún no se anuncia un instalador aceptado.
 
-Cierra AKIRA, extrae el ZIP descargado y ejecuta `AKIRA_16_5_0_STUDIO_REV15_IA_INCLUIDA.exe`. Se conserva el diseño y la configuración de la instalación existente. El artefacto caduca el 2026-11-03T01:31:52Z.
+La cifra principal pasa a ser el límite efectivo por orden. El uso reservado aparece por separado, con presupuesto e importes explicados. Guardar riesgo queda accesible al desplazarse. Se comprueba con clics y teclado, aplicación al actor y reapertura.
 
-Se reconstruyó la coordinación de conversación: preguntas de ciencia y matemáticas directamente al modelo, historial acotado con seguimiento y cambios de tema, errores de escritura, caché entre mensajes y estados del avatar sincronizados con la solicitud. Los fallos ofrecen Reintentar y las respuestas cortadas, Continuar. El chat conserva la verificación de hechos actuales y las búsquedas solicitadas.
+La rueda y el touchpad desplazan la página sin editar números accidentalmente. El chat distribuye sus controles al reducir la ventana. Las fórmulas habituales se presentan como texto legible. Los temas breves y la escritura creativa usan el modelo; las búsquedas explícitas y los hechos actuales mantienen fuentes.
 
-Incluye pesos Qwen3 previamente entrenados y llama.cpp. No se afirma entrenamiento de pesos desde cero. Conserva los arreglos anteriores de riesgo, reconexión y cambio de cuenta MT5, y el motor BTC/oro.
+El estado lateral distingue análisis recibido del mercado, gestión pausada, espera de datos y conversación. Se comprueba también una actualización real desde Rev15, conservando configuración, chats, fondos y la carpeta de datos de los accesos existentes.
 
-Windows verificado: **1531 pruebas, 173 subpruebas, cero omitidas**, nueve respuestas completas del modelo real, autocontrol del ejecutable y una instalación limpia con respuesta de su IA incluida. Las mediciones usan dos CPU y política de equipo de 8 GB; la laptop física del usuario no se ha medido. Los mercados son simulados y no certifican rentabilidad.
-
-[Alcance, medidas y aceptación](ACEPTACION_REV15.md) · [Evidencia y procedencia del instalador](VALIDACION_REV15.json)
+[Alcance y aceptación](ACEPTACION_REV16.md) · [Estado de verificación](VALIDACION_REV16.json)

@@ -1,4 +1,4 @@
-"""Entrada única de AKIRA Studio 16.4.2 y proceso de voz empaquetable."""
+"""Entrada única de AKIRA Studio y proceso de voz empaquetable."""
 import argparse
 from pathlib import Path
 import os,sys
@@ -6,7 +6,7 @@ from windows_identity import set_identity,application_root
 
 if __name__=='__main__':
     set_identity()
-    parser=argparse.ArgumentParser();parser.add_argument('--sources-check');parser.add_argument('--low-resource-check');parser.add_argument('--https-check');parser.add_argument('--prepare-uninstall',action='store_true');parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');parser.add_argument('--local-components-check');parser.add_argument('--sprite-ai-check');parser.add_argument('--legacy-ui',action='store_true',help=argparse.SUPPRESS);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--sources-check');parser.add_argument('--low-resource-check');parser.add_argument('--https-check');parser.add_argument('--prepare-uninstall',action='store_true');parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');parser.add_argument('--local-components-check');parser.add_argument('--sprite-ai-check');parser.add_argument('--installation-info');parser.add_argument('--legacy-ui',action='store_true',help=argparse.SUPPRESS);args=parser.parse_args()
     if args.sources_check:
         import json
         from qa_sources_rev10 import run
@@ -33,6 +33,11 @@ if __name__=='__main__':
         from application_management import prepare_native_uninstall
         sys.exit(0 if prepare_native_uninstall(Path(sys.executable).parent)['status']=='READY' else 1)
     if args.app_root:os.environ['AKIRA_APP_ROOT']=str(Path(args.app_root).resolve())
+    if args.installation_info:
+        import json
+        from installation_info import describe_installation
+        result=describe_installation();output=Path(args.installation_info);output.parent.mkdir(parents=True,exist_ok=True)
+        output.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8');sys.exit(0)
     if args.local_components_check:
         from local_components import check_components
         sys.exit(check_components(args.local_components_check,application_root()))

@@ -26,7 +26,7 @@ class StudioController:
         self.cfg=ConfigSnapshot(load_config(config_path if config_path.exists() else DEFAULT));self.preview=bool(preview)
         if not config_path.exists():save_config(self.cfg,config_path)
         self.commands=queue.Queue(maxsize=128);self.bridge=CommandBridge(self.commands)
-        self.events=queue.Queue(maxsize=512);self.stop=threading.Event();self.view={};self._latest=None;self._snapshot_lock=threading.Lock()
+        self.events=queue.Queue(maxsize=512);self.stop=threading.Event();self.view={};self._latest=None;self._snapshot_lock=threading.Lock();self.last_snapshot_at=0
         self._settings_lock=threading.RLock();self._save_serial=0;self.log_rows=deque(maxlen=300);self._jobs=set();self._jobs_lock=threading.Lock()
         self.settings_io=ThreadPoolExecutor(max_workers=1,thread_name_prefix='AkiraPreference');self.io=ThreadPoolExecutor(max_workers=3,thread_name_prefix='AkiraStudioIO');self.chat_busy=False;self.closed=False
         self.notices=NotificationCenter(self.folder);self.network=None;self.online=None;self.last_evidence=-100
@@ -118,7 +118,7 @@ class StudioController:
         with self._snapshot_lock:view=self._latest;self._latest=None
         results=[]
         if view is not None:
-            self.view=view;self.bridge.connected=bool(view.get('connected'));self.bridge.starting=False
+            self.view=view;self.last_snapshot_at=time.monotonic();self.bridge.connected=bool(view.get('connected'));self.bridge.starting=False
             from connectivity import recently_connected
             if recently_connected(view):self.last_evidence=time.monotonic()
             results.append({'kind':'snapshot','data':view})

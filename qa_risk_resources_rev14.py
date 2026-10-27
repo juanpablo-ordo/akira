@@ -59,7 +59,7 @@ def run_check():
                 checks['save_reaches_financial_actor']=controller.view['risk_limits']['per_trade']==2.5 and controller.view['risk_limits']['runner']==1.25
                 checks['save_keeps_other_form_edits']=controller.cfg['voice']['rate']==old_voice and panel.fields['voice.rate'][1]()==137
                 window.navigate(2);window.render(controller.view)
-                checks['main_window_updates_saved_limits']='2.50' in window.metrics['reserved_risk'].caption.text() and window.budget_limit_bar.value()==13 and window.budget_bar.value()==0
+                checks['main_window_updates_saved_limits']='2.50' in window.metrics['reserved_risk'].value.text() and 'En uso: 0.00' in window.metrics['reserved_risk'].caption.text() and window.budget_limit_bar.value()==13 and window.budget_bar.value()==0
                 checks['applied_state_is_confirmed']='Aplicado' in window.budget_status.text()
                 from types import SimpleNamespace as NS
                 api.add_pending(NS(side=1,kind='LIMIT',symbol='BTCUSDm',entry=59970,sl=59800,tp=60300))

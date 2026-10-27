@@ -102,11 +102,11 @@ class Metric(Card):
         self.title.hide();self.body.removeItem(self.heading)
         line=QHBoxLayout();line.setSpacing(12);self.body.addLayout(line)
         self.metric_color=color;self.symbol=QLabel();self.symbol.setFixedWidth(40);self.symbol.setAlignment(Qt.AlignmentFlag.AlignCenter);self.symbol.setPixmap(icon(glyph,color,32).pixmap(32,32));line.addWidget(self.symbol)
-        values=QVBoxLayout();values.setSpacing(1);self.name_label=label(title,'metricName');self.name_row=QHBoxLayout();self.name_row.addWidget(self.name_label,1);values.addLayout(self.name_row)
+        values=QVBoxLayout();values.setSpacing(1);self.name_label=label(title,'metricName');self.name_label.setWordWrap(True);self.name_row=QHBoxLayout();self.name_row.addWidget(self.name_label,1);values.addLayout(self.name_row)
         self.value=label('—','metric',color);values.addWidget(self.value)
         self.caption=label('','muted');values.addWidget(self.caption);line.addLayout(values,1)
         self.value.setWordWrap(True);self.caption.setWordWrap(True)
-        self.setMinimumHeight(90);self.setMaximumHeight(115)
+        self.setMinimumHeight(90);self.setMaximumHeight(132)
     def set_action(self,title,callback):
         action=QPushButton(title);action.setMinimumHeight(20);action.setMaximumHeight(22);action.setCursor(Qt.CursorShape.PointingHandCursor)
         action.setStyleSheet('font-size:11px;padding:1px 5px;');action.clicked.connect(callback);self.name_row.addWidget(action);return action

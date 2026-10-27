@@ -43,8 +43,11 @@ class SettingsPanel(QWidget):
             self.tabs.addTab(scroll,self.tr.text(name));self.categories.append((name,box))
         self.operation();self.risk();self.ai_voice();self.sources();self.appearance();self.application()
         for _,box in self.categories:box.addStretch(1)
-        footer=QHBoxLayout();self.message=label('','muted');footer.addWidget(self.message,1)
+        footer=QHBoxLayout();self.message=label('','muted');self.message.setWordWrap(True);footer.addWidget(self.message,1)
         self.save_button=button('',self.window.save_settings,'primary');self.tr.bind(self.save_button,'GUARDAR AJUSTES');footer.addWidget(self.save_button);layout.addLayout(footer)
+        footer.addWidget(self.risk_save_button)
+        def show_save(index):self.risk_save_button.setVisible(index==1);self.save_button.setVisible(index!=1)
+        self.tabs.currentChanged.connect(show_save);show_save(self.tabs.currentIndex())
         self.preview_timer=QTimer(self);self.preview_timer.setSingleShot(True);self.preview_timer.setInterval(220);self.preview_timer.timeout.connect(self.preview)
         self.autosave_timer=QTimer(self);self.autosave_timer.setSingleShot(True);self.autosave_timer.setInterval(800);self.autosave_timer.timeout.connect(self.persist_visual)
 
@@ -126,10 +129,10 @@ class SettingsPanel(QWidget):
         before=set(self.fields)
         card=self.card(1,'TUS LÍMITES EN ESTA CUENTA','shield')
         self.risk_preview=label('Conecta MT5 para calcular los límites de tu cuenta.','body');self.risk_preview.setWordWrap(True);card.body.addWidget(self.risk_preview)
-        self.risk_save_button=self.add_button(card,'GUARDAR LÍMITES DE RIESGO',self.window.save_risk_limits,'primary','shield')
+        self.risk_save_button=button('',self.window.save_risk_limits,'primary','shield');self.tr.bind(self.risk_save_button,'GUARDAR Y APLICAR RIESGO')
         card=self.card(1,'CUÁNTO PUEDE ARRIESGAR CADA ORDEN','shield')
-        self.field(card,'risk.max_trade_money','Tope por orden en dinero',limits=(0,1e8),help='Pérdida máxima estimada si una orden llega a su protección. También se aplica el porcentaje de abajo: manda el menor de los dos límites.')
-        self.field(card,'risk.max_trade_pct','Tope por orden sobre el patrimonio',limits=(0,100),help='Con 40 USD de patrimonio, 5% equivale a 2 USD. La vista previa muestra cuánto permiten juntos tus dos topes.')
+        self.field(card,'risk.max_trade_money','Tope por orden en dinero',limits=(0,1e8),help='Pérdida máxima estimada si una orden llega a su protección. También se aplica el porcentaje: manda el menor. Con 0 no se habilita riesgo para nuevas órdenes.')
+        self.field(card,'risk.max_trade_pct','Tope por orden sobre el patrimonio',limits=(0,100),help='Con 40 USD de patrimonio, 5% equivale a 2 USD. Manda el menor entre este porcentaje y el tope en dinero. Con 0 no se habilita riesgo para nuevas órdenes.')
         card=self.card(1,'PRESUPUESTO PARA TODAS LAS ÓRDENES','wallet')
         self.field(card,'risk.portfolio_capital_pct','Parte del capital disponible para riesgo',limits=(0,100),help='Es el límite conjunto de pendientes y posiciones. Se calcula sobre el menor valor entre balance y patrimonio.')
         self.field(card,'risk.portfolio_money_cap','Tope adicional del presupuesto en dinero',limits=(0,1e8),help='Con 0 se usa solo el porcentaje de arriba. Con otro importe se aplica el menor de ambos. La barra de uso mide las reservas, incluidas las solicitudes provisionales, no cuánto subas este límite.')
@@ -168,6 +171,7 @@ class SettingsPanel(QWidget):
         for path in self.risk_paths:put(config,path,self.fields[path][1]())
         data=risk_dashboard(self.controller.view,config,self.window.private)
         text='Vista previa de lo que estás editando\n'+data['configured']
+        text+='\n\nEl motor recalcula el lote admisible con estos límites y conserva la protección estructural. El margen disponible y el lote mínimo del bróker también deben permitir la orden.'
         if data['ready'] and not self.window.private:text+='\nCapital usado para el presupuesto: '+format(data['limits']['capital_basis'],',.2f')+' '+data['limits']['currency']
         changed=any(self.fields[p][1]()!=get(self.controller.cfg,p) for p in self.risk_paths)
         text+='\n\nCambios sin guardar. Pulsa Guardar límites de riesgo.' if changed else '\n\n'+data['state']

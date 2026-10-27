@@ -8,6 +8,11 @@ import json,re,weakref
 from pathlib import Path
 
 EN={
+'RIESGO POR ORDEN':'RISK PER ORDER','GUARDAR Y APLICAR RIESGO':'SAVE AND APPLY RISK',
+'Analizando BTC y oro':'Analyzing BTC and gold','Analizando BTC':'Analyzing BTC','Analizando oro':'Analyzing gold',
+'Gestión pausada · chat disponible':'Management paused · chat available','Esperando datos de MT5':'Waiting for MT5 data','Preparando el análisis':'Preparing analysis',
+'Lista para conversar':'Ready to chat','Pensando tu respuesta':'Thinking about your reply','Respondiendo':'Replying',
+'Cargando la IA':'Loading AI','Consultando fuentes':'Checking sources','IA instalada · se activa al conversar':'AI installed · starts when you chat',
 'TRADING':'TRADING','PENDIENTES':'PENDING ORDERS','CUENTA':'ACCOUNT','ANÁLISIS':'ANALYSIS','FUENTES':'SOURCES','CHAT':'CHAT','AJUSTES':'SETTINGS','TERMINAL':'TERMINAL',
 'Visión general del sistema y actividad en tiempo real':'System overview and live activity',
 'Gestión de órdenes pendientes y oportunidades del mercado':'Pending orders and market opportunities',

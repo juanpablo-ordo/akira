@@ -33,7 +33,7 @@ def summarize(root, folder):
     names=('SOURCE_SELF_CHECK','NATIVE_APPLICATION','NATIVE_FIRST_RUN','SPRITE_AI_SOURCE',
         'SPRITE_AI_FROZEN','HTTPS_SOURCE_REV10','HTTPS_FROZEN_REV10','LOW_RESOURCE_FROZEN_REV10',
         'PUBLIC_SOURCES_SOURCE_REV10','PUBLIC_SOURCES_FROZEN_REV10','LOCAL_AI_SCENARIOS',
-        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','REAL_CHAT_DELL_7280_REV14','UI_COMPARISON_REV14','REAL_CHAT_REV15','INSTALLED_LOCAL_AI')
+        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','REAL_CHAT_DELL_7280_REV14','UI_COMPARISON_REV14','REAL_CHAT_REV15','REAL_CHAT_REV16','INSTALLED_LOCAL_AI','UPGRADE_REV16')
     reports={}
     for name in names:
         path=folder/(name+'.json');raw=path.read_bytes();data=json.loads(raw)
@@ -79,8 +79,24 @@ def summarize(root, folder):
     if any(row.get('origin')!='model' or row.get('first_visible_seconds') is None or row.get('completion',{}).get('backend')!='llama.cpp' or row.get('completion',{}).get('truncated') for row in rebuilt['scenarios']):
         raise RuntimeError('A canned, unobserved or incomplete answer cannot certify the new conversation')
     result['rebuilt_conversation']=rebuilt
-    (folder/'VERIFICATION_REV15.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('AKIRA_REV15_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
+    flow={'source':source.get('studio_check',{}).get('user_request_flow_details'),
+        'frozen':native.get('self_check',{}).get('studio_check',{}).get('user_request_flow_details')}
+    for name,check in flow.items():
+        if not check or check.get('status')!='PASSED' or check.get('build')!=BUILD_ID or len(check.get('checks',{}))<24 or not all(check['checks'].values()):
+            raise RuntimeError('The complete user interaction was not verified: '+name)
+    result['user_request_flow']=flow
+    ordinary=json.loads((folder/'REAL_CHAT_REV16.json').read_text(encoding='utf-8'))
+    if ordinary.get('status')!='PASSED' or len(ordinary.get('scenarios',[]))!=6 or not ordinary.get('all_scenarios_require_model_generation') or ordinary.get('scenario_group')!='short_general_conversation':
+        raise RuntimeError('Short ordinary conversation not verified')
+    if any(row.get('origin')!='model' or row.get('first_visible_seconds') is None or row.get('completion',{}).get('backend')!='llama.cpp' or row.get('completion',{}).get('finish_reason')!='stop' or row['completion'].get('truncated') for row in ordinary['scenarios']):
+        raise RuntimeError('An ordinary reply was not a completed model generation')
+    result['ordinary_conversation']=ordinary
+    upgrade=json.loads((folder/'UPGRADE_REV16.json').read_text(encoding='utf-8'))
+    if upgrade.get('build')!=BUILD_ID or len(upgrade.get('checks',{}))<16 or not all(upgrade['checks'].values()):
+        raise RuntimeError('Installer upgrade or saved data not verified')
+    result['installer_upgrade']=upgrade
+    (folder/'VERIFICATION_REV16.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('AKIRA_REV16_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
 
 

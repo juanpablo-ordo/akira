@@ -17,6 +17,30 @@ def source_name(url):
     host=(urlsplit(url).hostname or 'Fuente').removeprefix('www.')
     return {'news.xbox.com':'Xbox Wire','youtube.com':'YouTube','youtu.be':'YouTube','coinglass.com':'CoinGlass','reuters.com':'Reuters'}.get(host,host)
 
+def readable_math(text):
+    """Render common generated math as inert text; leave currency untouched."""
+    if '$' not in text and r'\(' not in text and r'\[' not in text:return text
+    if '`' in text:
+        parts=re.split(r'(```[\s\S]*?```|`[^`\n]*`)',text)
+        if len(parts)>1:return ''.join(part if i%2 else readable_math(part) for i,part in enumerate(parts))
+    symbols={'pi':'π','theta':'θ','alpha':'α','beta':'β','gamma':'γ','Delta':'Δ','sigma':'σ',
+        'lambda':'λ','infty':'∞','cdot':'·','times':'×','leq':'≤','geq':'≥','neq':'≠','pm':'±','to':'→','sum':'Σ','int':'∫'}
+    def convert(match):
+        value=next(v for v in match.groups() if v is not None)
+        if not re.search(r'[\\=^_{}]|^\s*[A-Za-zπθφ]\s*$',value):return match.group(0)
+        value=re.sub(r'\\(?:left|right)\b','',value)
+        value=re.sub(r'\\(?:mathrm|text|operatorname)\{([^{}]*)\}',r'\1',value)
+        value=re.sub(r'\\([A-Za-z]+)\b',lambda m:symbols.get(m[1],m[0]),value)
+        for _ in range(8):
+            before=value
+            value=re.sub(r'\\sqrt\{([^{}]*)\}',r'√(\1)',value)
+            value=re.sub(r'\\frac\{([^{}]*)\}\{([^{}]*)\}',r'(\1)/(\2)',value)
+            value=re.sub(r'([\^_])\{([^{}]*)\}',r'\1(\2)',value)
+            if value==before:break
+        value=re.sub(r'\\[,;!]',' ',value)
+        return value.strip()
+    return re.sub(r'(?<!\\)\$\$([\s\S]*?)\$\$|(?<!\\)\$([^$\n]+)\$|\\\((.*?)\\\)|\\\[([\s\S]*?)\\\]',convert,text)
+
 def rich_text(value):
     links=[]
     def link(title,url):
@@ -24,7 +48,7 @@ def rich_text(value):
         links.append('<a style="color:#00ddff" href="'+html.escape(url,quote=True)+'">'+html.escape(title)+'</a>');return '\x00'+str(len(links)-1)+'\x00'
     text=re.sub(r'\[([^\]\n]+)\]\((https?://[^\s)]+)\)',lambda m:link(m[1],m[2]),str(value or ''))
     text=re.sub(r'https?://[^\s<>\x00]+',lambda m:link(source_name(m[0].rstrip('.,;')),m[0].rstrip('.,;')),text)
-    text=html.escape(human(text)).replace('\n','<br>');text=re.sub(r'\*\*([^*]+)\*\*',r'<b>\1</b>',text)
+    text=html.escape(human(readable_math(text))).replace('\n','<br>');text=re.sub(r'\*\*([^*]+)\*\*',r'<b>\1</b>',text)
     for i,item in enumerate(links):text=text.replace('\x00'+str(i)+'\x00',item)
     return text
 
@@ -73,7 +97,9 @@ def risk_dashboard(view,config,private=False):
     used=float(ledger.get('reserved_usd',view.get('reserved_risk',0)) or 0)
     if not limits['ready']:
         return {'ready':False,'state':state,'limits':limits,'configured':'Tus límites están guardados. Conecta MT5 para calcular los importes de esta cuenta.',
-            'usage':'Esperando órdenes y posiciones de MT5.','caption':'Límites guardados · conecta MT5','budget_pct':0,'used_pct':0}
+            'usage':'Esperando órdenes y posiciones de MT5.','caption':'Límites guardados · conecta MT5',
+            'metric_value':'••••••' if private else '—','metric_caption':'Importe pendiente de conectar MT5',
+            'budget_format':'Esperando datos de la cuenta','usage_format':'Esperando datos de la cuenta','budget_pct':0,'used_pct':0}
     cap=limits['portfolio'];available=max(0,cap-used)
     count=int(ledger.get('pending_orders',len(view.get('orders') or [])))+int(ledger.get('positions',len(view.get('positions') or [])))
     provisional=bool(ledger.get('unconfirmed_requests')) or not ledger.get('risk_known',True)
@@ -82,6 +108,10 @@ def risk_dashboard(view,config,private=False):
     configured=(f"Por orden: hasta {money(limits['per_trade'])}\nElegiste {money(limits['trade_money'])} y {limits['trade_pct']:g}% del patrimonio."
         f"\nRunner directo: hasta {money(limits['runner'])}\nPresupuesto conjunto: {money(cap)}"
         f"\nElegiste {limits['portfolio_pct']:g}% del capital y {total_choice}. Se usa el menor límite aplicable.")
+    if limits['per_trade']<=0:configured+='\nEl límite por orden es cero: los topes en dinero y porcentaje deben ser mayores que cero para habilitar riesgo.'
+    elif not limits.get('override'):
+        binding='el tope en dinero' if limits['trade_money']<=limits['equity']*limits['trade_pct']/100 else 'el porcentaje del patrimonio'
+        configured+='\nEn esta cuenta manda '+binding+' para el límite por orden.'
     if limits.get('override'):configured+='\nEl permiso extra para el lote mínimo estructural está incluido en el tope por orden.'
     usage=f"En uso: {money(used)}\nDisponible para nuevas órdenes: {money(available)}\n{usage_note}"
     if used>cap:usage+='\nEl riesgo reservado supera el límite guardado; no queda presupuesto para nuevas entradas.'
@@ -89,7 +119,11 @@ def risk_dashboard(view,config,private=False):
         configured='Límites ocultos. Pulsa el ojo de la cuenta para ver los importes.'
         usage=usage_note;caption='Límites ocultos · Ajustar riesgo'
     else:caption=f"Por orden: {money(limits['per_trade'])}\nConjunto: {money(cap)}"
+    metric_caption='Importes ocultos · Ajustar límites' if private else f"En uso: {money(used)}\nConjunto: {money(cap)}"
     return {'ready':True,'state':state,'limits':limits,'configured':configured,'usage':usage,'caption':caption,
+        'metric_value':'••••••' if private else money(limits['per_trade']),'metric_caption':metric_caption,
+        'budget_format':'%p% del capital habilitado' if private else money(cap)+' · %p% del capital',
+        'usage_format':'%p% del presupuesto en uso' if private else money(used)+' en uso · %p% del presupuesto',
         'budget_pct':round(limits['portfolio_capital_pct']),
         'used_pct':min(100,max(0,round(used/cap*100))) if cap>0 else 100 if used>0 else 0}
 
