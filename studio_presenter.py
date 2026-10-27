@@ -20,6 +20,9 @@ def source_name(url):
 def readable_math(text):
     """Render common generated math as inert text; leave currency untouched."""
     if '$' not in text and r'\(' not in text and r'\[' not in text:return text
+    if '`' in text:
+        parts=re.split(r'(```[\s\S]*?```|`[^`\n]*`)',text)
+        if len(parts)>1:return ''.join(part if i%2 else readable_math(part) for i,part in enumerate(parts))
     symbols={'pi':'π','theta':'θ','alpha':'α','beta':'β','gamma':'γ','Delta':'Δ','sigma':'σ',
         'lambda':'λ','infty':'∞','cdot':'·','times':'×','leq':'≤','geq':'≥','neq':'≠','pm':'±','to':'→','sum':'Σ','int':'∫'}
     def convert(match):

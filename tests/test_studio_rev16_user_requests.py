@@ -6,10 +6,10 @@ from studio_presenter import risk_dashboard
 
 class OrdinaryConversationTests(unittest.TestCase):
     def test_short_conversation_does_not_become_unsolicited_news(self):
-        for question in ('arte abstracto','pintura al óleo','cuéntame algo bonito','astronomía','la fotosíntesis','un cuento corto','cuéntame una historia corta','escribe una historia inventada','historia'):
+        for question in ('arte abstracto','pintura al óleo','cuéntame algo bonito','astronomía','la fotosíntesis','un cuento corto','cuéntame una historia corta','escribe una historia inventada','historia','Invéntame una historia que ocurrió ayer'):
             with self.subTest(question=question):self.assertFalse(needs_research(question))
     def test_explicit_sources_and_current_facts_still_require_research(self):
-        for question in ('Busca fuentes de astronomía','presidente actual de Guatemala','noticias de hoy','¿Qué acaba de lanzar Xbox?','historia de Guatemala','busca una historia real con fuentes'):
+        for question in ('Busca fuentes de astronomía','presidente actual de Guatemala','noticias de hoy','¿Qué acaba de lanzar Xbox?','historia de Guatemala','busca una historia real con fuentes','Cuéntame una historia que ocurrió ayer en Guatemala'):
             with self.subTest(question=question):self.assertTrue(needs_research(question))
 
 
@@ -85,6 +85,7 @@ class ReadableFormulaTests(unittest.TestCase):
         from studio_presenter import rich_text
         text=rich_text('Presupuesto $10 y coste $2.50. [Fuente](https://example.com/a?x=$value)')
         self.assertIn('$10',text);self.assertIn('$2.50',text);self.assertIn('https://example.com/a?x=$value',text)
+        self.assertIn('$e$',rich_text('Código literal: `$e$` y ```$e$```'))
     def test_fraction_and_root_stay_inert_text(self):
         from studio_presenter import rich_text
         text=rich_text(r'$\frac{1}{\sqrt{x}}$ <script>alert(1)</script>')

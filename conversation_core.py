@@ -22,8 +22,9 @@ def needs_research(message):
         r'actualizad\w*|reciente\w*|ultima\w*|ultimo\w*|documentacion|youtube|video|'
         r'medicament\w*|diagnostic\w*|legislacion|leyes|invertir|inversiones)\b',text))
     creative=bool(re.search(r'\b(?:una historia|un cuento|un relato|historia (?:corta|inventada|ficticia))\b',text))
-    factual_story=bool(re.search(r'\b(?:historia real|hechos reales)\b',text))
-    if creative and not explicit and not factual_story:return False
+    factual_story=bool(re.search(r'\b(?:historia real|hechos reales|historia veridica|ocurrio|sucedio|acontecio)\b',text))
+    fiction_marked=bool(re.search(r'\b(?:inventa\w*|fictici\w*|ficcion)\b',text))
+    if creative and not explicit and (fiction_marked or not factual_story):return False
     if needs_web_verification(message):return True
     # A conceptual explanation differs from a specific external occurrence:
     # "cómo funciona RAM" is stable knowledge; "quién inventó..." needs sources.

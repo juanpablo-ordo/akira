@@ -200,7 +200,7 @@
   "command_bridge.py": "a21132a6719bbd9bffdb7709f59809dd2840cdd2ee20387c46346270e080a06c",
   "compact_review.py": "6c0f4f8ef8366401fae3cc51805cc0b3193eafb5ce0abfd5e2a6c1cf7cbf173e",
   "connectivity.py": "23f522b59ca5cf9ee659f3695d550e83d3787e71aea0038627922a6385837dbe",
-  "conversation_core.py": "56c8cb6551a3127f0859e1a2a246a61efc4752f4913fbe4b8283998fb0ef0ab4",
+  "conversation_core.py": "74fba296dc8920041a554c897f785aca2a9cff6e3b52bf486264efbc52e57de5",
   "conversation_intent.py": "47d50b56f84c4e1f5632350271b8a0d7480bb461715995d3d534f5becb62ba59",
   "conversation_state.py": "07eb944d0c076f6efafccfdc30f329da6384ef1716a1140486e5ffdb64e80981",
   "cyber_ui.py": "7946242f8b8d0ef5ce348fe035ba45322e640e24940bbcd61ade608876b3bb15",
@@ -304,7 +304,7 @@
   "studio_background.py": "4ad45b42b271c21c7543a1678108d50583e617dae390b2b30c41d3acf956e335",
   "studio_controller.py": "fb4f5d5376e3400878aea85991eb090171b95c6ca520deec7403ee442bb8498d",
   "studio_editors.py": "7e901c6b688d7cae4089d1cdde6c1558143a3dc9db9828d4b7c58cb054aba3e2",
-  "studio_presenter.py": "562b52c9350a0738515e7ecac6117c20f6cfc1d0b634c78079c71bbece8389e4",
+  "studio_presenter.py": "be9f9bcda954d51aee718e252b711cf7c78b350cdfd3a7370a9b8a0c2d549825",
   "studio_settings_qt.py": "ea32bcb085b65c9f8f366e504ddc5033f1aad06cb8e8d46d73bddc811aaeaf02",
   "studio_theme.py": "a2656c3306c23d4f26414a520bfeef0c2bfb7fc8ccbf19fe5d7d695baa135d27",
   "studio_translations.py": "a3f686aa4c00ac2267523c2fd54142e30a28f6bb73a1b8bc99b2f8a84fb9d57f",
@@ -446,7 +446,7 @@
   "qa_user_flow_rev16.py": "3b567f535d2a54a13b9aed731a3af337fb767f390fc0e4d385dc205ffb0b1ff0",
   "qa_conversation_rev16.py": "d46b0754c0afa192425c690550fc287a214b74c61f4f8927ec963a5d9e8d6cc3",
   "installer/check_upgrade.py": "6f9c24c7e5d94550b68f5fb93bd463a1c3e4c891419fb33ea2ddad36519f0d16",
-  "tests/test_studio_rev16_user_requests.py": "2b3d8f8b0efdfcec50fc67920a8893c406dd9514cc1bd97a570b815a462baa4c",
+  "tests/test_studio_rev16_user_requests.py": "5e0b9f570d2fc11fd38a22d63ccfac6519b915116b6b1f22e2444dc27d9eb507",
   "ACEPTACION_REV16.md": "c6a3bb98fb194e5530c02e212154e712d708acb20a9a859796b5479c706fae84",
   "VALIDACION_REV16.json": "ee34fb04b496d95c421987f2a22355905c2870a7f44ddca5e41f6aae493bb986"
 }
