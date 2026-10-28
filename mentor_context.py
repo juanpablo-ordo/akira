@@ -46,11 +46,11 @@ def inspect_state(snapshot,section,now):
     elif section=='account':data={k:(snapshot.get('account') or {}).get(k) for k in ('balance','equity','floating','daily_net','currency','margin_free')}
     elif section=='risk':
         ledger=snapshot.get('portfolio_risk') or {}
-        data=dict(protection=snapshot.get('capital_protection') or {},
+        data=dict(protection=snapshot.get('capital_protection') or {},entry_safety=snapshot.get('entry_safety') or {},
                   trade_cap=snapshot.get('trade_risk_cap'),portfolio_cap=snapshot.get('risk_cap'),
                   reserved=ledger.get('reserved_usd',snapshot.get('reserved_risk')),available=ledger.get('available_usd'))
     elif section=='activity':
-        data=dict(mode=snapshot.get('mode'),paused=snapshot.get('paused'),status={str(k):{'state':str(v.get('state',''))[:120],'detail':str(v.get('detail',''))[:450]} for k,v in list((snapshot.get('status') or {}).items())[:4] if isinstance(v,dict)})
+        data=dict(mode=snapshot.get('mode'),paused=snapshot.get('paused'),entry_safety=snapshot.get('entry_safety') or {},status={str(k):{'state':str(v.get('state',''))[:120],'detail':str(v.get('detail',''))[:450]} for k,v in list((snapshot.get('status') or {}).items())[:4] if isinstance(v,dict)})
     else:return dict(ok=False,error='Sección no autorizada')
     return dict(ok=True,as_of_utc=stamp,read_only=True,section=section,data=data)
 
@@ -70,6 +70,8 @@ def diagnostic_reply(message,snapshot,now):
         lines.append(f"{g['symbol']} · {g['lane']}: {g['wins']}/{g['closed']} ganadoras, neto {g['net']:.2f} {currency}. Esto describe el pasado; no mide la probabilidad de la próxima orden.")
     guard=snapshot.get('capital_protection') or {}
     if guard.get('enabled') and guard.get('reason'):lines.append(guard['reason'])
+    safety=snapshot.get('entry_safety') or {}
+    if safety.get('enabled') and not safety.get('allowed',True):lines.append(safety.get('reason','Nuevas entradas en pausa por la racha confirmada.'))
     ledger=snapshot.get('portfolio_risk') or {}
     if number(ledger.get('reserved_usd')) is not None:lines.append(f"Riesgo todavía reservado: {ledger['reserved_usd']:.2f} {currency}. Las pendientes pueden activarse mientras MT5 no confirme su retirada.")
     lines.append('El score técnico no demuestra rentabilidad. Para atribuir causas a cada entrada hay que revisar su tesis, exposición y ejecución; este resumen no cambia ninguna orden.')

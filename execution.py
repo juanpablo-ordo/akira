@@ -398,6 +398,10 @@ class Gateway:
         evaluation={} if evaluation is None else evaluation
         runner=plan.lane=='RUNNER' and plan.kind=='MARKET'
         if (not runner and (plan.lane!='PENDING' or plan.kind not in ('LIMIT','STOP'))) or plan.side not in (1,-1):raise Blocked('Solo pendientes LIMIT/STOP o runners estructurales')
+        from entry_safety import loss_pause
+        from trade_quality_gate import owned_outcomes
+        safety=loss_pause(self.cfg,owned_outcomes(self),self.clock())
+        if not safety['allowed']:raise Blocked(safety['reason'])
         if not runner:
             from trade_quality_gate import pending_admission
             admission=pending_admission(self.cfg,plan)

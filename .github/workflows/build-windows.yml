@@ -57,7 +57,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $required = @('source_recovery.py','qa_conversation_rev18.py','tests/test_studio_rev18_recovery.py','response_quality.py','mathematical_reference.py','tests/test_response_quality_rev17.py','capital_guard.py','mentor_context.py','tests/test_studio_rev17_capital_mentor.py','studio_interaction.py','installation_info.py','qa_user_flow_rev16.py','qa_conversation_rev16.py','installer/check_upgrade.py','tests/test_studio_rev16_user_requests.py','conversation_core.py','qa_chat_lifecycle_rev15.py','qa_conversation_rev15.py','tests/test_studio_rev15_conversation_core.py','akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
+          $required = @('entry_safety.py','tests/test_entry_safety_rev18.py','source_recovery.py','qa_conversation_rev18.py','tests/test_studio_rev18_recovery.py','response_quality.py','mathematical_reference.py','tests/test_response_quality_rev17.py','capital_guard.py','mentor_context.py','tests/test_studio_rev17_capital_mentor.py','studio_interaction.py','installation_info.py','qa_user_flow_rev16.py','qa_conversation_rev16.py','installer/check_upgrade.py','tests/test_studio_rev16_user_requests.py','conversation_core.py','qa_chat_lifecycle_rev15.py','qa_conversation_rev15.py','tests/test_studio_rev15_conversation_core.py','akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
                         'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
                         'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
@@ -82,7 +82,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV18_TARGETED.xml
+          python -u -m pytest -vv tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV18_TARGETED.xml
           if ($LASTEXITCODE -ne 0) { throw 'Una regresión de Rev18 falló; revisar REV16_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar

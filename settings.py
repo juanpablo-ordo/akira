@@ -376,6 +376,8 @@ def load_config(path):
         if type(guard[key]) is not bool:raise ValueError('capital_protection.'+key+' debe ser booleano')
     for key in ('trade_pct','portfolio_pct','symbol_pct','daily_loss_pct','max_drawdown_pct'):
         if isinstance(guard[key],bool) or not .1<=guard[key]<=100:raise ValueError('capital_protection.'+key+' debe estar entre 0.1 y 100')
+    if type(guard['loss_streak_limit']) is not int or not 1<=guard['loss_streak_limit']<=100:raise ValueError('Racha máxima debe ser un entero de 1 a 100')
+    if isinstance(guard['loss_pause_hours'],bool) or not 1<=guard['loss_pause_hours']<=168:raise ValueError('Pausa tras racha debe estar entre 1 y 168 horas')
     if cfg['mode'] not in ('trade','observe'):raise ValueError('mode debe ser trade u observe')
     if cfg['lot']<=0 or cfg['lot']>cfg['sizing']['max_lot']:raise ValueError('Lote base debe ser positivo y no superar el máximo de dimensionado')
     if not 0 < cfg['sizing']['risk_utilization'] <= 1:raise ValueError('Uso del presupuesto debe estar entre 0 y 1')

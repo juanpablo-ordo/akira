@@ -560,6 +560,8 @@
     "daily_loss_pct": 6.0,
     "max_drawdown_pct": 15.0,
     "one_position_per_symbol": true,
-    "strict_pending_quality": true
+    "strict_pending_quality": true,
+    "loss_streak_limit": 3,
+    "loss_pause_hours": 24.0
   }
 }

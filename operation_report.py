@@ -154,6 +154,8 @@ def build_report(snapshot,hours=24):
     cutoff=as_of-float(hours)*3600 if hours else as_of
     account=snapshot.get('account') or {};ledger=snapshot.get('portfolio_risk') or {};symbols=snapshot.get('symbols') or {}
     warnings=[]
+    safety=snapshot.get('entry_safety') or {}
+    if safety.get('enabled') and not safety.get('allowed',True):warnings.append(safety.get('reason','Nuevas entradas en pausa por pérdidas confirmadas.'))
     if snapshot.get('preview'):warnings.append('VISTA PREVIA · Datos simulados de prueba; no pertenecen a una cuenta real ni prueban calidad financiera.')
     if snapshot.get('report_capture_note'):warnings.append(snapshot['report_capture_note'])
     if not snapshot.get('connected'):warnings.append('Informe sin conexión actual confirmada; los datos pueden ser históricos.')

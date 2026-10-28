@@ -13,5 +13,10 @@
   "real_model_verified_for_this_revision": false,
   "physical_dell_tested": false,
   "live_account_used": false,
-  "profitability_verified": false
+  "profitability_verified": false,
+  "entry_safety_unit_tests": {
+    "tests": 17,
+    "failed": 0,
+    "scope": "Confirmed loss sequence across assets, pre-send checks, own pending withdrawal, restart persistence, and protection of manual tickets and existing position stops."
+  }
 }

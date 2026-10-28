@@ -8,7 +8,8 @@ import math
 
 DEFAULTS = dict(enabled=True, trade_pct=2.0, portfolio_pct=6.0, symbol_pct=3.0,
                 daily_loss_pct=6.0, max_drawdown_pct=15.0,
-                one_position_per_symbol=True, strict_pending_quality=True)
+                one_position_per_symbol=True, strict_pending_quality=True,
+                loss_streak_limit=3, loss_pause_hours=24.0)
 
 
 def rules(config):
