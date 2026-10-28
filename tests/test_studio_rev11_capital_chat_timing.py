@@ -277,7 +277,7 @@ class ConversationRoutingTests(unittest.TestCase):
             self.assertEqual(self.bot._local_llm_reply_impl(message,snapshot),'Te leo. Cuéntame qué pasó hoy.')
 
     def test_eco_chat_uses_production_cpu_deadline_instead_of_a_qa_override(self):
-        for profile,expected in [('Ahorro de energía',120),('Equilibrado',75)]:
+        for profile,expected in [('Ahorro de energía',120),('Equilibrado',120)]:
             self.cfg['desktop']['performance_profile']=profile
             self.cfg['assistant']['fast_chat_timeout_seconds']=25
             with self.subTest(profile=profile), \
@@ -285,8 +285,8 @@ class ConversationRoutingTests(unittest.TestCase):
                  patch('assistant_akira.ollama_agent',return_value='Cuéntame, te leo.') as model, \
                  patch.object(self.bot,'_source_tool',side_effect=AssertionError('unwanted search')):
                 self.bot._local_llm_reply_impl('Quiero contarte algo de mi día.',{})
-                self.assertEqual(model.call_args.kwargs['timeout'],expected)
-                self.assertEqual(model.call_args.kwargs['total_timeout'],expected)
+                self.assertGreater(model.call_args.kwargs['timeout'],expected-1);self.assertLessEqual(model.call_args.kwargs['timeout'],expected)
+                self.assertEqual(model.call_args.kwargs['total_timeout'],model.call_args.kwargs['timeout'])
 
     def test_weather_word_ola_is_not_rewritten_as_a_greeting(self):
         from language_normalization import understood

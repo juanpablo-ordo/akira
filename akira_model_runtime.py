@@ -88,7 +88,8 @@ class ManagedLlamaProcess:
             if configured is not None and configured.is_file():return configured
             return next((p for p in candidates if p.is_file()),configured or candidates[0])
         exe=resolve(exe_value,[app_dir/'local_ai/bin/llama-server.exe',app_dir/'local_ai/cpu/llama-server.exe'])
-        model=resolve(model_value,[app_dir/'local_ai/models/Qwen3-4B-Q4_K_M.gguf'])
+        candidates=[app_dir/'local_ai/models/Qwen3-4B-Q4_K_M.gguf'] if not model_value or Path(model_value).name=='Qwen3-4B-Q4_K_M.gguf' else []
+        model=resolve(model_value,candidates)
         self.path_resolution={'executable':str(exe),'model':str(model),'app_dir':str(app_dir)}
         if not (exe.is_file() and model.is_file()):return None
         if exe.suffix.lower() not in ('.exe','') or model.suffix.lower()!='.gguf':return None

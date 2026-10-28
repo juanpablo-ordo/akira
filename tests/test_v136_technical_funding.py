@@ -71,7 +71,7 @@ class TechnicalFunding136Tests(PendingCase,unittest.TestCase):
         self.assertTrue(gold['allocation_checks'])
         self.assertTrue(all(not r['funding']['minimum_fits'] for r in gold['allocation_checks']))
         self.assertEqual(view['status']['XAUUSDm']['state'],'BLOQUEO DE RIESGO')
-        self.assertAlmostEqual(view['trade_risk_cap'],30.47*.06)
+        self.assertAlmostEqual(view['trade_risk_cap'],30.47*.02)
 
     def test_default_startup_attempts_both_symbols_without_external_sources(self):
         view=self.e.step()

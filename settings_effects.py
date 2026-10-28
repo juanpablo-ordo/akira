@@ -3,7 +3,7 @@ import copy,math
 from settings import load_config
 
 TARGETS={'mode':'Modo de operación','desktop':'Interfaz, rendimiento y notificaciones','risk':'Gateway: riesgo y margen','sizing':'Gateway: lote',
- 'lot':'Gateway: lote base','pending':'Motor: vigencia y sustitución','execution':'Motor: ejecución',
+ 'capital_protection':'Gateway: protección proporcional y retiro de pendientes','lot':'Gateway: lote base','pending':'Motor: vigencia y sustitución','execution':'Motor: ejecución',
  'strategy':'Selector técnico','symbol_profiles':'Selector por símbolo','research':'Fuentes en segundo plano',
  'assistant':'Conversación y permisos','management':'Gestión de posiciones','runner':'Gestión de continuidad',
  'studio':'Personalización de interfaz (no opera MT5)','knowledge':'Actualización de conocimiento','charts':'Representación de indicadores'}

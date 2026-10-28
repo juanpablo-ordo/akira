@@ -35,7 +35,7 @@ class OverallActivityTests(unittest.TestCase):
 
 class VisibleRiskTests(unittest.TestCase):
     def setUp(self):
-        self.cfg=copy.deepcopy(DEFAULT);self.cfg['risk'].update(max_trade_money=2.5,max_trade_pct=100,portfolio_money_cap=8,portfolio_capital_pct=50)
+        self.cfg=copy.deepcopy(DEFAULT);self.cfg['capital_protection']['enabled']=False;self.cfg['risk'].update(max_trade_money=2.5,max_trade_pct=100,portfolio_money_cap=8,portfolio_capital_pct=50)
         self.view={'connected':True,'account':{'balance':40,'equity':40,'currency':'USD'},'reserved_risk':0,
             'portfolio_risk':{'reserved_usd':0,'risk_known':True,'pending_orders':0,'positions':0}}
     def test_main_value_reflects_effective_limit_even_with_no_orders(self):

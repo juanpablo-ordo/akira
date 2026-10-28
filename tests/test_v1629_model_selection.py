@@ -34,7 +34,7 @@ class ConversationProfileTests(unittest.TestCase):
     def test_saved_large_windows_model_cannot_override_single_pass_fast_conversation(self):
         self.saved();kw=self.conversation(['qwen3:8b','qwen3:14b'])
         self.assertEqual(kw['model'],'qwen3:8b');self.assertEqual(kw['max_rounds'],1)
-        self.assertFalse(kw['reasoning']);self.assertEqual(kw['timeout'],75)
+        self.assertFalse(kw['reasoning']);self.assertGreater(kw['timeout'],119);self.assertLessEqual(kw['timeout'],120)
 
     def test_verified_smaller_repair_model_is_preserved_when_larger_models_are_installed(self):
         self.saved('qwen3:4b');self.assertEqual(self.conversation(['qwen3:4b','qwen3:8b','qwen3:14b'])['model'],'qwen3:4b')

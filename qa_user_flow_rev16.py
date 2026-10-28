@@ -23,7 +23,7 @@ def run_check(capture=None):
         api.account.balance=api.account.equity=api.account.margin_free=40
         api.account.trade_mode=0;api.terminal.path=str(program.parent)
         api.initialize=lambda *a,**k:True;api.shutdown=lambda:None
-        cfg=load_config(DEFAULT);cfg.update(mode='observe',expected_login=123,expected_server='TEST',poll_seconds=.05)
+        cfg=load_config(DEFAULT);cfg['capital_protection']['enabled']=False;cfg.update(mode='observe',expected_login=123,expected_server='TEST',poll_seconds=.05)
         cfg['risk'].update(max_trade_money=1,max_trade_pct=100,portfolio_money_cap=3,portfolio_capital_pct=100)
         cfg['assistant'].update(local_runtime_enabled=False,auto_install_local_ai=False)
         cfg['desktop']['privacy']=False;save_config(cfg,root/'akira_config.json')
@@ -112,6 +112,16 @@ def run_check(capture=None):
                 QTest.mouseClick(window.risk_adjust,Qt.MouseButton.LeftButton);app.processEvents()
                 checks['controls_survive_reopening']=window.settings_panel.fields['risk.max_trade_money'][1]()==2.5 and window.settings_panel.fields['risk.portfolio_money_cap'][1]()==8
                 checks['no_broker_order_was_sent']=not api.sent
+                panel=window.settings_panel
+                panel.fields['capital_protection.enabled'][0].setChecked(True)
+                app.processEvents()
+                checks['protected_limits_visible_before_save']='0.80' in panel.risk_preview.text() and '2.40' in panel.risk_preview.text()
+                QTest.mouseClick(panel.risk_save_button,Qt.MouseButton.LeftButton)
+                wait_for(lambda:not controller._jobs and controller.cfg['capital_protection']['enabled'] and controller.view.get('risk_limits',{}).get('per_trade')==.8)
+                window.navigate(2);window.render(controller.view);app.processEvents()
+                checks['protected_limits_apply_to_actor_and_main']='0.80' in window.metrics['reserved_risk'].value.text() and controller.view['configured_execution']['capital_protection']['enabled']
+                checks['protection_does_not_send_in_observe']=not api.sent
+
         finally:
             if controller:controller.chat_busy=False
             if window:window.close();app.processEvents()

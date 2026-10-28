@@ -95,8 +95,8 @@ def summarize(root, folder):
     if upgrade.get('build')!=BUILD_ID or len(upgrade.get('checks',{}))<16 or not all(upgrade['checks'].values()):
         raise RuntimeError('Installer upgrade or saved data not verified')
     result['installer_upgrade']=upgrade
-    (folder/'VERIFICATION_REV16.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('AKIRA_REV16_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
+    (folder/'VERIFICATION_REV17.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('AKIRA_REV17_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
 
 

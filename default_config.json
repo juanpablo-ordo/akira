@@ -406,7 +406,8 @@
     "local_runtime_model": "local_ai/models/Qwen3-4B-Q4_K_M.gguf",
     "local_runtime_idle_seconds": 60,
     "local_runtime_start_on_launch": true,
-    "chat_warm_seconds": 30
+    "chat_warm_seconds": 30,
+    "conversation_style": "natural"
   },
   "desktop": {
     "width": 1580,
@@ -550,5 +551,15 @@
   "strategy_choice": {
     "selected": "AKIRA_ADAPTATIVA",
     "version": 1
+  },
+  "capital_protection": {
+    "enabled": true,
+    "trade_pct": 2.0,
+    "portfolio_pct": 6.0,
+    "symbol_pct": 3.0,
+    "daily_loss_pct": 6.0,
+    "max_drawdown_pct": 15.0,
+    "one_position_per_symbol": true,
+    "strict_pending_quality": true
   }
 }

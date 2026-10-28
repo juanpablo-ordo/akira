@@ -271,7 +271,7 @@ class StudioController:
                     result={'ok':True,'settings_applied':False,'connection_pending':True}
                 if confirmation_required:result['account_confirmation_required']=True
                 self.cfg=ConfigSnapshot(copy.deepcopy(merged));self.assistant.cfg=self.cfg;runtime=self.assistant._managed_model;runtime.settings=self.cfg.get('assistant') or {}
-                if hasattr(runtime,'reconfigure') and any(p.startswith('desktop.') for p in paths):runtime.reconfigure(self.cfg.get('desktop') or {})
+                if hasattr(runtime,'reconfigure') and any(p.startswith('desktop.') or p in ('assistant.local_runtime_model','assistant.local_runtime_exe') for p in paths):runtime.reconfigure(self.cfg.get('desktop') or {})
                 if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
                 return {'config':copy.deepcopy(self.cfg),'paths':paths,'submitted':validated,'result':result,'saved':True,'keys_saved':bool(keys)}
         return self.job('save_settings:'+str(serial),persist,'settings_saved',executor=self.settings_io)

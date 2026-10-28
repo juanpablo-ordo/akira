@@ -1,5 +1,12 @@
-AKIRA 16.4.1 Studio Rev6
+AKIRA 16.5.2 Studio Rev17
 
-Descarga el artefacto AKIRA-16.4.1-Studio-Rev6-IA-fuentes-expresiones-instalador-Windows-IA-INCLUIDA de la ejecución aprobada en https://github.com/juanpablo-ordo/akira/actions
-Extrae y ejecuta AKIRA_16_4_1_STUDIO_REV6_IA_INCLUIDA.exe. No uses un instalador de una ejecución antigua.
-Consulta README.md para funciones, pruebas y límites pendientes.
+Descarga el artefacto del instalador con IA incluida:
+https://github.com/juanpablo-ordo/akira/actions/runs/40655274399/artifacts/12802939072
+
+Inicia sesión en GitHub, descarga el ZIP y extrae AKIRA_16_5_2_STUDIO_REV17_IA_INCLUIDA.exe. Cierra Akira y ejecuta ese instalador. Abre Akira desde el acceso actualizado y comprueba que muestre AKIRA_16_5_2_STUDIO_REV17.
+
+En Ajustes > Riesgo puedes ver y modificar la protección de capital y los límites personalizados; la vista previa y el panel principal muestran el límite efectivo. En Ajustes > IA y voz puedes elegir estilo y modelo GGUF compatible.
+
+El instalador pasó la instalación limpia y la actualización desde Rev15 conservando ajustes y conversaciones. Estas pruebas usan un bróker sintético y no certifican rentabilidad ni el rendimiento de la laptop física. Consulta README.md y VALIDACION_REV17.json.
+
+El artefacto de GitHub caduca el 2026-11-04.

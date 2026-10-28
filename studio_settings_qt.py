@@ -130,6 +130,12 @@ class SettingsPanel(QWidget):
         card=self.card(1,'TUS LÍMITES EN ESTA CUENTA','shield')
         self.risk_preview=label('Conecta MT5 para calcular los límites de tu cuenta.','body');self.risk_preview.setWordWrap(True);card.body.addWidget(self.risk_preview)
         self.risk_save_button=button('',self.window.save_risk_limits,'primary','shield');self.tr.bind(self.risk_save_button,'GUARDAR Y APLICAR RIESGO')
+        card=self.card(1,'PROTECCIÓN PROPORCIONAL DEL CAPITAL','shield')
+        self.field(card,'capital_protection.enabled','Proteger el capital de esta cuenta',help='Aplica el menor de estos topes y tus límites personalizados. También revisa las pendientes existentes; no cierra posiciones por dinero ni estrecha su SL. Un lote mínimo puede ser incompatible con una cuenta pequeña.')
+        for key,title in [('trade_pct','Tope protegido por orden (%)'),('portfolio_pct','Tope protegido conjunto (%)'),('symbol_pct','Tope protegido por símbolo (%)'),('daily_loss_pct','Pérdida diaria protegida (%)'),('max_drawdown_pct','Caída máxima desde la referencia (%)')]:
+            self.field(card,'capital_protection.'+key,title,limits=(.1,100))
+        self.field(card,'capital_protection.one_position_per_symbol','Una posición por símbolo')
+        self.field(card,'capital_protection.strict_pending_quality','Exigir la misma calidad a las alternativas del mapa')
         card=self.card(1,'CUÁNTO PUEDE ARRIESGAR CADA ORDEN','shield')
         self.field(card,'risk.max_trade_money','Tope por orden en dinero',limits=(0,1e8),help='Pérdida máxima estimada si una orden llega a su protección. También se aplica el porcentaje: manda el menor. Con 0 no se habilita riesgo para nuevas órdenes.')
         self.field(card,'risk.max_trade_pct','Tope por orden sobre el patrimonio',limits=(0,100),help='Con 40 USD de patrimonio, 5% equivale a 2 USD. Manda el menor entre este porcentaje y el tope en dinero. Con 0 no se habilita riesgo para nuevas órdenes.')
@@ -167,7 +173,7 @@ class SettingsPanel(QWidget):
     def refresh_risk_preview(self,force=False):
         if not hasattr(self,'risk_paths') or (not force and not self.risk_preview.isVisible()):return
         from studio_presenter import risk_dashboard
-        config={'risk':dict(self.controller.cfg['risk']),'runner':dict(self.controller.cfg['runner'])}
+        config={'risk':dict(self.controller.cfg['risk']),'runner':dict(self.controller.cfg['runner']),'capital_protection':dict(self.controller.cfg['capital_protection'])}
         for path in self.risk_paths:put(config,path,self.fields[path][1]())
         data=risk_dashboard(self.controller.view,config,self.window.private)
         text='Vista previa de lo que estás editando\n'+data['configured']
@@ -183,6 +189,10 @@ class SettingsPanel(QWidget):
         self.translation_status=label('','muted');self.translation_status.setWordWrap(True);card.body.addWidget(self.translation_status)
         note=label('Importa traducciones en un archivo .json con locale y translations. Ejemplo: {"locale":"es","translations":{"TRADING":"TRADING"}}. Las voces disponibles dependen del idioma.','muted');note.setWordWrap(True);card.body.addWidget(note);self.add_button(card,'IMPORTAR PAQUETE',self.choose_language)
         card=self.card(2,'IA LOCAL Y CONVERSACIÓN','chat')
+        self.field(card,'assistant.conversation_style','Estilo de conversación',[('natural','Natural'),('mentor','Guía y mentor'),('detailed','Explicaciones detalladas')])
+        self.field(card,'assistant.local_runtime_model','Archivo GGUF local (opcional)')
+        self.add_button(card,'ELEGIR MODELO GGUF',self.choose_gguf)
+        note=label('El motor gratuito incluido es llama.cpp. Puedes elegir un modelo GGUF compatible más grande si dispones de RAM suficiente; no se descarga ni se activa hasta guardar. Más tamaño no garantiza mejores decisiones de trading.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.field(card,'assistant.chat_warm_seconds','Conservar la IA entre mensajes (segundos)',limits=(0,60),help='Con 30 evita cargar otra vez el modelo si continúas conversando. Con 0 libera su memoria al terminar. No cambia el riesgo ni la frecuencia del motor.')
         for path,title in [('assistant.enabled','Asistente activado'),('assistant.allow_live_orders','Permitir solicitudes operativas explícitas del chat'),('assistant.local_runtime_enabled','Motor local incluido'),('assistant.cross_chat_memory','Usar memoria de otras conversaciones')]:
             if get(self.controller.cfg,path) is not None:self.field(card,path,title)
@@ -190,6 +200,15 @@ class SettingsPanel(QWidget):
         self.add_button(card,'REPARAR ASISTENTE',self.controller.repair_ai);self.add_button(card,'MOTIVO Y REGISTRO',self.window.show_model_log)
         card=self.card(2,'PREFERENCIAS DE VOZ','sources');self.field(card,'voice.model','Modelo de reconocimiento',('tiny','base','small'));self.field(card,'voice.rate','Velocidad de voz',limits=(80,300));self.field(card,'voice.volume','Volumen de voz',limits=(0,1))
         note=label('El teléfono junto al envío del chat inicia la llamada y permite seleccionar micrófono, salida y voz.','muted');note.setWordWrap(True);card.body.addWidget(note)
+
+    def choose_gguf(self):
+        path,_=QFileDialog.getOpenFileName(self,'Seleccionar modelo local','','Modelo GGUF (*.gguf)')
+        if not path:return
+        try:
+            with Path(path).open('rb') as stream:
+                if stream.read(4)!=b'GGUF':raise ValueError('El archivo no tiene cabecera GGUF')
+            self.fields['assistant.local_runtime_model'][0].setText(path)
+        except (OSError,ValueError) as exc:self.window.show_error(str(exc))
 
     def sources(self):
         card=self.card(3,'ACCESO A FUENTES','sources')

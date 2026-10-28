@@ -308,6 +308,7 @@ def chat(messages,model='qwen3:8b',endpoint='http://127.0.0.1:11434/api/chat',ti
         except Exception:detail=str(exc)
         raise RuntimeError(f'Ollama HTTP {exc.code}: {detail[:500]}')
     except URLError as exc: raise RuntimeError(f'Akira Local Core no disponible: {exc.reason}')
+    _CONTEXT.completion={'backend':'ollama','finish_reason':data.get('done_reason'),'truncated':data.get('done_reason')=='length'}
     if raw:return data
     if response_format is not None and data.get('done') is False:raise RuntimeError('La respuesta estructurada de AKIRA quedó incompleta')
     text=_clean((data.get('message') or {}).get('content'))
@@ -326,6 +327,40 @@ def vision_chat(prompt,images_b64,model='gemma3:4b',endpoint='http://127.0.0.1:1
                 model=model,endpoint=endpoint,timeout=timeout,options={'temperature':0.20,'num_ctx':8192,'num_predict':1800},keep_alive='0')
 
 
+
+def validated_tool_args(call, tools):
+    """Reject malformed arguments before any trusted executor is called."""
+    if not isinstance(call,dict) or not isinstance(call.get('function'),dict):raise ValueError('Llamada de herramienta inválida')
+    fn=call['function'];name=fn.get('name')
+    schema=next(((t.get('function') or {}).get('parameters') for t in tools if (t.get('function') or {}).get('name')==name),None)
+    if not isinstance(schema,dict):raise ValueError('Herramienta fuera del alcance de este pedido')
+    args=fn.get('arguments',{})
+    if isinstance(args,str):args=json.loads(args,parse_constant=lambda v: (_ for _ in ()).throw(ValueError('Número JSON no finito')))
+    if not isinstance(args,dict):raise ValueError('Los argumentos deben ser un objeto JSON')
+    def validate(value,node):
+        typ=node.get('type');valid=True
+        if typ=='object':
+            valid=isinstance(value,dict)
+            if valid:
+                props=node.get('properties') or {}
+                if any(k not in value for k in node.get('required',[])):raise ValueError('Faltan argumentos obligatorios')
+                if node.get('additionalProperties') is False and set(value)-set(props):raise ValueError('Argumentos no autorizados')
+                for k,v in value.items():
+                    if k in props:validate(v,props[k])
+        elif typ=='string':valid=isinstance(value,str)
+        elif typ=='integer':valid=type(value) is int
+        elif typ=='number':valid=type(value) in (int,float) and __import__('math').isfinite(value)
+        elif typ=='boolean':valid=type(value) is bool
+        elif typ=='array':
+            valid=isinstance(value,list)
+            if valid:
+                for item in value:validate(item,node.get('items') or {})
+        if not valid:raise ValueError('Tipo de argumento incorrecto')
+        if 'enum' in node and value not in node['enum']:raise ValueError('Valor de argumento no autorizado')
+    validate(args,schema)
+    return name,args
+
+
 def agent(messages,tools,executor,model='qwen3:8b',endpoint='http://127.0.0.1:11434/api/chat',timeout=120,max_rounds=3,reasoning=False,cancel_event=None,options=None,total_timeout=None,context_char_budget=28000,keep_alive='90s'):
     """Tool loop local. `tools` usa el esquema nativo de Ollama.
 
@@ -338,7 +373,6 @@ def agent(messages,tools,executor,model='qwen3:8b',endpoint='http://127.0.0.1:11
         seconds=deadline-time.monotonic()
         if seconds<=0:raise TimeoutError('El modelo agotó el tiempo total de esta respuesta')
         return min(float(timeout),seconds)
-    allowed={str((row.get('function') or {}).get('name')) for row in (tools or [])}
     rounds=max(1,min(int(max_rounds or 3),8))
     for _ in range(rounds):
         if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
@@ -350,25 +384,21 @@ def agent(messages,tools,executor,model='qwen3:8b',endpoint='http://127.0.0.1:11
         if not calls:
             if text:return text
             raise RuntimeError('Akira Local Core no devolvió respuesta visible')
+        if not isinstance(calls,list) or len(calls)>8:raise ValueError('Demasiadas llamadas de herramienta en una respuesta')
         convo.append({'role':'assistant','content':text,'tool_calls':calls})
-        for call in calls[:5]:
+        for call in calls:
             if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
             remaining()
-            fn=(call.get('function') or {}) if isinstance(call,dict) else {}
-            name=str(fn.get('name') or '')
-            args=fn.get('arguments') or {}
-            if isinstance(args,str):
-                try:args=json.loads(args)
-                except Exception:args={}
+            name=str((call.get('function') or {}).get('name') or '') if isinstance(call,dict) else ''
             try:
-                if name not in allowed:raise ValueError('Herramienta fuera del alcance de este pedido')
-                result=executor(name,args if isinstance(args,dict) else {})
+                name,args=validated_tool_args(call,tools or [])
+                result=executor(name,args)
             except Exception as exc:result={'ok':False,'error':f'{type(exc).__name__}: {exc}'}
             content=json.dumps(result,ensure_ascii=False,default=str)
             current_size=sum(len(str(row.get('content') or '')) for row in convo)
             available=max(0,int(context_char_budget)-current_size-400)
             if available<200:content='Resultado demasiado grande; usa los datos suministrados para responder.'
-            elif len(content)>min(10000,available):content=content[:min(10000,available)]+'…'
+            elif len(content)>min(10000,available):content=json.dumps({'ok':False,'truncated':True,'error':'El resultado excede el contexto disponible; consulta una sección más pequeña.'},ensure_ascii=False)
             if _direct_local_engine(endpoint):
                 convo.append({'role':'tool','tool_call_id':str(call.get('id') or name),'content':content})
             else:convo.append({'role':'tool','tool_name':name,'content':content})

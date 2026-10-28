@@ -21,7 +21,7 @@ def run_check():
         calls=[]
         def initialize(*args,**kwargs):calls.append(threading.get_ident());return True
         api.initialize=initialize;api.shutdown=lambda:None
-        cfg=load_config(DEFAULT);cfg.update(mode='observe',expected_login=123,expected_server='TEST',poll_seconds=.05)
+        cfg=load_config(DEFAULT);cfg['capital_protection']['enabled']=False;cfg.update(mode='observe',expected_login=123,expected_server='TEST',poll_seconds=.05)
         cfg['risk'].update(max_trade_money=10000000,max_trade_pct=100,portfolio_money_cap=100000000,portfolio_capital_pct=100,daily_loss_money=100000000,daily_loss_pct=100,minimum_margin_level_pct=300)
         cfg['runner'].update(max_trade_budget_pct=100,allow_size_boost=True)
         cfg['assistant'].update(auto_install_local_ai=False,local_runtime_enabled=False);cfg['desktop']['privacy']=False
