@@ -266,6 +266,7 @@ class PendingPlanner:
         evaluation=evaluation if evaluation is not None else {}
         if 'snapshot' not in evaluation:evaluation['snapshot']=self.g.snapshot()
         map_snapshot=evaluation['snapshot']; account=map_snapshot.account
+        from capital_guard import rules as protection_rules
         presence_gap=bool(presence)
         r_cfg=self.cfg.get("risk",{})
         # Usar exactamente el mismo cap que Gateway. Así la UI/Planner nunca
@@ -419,7 +420,7 @@ class PendingPlanner:
                 reject(setup,'unobserved_structural_origin','H1/H4 sin origen SWING/OB/BOS observado; no ejecutar EMA/Fib/zona dinámica como si fuera estructura')
                 continue
             if (source_map=='STRUCTURAL' and bool(execution_cfg.get('require_observed_target',True))
-                    and not (presence and bool(execution_cfg.get('presence_allow_projected_target',True)))
+                    and not (presence and bool(execution_cfg.get('presence_allow_projected_target',True)) and not protection_rules(self.cfg)['enabled'])
                     and 'sin swing observado' in str(setup.reason).lower()):
                 reject(setup,'unobserved_target','TP proyectado sin swing H1/H4/D1 observado; Akira espera un objetivo estructural real')
                 continue
@@ -775,6 +776,9 @@ class PendingPlanner:
                 # los umbrales blandos; nunca se relajan SL/TP, riesgo, margen o MT5.
                 min_quality=min(min_quality,90.0)
                 min_activation=min(min_activation,12.0)
+            protected=protection_rules(self.cfg)
+            if protected['enabled'] and protected['strict_pending_quality']:
+                min_quality=max(min_quality,float(cfg.get('pending_structural_quality_min',84.0) if source_map=='STRUCTURAL' else cfg.get('pending_tactical_quality_min',76.0)))
             if self.cfg.get('pending_policy',{}).get('enabled',False):
                 # A presence quota must never promote a weaker zone. Generate
                 # observed alternatives, then let them meet the real thresholds.
@@ -813,6 +817,9 @@ class PendingPlanner:
                 grade_key='presence_minimum_structural_grade' if presence else 'minimum_structural_grade'
                 required_grade=str(execution.get(grade_key,'B' if presence else 'A') or ('B' if presence else 'A')).upper()
                 grade_rank={'B':0,'B+':1,'A':2,'A+':3}
+                if protected['enabled'] and protected['strict_pending_quality']:
+                    normal=str(execution.get('minimum_structural_grade','A')).upper()
+                    if grade_rank.get(normal,2)>grade_rank.get(required_grade,0):required_grade=normal
                 if grade_rank.get(grade,0)<grade_rank.get(required_grade,0 if presence else 2):
                     reject(setup,'grade_below_required',f'Pendiente {grade}: Akira exige {required_grade} o superior en este mapa')
                     continue
@@ -822,7 +829,7 @@ class PendingPlanner:
                     +fit_note
                     +f"; activación {activation_score:.0f}/100 ({distance_source:.2f} ATR-fuente)"
                     +f"; calidad {quality_score:.0f}/100; grado {grade}; MTF {mtf_alignment:+.2f}; ensemble {family} {ensemble_bonus:+.1f}; round/session {round_bonus:+.1f}; final {score:.0f}/100" + ("; V5 PRESENCE FALLBACK" if soft_fallback and presence_gap else "; BEST_VALID_FALLBACK" if soft_fallback else "")
-                    +f"; P/L 0.01: riesgo {risk_money:.2f}, objetivo {reward_money:.2f}" + ("; MAPA SIEMPRE ACTIVO: mejor tesis segura disponible, bajo control continuo" if presence else ""))
+                    +f"; P/L 0.01: riesgo {risk_money:.2f}, objetivo {reward_money:.2f}" + ("; MAPA SIEMPRE ACTIVO: alternativa técnica disponible, acierto no calibrado; bajo control continuo" if presence else ""))
             if selected:
                 reason+="; IA CLOUD ELIGIÓ ESTA PENDIENTE EXACTA"
             diag["accepted_pre_gateway"]+=1

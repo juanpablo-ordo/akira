@@ -38,6 +38,7 @@ from decision_brain import fast_command as route_fast_request, trade_result_text
 from assistant_startup import AssistantStartup
 from language_normalization import understood,normalize_message
 from conversation_intent import self_reply,is_personal_conversation
+from mentor_context import system_question
 from answer_grounding import release_constraint,neutral_question,enforce_release_constraint
 from akira_model_runtime import ManagedLlamaProcess, hardware_profile
 from strategy_research import ResearchLedger
@@ -326,7 +327,7 @@ class AkiraAssistant:
             'as_of_utc':snapshot.get('as_of_utc'),'connected':snapshot.get('connected'),
             'error':snapshot.get('error',''),'build':snapshot.get('build'),
             'conversation_memory':snapshot.get('conversation_memory',{}),
-            'trade_risk_cap':snapshot.get('trade_risk_cap'),'reserved_risk':snapshot.get('reserved_risk'),
+            'capital_protection':snapshot.get('capital_protection',{}),'trade_risk_cap':snapshot.get('trade_risk_cap'),'reserved_risk':snapshot.get('reserved_risk'),
             'risk_cap':snapshot.get('risk_cap'),'execution_block':snapshot.get('execution_block',''),
             'portfolio_risk':{**(snapshot.get('portfolio_risk') or {}),
                 'rows':sorted((snapshot.get('portfolio_risk') or {}).get('rows',[]),
@@ -784,6 +785,8 @@ class AkiraAssistant:
             return {'type':'function','function':{'name':name,'description':description,
                     'parameters':{'type':'object','properties':props,'required':required,'additionalProperties':False}}}
         rows=[
+            tool('inspect_akira_state','Consulta el estado real de cuenta, riesgo, rendimiento o actividad. Solo lectura: no coloca órdenes, no cambia ajustes ni ejecuta código.',
+                 {'section':{'type':'string','enum':['account','risk','performance','activity']}},['section']),
             tool('research_public_web','Busca fuentes públicas de Internet para responder o verificar información.',
                  {'query':{'type':'string'}},['query']),
             tool('search_source_memory','Busca en la memoria local de fuentes ya leídas por Akira.',
@@ -814,6 +817,13 @@ class AkiraAssistant:
         return rows
 
     def _execute_local_tool(self,name,args):
+        if name=='inspect_akira_state':
+            from mentor_context import inspect_state
+            if args.get('section') not in ('account','risk','performance','activity'):return {'ok':False,'error':'Sección inválida'}
+            if self.trade_callback is None:return {'ok':False,'error':'Motor de Akira no conectado'}
+            response=self.trade_callback({'action':'assistant_snapshot'})
+            if not isinstance(response,dict) or not isinstance(response.get('snapshot'),dict):return {'ok':False,'error':'El motor no confirmó una captura'}
+            return inspect_state(response['snapshot'],args['section'],time.time())
         if name in ('search_source_memory','research_public_web','search_youtube','read_public_source','read_youtube_transcript','analyze_youtube_video'):
             return self._source_tool(name,args)
         if name=='create_local_file': return self._create_local_file(args)
@@ -971,7 +981,7 @@ class AkiraAssistant:
             model=self.startup.conversation_model(available,endpoint)
             current=('Antes pregunté: '+research_query+'\nAhora reclamo: '+message+'\nResponde a mi pregunta anterior con el contexto disponible; no definas la frase del reclamo.' if routing.get('repair') else message)
             prompts=messages_for(current,self.dialogue.history(self.history),snapshot.get('conversation_memory'),
-                brand=(self.cfg.get('studio') or {}).get('brand_name','AKIRA'),language=(self.cfg.get('studio') or {}).get('language_chat','auto'))
+                brand=(self.cfg.get('studio') or {}).get('brand_name','AKIRA'),language=(self.cfg.get('studio') or {}).get('language_chat','auto'),style=cfg.get('conversation_style','natural'))
             self._progress('PENSANDO','Preparando una respuesta a tu pregunta')
             timeout=max(120 if self._managed_model.desktop_policy(self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía' else 75,float(cfg.get('fast_chat_timeout_seconds',75)))
             from akira_local_ai import completion_info,clear_completion_info
@@ -980,7 +990,7 @@ class AkiraAssistant:
             text=ollama_agent(prompts,[],self._execute_local_tool,model=model,endpoint=endpoint,
                 timeout=timeout,total_timeout=timeout,
                 max_rounds=1,reasoning=False,cancel_event=self._cancel_event,
-                options={'num_predict':480 if re.search(r'detall|paso a paso|demostraci[oó]n|extens',message,re.I) else 200,'temperature':.2},context_char_budget=9000)
+                options={'num_predict':min(1200,int(cfg.get('fast_chat_max_tokens',1200))) if cfg.get('conversation_style')=='detailed' or re.search(r'detall|paso a paso|demostraci[oó]n|extens|expl[ií]ca.*(?:todo|completo)',message,re.I) else 320,'temperature':.2},context_char_budget=9000)
             if not isinstance(text,str) or not text.strip():raise RuntimeError('El modelo no produjo texto visible')
             if routing.get('repair') and re.search(r'(?i)(?:la frase|la expresi[oó]n|el mensaje).{0,80}(?:sugiere|significa|se refiere)',text):
                 if time.monotonic()>=deadline-1:raise TimeoutError('No terminó la corrección de contexto')
@@ -1029,7 +1039,7 @@ class AkiraAssistant:
                 return self._limited_evidence_reply(research_query,source_rows)
             verified_context='\n'.join(f"[{i}] {r.get('title','Fuente')}: {r.get('text','')}\nURL: {r.get('url','')}" for i,r in enumerate(source_rows,1))
             web_context=verified_context
-        elif auto_research and (trading or factual or fresh or explicit_research) and not is_casual(research_query) and not social and not formatting:
+        elif auto_research and (trading or factual or fresh or explicit_research) and not system_question(message) and not is_casual(research_query) and not social and not formatting:
             # V12.2: no delegar la decisión de investigar a un modelo local pequeño.
             # Web y YouTube se descubren EN PARALELO antes de redactar. Trading usa
             # siempre evidencia pública reciente además del snapshot/cache interno.
@@ -1128,6 +1138,9 @@ class AkiraAssistant:
             for key in ('videos','news'):
                 research[key]=(research.get(key) or [])[:5]
             state['positions']=state['positions'][:8];state['orders']=state['orders'][:8]
+        if trading:
+            from mentor_context import inspect_state
+            state['performance_review']=inspect_state(snapshot,'performance',time.time())
         compact=json.dumps(state if trading else {'mode':'general_chat','research_query':research_query,'web_research_used':bool(web_context),'current_fact_requires_web':fresh,'local_core_model':model},ensure_ascii=False)
         current=(f'Antes pregunté: {research_query}\nAhora reclamo: {message}\nResponde a mi pregunta anterior con el contexto disponible.' if routing['repair'] else message)
         # Keep a normal answer inside the real server context and CPU time budget.
@@ -1378,6 +1391,10 @@ class AkiraAssistant:
         if memory:
             self.chats.remember(memory.group(1));answer='Lo guardé en tu memoria: '+memory.group(1).strip()
             self._remember_turn(message,answer);return answer
+        from mentor_context import diagnostic_reply
+        diagnosis=diagnostic_reply(message,snapshot,entered)
+        if diagnosis is not None:
+            self._remember_turn(message,diagnosis);return diagnosis
         quick=instant_review(message,snapshot,self.dialogue.previous_question(self.history),entered)
         if quick is not None:
             self._remember_turn(message,quick)

@@ -877,6 +877,7 @@ class Engine:
         except Exception as exc:self.log.report('MT5','HISTORIAL DE CIERRE','No se pudo confirmar el cierre: '+type(exc).__name__)
         from trade_quality_gate import owned_outcomes
         self._confirmed_outcomes=owned_outcomes(g)
+        snap=self.enforce_capital_protection(snap)
         snap=self.review_loss_pendings(snap)
         # El primer envío no espera una consulta de 90 días de deals.
         self.planner.research_context=self.read_context()
@@ -1213,7 +1214,7 @@ class Engine:
                 'cycle_ms':round(self.duration_ms,1),'cycle':self.cycle,'updated':self.g.clock(),
                 'position_closures':self.g.closure_monitor.rows(),
                 'position_management':{str(p.ticket):copy.deepcopy(self.g.journal.data['positions'].get(str(p.ticket),{})) for p in snap.positions if self.g.owned(p)},
-                'risk_cap':ledger['cap_usd'],'trade_risk_cap':self.g.trade_cap(snap),'reserved_risk':ledger['reserved_usd'],
+                'capital_protection':self.g.capital_status(snap),'risk_cap':ledger['cap_usd'],'trade_risk_cap':self.g.trade_cap(snap),'reserved_risk':ledger['reserved_usd'],
                 'portfolio_risk':ledger,'risk_limits':self._risk_limits,
                 'selection_evidence':self.planner.selection_summary,
                 'selection_configuration':self.verification_configuration(),
@@ -1285,6 +1286,25 @@ class Engine:
         if len(self._quality_notices)>128:self._quality_notices={key}
         self.log.event(plan.symbol,'ENTRADA EVITADA · '+reason,operation='quality_entry_blocked',reason=reason,event_key=key)
 
+    def enforce_capital_protection(self,snap):
+        from capital_guard import pending_reduction
+        g=self.g
+        if self.paused or self.cfg['mode']!='trade' or g.runtime_execution_block or getattr(g,'network_available',True) is False:return snap
+        state=g.capital_status(snap,refresh=True)
+        entry_block=g.daily_loss_reason(snap)
+        for _ in range(len(snap.orders)):
+            choice=pending_reduction(g,snap,g.reservation_ledger(snap),state,entry_block)
+            if choice is None:break
+            order,reason=choice
+            if order.symbol in g.journal.data['intents']:break
+            try:
+                if not g.cancel(order,'Protección de capital: '+reason):break
+                snap=g.snapshot();g.reconcile(snap);snap=g.snapshot()
+                if order.symbol in g.journal.data['intents']:break
+            except Blocked as exc:
+                self.log.report(order.symbol,'RETIRO PENDIENTE',str(exc));break
+        return snap
+
     def review_loss_pendings(self,snap):
         from trade_quality_gate import evaluate
         if self.paused or self.cfg['mode']!='trade' or self.g.runtime_execution_block:return snap
@@ -1292,12 +1312,16 @@ class Engine:
             if not self.g.owned_order(o):continue
             side=1 if int(o.type)%2==0 else -1
             rows=[r for r in self._confirmed_outcomes if r.get('symbol')==o.symbol and int(r.get('side',0))==side]
-            if not rows or float(rows[-1].get('pnl',0))>=0:continue
+            lost=bool(rows and float(rows[-1].get('pnl',0))<0)
+            from capital_guard import rules as protection_rules
+            protection=protection_rules(self.cfg);continuous=protection['enabled'] and protection['strict_pending_quality']
+            if not lost and not continuous:continue
+            if continuous and not self.market_state(o.symbol)['open']:continue
             p=order_plan(o,(self.g.journal.data['orders'].get(str(o.ticket)) or {}).get('plan'))
-            evidence=evaluate(p,self.planner.caches[o.symbol].frames,self._confirmed_outcomes,self.g.clock(),strict=False)
+            evidence=evaluate(p,self.planner.caches[o.symbol].frames,self._confirmed_outcomes,self.g.clock(),strict=continuous)
             if evidence['allowed']:continue
             try:
-                if self.g.cancel(o,'Revisión tras pérdida confirmada: '+evidence['reason']):
+                if self.g.cancel(o,('Revisión tras pérdida confirmada: ' if lost else 'Revisión continua de tesis: ')+evidence['reason']):
                     self.notice_quality_block(p,evidence['reason']);return self.g.snapshot()
             except Blocked as exc:self.log.report(o.symbol,'REVISIÓN DE TESIS',str(exc))
         return snap
@@ -1397,7 +1421,7 @@ class Engine:
             'deep_initialized':self.deep_initialized,'last_scan':dict(self.last_scan),
             'first_requests':dict(self.first_requests),'broker_cooldowns':dict(self.g.cooldowns),
             'last_broker_rejection':dict(self.g.last_rejection),'history_error':self.g.history_error}
-        row['configured_execution']={k:self.cfg[k] for k in ('mode','symbols','risk','sizing','runner','pending','execution','pending_policy')}
+        row['configured_execution']={k:self.cfg[k] for k in ('mode','symbols','risk','capital_protection','sizing','runner','pending','execution','pending_policy')}
         row['configured_execution']['management']=copy.deepcopy(self.cfg['management'])
         row.update(self.report_history())
         for symbol,cache in self.planner.caches.items():
@@ -1421,6 +1445,6 @@ class Engine:
         """Lectura del último ciclo: cero llamadas MT5 y cero escrituras al bróker."""
         if not self._last_view:raise Blocked('Esperando el primer ciclo; vuelve a generar el informe al conectar MT5')
         row=copy.deepcopy(self._last_view)
-        row['configured_execution']={k:copy.deepcopy(self.cfg[k]) for k in ('mode','symbols','risk','sizing','runner','pending','execution','pending_policy','management')}
+        row['configured_execution']={k:copy.deepcopy(self.cfg[k]) for k in ('mode','symbols','risk','capital_protection','sizing','runner','pending','execution','pending_policy','management')}
         row.update(self.report_history())
         return row

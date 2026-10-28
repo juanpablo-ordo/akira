@@ -39,7 +39,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
         row={**row,'build':BUILD_ID,'runtime':{'application_root':str(root.resolve()),
             'python_executable':sys.executable,'process_id':os.getpid(),
             'started_utc':started_utc,'stage':stage,'preview':bool(preview)},
-            'configured_execution':{k:cfg[k] for k in ('mode','symbols','risk','sizing','runner')}}
+            'configured_execution':{k:cfg[k] for k in ('mode','symbols','risk','capital_protection','sizing','runner')}}
         publish_callback(row)
     def disconnected(problem,delay=0):
         status=problem.status(delay)

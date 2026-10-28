@@ -1,0 +1,24 @@
+{
+  "build": "AKIRA_16_5_2_STUDIO_REV17",
+  "status": "PENDING_WINDOWS",
+  "date": "2026-10-28",
+  "local_targeted": {
+    "tests": 34,
+    "subtests": 5,
+    "failed": 0,
+    "includes": "capital policy, assistant facts, tool validation, Qt save and actor confirmation"
+  },
+  "local_full_suite": {
+    "passed": 1556,
+    "failed": 23,
+    "skipped": 5,
+    "subtests_passed": 200,
+    "scope": "21 Tk display failures; two compatibility failures subsequently corrected and retested separately. Windows pending."
+  },
+  "windows_verified": false,
+  "installer_verified": false,
+  "real_model_verified_for_this_revision": false,
+  "real_mt5_demo_used": false,
+  "physical_dell_tested": false,
+  "profitability_verified": false
+}

@@ -33,7 +33,7 @@ class SourceAccess(unittest.TestCase):
             exe=root/'local_ai/cpu/llama-server.exe';model=root/'local_ai/models/Qwen3-4B-Q4_K_M.gguf'
             exe.parent.mkdir(parents=True);model.parent.mkdir(parents=True)
             exe.write_bytes(b'MZtest');model.write_bytes(b'GGUFtest')
-            runtime=module.ManagedLlamaProcess({'local_runtime_exe':'/old/llama-server.exe','local_runtime_model':'/old/missing.gguf'})
+            runtime=module.ManagedLlamaProcess({'local_runtime_exe':'/old/llama-server.exe','local_runtime_model':'/old/Qwen3-4B-Q4_K_M.gguf'})
             with patch.object(module.sys,'frozen',True,create=True),patch.object(module.sys,'executable',str(root/'AKIRA.exe')):
                 self.assertEqual(runtime._paths(),(exe.resolve(),model.resolve()))
                 command=runtime.command('http://127.0.0.1:8080/v1/chat/completions')

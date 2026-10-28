@@ -370,6 +370,12 @@ def load_config(path):
     attempts=cfg['execution']['pending_attempts_per_cycle']
     if type(attempts) is not int or not 1<=attempts<=16:raise ValueError('Intentos por ciclo deben ser entero entre 1 y 16')
     if cfg['execution']['pending_rejection_retry_seconds']<1:raise ValueError('Reintento de pendiente rechazada debe esperar al menos 1 segundo')
+    if cfg['assistant'].get('conversation_style') not in ('natural','mentor','detailed'):raise ValueError('Estilo de conversación inválido')
+    guard=cfg['capital_protection']
+    for key in ('enabled','one_position_per_symbol','strict_pending_quality'):
+        if type(guard[key]) is not bool:raise ValueError('capital_protection.'+key+' debe ser booleano')
+    for key in ('trade_pct','portfolio_pct','symbol_pct','daily_loss_pct','max_drawdown_pct'):
+        if isinstance(guard[key],bool) or not .1<=guard[key]<=100:raise ValueError('capital_protection.'+key+' debe estar entre 0.1 y 100')
     if cfg['mode'] not in ('trade','observe'):raise ValueError('mode debe ser trade u observe')
     if cfg['lot']<=0 or cfg['lot']>cfg['sizing']['max_lot']:raise ValueError('Lote base debe ser positivo y no superar el máximo de dimensionado')
     if not 0 < cfg['sizing']['risk_utilization'] <= 1:raise ValueError('Uso del presupuesto debe estar entre 0 y 1')

@@ -394,7 +394,8 @@
     "deep_research_on_request": true,
     "cross_chat_memory": true,
     "voice_model": "tiny",
-    "voice_language": "es"
+    "voice_language": "es",
+    "conversation_style": "natural"
   },
   "desktop": {
     "width": 1580,
@@ -531,5 +532,15 @@
       "sequences": {},
       "profile": "default"
     }
+  },
+  "capital_protection": {
+    "enabled": true,
+    "trade_pct": 2.0,
+    "portfolio_pct": 6.0,
+    "symbol_pct": 3.0,
+    "daily_loss_pct": 6.0,
+    "max_drawdown_pct": 15.0,
+    "one_position_per_symbol": true,
+    "strict_pending_quality": true
   }
 }

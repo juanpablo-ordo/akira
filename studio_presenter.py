@@ -91,6 +91,7 @@ def risk_dashboard(view,config,private=False):
     limits=configured_limits(config,account);ledger=view.get('portfolio_risk') or {}
     actor=view.get('configured_execution') or {}
     applied=connected and actor.get('risk')==config['risk'] and (actor.get('runner') or {}).get('max_trade_budget_pct')==config['runner']['max_trade_budget_pct']
+    if 'capital_protection' in actor:applied=applied and actor['capital_protection']==config.get('capital_protection')
     state='Aplicado en el motor' if applied else 'Guardado; esperando la actualización del motor' if connected else 'Guardado; pendiente de conectar MT5'
     if view.get('preview'):state='Vista previa · no es una cuenta conectada al bróker'
     money=lambda value:f"{float(value):,.2f} {limits['currency']}"
@@ -108,12 +109,18 @@ def risk_dashboard(view,config,private=False):
     configured=(f"Por orden: hasta {money(limits['per_trade'])}\nElegiste {money(limits['trade_money'])} y {limits['trade_pct']:g}% del patrimonio."
         f"\nRunner directo: hasta {money(limits['runner'])}\nPresupuesto conjunto: {money(cap)}"
         f"\nElegiste {limits['portfolio_pct']:g}% del capital y {total_choice}. Se usa el menor límite aplicable.")
+    protection=limits.get('capital_protection') or {}
+    if protection.get('enabled'):
+        configured+=f"\nProtección activa: {protection['trade_pct']:g}% por orden, {protection['portfolio_pct']:g}% conjunto y {protection['symbol_pct']:g}% por símbolo."
     if limits['per_trade']<=0:configured+='\nEl límite por orden es cero: los topes en dinero y porcentaje deben ser mayores que cero para habilitar riesgo.'
-    elif not limits.get('override'):
+    elif not limits.get('override') and not protection.get('enabled'):
         binding='el tope en dinero' if limits['trade_money']<=limits['equity']*limits['trade_pct']/100 else 'el porcentaje del patrimonio'
         configured+='\nEn esta cuenta manda '+binding+' para el límite por orden.'
     if limits.get('override'):configured+='\nEl permiso extra para el lote mínimo estructural está incluido en el tope por orden.'
     usage=f"En uso: {money(used)}\nDisponible para nuevas órdenes: {money(available)}\n{usage_note}"
+    guard=view.get('capital_protection') or {}
+    if guard.get('enabled'):
+        usage+='\n'+(guard.get('reason') or f"Protección activa; caída desde referencia: {guard.get('drawdown_pct',0):.2f}%.")
     if used>cap:usage+='\nEl riesgo reservado supera el límite guardado; no queda presupuesto para nuevas entradas.'
     if private:
         configured='Límites ocultos. Pulsa el ojo de la cuenta para ver los importes.'

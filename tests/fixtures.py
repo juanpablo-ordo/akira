@@ -19,6 +19,7 @@ class PendingCase:
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name);self.clock=Clock();self.api=FakeMT5(self.clock);self.cfg=load_config(DEFAULT);self.cfg['mode']='trade'  # fixtures de ejecución usan opt-in explícito
         optional_ollama_fixture(self.cfg)
+        self.cfg['capital_protection']['enabled']=False  # transport fixtures test custom limits; Rev17 tests enable the capital policy
         self.cfg['execution']['pending_only']=True  # transport fixtures explicitly exercise the pending lane
         # La serie sintética base es deliberadamente simple y no contiene objetivos
         # swing H1/H4/D1 reales. Para pruebas de transporte/actor usamos un modo

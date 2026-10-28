@@ -9,7 +9,7 @@ from resource_optimizer import effective_desktop
 
 
 def screenshot_config():
-    cfg=load_config(DEFAULT)
+    cfg=load_config(DEFAULT);cfg['capital_protection']['enabled']=False
     cfg['risk'].update(max_trade_money=10000000,max_trade_pct=100,portfolio_money_cap=100000000,portfolio_capital_pct=100,daily_loss_money=100000000,daily_loss_pct=100,minimum_margin_level_pct=300)
     cfg['runner']['max_trade_budget_pct']=100
     return cfg

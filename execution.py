@@ -138,7 +138,7 @@ class Gateway:
     def __init__(self,api,cfg,journal,reporter,clock=time.time):
         self.api,self.cfg,self.journal,self.log,self.clock=api,cfg,journal,reporter,clock
         self.identity=None;self.cooldowns={};self.history=[];self.history_time=0.0
-        self.history_error='historial sin cargar';self.last_order_send_ms={}
+        self.history_error='historial sin cargar';self.last_order_send_ms={};self.history_revision=0
         self.pending_rejections=[];self.last_rejection={}
         self.runtime_execution_block=''
         self.account_currency=''
@@ -243,12 +243,27 @@ class Gateway:
         if self.cfg['expected_login'] and int(a.login)!=self.cfg['expected_login']:raise Blocked('Cuenta diferente de expected_login')
         if self.cfg.get('expected_server') and str(a.server).casefold()!=self.cfg['expected_server'].casefold():raise Blocked('El servidor MT5 no coincide con la cuenta autorizada')
         if entry and (not math.isfinite(float(a.equity)) or float(a.equity)<=0):raise Blocked('Capital no válido')
-        limits=[x for x in (float(self.cfg['risk'].get('daily_loss_money',0)),float(a.equity)*float(self.cfg['risk'].get('daily_loss_pct',0))/100) if x>0]
-        if entry and limits:
-            if self.history_error or not self.history_time or self.clock()-self.history_time>120:raise Blocked('Límite diario activo: esperando historial MT5 vigente')
-            today=int(self.clock()//86400)*86400
-            realized=sum(self.pnl(d) for d in self.history if float(d.time)>=today and int(d.type) in (0,1))
-            if realized<=-min(limits):raise Blocked('Límite de pérdida neta diaria alcanzado; se conserva la gestión de posiciones existentes')
+        if entry:
+            state=self.capital_status(snap,refresh=True)
+            if not state['allowed']:raise Blocked(state['reason'])
+            reason=self.daily_loss_reason(snap)
+            if reason:raise Blocked(reason)
+
+    def capital_status(self,snap,refresh=False):
+        from capital_guard import status
+        return status(self,snap,refresh=refresh)
+
+    def daily_loss_reason(self,snap):
+        rules=self.cfg['risk']
+        if not (rules.get('daily_loss_money',0)>0 or rules.get('daily_loss_pct',0)>0):return ''
+        if self.history_error or not self.history_time or not -2<=self.clock()-self.history_time<=120:
+            return 'Límite diario activo: esperando historial MT5 vigente'
+        from capital_guard import metrics_for
+        metrics=metrics_for(self,snap)
+        limits=[x for x in (float(rules.get('daily_loss_money',0)),metrics['day_basis']*float(rules.get('daily_loss_pct',0))/100) if x>0]
+        if limits and metrics['daily_loss']>=min(limits)-1e-9:
+            return 'Límite de pérdida neta diaria alcanzado; retirar pendientes propias y conservar la protección de posiciones existentes'
+        return ''
 
     def profit(self,symbol,side,volume,entry,exit,evaluation=None):
         x=self.valuation_call(evaluation,'order_calc_profit',BUY if side==1 else SELL,symbol,volume,entry,exit)
@@ -268,16 +283,18 @@ class Gateway:
             self.history_error='Historial MT5 no disponible; aprendizaje conserva último dato';return self.history
         by_id={int(d.ticket):d for d in self.history}
         by_id.update({int(d.ticket):d for d in rows})
-        self.history=list(by_id.values());self.history_time=now;self.history_error=''
+        self.history=list(by_id.values());self.history_time=now;self.history_error='';self.history_revision+=1
         return self.history
 
     def total_cap(self,snap):
         from risk_limits import portfolio_cap
-        return portfolio_cap(self.cfg['risk'],snap.account.balance,snap.account.equity)
+        from capital_guard import rules
+        return portfolio_cap(self.cfg['risk'],snap.account.balance,snap.account.equity,rules(self.cfg))
 
     def trade_cap(self,snap,*unused):
         from risk_limits import trade_cap
-        return trade_cap(self.cfg['risk'],snap.account.equity)
+        from capital_guard import rules
+        return trade_cap(self.cfg['risk'],snap.account.equity,rules(self.cfg))
 
     def entry_cap(self,plan,snap):
         from runner_protection import entry_cap
@@ -318,6 +335,9 @@ class Gateway:
         ledger=self.reservation_ledger(snap,ignore_orders,evaluation)
         if ledger['available_usd']<=0:raise Blocked(self.reservation_reason(ledger))
         capacity=min(self.entry_cap(plan,snap),ledger['available_usd'])
+        from capital_guard import rules as protection_rules,symbol_cap
+        if protection_rules(self.cfg)['enabled']:
+            capacity=min(capacity,max(0,symbol_cap(self.cfg,snap)-sum(r['reserved_usd'] for r in ledger['rows'] if r.get('symbol')==plan.symbol)))
         unit,_=self.plan_money(plan,minimum,evaluation=evaluation)
         if unit<=0:raise Blocked('Riesgo del lote mínimo no calculable')
         if unit>capacity+1e-9 or maximum<minimum-1e-9:
@@ -450,6 +470,13 @@ class Gateway:
         if reward/risk<float(cfg['pending_hard_min_rr']):raise Blocked(f'R:R neto {reward/risk:.2f} insuficiente')
         total=self.exposure_risk(snap,ignore_orders,evaluation)+risk
         if total>self.total_cap(snap)+1e-9:raise Blocked(f'Riesgo conjunto {total:.2f} supera {self.total_cap(snap):.2f}')
+        from capital_guard import rules as protection_rules,symbol_cap
+        protection=protection_rules(self.cfg)
+        if protection['enabled']:
+            if protection['one_position_per_symbol'] and any(p.symbol==plan.symbol for p in snap.positions):
+                raise Blocked('Protección de capital: ya existe una posición en este símbolo; no acumular exposición')
+            symbol_risk=sum(r['reserved_usd'] for r in self.reservation_ledger(snap,ignore_orders,evaluation)['rows'] if r.get('symbol')==plan.symbol)+risk
+            if symbol_risk>symbol_cap(self.cfg,snap)+1e-9:raise Blocked('Protección de capital: riesgo conjunto del símbolo supera su límite')
         margin=self.valuation_call(evaluation,'order_calc_margin',BUY if side==1 else SELL,plan.symbol,volume,plan.entry)
         if margin is None or not math.isfinite(float(margin)) or margin<0:raise Blocked('Margen no calculable')
         future=self.reserved_pending_margin(snap,ignore_orders,evaluation)+float(margin)
