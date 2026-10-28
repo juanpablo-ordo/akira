@@ -1,6 +1,6 @@
 # Studio Rev17 - capital proporcional y conversación de mentor
 
-Estado de publicación: candidata en revisión. No usar los resultados de Rev16 como evidencia de esta compilación. Las pruebas de Windows, instalador y modelo real deben terminar antes de ofrecer un ejecutable nuevo.
+Estado: validada en Windows y publicada. [Instalador con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/40655274399/artifacts/12802939072) · [Ejecución y diagnósticos](https://github.com/juanpablo-ordo/akira/actions/runs/40655274399). Compilación de la fuente `67e71bd0ff761b2036b7f3c1baac23bd1ac0b9b6`, no de Rev16. El artefacto caduca el 2026-11-04.
 
 ## Problema y comportamiento
 
@@ -35,3 +35,11 @@ La validación local se registra en `VALIDACION_REV17.json`. La ejecución Windo
 La primera ejecución Windows (40649761941, commit 4697980) aprobó las regresiones, el ejecutable y las pruebas concurrentes, pero falló al terminar la explicación matemática: el modelo alcanzó el límite de tokens y llamó erróneamente a pi número de Euler. No se publicó un instalador.
 
 Se añade respuesta completa con longitud y tiempo proporcionales al pedido, una sola regeneración dentro del mismo plazo y comprobación de finalización antes de guardar el turno. Un borrador truncado no se considera éxito. Un pequeño glosario de símbolos basado en NIST DLMF 4.2/4.4 aporta definiciones como datos al modelo, sin sustituir su respuesta por plantillas. La aceptación ahora también rechaza la atribución incorrecta detectada. Esto no acredita exactitud universal en matemáticas.
+
+## Resultado final de Rev17
+
+La fuente final pasó localmente 1,597 pruebas y 214 subpruebas (1,811 casos XML), sin fallos ni omisiones. En Windows se aprobaron las regresiones completas, las comprobaciones de fuente y ejecutable, los 20 informes exigidos, la inferencia del GGUF incluido con dos CPU lógicas y las pruebas de instalación limpia y actualización desde Rev15 conservando datos. `VALIDACION_REV17.json` contiene los contadores, respuestas reales, medidas, hashes de informes, versión del modelo y la identidad exacta del instalador.
+
+Las nueve respuestas de conversación reconstruida y las seis de conversación general proceden del modelo real y terminaron sin truncamiento. Las comprobaciones de Dell aplican una política de recursos y carga simulada; no equivalen a medir la laptop física del usuario. MT5 usa un bróker sintético durante estas comprobaciones, sin operar una cuenta real o demo del usuario. La rentabilidad y la tasa de acierto futura no están certificadas.
+
+La documentación final se guarda después de terminar la ejecución. No modifica el código fuente compilado ni presenta el primer intento fallido como una publicación válida.

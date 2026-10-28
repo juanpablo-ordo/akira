@@ -1,6 +1,8 @@
 # AKIRA 16.5.2 - Studio Rev17
 
-Candidata con protección proporcional del capital, revisión continua de pendientes y conversación de mentor. **Todavía no hay un instalador Rev17 validado que este README pueda recomendar.** Los instaladores y resultados de Rev16 corresponden a otra compilación.
+Rev17 incorpora protección proporcional del capital, revisión continua de pendientes y conversación de mentor. [Descargar instalador Windows con IA incluida](https://github.com/juanpablo-ordo/akira/actions/runs/40655274399/artifacts/12802939072). Requiere iniciar sesión en GitHub y el archivo caduca el 2026-11-04.
+
+La [ejecución Windows](https://github.com/juanpablo-ordo/akira/actions/runs/40655274399) terminó con regresiones, inferencia real, instalación limpia y actualización desde Rev15 aprobadas. La compilación corresponde a `67e71bd0ff761b2036b7f3c1baac23bd1ac0b9b6`; las actualizaciones posteriores de documentación registran la evidencia sin cambiar ese ejecutable.
 
 En Ajustes > Riesgo, la protección limita por orden, símbolo y cartera, y pausa nuevas entradas por pérdida diaria o caída desde la referencia. También retira pendientes propias incompatibles; conserva las órdenes externas y la protección de posiciones. La vista previa muestra el menor límite efectivo. Un lote mínimo puede hacer incompatible una cuenta pequeña con un SL estructural adecuado. No se estrecha el SL para forzar actividad.
 
