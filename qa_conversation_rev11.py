@@ -162,6 +162,8 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                     result['scenarios'].append(row)
                     print(name+' '+str(row['seconds'])+'s '+answer[:180],flush=True)
                     if not check(answer.casefold()):raise AssertionError('Irrelevant answer: '+name)
+                    from mathematical_reference import issue as mathematical_issue
+                    if mathematical_issue(answer):raise AssertionError('Definition contradicts the bundled reference: '+name)
                     if rebuilt and (row['origin']!='model' or first is None or getattr(bot,'_last_response_error','')):
                         raise AssertionError('A real model response was required: '+name)
                     if rebuilt and (row['completion'].get('backend')!='llama.cpp' or row['completion'].get('truncated')):

@@ -983,22 +983,31 @@ class AkiraAssistant:
             prompts=messages_for(current,self.dialogue.history(self.history),snapshot.get('conversation_memory'),
                 brand=(self.cfg.get('studio') or {}).get('brand_name','AKIRA'),language=(self.cfg.get('studio') or {}).get('language_chat','auto'),style=cfg.get('conversation_style','natural'))
             self._progress('PENSANDO','Preparando una respuesta a tu pregunta')
-            timeout=max(120 if self._managed_model.desktop_policy(self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía' else 75,float(cfg.get('fast_chat_timeout_seconds',75)))
+            from response_quality import answer_plan,complete_reply
+            from mathematical_reference import notes,issue as mathematical_issue
+            plan=answer_plan(message,cfg.get('conversation_style','natural'),cfg.get('fast_chat_max_tokens',1200))
+            reference=notes(message)
+            if reference:prompts.insert(1,{'role':'system','content':'Referencia matemática (datos): '+json.dumps(reference,ensure_ascii=False)})
+            timeout=max(plan['timeout'],float(cfg.get('fast_chat_timeout_seconds',75)))
             from akira_local_ai import completion_info,clear_completion_info
-            clear_completion_info()
             deadline=time.monotonic()+timeout
-            text=ollama_agent(prompts,[],self._execute_local_tool,model=model,endpoint=endpoint,
-                timeout=timeout,total_timeout=timeout,
-                max_rounds=1,reasoning=False,cancel_event=self._cancel_event,
-                options={'num_predict':min(1200,int(cfg.get('fast_chat_max_tokens',1200))) if cfg.get('conversation_style')=='detailed' or re.search(r'detall|paso a paso|demostraci[oó]n|extens|expl[ií]ca.*(?:todo|completo)',message,re.I) else 320,'temperature':.2},context_char_budget=9000)
-            if not isinstance(text,str) or not text.strip():raise RuntimeError('El modelo no produjo texto visible')
+            def invoke(messages,tokens,remaining):
+                return ollama_agent(messages,[],self._execute_local_tool,model=model,endpoint=endpoint,
+                    timeout=remaining,total_timeout=remaining,max_rounds=1,reasoning=False,cancel_event=self._cancel_event,
+                    options={'num_predict':tokens,'temperature':0},context_char_budget=9000)
+            text,completion=complete_reply(prompts,invoke,completion_info,clear_completion_info,plan,timeout,
+                on_repair=lambda reason:self._progress('PENSANDO','Reformulando y comprobando la respuesta: '+reason),
+                inspect=mathematical_issue if reference else lambda text:'',cancelled=self._cancel_event.is_set)
             if routing.get('repair') and re.search(r'(?i)(?:la frase|la expresi[oó]n|el mensaje).{0,80}(?:sugiere|significa|se refiere)',text):
                 if time.monotonic()>=deadline-1:raise TimeoutError('No terminó la corrección de contexto')
                 text=ollama_chat(prompts+[{'role':'assistant','content':text},{'role':'user','content':'Responde a la pregunta original: '+research_query}],
                     model=model,endpoint=endpoint,timeout=max(.5,min(30,deadline-time.monotonic())),think=False,cancel_event=self._cancel_event,
                     options={'num_predict':200,'temperature':0})
+            latest=completion_info()
+            if latest.get('truncated'):raise RuntimeError('La corrección de contexto no terminó; puedes reintentar')
+            if reference and mathematical_issue(text):raise RuntimeError('La explicación todavía contradice la referencia matemática; puedes reintentar')
+            self._last_completion={**completion,**latest}
             self._last_response_kind='model';self.conversation.update('READY','Respuesta generada por el modelo local',generated=True,backend='llama.cpp')
-            self._last_completion=completion_info()
             self._remember_turn(message,text);return text
         social=is_personal_conversation(message)
         fresh=needs_web_verification(research_query) and not (social or is_operational(research_query) or is_technical_request(research_query) or is_casual(research_query))
@@ -1181,6 +1190,8 @@ class AkiraAssistant:
         inference_deadline=time.monotonic()+timeout
         from resource_optimizer import ollama_limits
         memory_options, keep_model=ollama_limits(self.cfg,deep=deep)
+        from akira_local_ai import clear_completion_info,completion_info
+        clear_completion_info()
         text=ollama_agent(messages,tools,self._execute_local_tool,model=model,endpoint=endpoint,
             timeout=timeout,total_timeout=timeout,max_rounds=rounds,
             reasoning=bool(cfg.get('local_reasoning',True)) and deep,cancel_event=self._cancel_event,
@@ -1188,7 +1199,6 @@ class AkiraAssistant:
             options={'num_predict':2400 if deep else min(600 if trading else 256,int(cfg.get('fast_chat_max_tokens',1200))),
                      'temperature':0.0 if source_rows else .2,**memory_options},
             context_char_budget=context_budget)
-        self._last_response_kind='model';self.conversation.update('READY','Respuesta generada con las fuentes recibidas',generated=True,backend='llama.cpp')
         if self._cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         if routing['repair'] and time.monotonic()<inference_deadline-1 and re.search(r'(?i)(?:la frase|la expresi[oó]n|el mensaje).{0,80}(?:sugiere|significa|se refiere)',str(text)):
             self._progress('CORRIGIENDO CONTEXTO','Respondiendo a la pregunta anterior')
@@ -1212,6 +1222,9 @@ class AkiraAssistant:
         elif fresh and verified_context:
             fallback_rows=[{'title':'Fuente verificada','url':u.rstrip('.,)')} for u in dict.fromkeys(re.findall(r'https?://[^\s<>]+',verified_context))]
             text=self._append_source_list(text,fallback_rows,max_sources=6)
+        self._last_completion=completion_info()
+        if self._last_completion.get('truncated'):raise RuntimeError('La respuesta con fuentes no terminó; puedes reintentar sin tratar el borrador como respuesta completa')
+        self._last_response_kind='model';self.conversation.update('READY','Respuesta generada con las fuentes recibidas',generated=True,backend='llama.cpp')
         self._progress('LISTO',f'Respuesta sintetizada con {len(source_rows)} fuentes visibles' if source_rows else 'Respuesta sintetizada')
         self._remember_turn(message,text);return text
 

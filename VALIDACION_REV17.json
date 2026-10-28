@@ -9,16 +9,22 @@
     "includes": "capital policy, assistant facts, tool validation, Qt save and actor confirmation"
   },
   "local_full_suite": {
-    "passed": 1556,
-    "failed": 23,
-    "skipped": 5,
+    "passed": 1584,
+    "failed": 0,
+    "skipped": 0,
     "subtests_passed": 200,
-    "scope": "21 Tk display failures; two compatibility failures subsequently corrected and retested separately. Windows pending."
+    "scope": "Complete Linux run on first Rev17 source with virtual display; reply-quality changes await full run."
   },
   "windows_verified": false,
   "installer_verified": false,
   "real_model_verified_for_this_revision": false,
   "real_mt5_demo_used": false,
   "physical_dell_tested": false,
-  "profitability_verified": false
+  "profitability_verified": false,
+  "previous_windows_run": {
+    "run_id": 40649761941,
+    "source_commit": "469798092f6a7c542172f0598544cc64fdb0832b",
+    "status": "FAILED_REAL_CONVERSATION",
+    "reason": "Euler explanation truncated and incorrect pi alias; no installer published."
+  }
 }

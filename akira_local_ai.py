@@ -308,6 +308,7 @@ def chat(messages,model='qwen3:8b',endpoint='http://127.0.0.1:11434/api/chat',ti
         except Exception:detail=str(exc)
         raise RuntimeError(f'Ollama HTTP {exc.code}: {detail[:500]}')
     except URLError as exc: raise RuntimeError(f'Akira Local Core no disponible: {exc.reason}')
+    _CONTEXT.completion={'backend':'ollama','finish_reason':data.get('done_reason'),'truncated':data.get('done_reason')=='length'}
     if raw:return data
     if response_format is not None and data.get('done') is False:raise RuntimeError('La respuesta estructurada de AKIRA quedó incompleta')
     text=_clean((data.get('message') or {}).get('content'))

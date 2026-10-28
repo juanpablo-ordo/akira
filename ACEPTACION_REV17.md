@@ -29,3 +29,9 @@ Casos nuevos: cuenta pequeña frente a cuenta mayor con el mismo SL, caída pers
 Los fixtures de transporte y de edición de límites personalizados desactivan explícitamente la protección nueva: prueban ese modo configurable. Las pruebas nuevas la activan y los defaults de producción la incluyen. La regresión de capital mínimo de producción espera ahora el límite efectivo del 2%.
 
 La validación local se registra en `VALIDACION_REV17.json`. La ejecución Windows de la rama incluye los nuevos casos, regresiones, fuente y ejecutable, inferencia real, instalación y actualización. No se ha probado una cuenta real ni el hardware físico Dell. No hay prueba prospectiva o fuera de muestra que certifique una mejora de rentabilidad. El informe de una sola cuenta no permite encontrar ni prometer la estrategia de máxima rentabilidad.
+
+## Revisión tras inferencia real
+
+La primera ejecución Windows (40649761941, commit 4697980) aprobó las regresiones, el ejecutable y las pruebas concurrentes, pero falló al terminar la explicación matemática: el modelo alcanzó el límite de tokens y llamó erróneamente a pi número de Euler. No se publicó un instalador.
+
+Se añade respuesta completa con longitud y tiempo proporcionales al pedido, una sola regeneración dentro del mismo plazo y comprobación de finalización antes de guardar el turno. Un borrador truncado no se considera éxito. Un pequeño glosario de símbolos basado en NIST DLMF 4.2/4.4 aporta definiciones como datos al modelo, sin sustituir su respuesta por plantillas. La aceptación ahora también rechaza la atribución incorrecta detectada. Esto no acredita exactitud universal en matemáticas.
