@@ -952,7 +952,7 @@ class ContextWorker:
         # Per-source decay is already applied. Never refresh a failed source's age.
         evolution=self.evolution.read()
         # La memoria completa reside en SQLite; el estado que viaja a Tk no arrastra transcripciones.
-        videos=[{k:v for k,v in row.items() if k!='body'} for row in sources.get('youtube',{}).get('data',{}).get('rows',[])]
+        videos=[{k:v for k,v in row.items() if k!='body'} for row in sources.get('youtube',{}).get('data',{}).get('rows',[])] if self.source_enabled('youtube') else []
         coinglass={s:sources.get('coinglass:'+s,{}).get('data',{}) for s in fusion if freshness('coinglass:'+s)>0 and 'coinglass:'+s not in component_errors}
         derivatives={s:sources.get('derivatives:'+s,{}).get('data',{}) for s in fusion if freshness('derivatives:'+s)>0 and 'derivatives:'+s not in component_errors}
         news_data=sources.get('news',{}).get('data') or {};news=list(news_data.get('items',[])) if freshness('news')>0 and isinstance(news_data,dict) and 'news' not in component_errors else []
