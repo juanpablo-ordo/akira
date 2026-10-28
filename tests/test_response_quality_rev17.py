@@ -48,6 +48,11 @@ class MathematicalReferenceTests(unittest.TestCase):
     def test_unrelated_chat_is_not_loaded_with_mathematical_context(self):
         for q in ['Me siento triste','pintura al óleo','Mi perro se llama Pi','una receta de pie']:
             with self.subTest(q=q):self.assertIsNone(notes(q))
+    def test_homonymous_physics_variables_do_not_receive_constant_definitions(self):
+        for text in ['Explica E=mc²','Explícame e = m c^2','En física, E=mc2 expresa la energía','Explica la fórmula I=V/R']:
+            with self.subTest(text=text):self.assertIsNone(notes(text))
+        self.assertIsNotNone(notes('Explícame e^(i*pi)+1=0'))
+
     def test_correct_and_comparative_mentions_are_allowed(self):
         for text in ['π es el cociente entre circunferencia y diámetro.','e es el número de Euler, π es pi.','La fórmula de Euler usa e, π e i.']:
             with self.subTest(text=text):self.assertFalse(issue(text))

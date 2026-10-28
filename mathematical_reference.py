@@ -18,8 +18,11 @@ def notes(question):
     text=folded(question)
     cue=bool(re.search(r'\b(?:matematic\w*|formul\w*|ecuacion\w*|trigonometr\w*|logaritm\w*|constante\w*|euler|imaginari\w*)\b|[=^]|[π√]',text))
     if not cue:return None
-    selected=[key for key,row in GLOSSARY.items() if any(re.search(r'(?<!\w)'+re.escape(symbol)+r'(?!\w)',text) for symbol in row['symbols'])]
-    if not selected and re.search(r'\b(?:matematic\w*|euler|imaginari\w*)\b',text):selected=list(GLOSSARY)
+    original=str(question)
+    # E in E=mc² and I as current are variables, not the constants e and i.
+    if re.search(r'(?i)\be\s*=\s*m\s*\*?\s*c',original):return None
+    selected=[key for key,row in GLOSSARY.items() if any(re.search(r'(?<!\w)'+re.escape(symbol)+r'(?!\w)',original,0 if symbol in ('e','i') else re.I) for symbol in row['symbols'])]
+    if not selected and not re.search(r'[=^]',original) and re.search(r'\b(?:matematic\w*|euler|imaginari\w*)\b',text):selected=list(GLOSSARY)
     if not selected:return None
     # Nearby definitions avoid confusing e, pi and Euler's gamma in a single
     # explanation. The model still generates the actual requested answer.
