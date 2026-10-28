@@ -812,7 +812,7 @@ class PendingPlanner:
             if soft_fallback:score-=11.0 if presence_gap else 7.0
             grade=self.pending_grade(quality_score,activation_score,structural)
             item['grade']=grade;item['soft_fallback']=soft_fallback
-            if structural:
+            if structural or protected['enabled'] and protected['strict_pending_quality']:
                 execution=self.cfg.get('execution',{})
                 grade_key='presence_minimum_structural_grade' if presence else 'minimum_structural_grade'
                 required_grade=str(execution.get(grade_key,'B' if presence else 'A') or ('B' if presence else 'A')).upper()
@@ -861,7 +861,8 @@ class PendingPlanner:
                              int(setup.created_bar),float(entry if budget_fitted else setup.level),
                              max(float(setup.atr),float(getattr(setup,"horizon_atr",0.0) or 0.0)),
                              activation_score,quality_score,empirical_wr,empirical_n,empirical_ev,
-                             signal_timeframe=tf,signal_atr=horizon))
+                             signal_timeframe=tf,signal_atr=horizon,
+                             base_quality_score=quality_score,base_activation_score=activation_score))
         # CRÍTICO V193: fusionar TODAS las zonas antes de elegir el ganador de cada
         # cuadrante. V168 elegía primero el mejor técnico y después aplicaba IA, por
         # lo que una zona alternativa favorecida por CoinGlass/YouTube/Cloud jamás
@@ -924,6 +925,10 @@ class PendingPlanner:
         per_quadrant=max(1,min(6,int(self.cfg.get("execution",{}).get("pending_candidates_per_quadrant",3))))
         grouped={}
         for p in fused:
+            from trade_quality_gate import pending_admission
+            admission=pending_admission(self.cfg,p)
+            if not admission['allowed']:
+                reject(p,'strict_pending_admission',admission['reason']);continue
             # El transporte ocupa como máximo un slot por dirección, pero su
             # shortlist debe conservar alternativas LIMIT Y STOP para esa dirección.
             group=(int(p.side),str(p.kind)) if all_candidates else self.pending_slot(p.side,p.kind,p)

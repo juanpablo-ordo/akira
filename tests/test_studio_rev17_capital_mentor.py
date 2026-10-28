@@ -53,6 +53,10 @@ class CapitalMetricsTests(unittest.TestCase):
 
 
 class CapitalExecutionTests(PendingCase,unittest.TestCase):
+    def plan(self,*args,**kwargs):
+        # Capital cases use geometry that also meets the production RR policy.
+        p=super().plan(*args,**kwargs)
+        return replace(p,tp=p.entry+p.side*abs(p.entry-p.sl)*3)
     def setUp(self):
         super().setUp();self.cfg['capital_protection']['enabled']=True
         self.cfg['risk'].update(max_trade_money=1e7,max_trade_pct=100,portfolio_money_cap=1e8,portfolio_capital_pct=100)
@@ -61,12 +65,12 @@ class CapitalExecutionTests(PendingCase,unittest.TestCase):
         e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close);return e
     def test_39_dollars_cannot_admit_an_8_dollar_gold_stop(self):
         self.api.account.balance=self.api.account.equity=39
-        p=self.plan('XAUUSDm');p=replace(p,sl=p.entry-8.33,tp=p.entry+18)
+        p=self.plan('XAUUSDm');p=replace(p,sl=p.entry-8.33,tp=p.entry+20)
         with self.assertRaisesRegex(Blocked,'Lote mínimo'):self.g.send_immediate_plan(p)
         self.assertFalse(self.api.sent);self.assertEqual(p.sl,p.entry-8.33)
     def test_500_account_can_admit_the_same_structural_stop(self):
         self.api.account.balance=self.api.account.equity=500
-        p=self.plan('XAUUSDm');p=replace(p,sl=p.entry-8.33,tp=p.entry+18)
+        p=self.plan('XAUUSDm');p=replace(p,sl=p.entry-8.33,tp=p.entry+20)
         self.assertTrue(self.g.send_immediate_plan(p));self.assertEqual(self.api.sent[-1]['volume'],.01)
     def test_current_risk_is_rechecked_after_prepare_before_send(self):
         p=self.plan();ready=self.g.prepare(p);self.api.account.balance=self.api.account.equity=39

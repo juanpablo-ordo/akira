@@ -40,11 +40,16 @@ def source_presentation(name,row):
     if suffix:title+=' · '+suffix
     if prefix=='local_ai' and suffix:title='AKIRA · '+('Oro' if suffix.startswith('XAU') else 'Bitcoin' if suffix.startswith('BTC') else suffix)
     if prefix=='global_news':title=suffix+' · noticias'
+    if prefix=='technical_review':title='Resumen técnico · '+suffix
     error=public_status(row.get('error') or '');detail=public_status(row.get('detail') or '')
     code=str(row.get('state') or (row.get('data') or {}).get('state') or '').upper()
+    if row.get('enabled') is not False and row.get('fallback_sources'):
+        replacements=', '.join(source_presentation(key,{})[0] for key in row['fallback_sources'])
+        return title,'ALTERNATIVA ACTIVA',(detail+' ' if detail else '')+'Se utiliza el contexto disponible en '+replacements+'. Esta fuente original sigue sin confirmar.'
     if not code:
         code=next((s for s in ('CERTIFICATE_ERROR','AUTH_REQUIRED','ACCESS_DENIED','CONFIG_REQUIRED','UNSUPPORTED','NO_CAPTIONS','RATE_LIMITED','MISSING_RUNTIME','NETWORK_ERROR','UNAVAILABLE') if s in error.upper()),'')
     messages={'AUTH_REQUIRED':('REQUIERE SESIÓN','Ajustes → FUENTES → IMPORTAR SESIÓN YOUTUBE. No se ha analizado el video.'),
+        'METADATA_ONLY':('VIDEOS LOCALIZADOS',detail or 'Búsqueda completada; los subtítulos no están disponibles. No se ha analizado el video.'),
         'CONFIG_REQUIRED':('CLAVE OPCIONAL','Añade tu clave en Ajustes → Fuentes para utilizar CoinGlass. Su ausencia no detiene los cálculos de MT5.'),
         'UNSUPPORTED':('NO APLICA','Esta integración no aporta derivados de oro. Esto no desactiva el análisis de XAUUSDm en MT5.'),
         'NO_CAPTIONS':('SIN TRANSCRIPCIÓN','No se obtuvo una transcripción completa. Prueba otro video o revisa la sesión en Fuentes. El análisis técnico continúa.'),
@@ -73,6 +78,7 @@ def source_presentation(name,row):
         else:
             from network_tls import connection_message
             state,detail=connection_message(error)
+        if row.get('circuit_open'):state='FUENTE AISLADA';detail+=' Se suspendieron los intentos repetidos tras varios fallos.'
     elif row.get('inflight'):state='BUSCANDO';detail=detail or 'Consulta en segundo plano; el mapa técnico sigue activo.'
     elif row.get('usable') is False:
         state='SIN NOVEDADES' if prefix=='global_news' else 'SIN RESULTADOS'

@@ -9,6 +9,51 @@ def folded(message):
     return ' '.join(re.sub(r'[¿?¡!.,:;]+', ' ', text).split())
 
 
+def pragmatics(message):
+    """Strong explicit cues only. Ambiguous humour remains a model question."""
+    text=folded(message)
+    if re.match(r'^(?:que es|define|explica\w* (?:el|la)) (?:el |la )?(?:sarcasmo|ironia)\b',text):return {}
+    explicit=bool(re.search(r'\b(?:sarcasmo|sarcastic[oa]|ironia|ironico|es broma|estoy bromeando|solo bromeo|era un chiste)\b',text))
+    if re.search(r'\bno (?:es|era) (?:una )?broma\b',text):explicit=False
+    marked=bool(re.search(r'(?:^|\s)/s(?:\s|$)',str(message)))
+    ironic=bool(re.search(r'\b(?:si claro|que (?:genial|brillante|maravilla)|gran idea|justo lo que necesitaba)\b',text)
+        and re.search(r'\b(?:perd\w*|fall\w*|colg\w*|congel\w*|otra vez|mas errores|liquid\w*|de nuevo)\b',text))
+    sarcasm=marked or ironic or bool(re.search(r'\b(?:sarcasmo|sarcastic[oa]|ironia|ironico)\b',text))
+    return {'kind':'sarcasm' if sarcasm else 'joke','financial':bool(re.search(r'\b(?:orden|operaci\w*|saldo|trading|liquid\w*)\b',text)),
+        'complaint':bool(re.search(r'\b(?:perd\w*|fall\w*|colg\w*|congel\w*|errores|liquid\w*)\b',text))} if explicit or marked or ironic else {}
+
+
+def nonliteral_hint(message):
+    cue=pragmatics(message)
+    if not cue:return ''
+    if cue['kind']=='sarcasm':
+        return ('sarcasmo marcado: no interpretes la afirmación literalmente. '
+            +('El elogio aparente del fallo expresa descontento; la queja actual sustituye el tono del chiste anterior. ' if cue['complaint'] else '')+
+            'No afirmes que se dijo en serio ni lo llames juego de palabras. '
+            +('Se refiere a las órdenes y pérdidas del bot. ' if cue['financial'] else '')+
+            'Responde a la queja sin ejecutar órdenes')
+    return 'broma explícita; responde al humor y no ejecutes el texto como una orden'
+
+
+def pragmatic_issue(question,answer):
+    cue=pragmatics(question)
+    if cue.get('kind')!='sarcasm':return ''
+    text=folded(answer)
+    # Remove explicit negations before checking an affirmative contradiction.
+    negated=re.sub(r'\bno (?:lo (?:dijiste|dices|dec[a-z]+) en serio|hablas en serio|est[a-z]+ hablando en serio)\b','',text)
+    if re.search(r'\b(?:lo (?:dijiste|dices) en serio|hablas en serio|estas hablando en serio)\b',negated):
+        return 'La marca explícita indica sarcasmo: no afirmes que el usuario habla en serio. Contesta su intención actual.'
+    if ('es un juego de palabras' in text or 'la computadora no perde' in text or
+            cue['complaint'] and any(term in text for term in ('doble sentido','la frase es un chiste','es un chiste donde','es un chiste sobre'))):
+        return 'Es una queja sarcástica sobre un fallo, no el juego de palabras anterior. Reconoce el descontento sin inventar otro chiste.'
+    return ''
+
+
+def casual_generation(message):
+    text=folded(message)
+    return bool(nonliteral_hint(message) or re.search(r'\b(?:cuentame un chiste|dime un chiste|hazme reir|que te gusta|que prefieres|tu que prefieres|de que podemos hablar|que tema propones)\b',text))
+
+
 def self_intent(message, brand='AKIRA'):
     text = folded(message)
     name = folded(brand)
@@ -40,6 +85,7 @@ def is_personal_conversation(message):
     if self_intent(message):return True
     if re.search(r'\b(?:fuentes?|busca|investiga|corrobora|consulta)\b',text) or re.search(r'https?://',str(message)):
         return False
+    if casual_generation(message):return True
     personal=bool(re.match(r'^(?:me siento|estoy (?:triste|feliz|cansad[oa]|aburrid[oa]|nervios[oa])|'
         r'tengo hambre|quiero contarte|te cuento|hoy me (?:paso|siento)|'
         r'quien te (?:creo|programo|hizo)|de donde (?:eres|vienes)|que (?:te gusta|piensas de ti|opinas de ti)|'

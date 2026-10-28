@@ -59,6 +59,8 @@ def set_document(widget,text,follow=False):
 
 def next_query(row):
     if row.get('enabled') is False:return '—'
+    if row.get('fallback_sources'):return 'Alternativa activa'
+    if row.get('circuit_open'):return 'Fuente aislada'
     if row.get('waiting_for_worker'):return 'Esperando conexión'
     if row.get('inflight'):return 'En curso'
     seconds=max(0,round(float(row.get('retry_after_seconds') or 0)))

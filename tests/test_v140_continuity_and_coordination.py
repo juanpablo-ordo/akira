@@ -166,6 +166,9 @@ class Conversation140Tests(PendingCase,unittest.TestCase):
 class Coordination140Tests(PendingCase,unittest.TestCase):
     def setUp(self):
         super().setUp();self.cfg=optional_ollama_fixture(load_config(DEFAULT));self.cfg['mode']='trade';self.g.cfg=self.cfg
+        # Actor/locking fixtures exercise transport with a synthetic B-grade map.
+        # Production strict admission has separate positive and negative cases.
+        self.cfg['capital_protection']['strict_pending_quality']=False
         self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close)
 
     def bot(self):return AkiraAssistant(self.cfg,self.root,trade_callback=self.e.handle_command)

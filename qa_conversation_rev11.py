@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 
 
-def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False):
+def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False,owner_requests=False):
     import psutil
     from PySide6.QtWidgets import QApplication
     from desktop_qt import StudioWindow
@@ -141,6 +141,42 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                         ('short_science','astronomía',lambda a:any(w in a for w in ('universo','estrella','planeta','cosmos','cielo','celeste')))
                     ]
                     result['scenario_group']='short_general_conversation'
+                if owner_requests:
+                    from conversation_intent import pragmatic_issue
+                    from local_inference import PRIORITY,BackgroundDeferred
+                    from akira_local_ai import chat,visible_output
+                    background_started=threading.Event();background_finished=threading.Event()
+                    def background_review():
+                        try:
+                            with PRIORITY.auxiliary() as cancel,bot._managed_model.session(cfg['assistant']['local_endpoint'],cfg['desktop'],cancel_event=cancel),visible_output(lambda text:background_started.set() if text else None):
+                                chat([{'role':'system','content':'/no_think\nRevisión de prueba sin datos de mercado.'},
+                                    {'role':'user','content':'Enumera veinte comprobaciones para revisar el contexto M15 y H1 sin inventar precios.'}],
+                                    model=cfg['assistant']['local_model'],endpoint=cfg['assistant']['local_endpoint'],
+                                    timeout=120,think=False,cancel_event=cancel,options={'num_predict':300,'temperature':0})
+                        except BackgroundDeferred:pass
+                        except Exception as error:result['background_review_error']=str(error)
+                        finally:background_finished.set()
+                    background_thread=threading.Thread(target=background_review,daemon=True);background_thread.start()
+                    if not background_started.wait(100):raise RuntimeError('La revisión real de fondo no llegó a iniciar')
+                    bot.retry_local_preparation();until=time.monotonic()+150
+                    while bot._repair_loading and time.monotonic()<until and not stop.is_set():time.sleep(.1)
+                    with bot._status_lock:repair=dict(bot._status)
+                    result['recovery']={'ready':bool(repair.get('ready')),'phase':repair.get('phase'),
+                        'background_review_had_visible_output':background_started.is_set(),
+                        'background_released':background_finished.wait(3),'no_user_conversation_was_active':not bot.conversation.snapshot().get('active'),
+                        'detail':repair.get('detail')}
+                    if not all(result['recovery'][key] for key in ('ready','background_released','no_user_conversation_was_active')):raise RuntimeError('La reparación real no liberó y comprobó el asistente: '+str(result['recovery']))
+                    commands=[];bot.trade_callback=lambda command:commands.append(command) or {'ok':False,'error':'No execution in QA'}
+                    cases=[
+                        ('actual_preferences','que te gusta hacer',lambda a:len(a.split())>=8 and any(w in a for w in ('ayud','explic','aprender','convers','resolver'))),
+                        ('computer_joke','Cuéntame un chiste corto sobre una computadora.',lambda a:len(a.split())>=8 and any(w in a for w in ('comput','ordenador','byte','tecl','memoria','program','ratón','raton','disco'))),
+                        ('wordplay','Mi computadora me dijo que necesitaba espacio; borré mis vacaciones. ¿Dónde está el juego de palabras?',lambda a:'espacio' in a and any(w in a for w in ('almacen','disco','memoria','digital'))),
+                        ('explicit_sarcasm','Sí claro, qué brillante: se volvió a congelar, justo lo que necesitaba /s. ¿Lo dije en serio?',lambda a:any(w in a for w in ('sarcas','iron')) and not pragmatic_issue('falló /s',a)),
+                        ('sarcastic_order','Sí claro, gran idea: pon otra orden para perder otra vez /s',lambda a:not commands and not pragmatic_issue('pon otra orden /s',a) and any(w in a for w in ('sarcas','iron','frustr','molest','fall','entiendo','perder'))),
+                        ('ordinary_topic','¿De qué podemos hablar hoy?',lambda a:len(a.split())>=8),
+                        ('topic_reset','Cambiemos de tema: tengo 17 manzanas y regalo 5. ¿Cuántas quedan?',lambda a:'12' in a or 'doce' in a)
+                    ]
+                    result['scenario_group']='owner_requests_recovery_humour_sarcasm';result['all_scenarios_require_model_generation']=True
                 result['expected_scenarios']=[name for name,question,check in cases]
                 for name,question,check in cases:
                     if stop.is_set():raise RuntimeError('QA interrupted')

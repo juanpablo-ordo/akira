@@ -302,7 +302,7 @@ class ConversationRoutingTests(unittest.TestCase):
         with patch.object(self.bot,'local_llm_reply',side_effect=TimeoutError('fixture timeout')), \
              patch('assistant_akira.lookup_current_fact',side_effect=AssertionError('irrelevant web search')):
             answer=self.bot.reply('¿Tienes amigos?',{},False)
-        self.assertIn('motor de conversación',answer)
+        self.assertIn('tardó demasiado',answer);self.assertIn('Reintentar',answer)
         self.assertNotIn('referencias',answer)
 
     def test_own_identity_is_not_confused_with_current_factual_questions(self):

@@ -1319,6 +1319,10 @@ class Engine:
             if continuous and not self.market_state(o.symbol)['open']:continue
             p=order_plan(o,(self.g.journal.data['orders'].get(str(o.ticket)) or {}).get('plan'))
             evidence=evaluate(p,self.planner.caches[o.symbol].frames,self._confirmed_outcomes,self.g.clock(),strict=continuous)
+            if continuous:
+                from trade_quality_gate import pending_admission
+                admission=pending_admission(self.cfg,p)
+                if not admission['allowed']:evidence.update(allowed=False,reason=admission['reason'])
             if evidence['allowed']:continue
             try:
                 if self.g.cancel(o,('Revisión tras pérdida confirmada: ' if lost else 'Revisión continua de tesis: ')+evidence['reason']):

@@ -6,6 +6,37 @@ def num(x,default=0):
     try:x=float(x);return x if math.isfinite(x) else default
     except (ValueError,TypeError,OverflowError):return default
 
+
+def pending_admission(config,plan):
+    from capital_guard import rules
+    policy=rules(config)
+    if value(plan,'lane')!='PENDING' or not (policy['enabled'] and policy['strict_pending_quality']):
+        return {'allowed':True,'reason':'','enabled':False}
+    from strategy import symbol_strategy
+    cfg=symbol_strategy(config,value(plan,'symbol'));key=str(value(plan,'key','')).upper()
+    structural=value(plan,'signal_timeframe') in ('H1','H4','D1','W1') or any(t in key for t in (':H1:',':H4:',':D1:',':W1:')) or 'MAPA STRUCTURAL' in str(value(plan,'reason','')).upper()
+    quality=num(value(plan,'quality_score'));activation=num(value(plan,'activation_score'))
+    for field,current in (('base_quality_score',quality),('base_activation_score',activation)):
+        baseline=value(plan,field)
+        if baseline is not None:
+            if field=='base_quality_score':quality=min(current,num(baseline))
+            else:activation=min(current,num(baseline))
+    group='structural' if structural else 'tactical'
+    min_quality=float(cfg.get('pending_'+group+'_quality_min',84 if structural else 76))
+    min_activation=float(cfg.get('pending_'+group+'_activation_min',18 if structural else 42))
+    combined=(.9*quality+.1*activation) if structural else (.75*quality+.25*activation)
+    grade='A+' if combined>=90 else 'A' if combined>=84 else 'B+' if combined>=76 else 'B'
+    required=str(config.get('execution',{}).get('minimum_structural_grade','A')).upper()
+    ranks={'B':0,'B+':1,'A':2,'A+':3}
+    side=num(value(plan,'side'));risk=side*(num(value(plan,'entry'))-num(value(plan,'sl')))
+    rr=side*(num(value(plan,'tp'))-num(value(plan,'entry')))/risk if risk>0 else 0
+    minimum_rr=float(cfg.get('min_rr_pending',2.2));reason=''
+    if quality<min_quality or activation<min_activation:reason=f'Calidad estricta: {quality:.1f}/{activation:.1f} frente a {min_quality:g}/{min_activation:g}; una alternativa no reduce los umbrales.'
+    elif ranks.get(grade,-1)<ranks.get(required,2):reason=f'Calidad estricta: grado {grade}; se exige {required} también en el mapa táctico.'
+    elif rr+1e-9<minimum_rr:reason=f'Calidad estricta: R:R {rr:.2f} inferior al mínimo configurado {minimum_rr:g}; la vía rápida no lo rebaja.'
+    return {'allowed':not reason,'reason':reason,'enabled':True,'grade':grade,'required_grade':required,
+        'quality':quality,'activation':activation,'minimum_quality':min_quality,'minimum_activation':min_activation,'minimum_rr':minimum_rr}
+
 def family(plan):
     key=str(value(plan,'key','')).upper();kind=value(plan,'kind');lane=value(plan,'lane')
     if lane=='RUNNER':return 'RUNNER_RETEST_M5' if value(plan,'signal_timeframe')=='M5' else 'RUNNER_CONTINUACION_M15'
@@ -72,6 +103,16 @@ def evaluate(plan,frames,outcomes,now,strict=True):
         atr=num(value(m15,'atr'));horizon=num(value(plan,'horizon_atr')) or num(value(plan,'signal_atr')) or atr
         risk=side*(num(value(plan,'entry'))-num(value(plan,'sl')))
         check('Espacio estructural de SL',horizon>0 and risk>=horizon*.35,'El SL debe dejar al menos 0,35 ATR del horizonte declarado. Un presupuesto bajo no autoriza estrechar su invalidación.')
+        if value(plan,'kind')=='LIMIT' and side*num(value(m15,'trend'))<-.18:
+            m5=frames.get('M5');short=value(m5,'bars',[]) or []
+            recovering=False
+            if len(short)>=2:
+                last,previous=short[-1],short[-2];stamp=num(value(last,'time'))
+                body=side*(num(value(last,'close'))-num(value(last,'open')))
+                edge=num(value(previous,'high' if side==1 else 'low'))
+                recovering=(0<=now-(stamp+300)<=600 and body>=num(value(m5,'atr'))*.2>0
+                    and side*(num(value(last,'close'))-edge)>0)
+            check('Recuperación antes de LIMIT contra M15',recovering,'La LIMIT va contra el impulso M15: esperar un cierre M5 de recuperación que supere el extremo de la vela anterior. Una H1 favorable no confirma el rebote por sí sola.')
         contrary=side*num(value(h1,'trend'))<-.18
         if contrary:
             # A future reversal STOP needs a trigger outside the whole M15 range,

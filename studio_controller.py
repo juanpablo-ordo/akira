@@ -173,7 +173,7 @@ class StudioController:
 
     def ask(self,message,use_cloud=False):
         message=str(message).strip()
-        if not message or self.chat_busy:return False
+        if not message or self.chat_busy or 'repair_ai' in getattr(self,'_jobs',()) or getattr(self.assistant,'_repair_loading',False):return False
         self.chat_busy=True;self.assistant.reset_cancel();snapshot={**self.view,'network_available':self.online if self.online is not None else self.view.get('network_available',True)}
         self.last_chat_message=message
         cid=self.assistant.chats.active
@@ -193,7 +193,8 @@ class StudioController:
                 except Exception:pass
                 self.emit('chat_reply',{'text':answer,'chat':cid,'error':True})
             finally:self.chat_busy=False
-        threading.Thread(target=run,name='AkiraInteractiveChat',daemon=True).start();return True
+        self._chat_thread=threading.Thread(target=run,name='AkiraInteractiveChat',daemon=True)
+        self._chat_thread.start();return True
 
     def cancel_chat(self):
         self.assistant.cancel_current_reply()
@@ -285,9 +286,14 @@ class StudioController:
     def save_keys(self,keys):return self.job('save_keys:'+str(time.monotonic_ns()),lambda:self._save_keys(keys),'keys_saved',executor=self.settings_io)
 
     def repair_ai(self):
-        if self.chat_busy:self.emit('ai_repair',{'ready':False,'detail':'Termina o detén la conversación antes de reparar la IA.'});return False
-        self.assistant.reset_cancel()
+        if self.chat_busy:self.cancel_chat()
         def work():
+            thread=getattr(self,'_chat_thread',None)
+            if thread and thread.is_alive():
+                self.emit('repair_progress','Deteniendo la respuesta anterior antes de comprobar la IA…')
+                thread.join(15)
+                if thread.is_alive():return {'ready':False,'detail':'La respuesta anterior no se pudo detener. Su cancelación sigue solicitada; no se iniciará otra en paralelo.'}
+            self.chat_busy=False;self.assistant.reset_cancel()
             self.assistant.retry_local_preparation();deadline=time.monotonic()+1000
             while not self.closed and time.monotonic()<deadline:
                 with self.assistant._status_lock:busy=self.assistant._repair_loading;status=copy.deepcopy(self.assistant._status)
@@ -299,6 +305,7 @@ class StudioController:
     def refresh_provider_access(self):
         """Drop cached authentication failures when the user changes a credential."""
         import providers
+        providers.reset_youtube_access()
         for cache,lock in (('_YT_CACHE','_YT_LOCK'),('_CG_AUTH_CACHE','_CG_AUTH_LOCK')):
             store=getattr(providers,cache,None);guard=getattr(providers,lock,None)
             if store is not None:
@@ -349,6 +356,16 @@ class StudioController:
                 return value
             data={'build':__import__('akira_version').BUILD_ID,'snapshot':redact_snapshot(copy.deepcopy(self.view)),
                   'preferences':strip(self.cfg),'resources':self.resources,'errors':[safe_text(r.get('message','')) for r in self.log_rows if r.get('symbol')=='ERROR']}
+            from local_inference import PRIORITY
+            from providers import youtube_access_status
+            with self.assistant._status_lock:status=copy.deepcopy(self.assistant._status)
+            with PRIORITY.lock:priority={'interactive_requests':PRIORITY.users,'background_requests':len(PRIORITY.background)}
+            data['assistant']={'status':strip(status),'conversation':self.assistant.conversation.snapshot(),
+                'last_error':safe_text(getattr(self.assistant,'_last_response_error','')),
+                'completion':getattr(self.assistant,'_last_completion',{}),'repair_running':self.assistant._repair_loading,
+                'runtime_active_requests':self.assistant._managed_model.active,
+                'runtime':self.assistant._managed_model.effective_parameters(),'priority':priority}
+            data['youtube_access']=youtube_access_status()
             Path(path).write_text(json.dumps(data,ensure_ascii=False,indent=2,default=str),encoding='utf-8');return {'path':str(path)}
         return self.job('export_diagnostic',export,'exported')
 

@@ -9,6 +9,9 @@ from conversation_core import folded
 
 def answer_plan(question,style='natural',maximum=1200):
     detailed=style=='detailed' or bool(re.search(r'\b(?:detall\w*|paso a paso|demostraci\w*|extens\w*|completo|completa|a fondo)\b',folded(question)))
+    from conversation_intent import casual_generation
+    if not detailed and casual_generation(question):
+        return {'tokens':max(128,min(int(maximum),256)),'words':65,'timeout':120,'detail':False}
     return {'tokens':max(128,min(int(maximum),1024 if detailed else 512)),
             'words':260 if detailed else 110,'timeout':210 if detailed else 120,
             'detail':detailed}

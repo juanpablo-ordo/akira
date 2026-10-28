@@ -109,7 +109,7 @@ class ResearchTests(unittest.TestCase):
     def test_public_derivatives_are_not_fabricated_for_gold(self):
         jobs=self.w.jobs_for({},{});self.assertIn('derivatives:BTCUSDm',jobs);self.assertNotIn('derivatives:XAUUSDm',jobs)
     def test_provider_intervals_are_independent(self):
-        jobs=self.w.jobs_for({},{});self.assertEqual(jobs['fed'][0],8);self.assertEqual(jobs['youtube'][0],25);self.assertEqual(jobs['derivatives:BTCUSDm'][0],60)
+        jobs=self.w.jobs_for({},{});self.assertEqual(jobs['fed'][0],8);self.assertGreaterEqual(jobs['youtube'][0],900);self.assertEqual(jobs['derivatives:BTCUSDm'][0],60)
         self.assertNotIn('coinglass:BTCUSDm',jobs)
     def test_paid_cloud_is_not_automatically_enabled(self):
         self.assertNotIn('cloud',self.w.jobs_for({'symbols':{'BTCUSDm':{}}},{}))

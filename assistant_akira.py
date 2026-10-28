@@ -95,6 +95,8 @@ class AkiraAssistant:
 
     @staticmethod
     def is_trade_control_message(message):
+        from conversation_intent import nonliteral_hint
+        if nonliteral_hint(message):return False
         m=' '.join(str(message or '').lower().split())
         if not m:return False
         return bool(re.search(r'\b(?:pon|poner|ponme|dame|saca|genera|mete|coloca|ejecuta|retira|borra|cancela|modifica)\b.*\b(?:pendient\w*|orden(?:es)?|buy limit|sell limit|buy stop|sell stop)\b',m,re.I))
@@ -479,6 +481,8 @@ class AkiraAssistant:
 
     @staticmethod
     def _explicit_trade_request(message):
+        from conversation_intent import nonliteral_hint
+        if nonliteral_hint(message):return False
         m=(message or '').lower()
         if (AkiraAssistant._analysis_only(m) or
                 any(x in m for x in ('por qué','por que','porque no','cómo','como '))):
@@ -495,6 +499,8 @@ class AkiraAssistant:
 
     @staticmethod
     def _best_pending_request(message):
+        from conversation_intent import nonliteral_hint
+        if nonliteral_hint(message):return False
         m=(message or '').lower().strip()
         # V194: para este proyecto "dame/saca/genera pendientes" significa
         # analizar el mapa actual Y colocarlo; no es una petición pasiva de texto.
@@ -950,7 +956,7 @@ class AkiraAssistant:
         from local_inference import PRIORITY
         from akira_local_ai import visible_output
         self._progress('CARGANDO IA','Preparando el modelo local para tu pregunta')
-        with visible_output(lambda text:self._progress('RESPONDIENDO',text)),PRIORITY.interactive(),self._managed_model.session(endpoint,self.cfg.get('desktop') or {},cancel_event=self._cancel_event):
+        with visible_output(lambda text:self._progress('RESPONDIENDO',text)),PRIORITY.interactive(cancel_event=self._cancel_event),self._managed_model.session(endpoint,self.cfg.get('desktop') or {},cancel_event=self._cancel_event):
             response=self._local_llm_reply_impl(message,snapshot)
             if str(response).strip() and self._last_response_kind=='model':
                 self._model_inference_verified=True
@@ -973,11 +979,14 @@ class AkiraAssistant:
         model=self.startup.preferred_model(available,endpoint) or choose_text_model(available,str(cfg.get('local_model') or 'qwen3:8b'),str(cfg.get('local_model_lite') or 'qwen3:4b'),prefer_fast=True)
         research_query=self._research_query(message)
         routing=self.dialogue.resolve(message,self.history)
-        trading=self._is_trading_question(research_query)
+        from conversation_intent import nonliteral_hint
+        nonliteral=bool(nonliteral_hint(message))
+        trading=self._is_trading_question(research_query) and not nonliteral
+        if nonliteral:routing={**routing,'repair':False,'contextual':False}
         from conversation_core import needs_research,messages_for
         deep=bool(re.search(r'\b(?:a fondo|investigaci[oó]n profunda|an[aá]lisis exhaustivo|revisi[oó]n profunda|investiga todo)\b',message,re.I))
         file_request=bool(re.search(r'\b(?:crea|guarda|escribe|genera|modifica|edita|lee|abre)\b.*\b(?:archivo|documento|word|proyecto|zip|c[oó]digo)\b',message,re.I))
-        if not (trading or deep or file_request) and not needs_research(message) and not (routing.get('contextual') and needs_research(research_query)):
+        if nonliteral or not (trading or deep or file_request) and not needs_research(message) and not (routing.get('contextual') and needs_research(research_query)):
             model=self.startup.conversation_model(available,endpoint)
             current=('Antes pregunté: '+research_query+'\nAhora reclamo: '+message+'\nResponde a mi pregunta anterior con el contexto disponible; no definas la frase del reclamo.' if routing.get('repair') else message)
             prompts=messages_for(current,self.dialogue.history(self.history),snapshot.get('conversation_memory'),
@@ -985,6 +994,7 @@ class AkiraAssistant:
             self._progress('PENSANDO','Preparando una respuesta a tu pregunta')
             from response_quality import answer_plan,complete_reply
             from mathematical_reference import notes,issue as mathematical_issue
+            from conversation_intent import pragmatic_issue
             plan=answer_plan(message,cfg.get('conversation_style','natural'),cfg.get('fast_chat_max_tokens',1200))
             reference=notes(message)
             if reference:prompts.insert(1,{'role':'system','content':'Referencia matemática (datos): '+json.dumps(reference,ensure_ascii=False)})
@@ -997,7 +1007,7 @@ class AkiraAssistant:
                     options={'num_predict':tokens,'temperature':0},context_char_budget=9000)
             text,completion=complete_reply(prompts,invoke,completion_info,clear_completion_info,plan,timeout,
                 on_repair=lambda reason:self._progress('PENSANDO','Reformulando y comprobando la respuesta: '+reason),
-                inspect=mathematical_issue if reference else lambda text:'',cancelled=self._cancel_event.is_set)
+                inspect=lambda text:(mathematical_issue(text) if reference else '') or pragmatic_issue(message,text),cancelled=self._cancel_event.is_set)
             if routing.get('repair') and re.search(r'(?i)(?:la frase|la expresi[oó]n|el mensaje).{0,80}(?:sugiere|significa|se refiere)',text):
                 if time.monotonic()>=deadline-1:raise TimeoutError('No terminó la corrección de contexto')
                 text=ollama_chat(prompts+[{'role':'assistant','content':text},{'role':'user','content':'Responde a la pregunta original: '+research_query}],
@@ -1334,10 +1344,10 @@ class AkiraAssistant:
                 if self._managed_model.enabled():
                     import sys
                     from local_inference import PRIORITY
-                    with PRIORITY.interactive():
+                    with PRIORITY.interactive(cancel_event=self._cancel_event):
                         runtime=self._managed_model
                         with runtime.lock:
-                            if runtime.active:raise RuntimeError('La IA está respondiendo. Detén la conversación antes de reparar.')
+                            if runtime.active:raise RuntimeError('Una tarea anterior no liberó el modelo; la reparación no interrumpirá un proceso ajeno.')
                             runtime._terminate_own()
                         paths=runtime._paths();default=not paths or Path(paths[1]).resolve()==(Path(sys.executable).parent/'local_ai/models/Qwen3-4B-Q4_K_M.gguf').resolve()
                         if sys.platform=='win32' and getattr(sys,'frozen',False) and default:
@@ -1346,15 +1356,16 @@ class AkiraAssistant:
                                 with self._status_lock:self._status['detail']=text
                             recover_bundled(Path(sys.executable).parent,self._cancel_event,progress,force_cpu=previous_phase in ('FAILED','ERROR'))
                             if previous_phase in ('FAILED','ERROR'):runtime._force_cpu=True
-                    if self._managed_model._paths() is None:
-                        result={'accepted':False,'phase':'MISSING',
-                                'detail':'No se encontró el motor llama.cpp o el modelo GGUF instalado.'}
-                    else:
-                        endpoint=str((self.cfg.get('assistant') or {}).get('local_endpoint'))
-                        with self._managed_model.session(endpoint,self.cfg.get('desktop') or {}):
-                            self._verify_local_generation(endpoint)
-                            result={'accepted':True,'ready':True,'error':'','phase':'READY',
-                                    'detail':'Qwen generó texto real. IA local verificada sin Ollama.'}
+                        if self._managed_model._paths() is None:
+                            result={'accepted':False,'phase':'MISSING',
+                                    'detail':'No se encontró el motor llama.cpp o el modelo GGUF instalado.'}
+                        else:
+                            endpoint=str((self.cfg.get('assistant') or {}).get('local_endpoint'))
+                            with self._managed_model.session(endpoint,self.cfg.get('desktop') or {},cancel_event=self._cancel_event):
+                                self._verify_local_generation(endpoint,cancel_event=self._cancel_event)
+                                self._managed_model.keep_warm(30)
+                                result={'accepted':True,'ready':True,'error':'','phase':'READY',
+                                        'detail':'El modelo generó texto real. Asistente reiniciado y comprobado.'}
                 else:
                     result=self.startup.retry() or {'accepted':False,'phase':'FAILED','detail':'La preparación no confirmó el inicio.'}
             except Exception as exc:
@@ -1414,7 +1425,8 @@ class AkiraAssistant:
             return quick
         # Las decisiones operativas no toman el lock del modelo conversacional.
         # También funciona al invocar el asistente fuera del botón de la GUI.
-        if self.trade_callback is not None and not is_repair(message) and not is_operational(message):
+        from conversation_intent import nonliteral_hint
+        if self.trade_callback is not None and not nonliteral_hint(message) and not is_repair(message) and not is_operational(message):
             previous=self.dialogue.previous_question(self.history)
             command=route_fast_request(message,previous,analysis_only=self._analysis_only(message),
                 pending_execution=self._best_pending_request(message))
@@ -1440,6 +1452,8 @@ class AkiraAssistant:
     def _reply(self,message,snapshot,use_cloud=True):
         if not self.is_trade_control_message(message):message=understood(message)
         with self.lock:
+            from conversation_intent import nonliteral_hint
+            nonliteral=bool(nonliteral_hint(message))
             routing=self.dialogue.resolve(message,self.history)
             question=routing['question']
             control=re.fullmatch(r'(?i)\s*(?:akira[, ]+)?(pausa|det[eé]n|reanuda)\s+(?:(?:el|la|a)\s+)?(?:bot|motor|trading|akira|gesti[oó]n)\s*[.!]*',str(message))
@@ -1451,14 +1465,15 @@ class AkiraAssistant:
                 return str((result or {}).get('error') or 'El motor no confirmó el cambio de pausa.')
             # JARVIS: intención operativa y formato se resuelven antes del LLM.
             # Nunca ejecutar una frase inferida del historial o de un reclamo.
-            if self.trade_callback is not None and not is_repair(message) and not is_operational(message):
+            from conversation_intent import nonliteral_hint
+            if self.trade_callback is not None and not nonliteral_hint(message) and not is_repair(message) and not is_operational(message):
                 command=route_fast_request(message,routing['previous_question'],
                     analysis_only=self._analysis_only(message),pending_execution=self._best_pending_request(message))
                 if command is not None:
                     self._progress('DECISIÓN RÁPIDA','Actualizando parámetros y resultado del actor MT5')
                     answer=self._trade_result_text(self.trade_callback(command))
                     self._remember_turn(message,answer);return answer
-            if is_operational(message) or (routing['contextual'] and (self._is_trading_question(question) or is_operational(question))):
+            if not nonliteral and (is_operational(message) or (routing['contextual'] and (self._is_trading_question(question) or is_operational(question)))):
                 live=snapshot
                 if self.trade_callback is not None:
                     try:
@@ -1471,7 +1486,7 @@ class AkiraAssistant:
                 return self._operational_answer(question,live,repair=routing['repair'])
             if routing['repair'] and not routing['previous_question']:
                 return 'Me estás reclamando a mí por la respuesta anterior. No tengo una pregunta anterior recuperable en este hilo; tu frase no era una solicitud de definición.'
-            trading=self._is_trading_question(message)
+            trading=self._is_trading_question(message) and not nonliteral
             if not trading and not is_personal_conversation(message) and snapshot.get('network_available') is False and needs_web_verification(message):
                 return ('Estoy sin Internet. Puedo usar la IA y los datos locales, pero no verificar ahora «'+str(message)[:220]+
                         '». La conexión se comprueba automáticamente; cuando vuelva podrás consultar el dato actualizado.')
@@ -1488,11 +1503,11 @@ class AkiraAssistant:
                 target='ALL' if both else 'BTCUSDm' if ('btc' in m or 'bitcoin' in m) else 'XAUUSDm' if any(x in m for x in ('oro','xau','gold')) else 'ALL'
                 answer=self._trade_result_text(self.trade_callback({'action':'assistant_best_pending','symbol':target}))
                 self._remember_turn(message,answer);return answer
-            exact=self._named_pending(message,snapshot)
+            exact=None if nonliteral else self._named_pending(message,snapshot)
             if exact is not None and self.trade_callback is not None:
                 answer=self._trade_result_text(self._queue_trade_plan(exact,message))
                 self._remember_turn(message,answer);return answer
-            if is_technical_request(message) and not self._explicit_trade_request(message) and self.trade_callback is not None:
+            if not nonliteral and is_technical_request(message) and not self._explicit_trade_request(message) and self.trade_callback is not None:
                 m=str(message).lower();btc=bool(re.search(r'\b(?:btc\w*|bitcoin)\b',m));gold=bool(re.search(r'\b(?:oro|xau\w*|gold)\b',m))
                 target='ALL' if btc==gold else 'BTCUSDm' if btc else 'XAUUSDm'
                 result=self.trade_callback({'action':'assistant_analyze_pending','symbol':target})
@@ -1534,7 +1549,9 @@ class AkiraAssistant:
                         if cached.get('rows'):return self._limited_evidence_reply(question,cached['rows'])
                         return ('Me estás reclamando la respuesta a «'+question[:300]+'». El modelo conversacional no respondió: '+
                                 (local_error or cloud_error or 'modelo no disponible')[:260]+'. El hilo está conservado.')
-                    return 'Te estoy leyendo, pero el motor de conversación no consiguió generar esta respuesta. Tu mensaje sigue guardado; vuelve a enviarlo cuando el estado indique IA disponible.'
+                    from conversation_core import failure_text
+                    error=TimeoutError(local_error) if 'Timeout' in local_error else RuntimeError(local_error or cloud_error)
+                    return failure_text(error)
                 if needs_web_verification(message):
                     strict=self._strict_current_fact(message)
                     cached=self._research_cache.get(self._research_query(message)) or {}

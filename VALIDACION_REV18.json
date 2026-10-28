@@ -1,0 +1,17 @@
+{
+  "build": "AKIRA_16_5_3_STUDIO_REV18",
+  "status": "PENDING_WINDOWS",
+  "date": "2026-10-28",
+  "preliminary_targeted": {
+    "passed": 146,
+    "subtests_passed": 24,
+    "failed": 0,
+    "scope": "Recovery, source and conversation tests before final build validation."
+  },
+  "windows_verified": false,
+  "installer_verified": false,
+  "real_model_verified_for_this_revision": false,
+  "physical_dell_tested": false,
+  "live_account_used": false,
+  "profitability_verified": false
+}

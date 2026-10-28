@@ -1,15 +1,12 @@
 {
-  "build": "AKIRA_16_5_2_STUDIO_REV17",
+  "build": "AKIRA_16_5_3_STUDIO_REV18",
   "tests": 1594,
   "pytest_tests": 1597,
-  "status": "PASSED",
+  "status": "PENDING_WINDOWS",
   "date": "2026-10-28",
   "skipped": 0,
   "scope": "Regresiones completas en Windows; los contadores de unittest y pytest son métodos de colección distintos. No certifica exactitud universal del modelo, hardware físico ni rentabilidad.",
-  "notes_file": "ACEPTACION_REV17.md",
-  "evidence_file": "VALIDACION_REV17.json",
-  "pytest_subtests": 214,
-  "windows_xml_testcases": 1597,
-  "source_commit": "67e71bd0ff761b2036b7f3c1baac23bd1ac0b9b6",
-  "workflow_url": "https://github.com/juanpablo-ordo/akira/actions/runs/40655274399"
+  "notes_file": "ACEPTACION_REV18.md",
+  "evidence_file": "VALIDACION_REV18.json",
+  "pytest_subtests": 214
 }

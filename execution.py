@@ -398,6 +398,10 @@ class Gateway:
         evaluation={} if evaluation is None else evaluation
         runner=plan.lane=='RUNNER' and plan.kind=='MARKET'
         if (not runner and (plan.lane!='PENDING' or plan.kind not in ('LIMIT','STOP'))) or plan.side not in (1,-1):raise Blocked('Solo pendientes LIMIT/STOP o runners estructurales')
+        if not runner:
+            from trade_quality_gate import pending_admission
+            admission=pending_admission(self.cfg,plan)
+            if not admission['allowed']:raise Blocked(admission['reason'])
         if runner:
             if self.cfg['execution'].get('pending_only',False):raise Blocked('Entradas exclusivamente pendientes; los runners se gestionan tras activarse una pendiente')
             rules=self.cfg['runner']
@@ -467,7 +471,9 @@ class Gateway:
         if not runner and (len(own)>=self.cfg['pending']['max_own_map_orders'] or sum((1 if int(o.type)%2==0 else -1)==plan.side for o in own)>=self.cfg['pending']['max_same_side_orders']):raise Blocked('Mapa de este símbolo completo')
         risk,reward=self.plan_money(plan,volume,q,evaluation)
         if risk<=0 or risk>self.entry_cap(plan,snap)+1e-9:raise Blocked(f'Riesgo de operación {risk:.2f} supera límite estructural {self.entry_cap(plan,snap):.2f}')
-        if reward/risk<float(cfg['pending_hard_min_rr']):raise Blocked(f'R:R neto {reward/risk:.2f} insuficiente')
+        minimum_rr=float(cfg['pending_hard_min_rr'])
+        if not runner and admission['enabled']:minimum_rr=max(minimum_rr,admission['minimum_rr'])
+        if reward/risk+1e-9<minimum_rr:raise Blocked(f'R:R neto {reward/risk:.2f} inferior al mínimo {minimum_rr:g}')
         total=self.exposure_risk(snap,ignore_orders,evaluation)+risk
         if total>self.total_cap(snap)+1e-9:raise Blocked(f'Riesgo conjunto {total:.2f} supera {self.total_cap(snap):.2f}')
         from capital_guard import rules as protection_rules,symbol_cap
