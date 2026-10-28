@@ -1,5 +1,5 @@
 """Reproduce stale busy, stalled DNS, lost YouTube discovery and tactical bypasses."""
-import copy,tempfile,threading,time,unittest
+import copy,json,tempfile,threading,time,unittest
 from concurrent.futures import Future
 from dataclasses import replace
 from pathlib import Path
@@ -176,6 +176,14 @@ class GatewayAdmission(PendingCase,unittest.TestCase):
 
 
 class ConversationalIntent(unittest.TestCase):
+    def test_a_current_complaint_does_not_inherit_the_previous_fiction(self):
+        from conversation_core import messages_for
+        history=[{'role':'user','text':'Recuerda que prefiero explicaciones breves.'},{'role':'assistant','text':'Lo tendré presente.'},
+            {'role':'user','text':'Cuéntame un chiste de computadora.'},{'role':'assistant','text':'Un ordenador se fue de vacaciones.'}]
+        prompts=messages_for('Sí claro, qué brillante, volvió a congelarse /s',history)
+        data=json.dumps(prompts,ensure_ascii=False)
+        self.assertNotIn('vacaciones',data);self.assertIn('explicaciones breves',data)
+        self.assertEqual(prompts[-2]['role'],'system');self.assertIn('turno actual',prompts[-2]['content'])
     def test_negative_response_is_not_confused_with_the_observed_affirmative_error(self):
         from conversation_intent import pragmatic_issue,nonliteral_hint
         question='Qué brillante, volvió a fallar /s. ¿Lo dije en serio?'
@@ -184,6 +192,7 @@ class ConversationalIntent(unittest.TestCase):
         self.assertFalse(pragmatic_issue(question,'No, no lo dijiste en serio; es sarcasmo.'))
         self.assertFalse(nonliteral_hint('¿Qué es el sarcasmo?'))
         self.assertFalse(nonliteral_hint('No es broma: pon las mejores pendientes.'))
+        self.assertTrue(pragmatic_issue('Gran idea, pon otra orden para perder otra vez /s','Mejor mueve los archivos a la papelera.'))
     def test_humour_goes_to_generation_without_web_lookup(self):
         from conversation_core import messages_for,needs_research
         from response_quality import answer_plan

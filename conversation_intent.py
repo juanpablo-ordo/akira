@@ -19,7 +19,9 @@ def pragmatics(message):
     ironic=bool(re.search(r'\b(?:si claro|que (?:genial|brillante|maravilla)|gran idea|justo lo que necesitaba)\b',text)
         and re.search(r'\b(?:perd\w*|fall\w*|colg\w*|congel\w*|otra vez|mas errores|liquid\w*|de nuevo)\b',text))
     sarcasm=marked or ironic or bool(re.search(r'\b(?:sarcasmo|sarcastic[oa]|ironia|ironico)\b',text))
-    return {'kind':'sarcasm' if sarcasm else 'joke','financial':bool(re.search(r'\b(?:orden|operaci\w*|saldo|trading|liquid\w*)\b',text)),
+    financial=bool(re.search(r'\b(?:operaci\w*|saldo|trading|liquid\w*|broker|btc|xau|dinero)\b',text) or
+        re.search(r'\borden\b',text) and re.search(r'\bperd\w*\b',text) and not re.search(r'\b(?:datos|archivos|tiempo)\b',text))
+    return {'kind':'sarcasm' if sarcasm else 'joke','financial':financial,
         'complaint':bool(re.search(r'\b(?:perd\w*|fall\w*|colg\w*|congel\w*|errores|liquid\w*)\b',text))} if explicit or marked or ironic else {}
 
 
@@ -39,6 +41,8 @@ def pragmatic_issue(question,answer):
     cue=pragmatics(question)
     if cue.get('kind')!='sarcasm':return ''
     text=folded(answer)
+    if cue['financial'] and re.search(r'\b(?:archivos|carpetas|papelera|borrar datos|perder datos)\b',text):
+        return 'La queja actual se refiere a operaciones y pérdidas del bot, no a archivos ni datos del ordenador. Responde sobre esa intención sin ejecutar órdenes.'
     # Remove explicit negations before checking an affirmative contradiction.
     negated=re.sub(r'\bno (?:lo (?:dijiste|dices|dec[a-z]+) en serio|hablas en serio|est[a-z]+ hablando en serio)\b','',text)
     if re.search(r'\b(?:lo (?:dijiste|dices) en serio|hablas en serio|estas hablando en serio)\b',negated):
