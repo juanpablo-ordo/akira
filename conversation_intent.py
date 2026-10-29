@@ -56,6 +56,8 @@ def pragmatic_issue(question,answer):
         return 'El usuario pregunta si ÉL lo dijo en serio. Responde sobre su intención en segunda persona (tú), no como si la frase fuera tuya.'
     if cue['financial'] and re.search(r'\b(?:archivos|carpetas|papelera|borrar datos|perder datos)\b',text):
         return 'La queja actual se refiere a operaciones y pérdidas del bot, no a archivos ni datos del ordenador. Responde sobre esa intención sin ejecutar órdenes.'
+    if cue['financial'] and re.search(r'\b(?:si (?:quieres|deseas) (?:anadir|poner|colocar|abrir) (?:otra |una |nueva )?orden|que tipo de orden estas intentando (?:anadir|poner|colocar|abrir))\b',text):
+        return 'El usuario reclama pérdidas mediante sarcasmo. No solicita otra operación ni sus parámetros. Contesta el reclamo y ofrece revisar las operaciones registradas.'
     # Remove explicit negations before checking an affirmative contradiction.
     negated=re.sub(r'\bno (?:lo (?:dijiste|dices|dec[a-z]+) en serio|hablas en serio|est[a-z]+ hablando en serio)\b','',text)
     if re.search(r'\b(?:lo (?:dijiste|dices) en serio|hablas en serio|estas hablando en serio)\b',negated):

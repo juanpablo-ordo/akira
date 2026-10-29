@@ -26,6 +26,10 @@ class ModelMigrationAndTemplate(unittest.TestCase):
         prompt=messages_for(question)
         self.assertIn('interpretar la intención del usuario',prompt[0]['content'])
         self.assertIn('No conviertas esta pregunta',prompt[0]['content']);self.assertEqual(prompt[-1]['content'],question)
+        financial='Sí claro, gran idea: pon otra orden para perder otra vez /s'
+        self.assertIn('no solicita una nueva orden',messages_for(financial)[0]['content'])
+        self.assertTrue(pragmatic_issue(financial,'Si quieres añadir otra orden, debes revisar tu estrategia. ¿Qué tipo de orden estás intentando añadir?'))
+        self.assertFalse(pragmatic_issue(financial,'Estás expresando tu descontento con las pérdidas. Podemos revisar las operaciones registradas para encontrar errores.'))
 
     def test_bundled_gemma_on_small_cpu_avoids_a_duplicate_mapping_and_keeps_cpu_kernels(self):
         from akira_model_runtime import ManagedLlamaProcess,hardware_profile

@@ -58,13 +58,19 @@ def messages_for(question,history=(),memories=None,brand='AKIRA',language='auto'
         'Fórmulas en texto o Unicode, sin LaTeX.'+locale)
     from conversation_intent import nonliteral_hint,pragmatics,casual_generation,asks_literal_intention
     hint=nonliteral_hint(question)
-    complaint=pragmatics(question).get('complaint',False)
+    cue=pragmatics(question);complaint=cue.get('complaint',False)
     if asks_literal_intention(question):
         system=('Eres '+str(brand)+', asistente de IA. Tu tarea de este turno es interpretar la intención del usuario. '
             'Pregunta si él habló en serio: contesta esa pregunta directamente y explica las señales de ironía o sarcasmo de su mensaje. '
             'Distingue el sentido no literal de sus palabras del fallo que relata. No evalúes si ocurrió el fallo. '
             'No conviertas esta pregunta en una solicitud de diagnóstico técnico, no pidas detalles del fallo ni ofrezcas repararlo. '
             'Habla de tú con naturalidad. Usa dos o tres frases completas, sin condicionales ni hipótesis.'+locale)
+    elif cue.get('kind')=='sarcasm' and cue.get('financial') and cue.get('complaint'):
+        system=('Eres '+str(brand)+', asistente de IA. Interpreta el sarcasmo del usuario como un reclamo sobre las pérdidas del bot. '
+            'El imperativo sarcástico expresa descontento por las operaciones; no solicita una nueva orden. '
+            'Responde a esa intención y propone revisar los errores de las operaciones registradas, sin inventar su causa ni ganancias. '
+            'No pidas tipo, precio o parámetros para añadir otra operación. No anuncies envíos ni acciones que no ocurrieron. '
+            'Habla de tú con naturalidad en dos o tres frases completas.'+locale)
     if style=='mentor':system+=' Ayuda a aprender: explica el porqué, da un ejemplo y un siguiente paso práctico cuando proceda.'
     elif style=='detailed':system+=' Desarrolla la explicación y sus límites con ejemplos, sin repetir ideas.'
     result=[{'role':'system','content':system}]
