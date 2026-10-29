@@ -222,19 +222,17 @@ class SettingsPanel(QWidget):
         health=credential_health()
         if not health['readable']:
             warning=label(health['detail'],'body',INK['amber']);warning.setWordWrap(True);card.body.addWidget(warning)
-        for key,title in [('COINGLASS_API_KEY','Clave CoinGlass (opcional)'),('YOUTUBE_API_KEY','Clave YouTube Data API (opcional)'),('OPENAI_API_KEY','Clave OpenAI (opcional)')]:
+        for key,title in [('COINGLASS_API_KEY','Clave CoinGlass (opcional)'),('OPENAI_API_KEY','Clave OpenAI (opcional)')]:
             row=QHBoxLayout();caption=label(title);self.tr.bind(caption,title);row.addWidget(caption,1)
             entry=QLineEdit(str(saved.get(key) or ''));entry.setEchoMode(QLineEdit.EchoMode.Password);entry.setPlaceholderText('Guardada' if saved.get(key) else 'Sin configurar');row.addWidget(entry,1);eye=button('Mostrar',lambda _=False,w=entry:w.setEchoMode(QLineEdit.EchoMode.Normal if w.echoMode()==QLineEdit.EchoMode.Password else QLineEdit.EchoMode.Password),glyph='eye');row.addWidget(eye);card.body.addLayout(row);self.keys[key]=entry
         note=label('Guardar incluye estas claves. Un campo vacío conserva la clave anterior. Guardar no certifica acceso al proveedor.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
         self.add_button(card,'GUARDAR API',lambda:self.controller.save_keys({k:w.text() for k,w in self.keys.items()}),'primary')
-        note=label('Una clave nueva reemplaza la anterior del mismo proveedor. La sesión de YouTube es un archivo de cookies Netscape .txt de tu navegador; úsalo cuando YouTube pida iniciar sesión. No publiques ese archivo.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.add_button(card,'COMPROBAR FUENTES',self.window.check_sources)
-        self.add_button(card,'IMPORTAR SESIÓN YOUTUBE',self.window.import_youtube_session)
         self.add_button(card,'ELIMINAR UNA CLAVE GUARDADA',self.window.delete_key)
         card=self.card(3,'INVESTIGACIÓN Y CONOCIMIENTO','sources')
         self.field(card,'research.derivatives_provider','Datos de derivados BTC',(('public','Públicos sin plan (recomendado)'),('coinglass','CoinGlass opcional con mi plan')),
             help='Públicos consulta OKX, Bybit o Binance sin clave. La cobertura se muestra en Fuentes; no incluye un mapa agregado de liquidaciones. El oro usa sus propios datos MT5 y macro.')
-        for path,title in [('research.enabled','Investigación de mercado'),('research.youtube','Estudiar estrategias de YouTube'),('research.coinglass_public_fallback','Derivados públicos BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
+        for path,title in [('research.enabled','Investigación de mercado'),('research.coinglass_public_fallback','Derivados públicos BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
         self.field(card,'knowledge.mode','Actualización de conocimiento',(('automatic','Automática'),('request','Solo al solicitarla')))
         self.field(card,'knowledge.interval_hours','Intervalo de biblioteca (horas)',limits=(1,168))
         self.add_button(card,'ACTUALIZAR CONOCIMIENTO',self.window.refresh_knowledge)
