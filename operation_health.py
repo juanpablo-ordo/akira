@@ -26,8 +26,14 @@ def execution_gate(mode, paused=False, runtime_block='', network_available=True,
         code, reason, action = ('PAUSED', 'La gestión fue pausada; las nuevas entradas están suspendidas.',
                                 'Reanuda manualmente la gestión cuando corresponda.')
     elif runtime_block:
-        code, reason, action = ('BROKER_BLOCK', str(runtime_block)[:400],
-                               'Revisa el terminal, los permisos, el margen o las restricciones indicadas.')
+        # An own-trade cooldown is a risk policy, not a broker rejection.
+        reason=str(runtime_block)[:400]
+        if reason.startswith('Pausa de nuevas entradas:'):
+            code, action = ('RISK_COOLDOWN',
+                'Comprueba la racha, el vencimiento y el interruptor de pausa en Ajustes → Riesgo.')
+        else:
+            code, action = ('BROKER_BLOCK',
+                'Revisa el terminal, los permisos, el margen o las restricciones indicadas.')
     elif network_available is False:
         code, reason, action = ('OFFLINE',
             'La conectividad esencial no está disponible; nuevas entradas suspendidas.',
