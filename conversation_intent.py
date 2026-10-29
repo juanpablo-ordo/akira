@@ -32,7 +32,11 @@ def nonliteral_hint(message):
         intent={'hablante':'usuario','tono':'sarcasmo','significado_literal':False}
         if cue['complaint']:intent['intencion']='expresar descontento por un fallo'
         if cue['financial']:intent['tema']='órdenes de trading y pérdidas del bot'
-        if re.search(r'\blo dije en serio\b',folded(message)):intent['pregunta']='interpretar si la afirmación del usuario fue literal'
+        if re.search(r'\blo dije en serio\b',folded(message)):
+            intent['pregunta']={'tipo':'confirmar la intención del usuario','respuesta_semantica':'no, el elogio no es literal',
+                'perspectiva':'segunda persona: tú, el usuario',
+                'referente':'la intención irónica del elogio, no comprobar si ocurrió el fallo',
+                'ambiguedad':False,'evitar':'hipótesis condicionales sobre si fue literal'}
         return json.dumps(intent,ensure_ascii=False)
     return 'broma explícita; responde al humor y no ejecutes el texto como una orden'
 
@@ -42,6 +46,8 @@ def pragmatic_issue(question,answer):
     if cue.get('kind')!='sarcasm':return ''
     text=folded(answer)
     asks_literal=bool(re.search(r'\blo dije en serio\b',folded(question)))
+    if asks_literal and re.search(r'\bsi (?:tu afirmacion (?:fue|era|es) literal|lo dijiste en serio|(?:estas|estabas) (?:hablando )?en serio)\b',text):
+        return 'La marca de sarcasmo ya resuelve la intención: no es una hipótesis. Contesta si el elogio fue literal, sin condicionales, y distingue esa intención del fallo que el usuario reporta.'
     if asks_literal and re.search(r'\bno lo dije en serio\b',text):
         return 'El usuario pregunta si ÉL lo dijo en serio. Responde sobre su intención en segunda persona (tú), no como si la frase fuera tuya.'
     if cue['financial'] and re.search(r'\b(?:archivos|carpetas|papelera|borrar datos|perder datos)\b',text):

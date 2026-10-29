@@ -14,6 +14,15 @@ from execution import Blocked
 
 
 class ModelMigrationAndTemplate(unittest.TestCase):
+    def test_explicit_sarcasm_is_resolved_as_intention_rather_than_a_conditional_claim_about_the_failure(self):
+        from conversation_intent import nonliteral_hint,pragmatic_issue
+        question='Sí claro, qué brillante: se volvió a congelar /s. ¿Lo dije en serio?'
+        plan=json.loads(nonliteral_hint(question))
+        self.assertFalse(plan['pregunta']['ambiguedad']);self.assertIn('no,',plan['pregunta']['respuesta_semantica'])
+        wrong='Si tu afirmación fue literal, entonces sí, el sistema se congeló.'
+        self.assertIn('no es una hipótesis',pragmatic_issue(question,wrong))
+        self.assertFalse(pragmatic_issue(question,'No, tu elogio fue sarcástico: expresabas descontento por el fallo.'))
+
     def test_bundled_gemma_on_small_cpu_avoids_a_duplicate_mapping_and_keeps_cpu_kernels(self):
         from akira_model_runtime import ManagedLlamaProcess,hardware_profile
         from bundled_model import MODEL_NAME

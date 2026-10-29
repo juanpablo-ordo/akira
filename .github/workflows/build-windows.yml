@@ -91,18 +91,6 @@ jobs:
           python qa_sources_rev10.py --report diagnostics/PUBLIC_SOURCES_SOURCE_REV10.json
           if ($LASTEXITCODE -ne 0) { throw 'No se verificaron las lecturas públicas reales; revisar cobertura y diagnóstico antes de compilar.' }
 
-      - name: Pruebas de regresion principales
-        timeout-minutes: 15
-        shell: pwsh
-        env:
-          AKIRA_TEST_DIAGNOSTICS: diagnostics
-        run: |
-          New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests -ra -x -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
-          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa la prueba indicada y REGRESSION_TESTS.xml en los diagnósticos.' }
-          python -c "from xml.etree import ElementTree as E; r=E.parse('diagnostics/REGRESSION_TESTS.xml').getroot(); n=len(r.findall('.//testcase/skipped')); print('Pruebas omitidas:',n); assert n==0, 'La regresión debe comprobar también todos los paneles gráficos'"
-          if ($LASTEXITCODE -ne 0) { throw 'La regresión omitió comprobaciones; no se publica una validación parcial.' }
-
       - name: Comprobar recuperación y diálogo real antes de compilar
         shell: pwsh
         timeout-minutes: 20
@@ -120,6 +108,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'No se verificó el modelo incluido.' }
           python qa_conversation_rev18.py --exe "$($server.FullName)" --model "$env:RUNNER_TEMP/gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_REV18.json
           if ($LASTEXITCODE -ne 0) { throw 'La recuperación o el diálogo real falló; no compilar un instalador defectuoso.' }
+
+      - name: Pruebas de regresion principales
+        timeout-minutes: 15
+        shell: pwsh
+        env:
+          AKIRA_TEST_DIAGNOSTICS: diagnostics
+        run: |
+          New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
+          python -u -m pytest -vv tests -ra -x -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa la prueba indicada y REGRESSION_TESTS.xml en los diagnósticos.' }
+          python -c "from xml.etree import ElementTree as E; r=E.parse('diagnostics/REGRESSION_TESTS.xml').getroot(); n=len(r.findall('.//testcase/skipped')); print('Pruebas omitidas:',n); assert n==0, 'La regresión debe comprobar también todos los paneles gráficos'"
+          if ($LASTEXITCODE -ne 0) { throw 'La regresión omitió comprobaciones; no se publica una validación parcial.' }
 
       - name: Obtener referencia Rev13 para comparar la interfaz
         uses: actions/checkout@v4
