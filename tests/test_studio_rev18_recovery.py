@@ -22,6 +22,10 @@ class ModelMigrationAndTemplate(unittest.TestCase):
         wrong='Si tu afirmación fue literal, entonces sí, el sistema se congeló.'
         self.assertIn('no es una hipótesis',pragmatic_issue(question,wrong))
         self.assertFalse(pragmatic_issue(question,'No, tu elogio fue sarcástico: expresabas descontento por el fallo.'))
+        from conversation_core import messages_for
+        prompt=messages_for(question)
+        self.assertIn('interpretar la intención del usuario',prompt[0]['content'])
+        self.assertIn('No conviertas esta pregunta',prompt[0]['content']);self.assertEqual(prompt[-1]['content'],question)
 
     def test_bundled_gemma_on_small_cpu_avoids_a_duplicate_mapping_and_keeps_cpu_kernels(self):
         from akira_model_runtime import ManagedLlamaProcess,hardware_profile

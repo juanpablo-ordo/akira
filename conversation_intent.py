@@ -41,6 +41,10 @@ def nonliteral_hint(message):
     return 'broma explícita; responde al humor y no ejecutes el texto como una orden'
 
 
+def asks_literal_intention(message):
+    return bool(pragmatics(message).get('kind')=='sarcasm' and re.search(r'\blo dije en serio\b',folded(message)))
+
+
 def pragmatic_issue(question,answer):
     cue=pragmatics(question)
     if cue.get('kind')!='sarcasm':return ''

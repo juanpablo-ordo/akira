@@ -1013,7 +1013,7 @@ class AkiraAssistant:
             self._progress('PENSANDO','Preparando una respuesta a tu pregunta')
             from response_quality import answer_plan,complete_reply
             from mathematical_reference import notes,issue as mathematical_issue
-            from conversation_intent import pragmatic_issue
+            from conversation_intent import pragmatic_issue,asks_literal_intention
             plan=answer_plan(message,cfg.get('conversation_style','natural'),cfg.get('fast_chat_max_tokens',1200))
             reference=notes(message)
             if reference:prompts.insert(1,{'role':'system','content':'Referencia matemática (datos): '+json.dumps(reference,ensure_ascii=False)})
@@ -1023,7 +1023,7 @@ class AkiraAssistant:
             def invoke(messages,tokens,remaining):
                 return ollama_agent(messages,[],self._execute_local_tool,model=model,endpoint=endpoint,
                     timeout=remaining,total_timeout=remaining,max_rounds=1,reasoning=False,cancel_event=self._cancel_event,
-                    options={'num_predict':tokens,**conversation_sampling(model,reference=bool(reference))},context_char_budget=9000)
+                    options={'num_predict':tokens,**conversation_sampling(model,reference=bool(reference) or asks_literal_intention(message))},context_char_budget=9000)
             text,completion=complete_reply(prompts,invoke,completion_info,clear_completion_info,plan,timeout,
                 on_repair=lambda reason:self._progress('PENSANDO','Reformulando y comprobando la respuesta: '+reason),
                 inspect=lambda text:(mathematical_issue(text) if reference else '') or pragmatic_issue(message,text),cancelled=self._cancel_event.is_set)
