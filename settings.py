@@ -389,7 +389,7 @@ def load_config(path):
     if cfg['execution']['pending_rejection_retry_seconds']<1:raise ValueError('Reintento de pendiente rechazada debe esperar al menos 1 segundo')
     if cfg['assistant'].get('conversation_style') not in ('natural','mentor','detailed'):raise ValueError('Estilo de conversación inválido')
     guard=cfg['capital_protection']
-    for key in ('enabled','one_position_per_symbol','strict_pending_quality','fomc_pause'):
+    for key in ('enabled','one_position_per_symbol','strict_pending_quality','fomc_pause','loss_streak_enabled'):
         if type(guard[key]) is not bool:raise ValueError('capital_protection.'+key+' debe ser booleano')
     for key in ('trade_pct','portfolio_pct','symbol_pct','daily_loss_pct','max_drawdown_pct'):
         if isinstance(guard[key],bool) or not .1<=guard[key]<=100:raise ValueError('capital_protection.'+key+' debe estar entre 0.1 y 100')
