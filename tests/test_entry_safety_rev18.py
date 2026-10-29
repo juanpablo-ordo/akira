@@ -98,6 +98,12 @@ class ExecutionLossPause(PendingCase,unittest.TestCase):
         e._confirmed_outcomes=owned_outcomes(self.g);v=e.view()
         self.assertTrue(v['capital_protection']['allowed']);self.assertFalse(v['execution_allowed'])
         self.assertIn('Pausa de nuevas entradas',v['execution_block']);self.assertFalse(v['entry_safety']['allowed'])
+    def test_public_network_probe_failure_does_not_prevent_protective_withdrawal_on_a_connected_broker(self):
+        self.losses();self.api.add_pending(self.plan());self.g.network_available=False
+        e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)
+        from trade_quality_gate import owned_outcomes
+        e._confirmed_outcomes=owned_outcomes(self.g);e.enforce_capital_protection(self.g.snapshot())
+        self.assertFalse(self.api.orders);self.assertTrue(all(r['action']==REMOVE for r in self.api.sent))
 
 
 if __name__=='__main__':unittest.main()

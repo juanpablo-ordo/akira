@@ -562,6 +562,8 @@
     "one_position_per_symbol": true,
     "strict_pending_quality": true,
     "loss_streak_limit": 3,
-    "loss_pause_hours": 24.0
+    "loss_pause_hours": 24.0,
+    "fomc_pause": true,
+    "event_pause_minutes": 60
   }
 }

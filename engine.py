@@ -1293,15 +1293,15 @@ class Engine:
         self.log.event(plan.symbol,'ENTRADA EVITADA · '+reason,operation='quality_entry_blocked',reason=reason,event_key=key)
 
     def entry_safety(self,live=False):
-        from entry_safety import loss_pause
+        from entry_safety import entry_policy
         from trade_quality_gate import owned_outcomes
-        return loss_pause(self.cfg,owned_outcomes(self.g) if live else self._confirmed_outcomes,self.g.clock())
+        return entry_policy(self.cfg,owned_outcomes(self.g) if live else self._confirmed_outcomes,self.g.clock())
 
     def enforce_capital_protection(self,snap):
         from capital_guard import pending_reduction
         g=self.g
         safety=self.entry_safety()
-        if (self.paused and safety['allowed']) or self.cfg['mode']!='trade' or g.runtime_execution_block or getattr(g,'network_available',True) is False:return snap
+        if ((self.paused or getattr(g,'network_available',True) is False) and safety['allowed']) or self.cfg['mode']!='trade' or g.runtime_execution_block:return snap
         state=g.capital_status(snap,refresh=True)
         entry_block=g.daily_loss_reason(snap) or (safety['reason'] if not safety['allowed'] else '')
         for _ in range(len(snap.orders)):

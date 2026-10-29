@@ -96,7 +96,7 @@ def summarize(root, folder):
         raise RuntimeError('Installer upgrade or saved data not verified')
     result['installer_upgrade']=upgrade
     owner=json.loads((folder/'REAL_CHAT_REV18.json').read_text(encoding='utf-8'))
-    if owner.get('status')!='PASSED' or len(owner.get('scenarios',[]))!=7 or not owner.get('recovery',{}).get('ready') or not owner.get('recovery',{}).get('background_review_had_visible_output'):
+    if owner.get('status')!='PASSED' or len(owner.get('scenarios',[]))!=8 or not owner.get('caption_source_fixture') or not owner.get('recovery',{}).get('ready') or not owner.get('recovery',{}).get('background_review_had_visible_output'):
         raise RuntimeError('Recovery and owner conversation not verified')
     if any(row.get('origin')!='model' or row.get('completion',{}).get('finish_reason')!='stop' or row.get('completion',{}).get('truncated') for row in owner['scenarios']):
         raise RuntimeError('Owner conversation was incomplete or canned')

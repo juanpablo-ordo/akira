@@ -6,7 +6,8 @@ class SourceDeadline:
     def __init__(self,limit=64):
         self.lock=threading.Lock();self.tasks={};self.limit=limit;self.closed=threading.Event()
 
-    def run(self,name,function,timeout=45):
+    def run(self,name,function,timeout=45,cancel_event=None):
+        if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         with self.lock:
             for key,row in list(self.tasks.items()):
                 if row['done'].is_set():self.tasks.pop(key)
@@ -21,10 +22,12 @@ class SourceDeadline:
             threading.Thread(target=work,name='AkiraSourceDeadline',daemon=True).start()
         deadline=time.monotonic()+timeout
         while not row['done'].wait(min(.1,max(.001,deadline-time.monotonic()))):
+            if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
             if self.closed.is_set():raise RuntimeError('Consultas de fuentes cerradas')
             if time.monotonic()>=deadline:raise TimeoutError('La fuente superó su plazo; resultado tardío descartado y conexión aislada.')
         with self.lock:
             if self.tasks.get(name) is row:self.tasks.pop(name)
+        if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         if 'error' in row:raise row['error']
         return row.get('result')
 

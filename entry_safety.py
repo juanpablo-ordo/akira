@@ -37,3 +37,12 @@ def loss_pause(config,outcomes,now):
                    f'Esperar {policy["loss_pause_hours"]:g} h desde el cierre que activó la pausa. '
                    'Se retiran pendientes propias; las posiciones conservan sus SL/TP.')
     return result
+
+
+def entry_policy(config,outcomes,now):
+    from scheduled_events import fomc_window
+    result=loss_pause(config,outcomes,now);event=fomc_window(rules(config),now)
+    result['scheduled_event']=event
+    if result['allowed'] and not event['allowed']:
+        result.update(allowed=False,reason=event['reason'],paused_until=event['paused_until'])
+    return result

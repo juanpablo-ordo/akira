@@ -110,7 +110,13 @@ def _post_direct_cancellable(url,payload,timeout,cancel_event):
             if callback and content:callback(_clean(''.join(content)))
             if not terminal and finish is None:raise RuntimeError('El flujo de respuesta de la IA se interrumpió antes de terminar')
             result={'choices':[{'message':{'role':'assistant','content':''.join(content)},'finish_reason':finish or 'stop'}]}
-        else:result=json.loads(response.read(8_000_000).decode('utf-8','replace'))
+        else:
+            result=json.loads(response.read(8_000_000).decode('utf-8','replace'))
+            # Tool-enabled completions use JSON rather than the text-only SSE
+            # parser. Their final visible answer must still reach the chat UI.
+            callback=getattr(_CONTEXT,'visible',None)
+            message=((result.get('choices') or [{}])[0].get('message') or {})
+            if callback and message.get('content'):callback(_clean(str(message['content'])))
         if expired.is_set():raise TimeoutError('AKIRA agotó el tiempo total de inferencia')
         if cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         return result

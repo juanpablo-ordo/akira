@@ -1,7 +1,7 @@
 {
   "build": "AKIRA_16_5_3_STUDIO_REV18",
   "status": "PENDING_WINDOWS",
-  "date": "2026-10-28",
+  "date": "2026-10-29",
   "preliminary_targeted": {
     "passed": 146,
     "subtests_passed": 24,
@@ -15,14 +15,15 @@
   "live_account_used": false,
   "profitability_verified": false,
   "entry_safety_unit_tests": {
-    "tests": 18,
+    "tests": 19,
     "failed": 0,
     "scope": "Confirmed loss sequence across assets, pre-send checks, own pending withdrawal, restart persistence, and protection of manual tickets and existing position stops."
   },
   "local_targeted": {
-    "xml_cases": 168,
+    "tests": 222,
     "failures": 0,
-    "errors": 0
+    "errors": 0,
+    "scope": "Confirmed-loss and event guards, interactive sources, template/migration, legacy source compatibility and capital timing."
   },
   "local_real_model": {
     "status": "PASSED",
@@ -35,6 +36,13 @@
     "scenarios": 7,
     "recovery_verified": true,
     "model": "Gemma 4 E2B IT Q4",
-    "physical_dell_tested": false
+    "physical_dell_tested": false,
+    "scope": "Previous seven-case candidate, before final mmap, interactive source and event changes; not certification of the final build.",
+    "current_eight_case_validation": "PENDING"
+  },
+  "scheduled_events_unit_tests": {
+    "tests": 8,
+    "failures": 0,
+    "scope": "October and winter DST windows, overlap union, pending/runner admission and only-own pending withdrawal."
   }
 }

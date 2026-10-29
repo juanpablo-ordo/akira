@@ -138,6 +138,8 @@ class SettingsPanel(QWidget):
         self.field(card,'capital_protection.strict_pending_quality','Exigir la misma calidad a las alternativas del mapa')
         self.field(card,'capital_protection.loss_streak_limit','Pérdidas propias seguidas antes de pausar entradas')
         self.field(card,'capital_protection.loss_pause_hours','Pausa de nuevas entradas tras la racha (horas)')
+        self.field(card,'capital_protection.fomc_pause','Evitar entradas alrededor de anuncios FOMC programados')
+        self.field(card,'capital_protection.event_pause_minutes','Minutos antes y después de cada anuncio o conferencia FOMC')
         card=self.card(1,'CUÁNTO PUEDE ARRIESGAR CADA ORDEN','shield')
         self.field(card,'risk.max_trade_money','Tope por orden en dinero',limits=(0,1e8),help='Pérdida máxima estimada si una orden llega a su protección. También se aplica el porcentaje: manda el menor. Con 0 no se habilita riesgo para nuevas órdenes.')
         self.field(card,'risk.max_trade_pct','Tope por orden sobre el patrimonio',limits=(0,100),help='Con 40 USD de patrimonio, 5% equivale a 2 USD. Manda el menor entre este porcentaje y el tope en dinero. Con 0 no se habilita riesgo para nuevas órdenes.')

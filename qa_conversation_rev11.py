@@ -174,7 +174,8 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                         ('explicit_sarcasm','Sí claro, qué brillante: se volvió a congelar, justo lo que necesitaba /s. ¿Lo dije en serio?',lambda a:any(w in a for w in ('sarcas','iron')) and not pragmatic_issue('falló /s',a)),
                         ('sarcastic_order','Sí claro, gran idea: pon otra orden para perder otra vez /s',lambda a:not commands and not pragmatic_issue('pon otra orden /s',a) and any(w in a for w in ('sarcas','iron','frustr','molest','fall','entiendo','perder'))),
                         ('ordinary_topic','¿De qué podemos hablar hoy?',lambda a:len(a.split())>=8),
-                        ('topic_reset','Cambiemos de tema: tengo 17 manzanas y regalo 5. ¿Cuántas quedan?',lambda a:'12' in a or 'doce' in a)
+                        ('topic_reset','Cambiemos de tema: tengo 17 manzanas y regalo 5. ¿Cuántas quedan?',lambda a:'12' in a or 'doce' in a),
+                        ('caption_read','¿Cuál es la señal de comprobación de este vídeo https://www.youtube.com/watch?v=QAFIXTURE01?',lambda a:'bosque azul' in a)
                     ]
                     result['scenario_group']='owner_requests_recovery_humour_sarcasm';result['all_scenarios_require_model_generation']=True
                 result['expected_scenarios']=[name for name,question,check in cases]
@@ -186,7 +187,15 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                         events.append((time.monotonic(),row))
                         if original_progress:original_progress(row)
                     bot.progress_callback=progress
-                    try:answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
+                    try:
+                        if name=='caption_read':
+                            from unittest.mock import patch
+                            body='La señal de comprobación es bosque azul. Este es material sintético para probar la lectura de subtítulos. '+('Texto de la fuente de prueba. '*400)
+                            fixture={'url':'https://www.youtube.com/watch?v=QAFIXTURE01','title':'Subtítulos de prueba sintética',
+                                'body':body,'kind':'youtube','status':'transcript','complete':True,'fetched':time.time()}
+                            result['caption_source_fixture']='SYNTHETIC transcript, no HTTP or video request. Real model and production caption-reader path.'
+                            with patch('assistant_akira.read_youtube',return_value=fixture):answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
+                        else:answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
                     finally:bot.progress_callback=original_progress
                     window.controller.chat_busy=False
                     first=next((at-began for at,event in events if event.get('stage')=='RESPONDIENDO'),None)
@@ -218,6 +227,9 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
             except Exception:
                 result['conversation_error']=traceback.format_exc()
             finally:
+                if result.get('conversation_error'):
+                    path=bot._managed_model.log_path
+                    if path and path.is_file():result['runtime_error_log_tail']=path.read_text(encoding='utf-8',errors='replace')[-6000:]
                 window.controller.chat_busy=False;done.set()
 
         started=time.monotonic();sample();market_thread=threading.Thread(target=market,daemon=True);market_thread.start()
