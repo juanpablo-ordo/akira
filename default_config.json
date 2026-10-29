@@ -565,5 +565,10 @@
     "loss_pause_hours": 24,
     "fomc_pause": true,
     "event_pause_minutes": 60
+  },
+  "locale": {
+    "country": "Guatemala",
+    "region": "",
+    "timezone": "America/Guatemala"
   }
 }
