@@ -1091,8 +1091,16 @@ class AkiraAssistant:
                     'read_status':tool_result.get('status','read')}]
             source_rows.extend(tool_result.get('alternative_sources') or [])
         elif not social and self._strict_current_fact(research_query):
-            result=self._read_public('verified:'+research_query,lambda:lookup_verified_current_fact(research_query,timeout=7.5,limit=5))
-            source_rows=list(result.get('results') or [])
+            # A broken DNS resolver / exhausted source deadline must not crash
+            # the conversation or be mistaken for an answer from the model.
+            try:
+                result=self._read_public('verified:'+research_query,
+                    lambda:lookup_verified_current_fact(research_query,timeout=7.5,limit=5))
+                source_rows=list(result.get('results') or [])
+            except Exception as exc:
+                if self.cancelled():raise
+                self._last_response_error='Fuentes actuales: '+type(exc).__name__+': '+str(exc)[:160]
+                source_rows=[]
             if not source_rows:
                 return self._limited_evidence_reply(research_query,source_rows)
             verified_context='\n'.join(f"[{i}] {r.get('title','Fuente')}: {r.get('text','')}\nURL: {r.get('url','')}" for i,r in enumerate(source_rows,1))
@@ -1616,8 +1624,15 @@ class AkiraAssistant:
                     cached=self._research_cache.get(self._research_query(message)) or {}
                     if cached.get('rows') and time.monotonic()-cached.get('at',0)<60:rows=list(cached['rows'])
                     else:
-                        result=self._read_public('verified:'+message,lambda:(lookup_verified_current_fact(message,timeout=6.0,limit=4) if strict else lookup_current_fact(message,timeout=6.0,limit=4)))
-                        rows=list(result.get('results') or [])
+                        try:
+                            result=self._read_public('verified:'+message,
+                                lambda:(lookup_verified_current_fact(message,timeout=6.0,limit=4)
+                                    if strict else lookup_current_fact(message,timeout=6.0,limit=4)))
+                            rows=list(result.get('results') or [])
+                        except Exception as exc:
+                            if self.cancelled():return 'Consulta cancelada por ti.'
+                            self._last_response_error='Fuentes actuales: '+type(exc).__name__+': '+str(exc)[:160]
+                            rows=[]
                     answer=self._evidence_answer(message,rows)
                     if answer:return answer+'\n\nRespuesta tomada directamente de las fuentes; el modelo local no terminó esta consulta.'
                     return ('No pude completar la respuesta del modelo ni confirmar ese dato con fuentes pertinentes. '
