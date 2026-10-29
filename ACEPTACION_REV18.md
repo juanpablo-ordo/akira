@@ -1,6 +1,6 @@
 # Studio Rev18: recuperación, fuentes y conversación
 
-Estado: candidata en validación. Los resultados y el instalador de Rev17 no certifican este código.
+Estado: verificada en Windows el 29/10/2026. El ejecutable se compiló desde 232ec49ef01dade95b8c47aa99acc1fd3491a04f. La ejecución https://github.com/juanpablo-ordo/akira/actions/runs/40802152015 aprobó 1.658 pruebas, 231 subpruebas y los 21 reportes funcionales exigidos, incluida instalación limpia y actualización desde Rev17. Los cambios posteriores solo registran esta evidencia. VALIDACION_REV18.json conserva resultados, límites y enlaces. No se ha validado rentabilidad ni una Dell física.
 
 ## Fallos reproducidos
 

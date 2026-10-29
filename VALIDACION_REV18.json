@@ -1,48 +1,239 @@
 {
   "build": "AKIRA_16_5_3_STUDIO_REV18",
-  "status": "PENDING_WINDOWS",
+  "status": "PASSED",
   "date": "2026-10-29",
-  "preliminary_targeted": {
-    "passed": 146,
-    "subtests_passed": 24,
-    "failed": 0,
-    "scope": "Recovery, source and conversation tests before final build validation."
-  },
-  "windows_verified": false,
-  "installer_verified": false,
-  "real_model_verified_for_this_revision": false,
+  "verified_source_commit": "232ec49ef01dade95b8c47aa99acc1fd3491a04f",
+  "workflow_run_id": "40802152015",
+  "workflow_url": "https://github.com/juanpablo-ordo/akira/actions/runs/40802152015",
+  "evidence_note": "The executable was built from verified_source_commit. Later changes only record validation and update documentation.",
+  "windows_verified": true,
+  "installer_verified": true,
+  "real_model_verified_for_this_revision": true,
   "physical_dell_tested": false,
   "live_account_used": false,
   "profitability_verified": false,
-  "entry_safety_unit_tests": {
-    "tests": 19,
-    "failed": 0,
-    "scope": "Confirmed loss sequence across assets, pre-send checks, own pending withdrawal, restart persistence, and protection of manual tickets and existing position stops."
-  },
-  "local_targeted": {
-    "tests": 222,
+  "regressions": {
+    "xml_testcases": 1658,
     "failures": 0,
     "errors": 0,
-    "scope": "Confirmed-loss and event guards, interactive sources, template/migration, legacy source compatibility and capital timing."
+    "skipped": 0,
+    "regular_tests_passed": 1658,
+    "subtests_passed": 231
   },
-  "local_real_model": {
-    "status": "PASSED",
-    "logical_cpus": 2,
-    "peak_app_and_model_mb": 3666.4,
-    "memory_peak_limit_mb": 4096,
-    "ui_delay_p95_ms": 8.87,
-    "engine_cycle_p95_ms": 24.6,
-    "cpu_percent_of_available_cpus": 59.86,
-    "scenarios": 7,
-    "recovery_verified": true,
-    "model": "Gemma 4 E2B IT Q4",
-    "physical_dell_tested": false,
-    "scope": "Previous seven-case candidate, before final mmap, interactive source and event changes; not certification of the final build.",
-    "current_eight_case_validation": "PENDING"
+  "targeted_windows": {
+    "regular_tests_passed": 329,
+    "subtests_passed": 92,
+    "failures": 0
+  },
+  "manifest_entries_verified": 470,
+  "entry_safety_unit_tests": {
+    "tests": 19,
+    "failed": 0
   },
   "scheduled_events_unit_tests": {
     "tests": 8,
-    "failures": 0,
-    "scope": "October and winter DST windows, overlap union, pending/runner admission and only-own pending withdrawal."
-  }
+    "failed": 0,
+    "coverage": "Known regular FOMC meetings in 2026 and 2027; not a complete news calendar."
+  },
+  "local_real_model": {
+    "status": "PASSED",
+    "scenarios": 8,
+    "peak_app_and_model_mb": 3678.1,
+    "ui_delay_p95_ms": 7.25,
+    "engine_cycle_p95_ms": 25.2,
+    "logical_cpus": 2,
+    "model_command_limits": {
+      "--threads": "1",
+      "--threads-batch": "1",
+      "--poll": "0",
+      "--poll-batch": "0",
+      "--ctx-size": "2048",
+      "--n-gpu-layers": "0",
+      "--load-mode": "dio",
+      "--cache-ram": "0",
+      "--flash-attn": "on",
+      "--cache-type-k": "q8_0",
+      "--cache-type-v": "q8_0"
+    }
+  },
+  "windows_real_model": {
+    "status": "PASSED",
+    "scenarios": 8,
+    "scenario_names": [
+      "actual_preferences",
+      "computer_joke",
+      "wordplay",
+      "explicit_sarcasm",
+      "sarcastic_order",
+      "ordinary_topic",
+      "topic_reset",
+      "caption_read"
+    ],
+    "recovery": {
+      "ready": true,
+      "phase": "READY",
+      "background_review_had_visible_output": true,
+      "background_released": true,
+      "no_user_conversation_was_active": true,
+      "detail": "El modelo generó texto real. Asistente reiniciado y comprobado."
+    },
+    "peak_app_and_model_mb": 3690.8,
+    "memory_peak_limit_mb": 4096,
+    "cpu_percent_of_available_cpus": 61.87,
+    "ui_delay_p95_ms": 30,
+    "engine_cycle_p95_ms": 16.8,
+    "logical_cpus": 2,
+    "simulated_hardware": {
+      "ram_gb": 8,
+      "physical_cores": 2,
+      "logical_cores": 4
+    },
+    "caption_source_fixture": "SYNTHETIC transcript, no HTTP or video request. Real model and production caption-reader path."
+  },
+  "installer_upgrade": {
+    "status": "PASSED",
+    "build": "AKIRA_16_5_3_STUDIO_REV18",
+    "checks": {
+      "previous_source_commit_verified": true,
+      "previous_source_manifest_verified": true,
+      "previous_installer_is_rev17": true,
+      "canonical_shortcut_targets_new_executable": true,
+      "canonical_shortcut_keeps_data_arguments": true,
+      "canonical_start_menu_keeps_executable_and_data": true,
+      "canonical_actual_application_reads_same_data": true,
+      "canonical_bundled_model_migrates_without_rewriting_settings": true,
+      "canonical_configuration_chat_and_background_unchanged": true,
+      "canonical_no_broker_or_model_started": true,
+      "legacy_argument_shortcut_targets_new_executable": true,
+      "legacy_argument_shortcut_keeps_data_arguments": true,
+      "legacy_argument_start_menu_keeps_executable_and_data": true,
+      "legacy_argument_actual_application_reads_same_data": true,
+      "legacy_argument_bundled_model_migrates_without_rewriting_settings": true,
+      "legacy_argument_configuration_chat_and_background_unchanged": true,
+      "legacy_argument_no_broker_or_model_started": true,
+      "bundled_model_and_components_survive_upgrade": true
+    },
+    "previous_version": "16.5.2 Studio Rev17",
+    "previous_source_commit": "67e71bd0ff761b2036b7f3c1baac23bd1ac0b9b6",
+    "live_account_used": false,
+    "private_application_data": true,
+    "model_downloaded_by_check": false
+  },
+  "reports_verified": 21,
+  "reports": {
+    "SOURCE_SELF_CHECK": {
+      "status": "PASSED",
+      "sha256": "bd7fd8af8b5b8117ef553a34a7f7e84210ca630e129d492afd41ee7699fd8cb1",
+      "bytes": 12510
+    },
+    "NATIVE_APPLICATION": {
+      "status": "PASSED",
+      "sha256": "39da4c854bb2283154df29943dd68f74ff4efe97d9921a4e8b4b1b22ee3c4e88",
+      "bytes": 13582
+    },
+    "NATIVE_FIRST_RUN": {
+      "status": "PASSED",
+      "sha256": "5e939b1d1d7713251489daa2f15a0812b78848d2d9c0b82d3a3d818b7942dc98",
+      "bytes": 99
+    },
+    "SPRITE_AI_SOURCE": {
+      "status": "PASSED",
+      "sha256": "c2ae89634d56653f74ad7c891ebc00d06ca4a46ce32b3684f1438e2abe42425c",
+      "bytes": 615
+    },
+    "SPRITE_AI_FROZEN": {
+      "status": "PASSED",
+      "sha256": "c2ae89634d56653f74ad7c891ebc00d06ca4a46ce32b3684f1438e2abe42425c",
+      "bytes": 615
+    },
+    "HTTPS_SOURCE_REV10": {
+      "status": "PASSED",
+      "sha256": "0ca4c383efdd5c302f4e44fadc163d49062a93777c38809f1682297798a73c2d",
+      "bytes": 408
+    },
+    "HTTPS_FROZEN_REV10": {
+      "status": "PASSED",
+      "sha256": "0ca4c383efdd5c302f4e44fadc163d49062a93777c38809f1682297798a73c2d",
+      "bytes": 408
+    },
+    "LOW_RESOURCE_FROZEN_REV10": {
+      "status": "PASSED",
+      "sha256": "aa2814a40b7051cb48abde2b512ce27f0da24efbafb0f4f9e5752e31c9042cc9",
+      "bytes": 1350
+    },
+    "PUBLIC_SOURCES_SOURCE_REV10": {
+      "status": "PASSED",
+      "sha256": "62ea8c9bf068e441bc6d8a70ecbdbcbd9cb8e597f57f255e3bafee95b0158eb4",
+      "bytes": 2006
+    },
+    "PUBLIC_SOURCES_FROZEN_REV10": {
+      "status": "PASSED",
+      "sha256": "1e1136a920c3dd5934fd865c65acc579a42c98c8920695c70d3366d8522bc991",
+      "bytes": 2007
+    },
+    "LOCAL_AI_SCENARIOS": {
+      "status": "PASSED",
+      "sha256": "d08e3566558476fae4baf453fbb5f7291ad37a9c7a458414900040b25136ceff",
+      "bytes": 475
+    },
+    "REAL_REVIEW_REV10": {
+      "status": "PASSED",
+      "sha256": "0492fef76e320f46e873c33dadf69baf4185cb101b56c18d82fafc8a128ed4ea",
+      "bytes": 9839
+    },
+    "REAL_CONVERSATION_REV6_WINDOWS": {
+      "status": "PASSED",
+      "sha256": "302ba57c4b2ab249cae4d833897efde5409fff532e60c224b3e99d7037e22709",
+      "bytes": 3150
+    },
+    "REAL_CHAT_LOW_RESOURCE_REV11": {
+      "status": "PASSED",
+      "sha256": "4aec7e3b792abae1615d2414af3c705687c4e1aafa2b55b53150a424ce438b2b",
+      "bytes": 5780
+    },
+    "REAL_CHAT_DELL_7280_REV14": {
+      "status": "PASSED",
+      "sha256": "c13dc52439b82a70b7212aa921ec0e5c04c2b80a6a261e89ffd1c4e20be65551",
+      "bytes": 6774
+    },
+    "UI_COMPARISON_REV14": {
+      "status": "PASSED",
+      "sha256": "eedcb0b0b63105754828e6418bea7502275a95f0f553af21e917fada80fb1073",
+      "bytes": 2125
+    },
+    "REAL_CHAT_REV15": {
+      "status": "PASSED",
+      "sha256": "31b371e353b2c151f7601412c1ea2343951d9f5b4aa4eedfda955a95763e6d8e",
+      "bytes": 12987
+    },
+    "REAL_CHAT_REV16": {
+      "status": "PASSED",
+      "sha256": "6597408fe77ed034dae56d0e0b7815d549b99d7186b0e449f4eadd01c538a36e",
+      "bytes": 9261
+    },
+    "INSTALLED_LOCAL_AI": {
+      "status": "PASSED",
+      "sha256": "788ea3cff3ea7683d03a2018e802df4c67c4c7fc328849d4de3eef543d698317",
+      "bytes": 516
+    },
+    "UPGRADE_REV16": {
+      "status": "PASSED",
+      "sha256": "ceb54d118bf1c356cb0370adca4a2790a011a929109f4ad4f02c738aeb4d61a3",
+      "bytes": 1396
+    },
+    "REAL_CHAT_REV18": {
+      "status": "PASSED",
+      "sha256": "34a965b9c91c6de0357d676b654bda3627a0598dc7ffdbc9aa8156f06e5b3304",
+      "bytes": 9249
+    }
+  },
+  "installer_archive": {
+    "artifact_id": 12867619440,
+    "name": "AKIRA-16.5.3-Studio-Rev18-recuperacion-fuentes-dialogo-instalador-Windows-IA-INCLUIDA",
+    "size_in_bytes": 3476537920,
+    "archive_sha256": "sha256:cc859da649a9dab6be2c3778aa4ebd4edb2cc6dd7356539524628b5775f29886",
+    "url": "https://github.com/juanpablo-ordo/akira/actions/runs/40802152015/artifacts/12867619440",
+    "expires_at": "2026-11-05T02:30:06Z"
+  },
+  "model": "Gemma 4 E2B IT Q4_K_M with pinned llama.cpp b10355; pretrained model, no custom foundation-model training."
 }
