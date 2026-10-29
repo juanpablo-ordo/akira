@@ -1,0 +1,27 @@
+name: AKIRA Rev19 - regresiones de incidencias reales
+on:
+  push:
+    branches: [akira-rev19-live-defects-20261029]
+  pull_request:
+    branches: [akira-rev18-recovery-sources-dialogue]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Dependencias ligeras de prueba
+        run: python -m pip install --disable-pip-version-check pytest tzdata
+      - name: Sintaxis de archivos afectados
+        run: |
+          python -m py_compile engine.py assistant_akira.py settings.py studio_settings_qt.py user_locale.py entry_safety.py operation_health.py source_recovery.py
+      - name: Pruebas del diagnóstico real
+        run: python -m pytest -q tests/test_rev19_live_defects.py
