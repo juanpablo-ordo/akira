@@ -136,6 +136,8 @@ class SettingsPanel(QWidget):
             self.field(card,'capital_protection.'+key,title,limits=(.1,100))
         self.field(card,'capital_protection.one_position_per_symbol','Una posición por símbolo')
         self.field(card,'capital_protection.strict_pending_quality','Exigir la misma calidad a las alternativas del mapa')
+        self.field(card,'capital_protection.loss_streak_enabled','Activar pausa tras pérdidas consecutivas',
+            help='Opcional y configurable: desactivarla no evita los límites monetarios, el margen ni las comprobaciones de MT5.')
         self.field(card,'capital_protection.loss_streak_limit','Pérdidas propias seguidas antes de pausar entradas')
         self.field(card,'capital_protection.loss_pause_hours','Pausa de nuevas entradas tras la racha (horas)')
         self.field(card,'capital_protection.fomc_pause','Evitar entradas alrededor de anuncios FOMC programados')
