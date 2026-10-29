@@ -116,9 +116,9 @@ def risk_dashboard(view,config,private=False):
     labels={'monetary_cap':'tope en dinero','percentage_cap':'porcentaje del patrimonio',
             'protected_cap':'protección proporcional','structural_override':'permiso estructural explícito'}
     if bounds:
-        configured+='\\nDesglose por operación: '+', '.join(
+        configured+='\nDesglose por operación: '+', '.join(
             labels.get(k,k)+' '+money(value) for k,value in bounds.items())
-        configured+='\\nRegla determinante: '+labels.get(limits.get('trade_limiting_rule'),
+        configured+='\nRegla determinante: '+labels.get(limits.get('trade_limiting_rule'),
             str(limits.get('trade_limiting_rule') or 'sin identificar'))+'.'
     protection=limits.get('capital_protection') or {}
     if protection.get('enabled'):
