@@ -108,8 +108,10 @@ class Engine:
 
     def market_state(self,symbol):
         state=state_for(symbol,datetime.fromtimestamp(self.g.clock(),timezone.utc),self.cfg)
+        from user_locale import format_local
+        next_open=(format_local(state.next_open_utc,self.cfg) if state.next_open_utc else '')
         return {'open':state.open,'scheduled_closed':not state.open,'state':state.state,
-            'next_open':state.next_open_guatemala,'schedule_source':state.source}
+            'next_open':next_open,'schedule_source':state.source}
 
     def try_runner(self,symbol,q,required_side=0):
         """Retirar pendientes propias y confirmar antes de un runner; no duplicar."""
