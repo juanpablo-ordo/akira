@@ -564,7 +564,8 @@
     "loss_streak_limit": 3,
     "loss_pause_hours": 24,
     "fomc_pause": true,
-    "event_pause_minutes": 60
+    "event_pause_minutes": 60,
+    "loss_streak_enabled": true
   },
   "locale": {
     "country": "Guatemala",
