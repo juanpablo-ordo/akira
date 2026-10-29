@@ -45,6 +45,12 @@ def load_config(path):
     raw=copy.deepcopy(path) if isinstance(path,dict) else json.loads(Path(path).read_text(encoding='utf-8-sig'))
     if not isinstance(raw,dict):raise ValueError('Configuración: se requiere un objeto JSON')
     cfg=merge(DEFAULT,raw)
+    from user_locale import validate_timezone
+    cfg.setdefault('locale', {})
+    validate_timezone(cfg['locale'].get('timezone', 'America/Guatemala'))
+    for key in ('country', 'region'):
+        if not isinstance(cfg['locale'].get(key), str) or len(cfg['locale'][key]) > 120:
+            raise ValueError('Localización: país o región inválidos')
     from akira_studio import safe_studio
     cfg['studio']=safe_studio(raw)
     # Migrate only the legacy default Ollama endpoint when a complete, local
