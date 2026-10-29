@@ -356,6 +356,10 @@ def load_config(path):
         cfg['strategy']['intraday_structural_map']=True
 
     cfg['assistant']['friendly_followup_question']=False
+    # Rev19: remove automatic YouTube analysis from both fresh and migrated
+    # configurations. Explicit user-supplied video links remain readable.
+    cfg['research']['youtube']=False
+    cfg['assistant']['auto_youtube_research']=False
 
     if int(raw.get('schema_version',0))<1360 and float(cfg['runner']['max_signal_age_seconds'])==300.0:
         cfg['runner']['max_signal_age_seconds']=900.0
