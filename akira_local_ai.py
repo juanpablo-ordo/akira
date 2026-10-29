@@ -195,24 +195,35 @@ def _direct_base(endpoint):
 
 def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_event,response_format):
     opts=dict(options or {})
-    mapped=[]
+    qwen3=bool(re.search(r'(?i)(?:^|/)qwen3[-:]',str(model)))
+    mapped=[];system=[]
     for message in messages:
         m=dict(message)
+        if m.get('role')=='system':
+            content=str(m.get('content') or '')
+            if not qwen3 or think:content=content.replace('/no_think','').strip()
+            system.append(content);continue
         if m.get('role') == 'tool':
             m={'role':'tool','tool_call_id':str(m.get('tool_call_id') or m.get('tool_name') or ''),
                'content':str(m.get('content') or '')}
         mapped.append(m)
+    # Templates may accept exactly one initial system role, not interleaved
+    # instructions. Preserve all instructions in order and the actual question.
+    if system:mapped.insert(0,{'role':'system','content':'\n\n'.join(system)})
     payload={'model':model,'messages':mapped,'stream':False,
              'cache_prompt':True,
              'temperature':float(opts.get('temperature',.2)),
              'top_p':float(opts.get('top_p',.90)),
              'max_tokens':int(opts.get('num_predict',3000)),
              'chat_template_kwargs':{'enable_thinking':bool(think)}}
+    for key in ('top_k','min_p','presence_penalty','repeat_penalty','seed'):
+        if key in opts:payload[key]=opts[key]
     if tools:payload['tools']=tools
     elif response_format is None and getattr(_CONTEXT,'visible',None) is not None and cancel_event is not None:payload['stream']=True
-    if not think and mapped and not any('/no_think' in str(m.get('content','')) for m in mapped):
+    if not think and qwen3 and mapped and not any('/no_think' in str(m.get('content','')) for m in mapped):
         # Qwen3 can consume the whole token budget in hidden reasoning otherwise.
-        mapped.insert(0,{'role':'system','content':'/no_think\nDa una respuesta visible, concisa y útil.'})
+        if mapped[0].get('role')=='system':mapped[0]={**mapped[0],'content':'/no_think\n'+mapped[0]['content']}
+        else:mapped.insert(0,{'role':'system','content':'/no_think\nDa una respuesta visible, concisa y útil.'})
     if response_format is not None:
         if response_format=='json':payload['response_format']={'type':'json_object'}
         elif isinstance(response_format,dict) and response_format.get('type') not in ('json_object','json_schema'):

@@ -28,8 +28,8 @@ def complete_reply(messages,invoke,receipt,clear,plan,timeout,on_repair=lambda r
         words=plan['words'] if attempt==0 else min(90,plan['words'])
         instruction=(f'Redacta una respuesta completa en hasta {words} palabras. '
             'Resuelve lo preguntado y termina la explicación antes de añadir más ejemplos. '
-            'No añadas otras preguntas o temas si ya contestaste. '
-            'Si explicas una fórmula, define sus símbolos y la relación; usa las notas de referencia si las hay.')
+            'No añadas otras preguntas o temas si ya contestaste.')
+        if plan.get('detail'):instruction+=' Si explicas una fórmula, define sus símbolos y la relación; usa las notas de referencia si las hay.'
         if previous_issue:instruction+=' Revisión requerida: '+previous_issue
         prompts=[*base[:-1],{'role':'system','content':instruction},base[-1]]
         clear()
@@ -40,4 +40,4 @@ def complete_reply(messages,invoke,receipt,clear,plan,timeout,on_repair=lambda r
         attempts.append({'finish_reason':info.get('finish_reason'),'issue':issue or None})
         if not issue:return text,{**info,'attempts':attempts,'repaired':attempt>0}
         if attempt==0:previous_issue=issue;on_repair(issue)
-    raise RuntimeError('La respuesta no terminó o contradijo la referencia después de la revisión; no se guardó como respuesta completa.')
+    raise RuntimeError('La respuesta no terminó o no superó la revisión: '+str(issue)+' No se guardó como respuesta completa.')

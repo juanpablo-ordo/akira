@@ -1201,11 +1201,13 @@ class Engine:
                 self.allocation_checks.get(s,[]),book,self.pending_cycles.get(s,{}),self.status.get(s,{}),
                 self.g.trade_cap(snap),self.g.runtime_execution_block or ('Sin Internet: nuevas entradas en pausa' if getattr(self.g,'network_available',True) is False else ''),self.cfg['mode'],self.paused)
         from operation_health import execution_gate
-        effective_gate=execution_gate(self.cfg['mode'],self.paused,self.g.runtime_execution_block,
+        safety=self.entry_safety()
+        entry_block=self.g.runtime_execution_block or (safety['reason'] if not safety['allowed'] else '')
+        effective_gate=execution_gate(self.cfg['mode'],self.paused,entry_block,
                                      getattr(self.g,'network_available',True),account)
         view={'build':BUILD_ID,'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
                 'execution_gate':effective_gate,
-                'execution_block':self.g.runtime_execution_block,'execution_allowed':not bool(self.g.runtime_execution_block) and self.cfg['mode']=='trade' and not self.paused and getattr(self.g,'network_available',True),
+                'execution_block':entry_block,'execution_allowed':not bool(entry_block) and self.cfg['mode']=='trade' and not self.paused and getattr(self.g,'network_available',True),
                 'account':account,'orders':rows,'positions':positions,'symbols':symbols,'as_of_utc':self.g.clock(),
                 'status':self.status,'candidates':{s:[p.to_dict() for p in ps[:16]] for s,ps in self.candidates.items()},
                 'audit':self.planner.pending_candidate_audit,'research':self.planner.research_context,

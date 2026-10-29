@@ -13,6 +13,51 @@ from tests.fixtures import PendingCase
 from execution import Blocked
 
 
+class ModelMigrationAndTemplate(unittest.TestCase):
+    def test_relative_bundled_model_migrates_without_rewriting_custom_gguf_or_money(self):
+        from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME,LEGACY_MODEL_PATH
+        raw=copy.deepcopy(DEFAULT);raw['assistant'].update(local_model=LEGACY_MODEL_NAME,local_runtime_model=LEGACY_MODEL_PATH)
+        raw['capital_protection'].update(trade_pct=100,portfolio_pct=100,symbol_pct=100,daily_loss_pct=100,max_drawdown_pct=100)
+        before=copy.deepcopy(raw);migrated=load_config(raw)
+        self.assertEqual(migrated['assistant']['local_runtime_model'],MODEL_PATH);self.assertEqual(migrated['assistant']['local_model'],MODEL_NAME)
+        self.assertEqual(migrated['capital_protection'],raw['capital_protection']);self.assertEqual(raw,before)
+        for custom in ('my-model.gguf','C:/private/models/'+LEGACY_MODEL_NAME):
+            with self.subTest(custom=custom):
+                raw['assistant']['local_runtime_model']=custom
+                self.assertEqual(load_config(raw)['assistant']['local_runtime_model'],custom)
+
+    def test_strict_template_receives_one_system_role_and_an_unchanged_question(self):
+        from akira_local_ai import chat
+        question='Se volvió a congelar /s. ¿Lo dije en serio?'
+        messages=[{'role':'system','content':'/no_think\nbase'},{'role':'user','content':'anterior'},
+                  {'role':'assistant','content':'respuesta'},{'role':'system','content':'intención'},
+                  {'role':'system','content':'longitud'},{'role':'user','content':question}]
+        original=copy.deepcopy(messages)
+        def strict_server(endpoint,payload,**kwargs):
+            self.assertEqual([i for i,m in enumerate(payload['messages']) if m['role']=='system'],[0])
+            self.assertIn('intención',payload['messages'][0]['content']);self.assertIn('longitud',payload['messages'][0]['content'])
+            self.assertEqual(payload['messages'][1:3],messages[1:3]);self.assertEqual(payload['messages'][-1]['content'],question)
+            self.assertEqual(payload['top_k'],64);self.assertEqual(payload['seed'],42)
+            if payload['model'].startswith('gemma'):self.assertNotIn('/no_think',payload['messages'][0]['content'])
+            return {'choices':[{'message':{'role':'assistant','content':'Respuesta generada'},'finish_reason':'stop'}]}
+        for model in ('Qwen3-4B-Q4_K_M.gguf','gemma-4-E2B-it-Q4_K_M.gguf'):
+            with self.subTest(model=model),patch('akira_local_ai._post',side_effect=strict_server):
+                self.assertEqual(chat(messages,model=model,endpoint='http://127.0.0.1:18996/v1/chat/completions',options={'top_k':64,'seed':42}),'Respuesta generada')
+        self.assertEqual(messages,original)
+
+    def test_failed_sarcasm_reply_does_not_claim_the_user_requested_an_old_joke_again(self):
+        from assistant_akira import AkiraAssistant
+        with tempfile.TemporaryDirectory() as tmp:
+            bot=AkiraAssistant(load_config(DEFAULT),Path(tmp))
+            try:
+                bot._remember_turn('Explícame el juego de palabras de espacio.','El chiste del ordenador.')
+                with patch.object(bot,'local_llm_reply',side_effect=TimeoutError('fixture')):
+                    answer=bot.reply('Sí claro, se volvió a congelar /s. ¿Lo dije en serio?',{},False)
+                self.assertIn('Reintentar',answer);self.assertNotIn('juego de palabras',answer)
+                self.assertNotIn('Me estás reclamando la respuesta a',answer)
+            finally:bot._managed_model.shutdown()
+
+
 class PriorityRecovery(unittest.TestCase):
     def test_interactive_waits_for_actual_background_release(self):
         priority=InferencePriority();entered=threading.Event();released=threading.Event()
@@ -188,6 +233,8 @@ class ConversationalIntent(unittest.TestCase):
         from conversation_intent import pragmatic_issue,nonliteral_hint
         question='Qué brillante, volvió a fallar /s. ¿Lo dije en serio?'
         self.assertTrue(pragmatic_issue(question,'¡Jaja! Lo dijiste en serio, pero es una ironía.'))
+        self.assertTrue(pragmatic_issue(question,'No lo dije en serio.'))
+        self.assertFalse(pragmatic_issue(question,'No, no lo dijiste literalmente. Tu tono sarcástico indica que estás descontento por un fallo.'))
         self.assertTrue(pragmatic_issue(question,'No lo dijiste en serio. Es un chiste donde congelar tiene doble sentido.'))
         self.assertFalse(pragmatic_issue(question,'No, no lo dijiste en serio; es sarcasmo.'))
         self.assertFalse(nonliteral_hint('¿Qué es el sarcasmo?'))

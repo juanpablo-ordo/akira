@@ -28,6 +28,7 @@ def verify(previous_setup,setup,root,report,previous_source,remove_previous_setu
     from installer.check_installed_ai import validate_installed_payload
     from PIL import Image
     from installer.summarize_revision import verify_manifest
+    from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME,LEGACY_MODEL_PATH
 
     root=Path(root).resolve();report=Path(report).resolve();report.parent.mkdir(parents=True,exist_ok=True)
     if root.exists():raise FileExistsError('La comprobación requiere una carpeta de prueba nueva: '+str(root))
@@ -61,6 +62,8 @@ def verify(previous_setup,setup,root,report,previous_source,remove_previous_setu
                 data_root=(Path(personal)/'previous_saved_data') if explicit else private_local/'AKIRA';data_root.mkdir()
                 wallpaper=data_root/'background.png';Image.new('RGB',(12,12),'#97c5dd').save(wallpaper)
                 cfg=load_config(DEFAULT);cfg['risk'].update(max_trade_money=3.5,max_trade_pct=30,portfolio_money_cap=12,portfolio_capital_pct=40)
+                cfg['assistant'].update(local_model=LEGACY_MODEL_NAME,local_model_lite=LEGACY_MODEL_NAME,fast_chat_model=LEGACY_MODEL_NAME,local_runtime_model=LEGACY_MODEL_PATH)
+                cfg['desktop']['memory_budget_mb']=3072
                 cfg['desktop']['privacy']=True;cfg['studio']['brand_name']='AKIRA guardada'
                 cfg['studio']['wallpaper'].update(enabled=True,kind='image',file=str(wallpaper))
                 save_config(cfg,data_root/'akira_config.json');store=ChatStore(data_root)
@@ -82,6 +85,7 @@ def verify(previous_setup,setup,root,report,previous_source,remove_previous_setu
                 subprocess.run(command,env=probe_env,timeout=60,check=True)
                 info=json.loads(info_path.read_text(encoding='utf-8'))
                 checks[name+'_actual_application_reads_same_data']=info['build']==BUILD_ID and Path(info['application_data_root'])==data_root.resolve() and info['preferences']['risk']=={k:cfg['risk'][k] for k in ('max_trade_money','max_trade_pct','portfolio_money_cap','portfolio_capital_pct')}
+                checks[name+'_bundled_model_migrates_without_rewriting_settings']=info['preferences']['local_ai']['local_model']==MODEL_NAME and info['preferences']['local_ai']['local_runtime_model']==MODEL_PATH
                 checks[name+'_configuration_chat_and_background_unchanged']=before=={str(p.relative_to(data_root)):digest(p) for p in paths}
                 checks[name+'_no_broker_or_model_started']=not info['broker_started'] and not info['model_started']
             files=validate_installed_payload(root)

@@ -12,7 +12,8 @@ def describe_installation():
     preferences=None
     if cfg:
         preferences={'risk':{key:cfg['risk'][key] for key in ('max_trade_money','max_trade_pct','portfolio_money_cap','portfolio_capital_pct')},
-            'brand_name':cfg['studio']['brand_name'],'language_ui':cfg['studio']['language_ui'],'privacy':cfg['desktop']['privacy']}
+            'brand_name':cfg['studio']['brand_name'],'language_ui':cfg['studio']['language_ui'],'privacy':cfg['desktop']['privacy'],
+            'local_ai':{key:cfg['assistant'][key] for key in ('local_model','local_runtime_model','local_runtime_enabled')}}
     return {'status':'PASSED','build':BUILD_ID,'frozen':bool(getattr(sys,'frozen',False)),
         'executable':str(Path(sys.executable if getattr(sys,'frozen',False) else sys.argv[0]).resolve()),
         'application_data_root':str(root),'config_present':present,'preferences':preferences,

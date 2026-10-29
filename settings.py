@@ -4,6 +4,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME,LEGACY_MODEL_PATH
 
 DEFAULT=json.loads((Path(__file__).parent/'default_config.json').read_text(encoding='utf-8'))
 
@@ -51,11 +52,17 @@ def load_config(path):
     # download programs or change an explicitly selected custom endpoint.
     previous_assistant=raw.get('assistant') or {}
     if isinstance(previous_assistant,dict):
+        selected=str(previous_assistant.get('local_runtime_model') or '').replace('\\','/').removeprefix('./')
+        if (selected==LEGACY_MODEL_PATH and previous_assistant.get('local_runtime_enabled',False)
+                and str(previous_assistant.get('local_endpoint') or '').rstrip('/').endswith('/v1/chat/completions')):
+            cfg['assistant']['local_runtime_model']=MODEL_PATH
+            for key in ('local_model','local_model_lite','fast_chat_model'):
+                if cfg['assistant'].get(key)==LEGACY_MODEL_NAME:cfg['assistant'][key]=MODEL_NAME
         previous_endpoint=str(previous_assistant.get('local_endpoint') or '')
         legacy_default=previous_endpoint in ('http://127.0.0.1:11434/api/chat','http://localhost:11434/api/chat')
         if legacy_default and not bool(previous_assistant.get('legacy_ollama_opt_in',False)) and getattr(sys,'frozen',False):
             app_dir=Path(sys.executable).resolve().parent
-            if (app_dir/'local_ai/bin/llama-server.exe').is_file() and (app_dir/'local_ai/models/Qwen3-4B-Q4_K_M.gguf').is_file():
+            if (app_dir/'local_ai/bin/llama-server.exe').is_file() and (app_dir/MODEL_PATH).is_file():
                 for key in ('local_endpoint','local_model','local_model_lite','fast_chat_model',
                             'local_runtime_enabled','local_runtime_exe','local_runtime_model',
                             'auto_install_local_ai'):

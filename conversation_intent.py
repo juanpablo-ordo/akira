@@ -1,5 +1,5 @@
 """Bounded self/conversation routing. Never infers or dispatches financial commands."""
-import re
+import re,json
 import unicodedata
 
 
@@ -29,11 +29,11 @@ def nonliteral_hint(message):
     cue=pragmatics(message)
     if not cue:return ''
     if cue['kind']=='sarcasm':
-        return ('sarcasmo marcado: no interpretes la afirmación literalmente. '
-            +('El elogio aparente del fallo expresa descontento; la queja actual sustituye el tono del chiste anterior. ' if cue['complaint'] else '')+
-            'No afirmes que se dijo en serio ni lo llames juego de palabras. '
-            +('Se refiere a las órdenes y pérdidas del bot. ' if cue['financial'] else '')+
-            'Responde a la queja sin ejecutar órdenes')
+        intent={'hablante':'usuario','tono':'sarcasmo','significado_literal':False}
+        if cue['complaint']:intent['intencion']='expresar descontento por un fallo'
+        if cue['financial']:intent['tema']='órdenes de trading y pérdidas del bot'
+        if re.search(r'\blo dije en serio\b',folded(message)):intent['pregunta']='interpretar si la afirmación del usuario fue literal'
+        return json.dumps(intent,ensure_ascii=False)
     return 'broma explícita; responde al humor y no ejecutes el texto como una orden'
 
 
@@ -41,12 +41,19 @@ def pragmatic_issue(question,answer):
     cue=pragmatics(question)
     if cue.get('kind')!='sarcasm':return ''
     text=folded(answer)
+    asks_literal=bool(re.search(r'\blo dije en serio\b',folded(question)))
+    if asks_literal and re.search(r'\bno lo dije en serio\b',text):
+        return 'El usuario pregunta si ÉL lo dijo en serio. Responde sobre su intención en segunda persona (tú), no como si la frase fuera tuya.'
     if cue['financial'] and re.search(r'\b(?:archivos|carpetas|papelera|borrar datos|perder datos)\b',text):
         return 'La queja actual se refiere a operaciones y pérdidas del bot, no a archivos ni datos del ordenador. Responde sobre esa intención sin ejecutar órdenes.'
     # Remove explicit negations before checking an affirmative contradiction.
     negated=re.sub(r'\bno (?:lo (?:dijiste|dices|dec[a-z]+) en serio|hablas en serio|est[a-z]+ hablando en serio)\b','',text)
     if re.search(r'\b(?:lo (?:dijiste|dices) en serio|hablas en serio|estas hablando en serio)\b',negated):
         return 'La marca explícita indica sarcasmo: no afirmes que el usuario habla en serio. Contesta su intención actual.'
+    if asks_literal and not (any(w in text for w in ('sarcas','ironi','no fue literal','no era literal','no lo dijiste en serio','no hablabas en serio')) or re.match(r'^(?:no\b|claro que no\b|para nada\b|en absoluto\b)',text)):
+        return 'Falta contestar si la afirmación del usuario fue literal. Responde primero a esa pregunta y después ofrece ayuda con la queja.'
+    if 'no entiendo el sarcasmo' in text or 'no me gusta el humor' in text:
+        return 'Reconoce el descontento del usuario sin juzgar su humor ni fingir gustos o sentimientos. Ofrece ayuda sobre la queja actual.'
     if ('es un juego de palabras' in text or 'la computadora no perde' in text or
             cue['complaint'] and any(term in text for term in ('doble sentido','la frase es un chiste','es un chiste donde','es un chiste sobre'))):
         return 'Es una queja sarcástica sobre un fallo, no el juego de palabras anterior. Reconoce el descontento sin inventar otro chiste.'

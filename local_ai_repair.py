@@ -3,10 +3,7 @@ from pathlib import Path,PurePosixPath
 import hashlib,os,time,zipfile,tempfile,shutil
 from urllib.request import Request
 from network_tls import urlopen
-MODEL_NAME='Qwen3-4B-Q4_K_M.gguf'
-MODEL_SHA='7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5'
-MODEL_SIZE=2497280256
-MODEL_URL='https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/'+MODEL_NAME
+from bundled_model import MODEL_NAME,MODEL_SHA,MODEL_SIZE,MODEL_URL
 CPU_SHA='5488e6232c6114d81302adc616d6c7470a8c06e24140e1baf1d0a85e3b731adc'
 CPU_URL='https://github.com/ggml-org/llama.cpp/releases/download/b10355/llama-b10355-bin-win-cpu-x64.zip'
 def digest(path):

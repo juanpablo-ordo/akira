@@ -15,6 +15,7 @@ import json,copy
 import os
 from datetime import datetime
 from pathlib import Path
+from bundled_model import MODEL_NAME,MODEL_PATH,conversation_sampling
 import re
 import threading
 import time
@@ -1004,7 +1005,7 @@ class AkiraAssistant:
             def invoke(messages,tokens,remaining):
                 return ollama_agent(messages,[],self._execute_local_tool,model=model,endpoint=endpoint,
                     timeout=remaining,total_timeout=remaining,max_rounds=1,reasoning=False,cancel_event=self._cancel_event,
-                    options={'num_predict':tokens,'temperature':0},context_char_budget=9000)
+                    options={'num_predict':tokens,**conversation_sampling(model,reference=bool(reference))},context_char_budget=9000)
             text,completion=complete_reply(prompts,invoke,completion_info,clear_completion_info,plan,timeout,
                 on_repair=lambda reason:self._progress('PENSANDO','Reformulando y comprobando la respuesta: '+reason),
                 inspect=lambda text:(mathematical_issue(text) if reference else '') or pragmatic_issue(message,text),cancelled=self._cancel_event.is_set)
@@ -1248,7 +1249,7 @@ class AkiraAssistant:
         self._model_inference_error='La nueva comprobación aún no produjo texto visible.'
         cfg=self.cfg.get('assistant') or {}
         from akira_local_ai import chat
-        model=str(cfg.get('local_model') or 'Qwen3-4B-Q4_K_M.gguf')
+        model=str(cfg.get('local_model') or MODEL_NAME)
         text=chat([{'role':'system','content':'/no_think\nResponde en español, sin razonamiento interno.'},
                    {'role':'user','content':'Di hola en una frase breve.'}],
                   model=model,endpoint=endpoint,timeout=90,think=False,
@@ -1349,7 +1350,7 @@ class AkiraAssistant:
                         with runtime.lock:
                             if runtime.active:raise RuntimeError('Una tarea anterior no liberó el modelo; la reparación no interrumpirá un proceso ajeno.')
                             runtime._terminate_own()
-                        paths=runtime._paths();default=not paths or Path(paths[1]).resolve()==(Path(sys.executable).parent/'local_ai/models/Qwen3-4B-Q4_K_M.gguf').resolve()
+                        paths=runtime._paths();default=not paths or Path(paths[1]).resolve()==(Path(sys.executable).parent/MODEL_PATH).resolve()
                         if sys.platform=='win32' and getattr(sys,'frozen',False) and default:
                             from local_ai_repair import recover_bundled
                             def progress(text):
@@ -1455,6 +1456,7 @@ class AkiraAssistant:
             from conversation_intent import nonliteral_hint
             nonliteral=bool(nonliteral_hint(message))
             routing=self.dialogue.resolve(message,self.history)
+            if nonliteral:routing={**routing,'question':message,'repair':False,'contextual':False}
             question=routing['question']
             control=re.fullmatch(r'(?i)\s*(?:akira[, ]+)?(pausa|det[eé]n|reanuda)\s+(?:(?:el|la|a)\s+)?(?:bot|motor|trading|akira|gesti[oó]n)\s*[.!]*',str(message))
             if control and self.trade_callback is not None:

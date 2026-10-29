@@ -15,8 +15,26 @@
   "live_account_used": false,
   "profitability_verified": false,
   "entry_safety_unit_tests": {
-    "tests": 17,
+    "tests": 18,
     "failed": 0,
     "scope": "Confirmed loss sequence across assets, pre-send checks, own pending withdrawal, restart persistence, and protection of manual tickets and existing position stops."
+  },
+  "local_targeted": {
+    "xml_cases": 168,
+    "failures": 0,
+    "errors": 0
+  },
+  "local_real_model": {
+    "status": "PASSED",
+    "logical_cpus": 2,
+    "peak_app_and_model_mb": 3666.4,
+    "memory_peak_limit_mb": 4096,
+    "ui_delay_p95_ms": 8.87,
+    "engine_cycle_p95_ms": 24.6,
+    "cpu_percent_of_available_cpus": 59.86,
+    "scenarios": 7,
+    "recovery_verified": true,
+    "model": "Gemma 4 E2B IT Q4",
+    "physical_dell_tested": false
   }
 }

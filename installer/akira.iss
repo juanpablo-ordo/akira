@@ -1,7 +1,7 @@
 #define AppName "AKIRA"
 #define AppVersion "16.5.3"
 #define LocalAIModelPath GetEnv("AKIRA_MODEL_PATH")
-#define LocalAIModelSHA256 "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5"
+#define LocalAIModelSHA256 "740185b21d22ceb83a11c3aa62ad5842ef32c70f6096d756bbee85a1e4ec34b8"
 #if LocalAIModelPath == ""
   #error AKIRA_MODEL_PATH must point to the verified GGUF before compiling the complete installer.
 #endif
@@ -43,7 +43,7 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 Source: "..\native\AKIRA\*"; DestDir: "{app}"; Excludes: "local_ai\models\*"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; The compiler verifies and embeds the same model that passed the Windows chat test.
 ; Keep the installed model: deleteafterinstall would remove the AI immediately.
-Source: "{#LocalAIModelPath}"; DestDir: "{app}\local_ai\models"; DestName: "Qwen3-4B-Q4_K_M.gguf"; Flags: ignoreversion nocompression; Hash: "{#LocalAIModelSHA256}"
+Source: "{#LocalAIModelPath}"; DestDir: "{app}\local_ai\models"; DestName: "gemma-4-E2B-it-Q4_K_M.gguf"; Flags: ignoreversion nocompression; Hash: "{#LocalAIModelSHA256}"
 
 [Icons]
 Name: "{autoprograms}\AKIRA"; Filename: "{app}\AKIRA.exe"; Parameters: "{code:GetUserDataArguments}"; IconFilename: "{app}\AKIRA.exe"
@@ -128,10 +128,10 @@ begin
       RaiseException('No se encontró el motor de IA local de AKIRA.');
     if not FileExists(ExpandConstant('{app}\local_ai\cpu\llama-server.exe')) then
       RaiseException('No se encontró el motor de IA para CPU de AKIRA.');
-    if not FileExists(ExpandConstant('{app}\local_ai\models\Qwen3-4B-Q4_K_M.gguf')) then
+    if not FileExists(ExpandConstant('{app}\local_ai\models\gemma-4-E2B-it-Q4_K_M.gguf')) then
       RaiseException('No se encontró la inteligencia artificial incluida en el instalador.');
     Log('Verificando la integridad de la IA local instalada.');
-    if Lowercase(GetSHA256OfFile(ExpandConstant('{app}\local_ai\models\Qwen3-4B-Q4_K_M.gguf'))) <> LocalAIModelSHA256 then
+    if Lowercase(GetSHA256OfFile(ExpandConstant('{app}\local_ai\models\gemma-4-E2B-it-Q4_K_M.gguf'))) <> LocalAIModelSHA256 then
       RaiseException('La IA local instalada está incompleta o dañada. Vuelve a descargar el instalador completo.');
   end;
 end;

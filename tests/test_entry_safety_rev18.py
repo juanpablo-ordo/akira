@@ -92,6 +92,12 @@ class ExecutionLossPause(PendingCase,unittest.TestCase):
         e._confirmed_outcomes=owned_outcomes(self.g);e.enforce_capital_protection(self.g.snapshot())
         self.assertIn('BTCUSDm',self.g.journal.data['intents'])
         with self.assertRaises(Blocked):self.g.prepare(self.plan())
+    def test_main_execution_status_explains_the_pause_even_while_capital_is_available(self):
+        self.losses();e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)
+        from trade_quality_gate import owned_outcomes
+        e._confirmed_outcomes=owned_outcomes(self.g);v=e.view()
+        self.assertTrue(v['capital_protection']['allowed']);self.assertFalse(v['execution_allowed'])
+        self.assertIn('Pausa de nuevas entradas',v['execution_block']);self.assertFalse(v['entry_safety']['allowed'])
 
 
 if __name__=='__main__':unittest.main()

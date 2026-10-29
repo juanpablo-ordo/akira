@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from akira_model_runtime import ManagedLlamaProcess,hardware_profile
 from akira_local_ai import _direct_local_engine
+from bundled_model import MODEL_SHA
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -44,7 +45,7 @@ class LlamaSetupTests(unittest.TestCase):
 
     def test_installer_embeds_and_keeps_the_verified_model(self):
         installer=(ROOT/'installer'/'akira.iss').read_text(encoding='utf8')
-        self.assertIn('7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5',installer)
+        self.assertIn(MODEL_SHA,installer)
         files=installer.split('[Files]',1)[1].split('[Icons]',1)[0]
         model=next(line for line in files.splitlines() if line.startswith('Source:') and '.gguf' in line)
         self.assertNotIn('external',model)

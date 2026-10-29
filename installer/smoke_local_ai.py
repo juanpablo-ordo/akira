@@ -1,4 +1,4 @@
-"""Windows CI smoke for bundled llama.cpp + official Qwen3 GGUF.
+"""Windows CI smoke for bundled llama.cpp + pinned Gemma 4 E2B GGUF.
 
 Do not pass this check merely because /health is ready or a response contains
 thinking tokens. Require a nonempty, finished assistant message visible to users.
@@ -29,8 +29,9 @@ if not __package__:
 from akira_local_ai import chat, owned_context
 from language_normalization import understood
 
-URL = 'https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf'
-SHA = '7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5'
+from bundled_model import MODEL_NAME,MODEL_SHA,MODEL_URL
+URL = MODEL_URL
+SHA = MODEL_SHA
 
 
 def sha256(path):
@@ -54,7 +55,7 @@ def get_model(path):
             for chunk in iter(lambda: response.read(2 * 1024 * 1024), b''):
                 stream.write(chunk)
         if sha256(partial) != SHA:
-            raise ValueError('GGUF SHA256 did not match the pinned official model')
+            raise ValueError('GGUF SHA256 did not match the pinned model')
         partial.replace(path)
         return path
     finally:
@@ -66,7 +67,7 @@ def make_chat_payload():
     # thinking before any visible text is emitted. Use its supported soft switch
     # and the llama.cpp chat-template option for a predictable chat smoke.
     return {
-        'model': 'Qwen3-4B-Q4_K_M.gguf',
+        'model': MODEL_NAME,
         'messages': [
             {'role': 'system', 'content': '/no_think\nResponde brevemente en espanol.'},
             {'role': 'user', 'content': 'Di hola en una sola palabra.'},
@@ -101,7 +102,7 @@ def validate_completion(response):
             'total_tokens': usage.get('total_tokens'),
             'model': response.get('model'),
         }
-        raise RuntimeError('Qwen3 produced no complete visible answer: ' + json.dumps(details, ensure_ascii=True))
+        raise RuntimeError('Bundled model produced no complete visible answer: ' + json.dumps(details, ensure_ascii=True))
     return visible
 
 
@@ -111,7 +112,7 @@ def verify_chat_scenarios(endpoint):
     question=understood(original)
     answer=chat([{'role':'system','content':'/no_think\nResponde en español en una frase y utiliza solo la fuente de prueba.'},
         {'role':'user','content':question+'\nFUENTE DE PRUEBA (15/10/2026): El presidente de Guatemala es Bernardo Arévalo. No uses otros datos.'}],
-        model='Qwen3-4B-Q4_K_M.gguf',endpoint=endpoint,timeout=90,think=False,options={'num_predict':192,'temperature':0})
+        model=MODEL_NAME,endpoint=endpoint,timeout=90,think=False,options={'num_predict':192,'temperature':0})
     plain=''.join(c for c in unicodedata.normalize('NFKD',answer.lower()) if not unicodedata.combining(c))
     if 'bernardo' not in plain or 'arevalo' not in plain:raise RuntimeError('La IA no respondió a la pregunta con faltas usando la fuente de prueba: '+answer[:300])
     key='BTCUSDm:BUY:LIMIT:1'
@@ -121,7 +122,7 @@ def verify_chat_scenarios(endpoint):
         'required':[key],'additionalProperties':False}
     raw=chat([{'role':'system','content':'/no_think\nDevuelve exclusivamente el JSON solicitado.'},
         {'role':'user','content':'Para '+key+' no hay precios ni riesgo. Devuelve verdict ABSTAIN, reason faltan datos y missing [precios, riesgo].'}],
-        model='Qwen3-4B-Q4_K_M.gguf',endpoint=endpoint,timeout=90,think=False,
+        model=MODEL_NAME,endpoint=endpoint,timeout=90,think=False,
         options={'num_predict':256,'temperature':0},response_format=schema)
     parsed=json.loads(raw)
     if set(parsed)!={key} or parsed[key].get('verdict')!='ABSTAIN' or not parsed[key].get('missing'):
@@ -131,14 +132,14 @@ def verify_chat_scenarios(endpoint):
         started.set()
         try:
             chat([{'role':'user','content':'Cuenta del 1 al 1000 sin saltarte ningún número y sin resumir.'}],
-                 model='Qwen3-4B-Q4_K_M.gguf',endpoint=endpoint,timeout=30,think=False,
+                 model=MODEL_NAME,endpoint=endpoint,timeout=30,think=False,
                  cancel_event=cancel,options={'num_predict':1200,'temperature':0})
         except Exception as error:errors.append(str(error))
     thread=threading.Thread(target=background,daemon=True);thread.start();started.wait(1);time.sleep(.2)
     before=time.monotonic();cancel.set();thread.join(5);cancel_seconds=time.monotonic()-before
     if thread.is_alive() or not any('detenido' in error.lower() for error in errors):
         raise RuntimeError('La petición local no se interrumpió al cancelar antes de recibir cabeceras')
-    foreground=chat([{'role':'user','content':'Di hola en una palabra.'}],model='Qwen3-4B-Q4_K_M.gguf',
+    foreground=chat([{'role':'user','content':'Di hola en una palabra.'}],model=MODEL_NAME,
                     endpoint=endpoint,timeout=90,think=False,options={'num_predict':128,'temperature':0})
     if not foreground.strip():raise RuntimeError('La IA no volvió a responder después de cancelar')
     return {'typo_question':True,'fixture_based_answer':answer,'structured_review':True,

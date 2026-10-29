@@ -17,3 +17,10 @@ Upstream corresponding sources and licenses:
 
 No license in this directory changes the ownership of the user's imported
 fonts, wallpapers or sprites. Their files are kept in the user's data folder.
+
+The included text model is Google Gemma 4 E2B IT (Apache-2.0),
+converted by Unsloth to GGUF Q4_K_M (Apache-2.0). It was not trained by Akira.
+- https://huggingface.co/google/gemma-4-E2B-it
+- https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/tree/0314792d7f1f7e229411f620751375812bb9faf2
+See bundled_model.py for the pinned revision, size and SHA-256.
+See APACHE2_MODEL_LICENSE.txt for the full license.
