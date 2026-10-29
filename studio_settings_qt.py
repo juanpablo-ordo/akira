@@ -274,6 +274,11 @@ class SettingsPanel(QWidget):
             widget.setChecked(value) if isinstance(widget,QCheckBox) else widget.setValue(value)
         self.schedule_preview()
     def application(self):
+        region=self.card(5,'PAÍS, REGIÓN Y HORARIO','settings')
+        self.field(region,'locale.country','País')
+        self.field(region,'locale.region','Departamento / región')
+        self.field(region,'locale.timezone','Zona horaria IANA',
+            help='Ejemplo: America/Guatemala. Se aplica a la hora de AKIRA y al chat; los registros del bróker continúan en UTC.')
         card=self.card(5,'APLICACIÓN','settings')
         for path,title in [('desktop.privacy','Ocultar importes al iniciar'),('desktop.notifications','Avisos'),('desktop.notification_popup','Avisos emergentes'),('desktop.notification_sound','Sonido de avisos')]:self.field(card,path,title)
         self.add_button(card,'DESCARGAR DIAGNÓSTICO',self.window.export_diagnostic)
