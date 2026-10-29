@@ -10,6 +10,7 @@ from operation_health import execution_gate
 from user_locale import local_now, format_local, selected_timezone, validate_timezone
 from settings import DEFAULT, load_config
 from entry_safety import loss_pause
+from risk_limits import configured_limits
 from source_recovery import SourceDeadline
 
 
@@ -68,6 +69,16 @@ class LiveDefectsRev19(unittest.TestCase):
             source.run('fact:oro', failed, timeout=2)
         self.assertEqual(calls, ['attempt'])
         self.assertEqual(source.run('another-provider', lambda: 'ok', timeout=2), 'ok')
+
+    def test_risk_budget_exposes_each_restrictive_rule(self):
+        cfg = load_config(DEFAULT)
+        account = {'balance': 45.82, 'equity': 45.82, 'currency': 'USD'}
+        limits = configured_limits(cfg, account)
+        self.assertIn('monetary_cap', limits['trade_bounds'])
+        self.assertIn('percentage_cap', limits['trade_bounds'])
+        self.assertIn('trade_limiting_rule', limits)
+        self.assertLessEqual(limits['per_trade'],
+                             max(limits['trade_bounds'].values()))
 
     def test_invalid_zone_rejected(self):
         cfg = copy.deepcopy(DEFAULT)
