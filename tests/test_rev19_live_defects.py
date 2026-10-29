@@ -10,6 +10,7 @@ from operation_health import execution_gate
 from user_locale import local_now, format_local, selected_timezone, validate_timezone
 from settings import DEFAULT, load_config
 from entry_safety import loss_pause
+from source_recovery import SourceDeadline
 
 
 class LiveDefectsRev19(unittest.TestCase):
@@ -54,6 +55,19 @@ class LiveDefectsRev19(unittest.TestCase):
         cfg['locale'].update(country='Estados Unidos', region='Nueva York', timezone='America/New_York')
         self.assertIn('18:36', format_local(utc, cfg))
         self.assertEqual(local_now(cfg).tzinfo.key, 'America/New_York')
+
+    def test_dns_failure_does_not_spin_across_query_variants(self):
+        source = SourceDeadline()
+        calls = []
+        def failed():
+            calls.append('attempt')
+            raise OSError('[Errno 11002] getaddrinfo failed')
+        with self.assertRaises(OSError):
+            source.run('fact:bitcoin', failed, timeout=2)
+        with self.assertRaises(TimeoutError):
+            source.run('fact:oro', failed, timeout=2)
+        self.assertEqual(calls, ['attempt'])
+        self.assertEqual(source.run('another-provider', lambda: 'ok', timeout=2), 'ok')
 
     def test_invalid_zone_rejected(self):
         cfg = copy.deepcopy(DEFAULT)
