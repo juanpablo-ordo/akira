@@ -6,6 +6,7 @@ question. This fast check isolates loading/stream/retry behavior in the EXE.
 import tempfile,threading,time
 from contextlib import contextmanager
 from pathlib import Path
+from bundled_model import MODEL_NAME
 from unittest.mock import patch
 
 
@@ -45,7 +46,7 @@ def run_check():
                 if not stream_go.wait(5):raise TimeoutError('QA stream gate')
                 return 'Respuesta de transporte sintético; no es una inferencia neuronal.'
             with patch.object(bot._managed_model,'session',session), \
-                 patch('assistant_akira.ollama_status',return_value={'ok':True,'models':['Qwen3-4B-Q4_K_M.gguf']}), \
+                 patch('assistant_akira.ollama_status',return_value={'ok':True,'models':[MODEL_NAME]}), \
                  patch('assistant_akira.ollama_agent',side_effect=generate):
                 window.chat_entry.setText('que piensas de la ciencia');window.send_chat();wait_for(lambda:loading.is_set() and 'Cargando' in window.ai_label.text())
                 checks['loading_is_visible']=window.director.loading and 'Cargando' in window.ai_label.text()

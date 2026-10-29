@@ -1,5 +1,6 @@
 """Real bundled-model acceptance through the production assistant; synthetic news only."""
 from pathlib import Path
+from bundled_model import MODEL_NAME
 import argparse,json,re,subprocess,tempfile,time,traceback
 from urllib.request import urlopen
 from unittest.mock import patch
@@ -22,7 +23,7 @@ def run(exe,model,report,only_news=False):
                         if response.status==200:break
                 except Exception:time.sleep(.2)
             else:raise TimeoutError('Server health deadline')
-            cfg=load_config(DEFAULT);cfg['assistant'].update(local_runtime_enabled=False,local_endpoint=endpoint,local_model='Qwen3-4B-Q4_K_M.gguf',local_primary=True,local_fallback=True,cloud=False,auto_research=False,auto_youtube_research=False,self_review=False,fast_chat_timeout_seconds=90)
+            cfg=load_config(DEFAULT);cfg['assistant'].update(local_runtime_enabled=False,local_endpoint=endpoint,local_model=MODEL_NAME,local_primary=True,local_fallback=True,cloud=False,auto_research=False,auto_youtube_research=False,self_review=False,fast_chat_timeout_seconds=90)
             progress=[];bot=AkiraAssistant(cfg,Path(tmp),auto_prepare=False,progress_callback=lambda row:progress.append((time.monotonic(),row)))
             def ask(name,question,check):
                 progress.clear();start=time.monotonic()
@@ -46,7 +47,7 @@ def run(exe,model,report,only_news=False):
             with patch('assistant_akira.lookup_current_fact',return_value=fixture),patch('assistant_akira.lookup_verified_current_fact',return_value=fixture),patch.object(bot,'_source_tool',return_value=fixture):
                 ask('current_news_evidence','Xbox acaba de lanzar el nuevo Gears: según la ficha de prueba, ¿cómo se llama y quiénes son sus protagonistas?',news_check)
             schema={'type':'object','properties':{'bias':{'type':'number','minimum':-1,'maximum':1}},'required':['bias'],'additionalProperties':False}
-            with owned_context(4096):structured=chat([{'role':'system','content':'/no_think\nDevuelve solo el JSON requerido. Sin datos ni evidencia el sesgo bias es 0.'},{'role':'user','content':'No hay evidencia de mercado. Devuelve bias cero.'}],model='Qwen3-4B-Q4_K_M.gguf',endpoint=endpoint,timeout=90,think=False,response_format=schema,options={'num_predict':256,'temperature':0})
+            with owned_context(4096):structured=chat([{'role':'system','content':'/no_think\nDevuelve solo el JSON requerido. Sin datos ni evidencia el sesgo bias es 0.'},{'role':'user','content':'No hay evidencia de mercado. Devuelve bias cero.'}],model=MODEL_NAME,endpoint=endpoint,timeout=90,think=False,response_format=schema,options={'num_predict':256,'temperature':0})
             if json.loads(structured)!={'bias':0}:raise AssertionError('Structured review not exact')
             rows.append({'name':'strict_json','answer':structured});result['status']='PASSED';return result
         except Exception as error:

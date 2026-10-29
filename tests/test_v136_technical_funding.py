@@ -21,8 +21,10 @@ from tests.fixtures import PendingCase
 class TechnicalFunding136Tests(PendingCase,unittest.TestCase):
     def setUp(self):
         super().setUp()
-        # Estas regresiones del selector usan TODOS los defaults de producción.
+        # Funding cases isolate admission from technical quality. The production
+        # strict policy is exercised separately below and in Rev18 admission tests.
         self.cfg=load_config(DEFAULT);self.cfg['mode']='trade';self.g.cfg=self.cfg
+        self.cfg['capital_protection']['strict_pending_quality']=False
         # La vía MARKET sigue disponible por configuración explícita; 16.2 usa pendientes por defecto.
         self.cfg['execution']['pending_only']=False
         self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close)
@@ -73,14 +75,14 @@ class TechnicalFunding136Tests(PendingCase,unittest.TestCase):
         self.assertEqual(view['status']['XAUUSDm']['state'],'BLOQUEO DE RIESGO')
         self.assertAlmostEqual(view['trade_risk_cap'],30.47*.02)
 
-    def test_default_startup_attempts_both_symbols_without_external_sources(self):
+    def test_default_startup_rejects_weak_tactical_map_instead_of_forcing_two_orders(self):
+        self.cfg['capital_protection']['strict_pending_quality']=True
         view=self.e.step()
-        self.assertEqual({r['symbol'] for r in self.api.sent},{'BTCUSDm','XAUUSDm'})
-        self.assertEqual(len(self.api.orders),2)
-        self.assertTrue(all(r['action']==PENDING for r in self.api.sent))
-        self.assertTrue(all(r['pending_cycle']['sent']==1 for r in view['symbols'].values()))
-        self.assertTrue(all(o.type in (2,4) for o in self.api.orders))
-        self.assertTrue(all(any(r.get("side")==-1 and not r.get("sendable") for r in row["scenario_book"]) for row in view["symbols"].values()))
+        self.assertFalse(self.api.sent);self.assertFalse(self.api.orders)
+        for symbol in ('BTCUSDm','XAUUSDm'):
+            self.assertTrue(view['audit'][symbol])
+            self.assertTrue(any(r.get('reject_code') in ('grade_below_required','strict_pending_admission') for r in view['audit'][symbol]))
+            self.assertTrue(all(not r.get('sendable') for r in view['symbols'][symbol]['scenario_book']))
 
     def test_visible_winner_prefers_valid_alternative_to_unfunded_highest_score(self):
         self.e.warmup();good=self.plan('XAUUSDm',key='GOOD')
@@ -107,7 +109,7 @@ class TechnicalFunding136Tests(PendingCase,unittest.TestCase):
         opposite=self.plan('XAUUSDm',side=-1,key='SELL')
         f=self.e.planner.caches['XAUUSDm'].frames['M15'];bars=list(f.bars)
         for i in (-2,-1):bars[i]=replace(bars[i],open=bars[i].close+f.atr*.3,high=max(bars[i].high,bars[i].close+f.atr*.3))
-        self.e.planner.caches['XAUUSDm'].frames['M15']=replace(f,bars=tuple(bars))
+        self.e.planner.caches['XAUUSDm'].frames['M15']=replace(f,bars=tuple(bars),trend=-.8)
         row=self.e.execute_pending_map(p.symbol,[bad,opposite],self.g.quote(p.symbol))
         self.assertEqual(row['sent'],1);self.assertEqual(row['changed'],0)
         self.assertTrue(any(o.ticket==order.ticket and o.sl==p.sl for o in self.api.orders))

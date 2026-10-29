@@ -59,6 +59,8 @@ def set_document(widget,text,follow=False):
 
 def next_query(row):
     if row.get('enabled') is False:return '—'
+    if row.get('fallback_sources'):return 'Alternativa activa'
+    if row.get('circuit_open'):return 'Fuente aislada'
     if row.get('waiting_for_worker'):return 'Esperando conexión'
     if row.get('inflight'):return 'En curso'
     seconds=max(0,round(float(row.get('retry_after_seconds') or 0)))
@@ -119,12 +121,14 @@ def risk_dashboard(view,config,private=False):
     if limits.get('override'):configured+='\nEl permiso extra para el lote mínimo estructural está incluido en el tope por orden.'
     usage=f"En uso: {money(used)}\nDisponible para nuevas órdenes: {money(available)}\n{usage_note}"
     guard=view.get('capital_protection') or {}
+    safety=view.get('entry_safety') or {}
+    if safety.get('enabled') and not safety.get('allowed',True):usage+='\n'+safety.get('reason','Nuevas entradas en pausa por pérdidas confirmadas.')
     if guard.get('enabled'):
         usage+='\n'+(guard.get('reason') or f"Protección activa; caída desde referencia: {guard.get('drawdown_pct',0):.2f}%.")
     if used>cap:usage+='\nEl riesgo reservado supera el límite guardado; no queda presupuesto para nuevas entradas.'
     if private:
         configured='Límites ocultos. Pulsa el ojo de la cuenta para ver los importes.'
-        usage=usage_note;caption='Límites ocultos · Ajustar riesgo'
+        usage=usage_note+('\n'+safety.get('reason','Nuevas entradas en pausa por pérdidas confirmadas.') if safety.get('enabled') and not safety.get('allowed',True) else '');caption='Límites ocultos · Ajustar riesgo'
     else:caption=f"Por orden: {money(limits['per_trade'])}\nConjunto: {money(cap)}"
     metric_caption='Importes ocultos · Ajustar límites' if private else f"En uso: {money(used)}\nConjunto: {money(cap)}"
     return {'ready':True,'state':state,'limits':limits,'configured':configured,'usage':usage,'caption':caption,

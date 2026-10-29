@@ -25,7 +25,7 @@ def effective_desktop(desktop,hardware=None):
         and not hw.get('dedicated_gpu',False))
     if result.get('adaptive_resources',True) and light:
         result.update(performance_profile='Ahorro de energía',model_use_gpu=False,
-            memory_budget_mb=min(int(result.get('memory_budget_mb',3072)),3072),
+            memory_budget_mb=min(int(result.get('memory_budget_mb',4096)),4096),
             model_context_tokens=min(int(result.get('model_context_tokens',2048)),2048),
             model_keep_alive_seconds=0)
     return result
@@ -42,9 +42,9 @@ PROFILES = {
 PROFILE_BUDGETS = {
     'Rendimiento': {'memory_budget_mb': 4096, 'model_context_tokens': 8192,
                     'model_keep_alive_seconds': 60, 'model_use_gpu': True},
-    'Equilibrado': {'memory_budget_mb': 3072, 'model_context_tokens': 4096,
+    'Equilibrado': {'memory_budget_mb': 4096, 'model_context_tokens': 4096,
                    'model_keep_alive_seconds': 15, 'model_use_gpu': True},
-    'Ahorro de energía': {'memory_budget_mb': 3072, 'model_context_tokens': 2048,
+    'Ahorro de energía': {'memory_budget_mb': 4096, 'model_context_tokens': 2048,
                          'model_keep_alive_seconds': 0, 'model_use_gpu': False},
 }
 
@@ -52,7 +52,7 @@ def profile_budget(name):
     return dict(PROFILE_BUDGETS.get(str(name), PROFILE_BUDGETS['Equilibrado']))
 
 LIMITS = {'memory_budget_mb': (512, 16384), 'model_context_tokens': (1024, 16384), 'model_keep_alive_seconds': (0, 600)}
-DEFAULTS = {'performance_profile': 'Equilibrado', 'memory_budget_mb': 3072, 'model_context_tokens': 4096,
+DEFAULTS = {'performance_profile': 'Equilibrado', 'memory_budget_mb': 4096, 'model_context_tokens': 4096,
             'model_keep_alive_seconds': 15, 'model_use_gpu': True, 'pause_hidden_animations': True}
 
 def resolve_profile(value):

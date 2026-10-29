@@ -138,6 +138,8 @@ class ContextWorker:
         self._inference=threading.local()
         self._summary_cancel=None;self._pending_cancel=None;self._pending_turns={};self._pending_turn=0
         self._job_started={};self._expired_jobs=set();self._pending_failures={};self._pending_retry_due={}
+        from source_recovery import SourceDeadline
+        self.source_deadlines=SourceDeadline();self.caption_deadlines=SourceDeadline()
         # Old combined caches keep their original timestamps when split. A new
         # BTC result must never make an old gold review appear current.
         legacy=self.sources.get('local_ai') or {};data=legacy.get('data') or {}
@@ -175,6 +177,7 @@ class ContextWorker:
 
     def close(self):
         self.stop.set();self.wake.set()
+        self.source_deadlines.closed.set();self.caption_deadlines.closed.set()
         with self.lock:
             for event in (self._summary_cancel,self._pending_cancel):
                 if event is not None:event.set()
@@ -490,7 +493,7 @@ class ContextWorker:
             videos=[]
             for query in queries:
                 try:
-                    found=youtube_search(query,cache_seconds=self.cfg['research']['youtube_discovery_seconds'])
+                    found=youtube_search(query,cache_seconds=max(7200,self.cfg['research']['youtube_discovery_seconds']))
                     if isinstance(found,dict):found=found.get('videos',found.get('items',[]))
                     videos.extend(found or [])
                 except Exception as e:errors.append(symbol+': '+str(e))
@@ -499,17 +502,23 @@ class ContextWorker:
                 url=str(item.get('url',item.get('link','')) or '')
                 if not url or url in seen:continue
                 seen.add(url);unique.append(item)
-            limit=max(1,min(6,int(self.cfg['research'].get('youtube_videos_per_symbol',4))))
+            limit=max(1,min(2,int(self.cfg['research'].get('youtube_videos_per_symbol',4))))
             for item in unique[:limit]:
                 url=str(item.get('url',item.get('link','')) or '')
                 if not url:continue
                 try:
                     saved=self.store.get(url)
+                    if (saved and float(saved.get('caption_retry_after') or 0)>self.clock()
+                            or self.clock()<getattr(self,'_youtube_caption_until',0)):
+                        rows.append({**item,'topic':symbol,'kind':'youtube','status':'metadata_only','complete':False,
+                            'body':'','detail':'Video localizado; transcripción no disponible. Se conserva el enlace y se utiliza contexto de otras fuentes.'})
+                        continue
                     # Reuse complete captions; a new opinion is not invented on each poll.
-                    row=saved if saved and saved.get('status')=='analyzed' and saved.get('complete') and saved.get('body') else read_youtube(url)
+                    row=saved if saved and saved.get('complete') and saved.get('body') else self.caption_deadlines.run('caption:'+url,lambda u=url:read_youtube(u),18)
                     row={**row,'topic':symbol}
                     if row.get('status')=='analyzed':self.strategy_lab.ingest_source(row);rows.append(row);continue
                     if row.get('status')!='transcript' or not row.get('complete'):
+                        row['caption_retry_after']=self.clock()+21600
                         self.store.put(row);rows.append(row);continue
                     chunks=transcript_chunks(row.get('body',''))
                     values=[]
@@ -524,21 +533,25 @@ class ContextWorker:
                     row.update(status='analyzed',summary=json.dumps(analysis,ensure_ascii=False));self.store.put(row);self.strategy_lab.ingest_source(row);rows.append(row)
                 except Exception as e:
                     errors.append(symbol+': subtítulos '+str(e))
-                    from youtube_support import classify_error,explained
-                    if classify_error(e) in ('AUTH_REQUIRED','RATE_LIMITED','MISSING_RUNTIME','CERTIFICATE_ERROR'):
-                        if any(r.get('complete') for r in rows):
-                            return {'rows':rows,'errors':errors,'detail':'Hay videos completos guardados; la consulta restante espera resolver el acceso a YouTube.'}
-                        raise explained(e) from e
+                    from youtube_support import classify_error
+                    code=classify_error(e)
+                    if code in ('RATE_LIMITED','AUTH_REQUIRED','MISSING_RUNTIME','CERTIFICATE_ERROR'):
+                        self._youtube_caption_until=self.clock()+1800
+                    row={**item,'topic':symbol,'kind':'youtube','status':'metadata_only','complete':False,'body':'',
+                        'caption_error':code,'caption_retry_after':self.clock()+1800,
+                        'detail':'Video localizado; no se pudo leer su transcripción. '+code}
+                    self.store.put(row);rows.append(row)
         if not rows and errors:raise RuntimeError('; '.join(errors))
         complete=any(r.get('complete') for r in rows)
-        if not complete and errors:
-            from youtube_support import explained
-            raise explained(RuntimeError('; '.join(errors)))
-        return {'rows':rows,'errors':errors,**({} if complete else {'state':'NO_CAPTIONS','detail':'No se obtuvieron subtítulos completos; no se afirma haber aprendido estos videos.'})}
+        from providers import youtube_access_status
+        return {'rows':rows,'errors':errors,'access':youtube_access_status(),
+            **({} if complete else {'state':'METADATA_ONLY','detail':str(len(rows))+' videos localizados; sin transcripción completa. Se conserva su acceso y el contexto usa fuentes alternativas; no se afirma haber aprendido estos videos.'})}
 
     def _strategy_reference(self):
         from strategy_lab import REFERENCE_URL
         saved=self.store.get(REFERENCE_URL)
+        if self.clock()<getattr(self,'_youtube_caption_until',0) and not (saved and saved.get('complete') and saved.get('body')):
+            return {'state':'NO_CAPTIONS','detail':'El video de referencia no pudo leerse. La búsqueda de videos y las fuentes alternativas siguen disponibles; no se atribuye su contenido a otros videos.'}
         row=saved if saved and saved.get('complete') and saved.get('body') else read_youtube(REFERENCE_URL)
         if not row.get('complete') or len(str(row.get('body') or ''))<1000:
             self.store.put(row)
@@ -688,7 +701,7 @@ class ContextWorker:
                 if (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía':interval=max(120,interval)
                 jobs['derivatives:'+s]=(interval,lambda:public_derivatives_bundle('BTC'))
         if r.get('youtube',True):
-            jobs['youtube']=(r['youtube_discovery_seconds'],self._youtube)
+            jobs['youtube']=(max(900,r['youtube_discovery_seconds']),self._youtube)
             jobs['strategy_reference']=(86400,self._strategy_reference)
         if r.get('local_model',True) and snapshot.get('symbols'):jobs['model']=(r['model_refresh_seconds'],lambda:self._models(snapshot))
         if self.source_enabled('local_ai') and snapshot.get('symbols') and self.pending_future is None and not self.pending_queue:
@@ -762,8 +775,11 @@ class ContextWorker:
                     self.due[name]=now+3
                 except Exception as e:
                     count=self.failures.get(name,0)+1;self.failures[name]=count
-                    self.sources[name]={**old,'last_attempt':now,'error':type(e).__name__+': '+str(e)[:350]}
+                    self.sources[name]={**old,'last_attempt':now,'error':type(e).__name__+': '+str(e)[:350],'waiting_for_worker':False}
                     self.due[name]=now+min(600,15*2**min(count,5))
+                    if count>=3 and name.split(':')[0] not in ('local_ai','cloud'):
+                        self.due[name]=max(self.due[name],now+3600)
+                        self.sources[name]['circuit_open']=True
                     if name.startswith('local_ai:') and count>=2:
                         self.due[name]=max(self.due[name],now+min(3600,600*2**min(count-1,3)))
                         self.sources[name]['automatic_pause']=True
@@ -806,7 +822,10 @@ class ContextWorker:
                     self.due[name]=now+max(5,float(interval));pool=(self.ai_pool or self.pool) if kind=='local_ai' else self.pool
                     self._job_started[name]=now
                     self.sources[name]={**(self.sources.get(name) or {}),'last_attempt':now}
-                    self.jobs[name]=pool.submit(fn)
+                    if kind not in ('local_ai','cloud','model'):
+                        task=lambda n=name,f=fn:self.source_deadlines.run(n,f,120 if n in ('youtube','strategy_reference') else 40)
+                    else:task=fn
+                    self.jobs[name]=pool.submit(task)
 
     def _save(self):
         temp=self.path.with_suffix('.tmp');temp.write_text(json.dumps({'sources':self.sources},ensure_ascii=False,default=str),encoding='utf-8');temp.replace(self.path)
@@ -824,6 +843,7 @@ class ContextWorker:
         with self.lock:
             from snapshot_copy import snapshot_copy
             sources=snapshot_copy(self.sources);inflight=set(self.jobs)-self._expired_jobs;pending_reviews=snapshot_copy(self.pending_reviews)
+            current_snapshot=snapshot_copy(self.snapshot)
             for index,pid in enumerate(self.pending_queue):
                 if pid in pending_reviews:pending_reviews[pid]['queue_ahead']=index+len(self.pending_batch)
         fusion={};statuses={};component_errors={};fresh_seconds=self.cfg['research'].get('external_fresh_seconds',90)
@@ -887,6 +907,7 @@ class ContextWorker:
             if isinstance(data,dict):
                 for key in ('items','rows'):
                     if key in data:usable=bool(data[key]);break
+            if name=='youtube' and isinstance(data,dict):usable=any(r.get('complete') and r.get('body') for r in data.get('rows',[]))
             statuses[name]={'age_seconds':round(max(0,now-float(r.get('updated',now))),1) if r.get('updated') else None,
                             'usable':usable and not bool(r.get('error')) and self.source_enabled(name),
                             'enabled':self.source_enabled(name),'fresh':freshness(name)>0 and name not in component_errors,'inflight':name in inflight and self.source_enabled(name),'error':component_errors.get(name) or r.get('error',''),
@@ -894,10 +915,21 @@ class ContextWorker:
                             'updated':r.get('updated',0),'detail':str((r.get('data') or {}).get('detail',''))[:300] if isinstance(r.get('data'),dict) else ''}
             statuses[name]['automatic_pause']=bool(r.get('automatic_pause'))
             statuses[name]['waiting_for_worker']=bool(r.get('waiting_for_worker'))
+            statuses[name]['circuit_open']=bool(r.get('circuit_open'))
+            if isinstance(data,dict) and data.get('state'):statuses[name]['state']=data['state']
             if name.startswith('coinglass:') and self.cfg['research'].get('derivatives_provider','public')!='coinglass':statuses[name]['display_hidden']=True
             if name=='local_ai' and any(k.startswith('local_ai:') for k in set(sources)|inflight):statuses[name]['display_hidden']=True
             if name=='strategy_reference' and isinstance(data,dict) and data.get('reference_only'):
                 statuses[name]['reference_only']=True
+        from source_recovery import technical_review,alternatives
+        for symbol in (current_snapshot.get('symbols') or {}):
+            summary=technical_review(current_snapshot,symbol)
+            try:stamp=float(current_snapshot.get('as_of_utc') or 0)
+            except (TypeError,ValueError):stamp=0
+            if summary and 0<=now-stamp<=15:
+                statuses['technical_review:'+symbol]={'usable':True,'enabled':True,'fresh':True,'updated':stamp,
+                    'age_seconds':round(now-stamp,1),'detail':summary['detail'],'neural_review':False,'origin':'technical_engine'}
+        alternatives(statuses)
         for name in [n for n in statuses if n.split(':')[0] in ('local_ai','cloud')]:
             data=sources.get(name,{}).get('data') or {}
             meta=data.get('_meta') if isinstance(data,dict) else None
@@ -920,7 +952,7 @@ class ContextWorker:
         # Per-source decay is already applied. Never refresh a failed source's age.
         evolution=self.evolution.read()
         # La memoria completa reside en SQLite; el estado que viaja a Tk no arrastra transcripciones.
-        videos=[{k:v for k,v in row.items() if k!='body'} for row in sources.get('youtube',{}).get('data',{}).get('rows',[])] if freshness('youtube')>0 else []
+        videos=[{k:v for k,v in row.items() if k!='body'} for row in sources.get('youtube',{}).get('data',{}).get('rows',[])] if self.source_enabled('youtube') else []
         coinglass={s:sources.get('coinglass:'+s,{}).get('data',{}) for s in fusion if freshness('coinglass:'+s)>0 and 'coinglass:'+s not in component_errors}
         derivatives={s:sources.get('derivatives:'+s,{}).get('data',{}) for s in fusion if freshness('derivatives:'+s)>0 and 'derivatives:'+s not in component_errors}
         news_data=sources.get('news',{}).get('data') or {};news=list(news_data.get('items',[])) if freshness('news')>0 and isinstance(news_data,dict) and 'news' not in component_errors else []

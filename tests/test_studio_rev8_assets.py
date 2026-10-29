@@ -245,7 +245,7 @@ class CaptionConnectionTests(unittest.TestCase):
                 missing={'url':url,'status':'captions_unavailable','body':'','complete':False}
                 with patch('research.youtube_search',return_value=[{'url':url}]),patch('research.read_youtube',return_value=missing) as read:
                     result=worker._youtube()
-                read.assert_called_once();self.assertEqual(result['state'],'NO_CAPTIONS')
+                read.assert_called_once();self.assertEqual(result['state'],'METADATA_ONLY');self.assertTrue(result['rows']);self.assertFalse(any(r.get('complete') for r in result['rows']))
                 self.assertFalse(result['rows'][0]['complete'])
             finally:worker.close()
     def test_aggregated_session_errors_remain_actionable(self):

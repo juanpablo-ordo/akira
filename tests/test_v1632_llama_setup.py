@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from akira_model_runtime import ManagedLlamaProcess,hardware_profile
 from akira_local_ai import _direct_local_engine
+from bundled_model import MODEL_SHA
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -44,7 +45,7 @@ class LlamaSetupTests(unittest.TestCase):
 
     def test_installer_embeds_and_keeps_the_verified_model(self):
         installer=(ROOT/'installer'/'akira.iss').read_text(encoding='utf8')
-        self.assertIn('7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5',installer)
+        self.assertIn(MODEL_SHA,installer)
         files=installer.split('[Files]',1)[1].split('[Icons]',1)[0]
         model=next(line for line in files.splitlines() if line.startswith('Source:') and '.gguf' in line)
         self.assertNotIn('external',model)
@@ -59,7 +60,7 @@ class LlamaSetupTests(unittest.TestCase):
     def test_ci_generates_actual_installer_artifact(self):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
-        self.assertIn('AKIRA-16.5.2-Studio-Rev17-capital-mentor-instalador-Windows-IA-INCLUIDA',workflow)
+        self.assertIn('AKIRA-16.5.3-Studio-Rev18-recuperacion-fuentes-dialogo-instalador-Windows-IA-INCLUIDA',workflow)
         self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
         import shlex

@@ -4,6 +4,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME,LEGACY_MODEL_PATH
 
 DEFAULT=json.loads((Path(__file__).parent/'default_config.json').read_text(encoding='utf-8'))
 
@@ -51,11 +52,17 @@ def load_config(path):
     # download programs or change an explicitly selected custom endpoint.
     previous_assistant=raw.get('assistant') or {}
     if isinstance(previous_assistant,dict):
+        selected=str(previous_assistant.get('local_runtime_model') or '').replace('\\','/').removeprefix('./')
+        if (selected==LEGACY_MODEL_PATH and previous_assistant.get('local_runtime_enabled',False)
+                and str(previous_assistant.get('local_endpoint') or '').rstrip('/').endswith('/v1/chat/completions')):
+            cfg['assistant']['local_runtime_model']=MODEL_PATH
+            for key in ('local_model','local_model_lite','fast_chat_model'):
+                if cfg['assistant'].get(key)==LEGACY_MODEL_NAME:cfg['assistant'][key]=MODEL_NAME
         previous_endpoint=str(previous_assistant.get('local_endpoint') or '')
         legacy_default=previous_endpoint in ('http://127.0.0.1:11434/api/chat','http://localhost:11434/api/chat')
         if legacy_default and not bool(previous_assistant.get('legacy_ollama_opt_in',False)) and getattr(sys,'frozen',False):
             app_dir=Path(sys.executable).resolve().parent
-            if (app_dir/'local_ai/bin/llama-server.exe').is_file() and (app_dir/'local_ai/models/Qwen3-4B-Q4_K_M.gguf').is_file():
+            if (app_dir/'local_ai/bin/llama-server.exe').is_file() and (app_dir/MODEL_PATH).is_file():
                 for key in ('local_endpoint','local_model','local_model_lite','fast_chat_model',
                             'local_runtime_enabled','local_runtime_exe','local_runtime_model',
                             'auto_install_local_ai'):
@@ -372,10 +379,13 @@ def load_config(path):
     if cfg['execution']['pending_rejection_retry_seconds']<1:raise ValueError('Reintento de pendiente rechazada debe esperar al menos 1 segundo')
     if cfg['assistant'].get('conversation_style') not in ('natural','mentor','detailed'):raise ValueError('Estilo de conversación inválido')
     guard=cfg['capital_protection']
-    for key in ('enabled','one_position_per_symbol','strict_pending_quality'):
+    for key in ('enabled','one_position_per_symbol','strict_pending_quality','fomc_pause'):
         if type(guard[key]) is not bool:raise ValueError('capital_protection.'+key+' debe ser booleano')
     for key in ('trade_pct','portfolio_pct','symbol_pct','daily_loss_pct','max_drawdown_pct'):
         if isinstance(guard[key],bool) or not .1<=guard[key]<=100:raise ValueError('capital_protection.'+key+' debe estar entre 0.1 y 100')
+    if type(guard['loss_streak_limit']) is not int or not 1<=guard['loss_streak_limit']<=100:raise ValueError('Racha máxima debe ser un entero de 1 a 100')
+    if isinstance(guard['loss_pause_hours'],bool) or not 1<=guard['loss_pause_hours']<=168:raise ValueError('Pausa tras racha debe estar entre 1 y 168 horas')
+    if type(guard['event_pause_minutes']) is not int or not 1<=guard['event_pause_minutes']<=360:raise ValueError('Ventana FOMC debe ser un entero de 1 a 360 minutos')
     if cfg['mode'] not in ('trade','observe'):raise ValueError('mode debe ser trade u observe')
     if cfg['lot']<=0 or cfg['lot']>cfg['sizing']['max_lot']:raise ValueError('Lote base debe ser positivo y no superar el máximo de dimensionado')
     if not 0 < cfg['sizing']['risk_utilization'] <= 1:raise ValueError('Uso del presupuesto debe estar entre 0 y 1')

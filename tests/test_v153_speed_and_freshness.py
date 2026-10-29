@@ -149,8 +149,10 @@ class SpeedFreshnessTests(PendingCase,unittest.TestCase):
         data=bar.to_dict();self.assertEqual(data,asdict(bar));data['close']=100
         self.assertEqual(bar.close,1.8);self.assertIsNot(data,bar.to_dict())
 
-    def test_production_first_cycle_sends_qualified_sides_and_reduces_ipc(self):
+    def test_permissive_transport_first_cycle_confirms_sides_and_reduces_ipc(self):
         self.cfg=load_config(DEFAULT);self.cfg['mode']='trade';self.g.cfg=self.cfg;self.e.close()
+        # Keep real sends in this IPC benchmark; quality admission is tested apart.
+        self.cfg['capital_protection']['strict_pending_quality']=False
         self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close)
         from contextlib import ExitStack
         with ExitStack() as stack:

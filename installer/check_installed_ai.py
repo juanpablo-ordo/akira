@@ -20,7 +20,7 @@ if not __package__:
 from installer.smoke_local_ai import SHA, sha256, smoke
 from native_studio_check import require_studio_check
 
-MODEL_NAME = 'Qwen3-4B-Q4_K_M.gguf'
+from bundled_model import MODEL_NAME
 
 
 def run_installer(setup, root, log):

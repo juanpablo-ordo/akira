@@ -10,6 +10,7 @@ from pathlib import Path
 import os, subprocess, sys, threading, time, weakref
 from urllib.parse import urlsplit
 from urllib.request import urlopen
+from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME
 
 _SHARED=weakref.WeakValueDictionary()
 _SHARED_LOCK=threading.Lock()
@@ -88,7 +89,11 @@ class ManagedLlamaProcess:
             if configured is not None and configured.is_file():return configured
             return next((p for p in candidates if p.is_file()),configured or candidates[0])
         exe=resolve(exe_value,[app_dir/'local_ai/bin/llama-server.exe',app_dir/'local_ai/cpu/llama-server.exe'])
-        candidates=[app_dir/'local_ai/models/Qwen3-4B-Q4_K_M.gguf'] if not model_value or Path(model_value).name=='Qwen3-4B-Q4_K_M.gguf' else []
+        candidates=[app_dir/MODEL_PATH] if not model_value or Path(model_value).name==MODEL_NAME else []
+        if model_value and Path(model_value).name==LEGACY_MODEL_NAME:
+            # A retained legacy file may follow a moved installation. Recover
+            # the same filename, never substitute a custom GGUF with Gemma.
+            candidates=[app_dir/'local_ai/models'/LEGACY_MODEL_NAME]
         model=resolve(model_value,candidates)
         self.path_resolution={'executable':str(exe),'model':str(model),'app_dir':str(app_dir)}
         if not (exe.is_file() and model.is_file()):return None
@@ -137,7 +142,11 @@ class ManagedLlamaProcess:
         elif mode=='Equilibrado':threads=min(4,threads)
         batch,ubatch=(128,64) if mode=='Ahorro de energía' else (256,128)
         cache_mb=0 if mode=='Ahorro de energía' else 512 if mode=='Equilibrado' else 1024
-        loading='none' if mode=='Ahorro de energía' and gpu==0 else 'mmap'
+        # Load the small bundled CPU model without retaining an mmap of the
+        # original weights alongside repacked buffers. Direct I/O also avoids
+        # duplicating those weights in the OS file cache where supported.
+        gemma_bundle=paths[1].name==MODEL_NAME
+        loading=('dio' if gemma_bundle else 'none') if mode=='Ahorro de energía' and gpu==0 else 'mmap'
         command=[str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
                 '--threads',str(threads),'--threads-batch',str(threads),

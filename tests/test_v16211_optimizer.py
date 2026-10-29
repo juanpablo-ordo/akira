@@ -8,7 +8,7 @@ class ResourceOptimizerLatestTests(unittest.TestCase):
         cfg=load_config(DEFAULT)
         d=config_limits(cfg)
         self.assertEqual(d['performance_profile'],'Equilibrado')
-        self.assertEqual(d['memory_budget_mb'],3072)
+        self.assertEqual(d['memory_budget_mb'],4096)
         self.assertLessEqual(d['model_context_tokens'],4096)
         self.assertNotIn('mt5_cycle_seconds',get_intervals(cfg))
         self.assertEqual(validate_form(cfg)['risk'],cfg['risk'])
@@ -33,7 +33,7 @@ class ResourceOptimizerLatestTests(unittest.TestCase):
 
     def test_soft_budget_handles_malformed_input(self):
         result=config_limits({'desktop':{'memory_budget_mb':'nan','model_keep_alive_seconds':'oops'}})
-        self.assertEqual(result['memory_budget_mb'],3072)
+        self.assertEqual(result['memory_budget_mb'],4096)
         self.assertEqual(result['model_keep_alive_seconds'],15)
 
 if __name__=='__main__':unittest.main()

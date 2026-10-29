@@ -170,6 +170,19 @@ def youtube_api_probe(query="Bitcoin technical analysis"):
 _YT_LOCK=threading.Lock()
 _YT_CACHE={}
 _YT_API_BLOCK_UNTIL=0.0
+_YT_API_FINGERPRINT=''
+_YT_ACCESS_STATUS={}
+
+def reset_youtube_access():
+    global _YT_API_BLOCK_UNTIL,_YT_API_FINGERPRINT
+    with _YT_LOCK:
+        _YT_API_BLOCK_UNTIL=0;_YT_API_FINGERPRINT='';_YT_CACHE.clear();_YT_ACCESS_STATUS.clear()
+
+def youtube_access_status():
+    with _YT_LOCK:row=dict(_YT_ACCESS_STATUS)
+    return {**row,'api_configured':bool(get_secret('YOUTUBE_API_KEY')),
+        'api_retry_after_seconds':max(0,round(_YT_API_BLOCK_UNTIL-time.monotonic())),
+        'caption_access':'independent','detail':'La API descubre videos; los subtítulos tienen acceso y límites independientes.'}
 
 def youtube_search(query,cache_seconds=900):
     """YouTube de bajo peso, cacheado y nunca bloqueante.
@@ -179,25 +192,32 @@ def youtube_search(query,cache_seconds=900):
     - Cachea 15 min para que el bot no queme cuota repitiendo la misma búsqueda.
     - Los videos aportan contexto/hipótesis; nunca modifican directamente riesgo u órdenes.
     """
-    global _YT_API_BLOCK_UNTIL
+    global _YT_API_BLOCK_UNTIL,_YT_API_FINGERPRINT
     q=' '.join(str(query).split()).strip()
     now=time.monotonic()
+    key=get_secret("YOUTUBE_API_KEY")
+    import hashlib
+    fingerprint=hashlib.sha256(str(key or '').encode()).hexdigest()
     with _YT_LOCK:
+        if fingerprint!=_YT_API_FINGERPRINT:
+            _YT_API_FINGERPRINT=fingerprint;_YT_API_BLOCK_UNTIL=0;_YT_CACHE.clear();_YT_ACCESS_STATUS.clear()
         row=_YT_CACHE.get(q)
         if row and now-row[0] < max(60,float(cache_seconds)):
             return copy.deepcopy(row[1])
-    key=get_secret("YOUTUBE_API_KEY")
     rows=None
     if key and now >= _YT_API_BLOCK_UNTIL:
         try:
             rows=_youtube_api_search(q,key)
+            with _YT_LOCK:_YT_ACCESS_STATUS.update(api_available=True,discovery_engine='YouTube Data API',api_error='')
         except Exception as exc:
             detail=str(exc).lower()
+            with _YT_LOCK:_YT_ACCESS_STATUS.update(api_available=False,api_error=str(exc).replace(str(key),'[clave oculta]')[:250])
             # No insistir por una hora cuando Google ya nos dijo que bajemos el ritmo.
             if any(t in detail for t in ('429','ratelimit','quota','403')):
                 _YT_API_BLOCK_UNTIL=now+3600
     if rows is None:
         rows=_youtube_ytdlp_search(q)
+        with _YT_LOCK:_YT_ACCESS_STATUS['discovery_engine']='YouTube público'
     with _YT_LOCK:
         _YT_CACHE[q]=(now,copy.deepcopy(rows))
     return rows

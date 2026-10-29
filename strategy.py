@@ -107,6 +107,8 @@ class Plan:
     selector_id: str = ''
     selector_version: int = 0
     execution_build: str = ''
+    base_quality_score: float | None = None
+    base_activation_score: float | None = None
 
     @property
     def rr(self):

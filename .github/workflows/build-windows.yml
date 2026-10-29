@@ -1,11 +1,11 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.5.2 Studio Rev17 · capital proporcional y mentor · ${{ github.ref_name }}
+run-name: AKIRA 16.5.3 Studio Rev18 · recuperación, fuentes y conversación · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - akira-rev17-capital-mentor
+      - akira-rev18-recovery-sources-dialogue
 
 permissions:
   contents: read
@@ -53,43 +53,61 @@ jobs:
           python -m installer.check_tk_runtime --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
           if ($LASTEXITCODE -ne 0) { throw 'La biblioteca gráfica de Python está incompleta o no carga. Revisa TK_RUNTIME.json.' }
 
-      - name: Verificar que se incorporo REV17 antes de construir el instalador
+      - name: Verificar que se incorporo REV18 antes de construir el instalador
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $required = @('response_quality.py','mathematical_reference.py','tests/test_response_quality_rev17.py','capital_guard.py','mentor_context.py','tests/test_studio_rev17_capital_mentor.py','studio_interaction.py','installation_info.py','qa_user_flow_rev16.py','qa_conversation_rev16.py','installer/check_upgrade.py','tests/test_studio_rev16_user_requests.py','conversation_core.py','qa_chat_lifecycle_rev15.py','qa_conversation_rev15.py','tests/test_studio_rev15_conversation_core.py','akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
+          $required = @('scheduled_events.py','tests/test_scheduled_events_rev18.py','tests/test_chat_sources_rev18.py','bundled_model.py','entry_safety.py','tests/test_entry_safety_rev18.py','source_recovery.py','qa_conversation_rev18.py','tests/test_studio_rev18_recovery.py','response_quality.py','mathematical_reference.py','tests/test_response_quality_rev17.py','capital_guard.py','mentor_context.py','tests/test_studio_rev17_capital_mentor.py','studio_interaction.py','installation_info.py','qa_user_flow_rev16.py','qa_conversation_rev16.py','installer/check_upgrade.py','tests/test_studio_rev16_user_requests.py','conversation_core.py','qa_chat_lifecycle_rev15.py','qa_conversation_rev15.py','tests/test_studio_rev15_conversation_core.py','akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
                         'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
                         'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
                         'assets/avatar_states/akira_rev6_motion.png','assets/avatar_states/motion_bounds.json','entry_momentum.py','network_tls.py','public_derivatives.py','compact_review.py','qa_sources_rev10.py','qa_review_rev10.py','qa_low_resource_rev7.py','installer/check_https.py','answer_grounding.py','runner_protection.py','conversation_intent.py','order_timing.py','qa_conversation_rev11.py','tests/test_studio_rev11_capital_chat_timing.py','risk_limits.py','qa_risk_resources_rev14.py','qa_ui_cost_rev14.py','tests/test_studio_rev14_risk_resources.py','mt5_connection.py','qa_mt5_accounts_rev13.py','qa_mt5_reconnect_rev12.py','tests/test_studio_rev12_mt5_reconnect.py','tests/test_studio_rev13_mt5_accounts.py')
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) {
-              throw "Código REV17 incompleto: falta $file. No publicar un instalador antiguo."
+              throw "Código REV18 incompleto: falta $file. No publicar un instalador antiguo."
             }
           }
           $build = python -c "from akira_version import BUILD_ID; print(BUILD_ID)"
-          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_5_2_STUDIO_REV17') {
+          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_5_3_STUDIO_REV18') {
             throw "Identidad de compilación inesperada: $build"
           }
           python -m py_compile studio_interaction.py installation_info.py qa_user_flow_rev16.py qa_conversation_rev16.py installer/check_upgrade.py risk_limits.py qa_risk_resources_rev14.py qa_ui_cost_rev14.py mt5_connection.py qa_mt5_accounts_rev13.py qa_mt5_reconnect_rev12.py runtime.py answer_grounding.py runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
           if ($LASTEXITCODE -ne 0) { throw 'Un archivo nuevo contiene errores de sintaxis.' }
           python -m installer.summarize_revision --manifest-only
           if ($LASTEXITCODE -ne 0) { throw 'Los archivos no coinciden con el manifiesto SHA256.' }
-          Write-Host 'Fuente Studio Rev16 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
+          Write-Host 'Fuente Studio Rev18 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
       - name: Comprobar primero reconexión MT5, runners, chat y recursos
         timeout-minutes: 5
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV17_TARGETED.xml
-          if ($LASTEXITCODE -ne 0) { throw 'Una regresión de Rev17 falló; revisar REV16_TARGETED.xml.' }
+          python -u -m pytest -vv tests/test_scheduled_events_rev18.py tests/test_chat_sources_rev18.py tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV18_TARGETED.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Una regresión de Rev18 falló; revisar REV16_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar
         shell: pwsh
         run: |
           python qa_sources_rev10.py --report diagnostics/PUBLIC_SOURCES_SOURCE_REV10.json
           if ($LASTEXITCODE -ne 0) { throw 'No se verificaron las lecturas públicas reales; revisar cobertura y diagnóstico antes de compilar.' }
+
+      - name: Comprobar recuperación y diálogo real antes de compilar
+        shell: pwsh
+        timeout-minutes: 20
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $env:RUNNER_TEMP 'llama-b10355-bin-win-cpu-x64.zip'
+          curl.exe -fL --retry 4 --retry-all-errors -o $archive 'https://github.com/ggml-org/llama.cpp/releases/download/b10355/llama-b10355-bin-win-cpu-x64.zip'
+          if ($LASTEXITCODE -ne 0) { throw 'No se descargó el motor CPU para la prueba previa.' }
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne '5488e6232c6114d81302adc616d6c7470a8c06e24140e1baf1d0a85e3b731adc') { throw 'Motor CPU sin verificar.' }
+          $extract = Join-Path $env:RUNNER_TEMP 'AKIRA_PREFLIGHT_CPU'
+          Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
+          $server = Get-ChildItem $extract -Recurse -Filter 'llama-server.exe' | Select-Object -First 1
+          if ($null -eq $server) { throw 'Falta llama-server.exe.' }
+          python -c "import os; from pathlib import Path; from bundled_model import MODEL_NAME; from installer.smoke_local_ai import get_model; get_model(Path(os.environ['RUNNER_TEMP'])/MODEL_NAME)"
+          if ($LASTEXITCODE -ne 0) { throw 'No se verificó el modelo incluido.' }
+          python qa_conversation_rev18.py --exe "$($server.FullName)" --model "$env:RUNNER_TEMP/gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_REV18.json
+          if ($LASTEXITCODE -ne 0) { throw 'La recuperación o el diálogo real falló; no compilar un instalador defectuoso.' }
 
       - name: Pruebas de regresion principales
         timeout-minutes: 15
@@ -201,47 +219,47 @@ jobs:
       - name: Comprobar IA real en Windows sin Ollama
         shell: pwsh
         run: |
-          python -m installer.smoke_local_ai --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/LOCAL_AI_SCENARIOS.json
+          python -m installer.smoke_local_ai --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/LOCAL_AI_SCENARIOS.json
           if ($LASTEXITCODE -ne 0) { throw 'La IA real no pasó los escenarios. Revisa LOCAL_AI_SCENARIOS.json y LOCAL_AI_SCENARIOS.llama.log.' }
 
       - name: Probar IA real de BTC y oro, general e individual, con contexto pequeño
         shell: pwsh
         run: |
-          python qa_review_rev10.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_REVIEW_REV10.json
+          python qa_review_rev10.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_REVIEW_REV10.json
           if ($LASTEXITCODE -ne 0) { throw 'La revisión de ambos activos en ahorro no pasó con el modelo real.' }
 
       - name: Probar conversación con faltas, seguimiento y cambio de tema
         shell: pwsh
         run: |
-          python qa_real_conversation_rev6.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CONVERSATION_REV6_WINDOWS.json
+          python qa_real_conversation_rev6.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CONVERSATION_REV6_WINDOWS.json
           if ($LASTEXITCODE -ne 0) { throw 'La conversación real de Rev6 no pasó; no se publica el instalador.' }
 
       - name: Conversación real con interfaz y motor BTC-oro simultáneos en dos núcleos
         shell: pwsh
         timeout-minutes: 15
         run: |
-          python qa_conversation_rev11.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_LOW_RESOURCE_REV11.json
+          python qa_conversation_rev11.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_LOW_RESOURCE_REV11.json
           if ($LASTEXITCODE -ne 0) { throw 'La conversación o el rendimiento durante inferencia real no pasaron; revisar REAL_CHAT_LOW_RESOURCE_REV11.json.' }
 
       - name: Probar IA real y ventana con política Dell 7280 de 8 GB
         shell: pwsh
         timeout-minutes: 15
         run: |
-          python qa_conversation_rev11.py --dell-7280 --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_DELL_7280_REV14.json
+          python qa_conversation_rev11.py --dell-7280 --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_DELL_7280_REV14.json
           if ($LASTEXITCODE -ne 0) { throw 'La conversación real bajo la política Dell no pasó; no publicar.' }
 
       - name: Conversación reconstruida con las preguntas reales y nueve respuestas neuronales
         shell: pwsh
         timeout-minutes: 15
         run: |
-          python qa_conversation_rev15.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_REV15.json
+          python qa_conversation_rev15.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_REV15.json
           if ($LASTEXITCODE -ne 0) { throw 'El modelo real no respondió las nueve preguntas completas o la interfaz no mantuvo su respuesta; no publicar.' }
 
       - name: Conversación real con temas cortos, contexto y errores de escritura
         shell: pwsh
         timeout-minutes: 15
         run: |
-          python qa_conversation_rev16.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\Qwen3-4B-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_REV16.json
+          python qa_conversation_rev16.py --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_REV16.json
           if ($LASTEXITCODE -ne 0) { throw 'La conversación general de Rev16 no pasó con el modelo real.' }
 
       - name: Empaquetar ejecutable con motor local (sin el modelo GGUF)
@@ -257,7 +275,7 @@ jobs:
         run: |
           choco install innosetup --version=6.7.1 -y --no-progress
           if ($LASTEXITCODE -ne 0) { throw 'No se pudo instalar el compilador Inno Setup' }
-          $env:AKIRA_MODEL_PATH = Join-Path $env:RUNNER_TEMP 'Qwen3-4B-Q4_K_M.gguf'
+          $env:AKIRA_MODEL_PATH = Join-Path $env:RUNNER_TEMP 'gemma-4-E2B-it-Q4_K_M.gguf'
           if (!(Test-Path $env:AKIRA_MODEL_PATH)) { throw 'Falta el modelo que pasó la prueba de IA' }
           $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
           if ($iscc) { & $iscc.Source 'installer/akira.iss' }
@@ -276,11 +294,11 @@ jobs:
           python -m installer.check_installed_ai --setup "$($setup.FullName)" --root "$target" --report diagnostics/INSTALLED_LOCAL_AI.json
           if ($LASTEXITCODE -ne 0) { throw 'La instalación real o la IA instalada no pasaron la prueba; no se publica' }
 
-      - name: Obtener fuente Rev15 verificada para comprobar la actualización
+      - name: Obtener fuente Rev17 verificada para comprobar la actualización
         uses: actions/checkout@v4
         with:
-          ref: 6269a70b6373a5f986b7987f5a6c69053cf7e256
-          path: baseline_rev15
+          ref: 67e71bd0ff761b2036b7f3c1baac23bd1ac0b9b6
+          path: baseline_rev17
           persist-credentials: false
 
       - name: Reconstruir el instalador anterior desde su fuente verificada
@@ -289,33 +307,38 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $clean = Join-Path $env:RUNNER_TEMP 'AKIRA_INSTALACION_VERIFICADA'
           if (Test-Path $clean) { Remove-Item -LiteralPath $clean -Recurse -Force }
-          New-Item -ItemType Directory -Force -Path baseline_rev15/assets/sprite_vision | Out-Null
-          Copy-Item 'assets/sprite_vision/*' baseline_rev15/assets/sprite_vision -Recurse -Force
-          New-Item -ItemType Directory -Force -Path baseline_rev15/third_party/packages | Out-Null
-          Copy-Item 'third_party/packages/*' baseline_rev15/third_party/packages -Recurse -Force
-          python baseline_rev15/build_windows.py --source baseline_rev15 --diagnostic diagnostics/baseline_rev15
-          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir la aplicación Rev15 de referencia.' }
-          New-Item -ItemType Directory -Force -Path baseline_rev15/native/AKIRA/local_ai | Out-Null
-          Copy-Item 'native/AKIRA/local_ai/*' baseline_rev15/native/AKIRA/local_ai -Recurse -Force
-          New-Item -ItemType Directory -Force -Path baseline_rev15/native/AKIRA/bin | Out-Null
-          Copy-Item 'native/AKIRA/bin/*' baseline_rev15/native/AKIRA/bin -Recurse -Force
+          New-Item -ItemType Directory -Force -Path baseline_rev17/assets/sprite_vision | Out-Null
+          Copy-Item 'assets/sprite_vision/*' baseline_rev17/assets/sprite_vision -Recurse -Force
+          New-Item -ItemType Directory -Force -Path baseline_rev17/third_party/packages | Out-Null
+          Copy-Item 'third_party/packages/*' baseline_rev17/third_party/packages -Recurse -Force
+          python baseline_rev17/build_windows.py --source baseline_rev17 --diagnostic diagnostics/baseline_rev17
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir la aplicación Rev17 de referencia.' }
+          New-Item -ItemType Directory -Force -Path baseline_rev17/native/AKIRA/local_ai | Out-Null
+          Copy-Item 'native/AKIRA/local_ai/*' baseline_rev17/native/AKIRA/local_ai -Recurse -Force
+          New-Item -ItemType Directory -Force -Path baseline_rev17/native/AKIRA/bin | Out-Null
+          Copy-Item 'native/AKIRA/bin/*' baseline_rev17/native/AKIRA/bin -Recurse -Force
           $env:AKIRA_MODEL_PATH = Join-Path $env:RUNNER_TEMP 'Qwen3-4B-Q4_K_M.gguf'
+          Push-Location baseline_rev17
+          try {
+            python -c "import os; from installer.smoke_local_ai import get_model; get_model(os.environ['AKIRA_MODEL_PATH'])"
+            if ($LASTEXITCODE -ne 0) { throw 'No se verificó el modelo original Rev17.' }
+          } finally { Pop-Location }
           $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
-          if ($iscc) { & $iscc.Source 'baseline_rev15/installer/akira.iss' }
-          else { & (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe') 'baseline_rev15/installer/akira.iss' }
-          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir el instalador Rev15 de referencia.' }
+          if ($iscc) { & $iscc.Source 'baseline_rev17/installer/akira.iss' }
+          else { & (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe') 'baseline_rev17/installer/akira.iss' }
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir el instalador Rev17 de referencia.' }
 
-      - name: Actualizar Rev15 conservando riesgo, chats, fondos y accesos
+      - name: Actualizar Rev17 conservando riesgo, chats, fondos y accesos
         shell: pwsh
         timeout-minutes: 20
         run: |
           $setup = Get-ChildItem 'dist_installer' -Filter '*_IA_INCLUIDA.exe' | Select-Object -First 1
-          $previous = Get-ChildItem 'baseline_rev15/dist_installer' -Filter '*_IA_INCLUIDA.exe' | Select-Object -First 1
+          $previous = Get-ChildItem 'baseline_rev17/dist_installer' -Filter '*_IA_INCLUIDA.exe' | Select-Object -First 1
           $target = Join-Path $env:RUNNER_TEMP 'AKIRA_UPGRADE_VERIFICADA'
-          python -m installer.check_upgrade --previous-setup "$($previous.FullName)" --setup "$($setup.FullName)" --previous-source baseline_rev15 --remove-previous-setup --root "$target" --report diagnostics/UPGRADE_REV16.json
+          python -m installer.check_upgrade --previous-setup "$($previous.FullName)" --setup "$($setup.FullName)" --previous-source baseline_rev17 --remove-previous-setup --root "$target" --report diagnostics/UPGRADE_REV16.json
           if ($LASTEXITCODE -ne 0) { throw 'La actualización real perdió datos o mantuvo un acceso a la versión anterior.' }
 
-      - name: Resumir comprobaciones reales y verificar integridad de Rev17
+      - name: Resumir comprobaciones reales y verificar integridad de Rev18
         shell: pwsh
         run: |
           python -m installer.summarize_revision --diagnostics diagnostics
@@ -325,7 +348,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.5.2-Studio-Rev17-capital-mentor-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.5.3-Studio-Rev18-recuperacion-fuentes-dialogo-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

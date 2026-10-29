@@ -1201,11 +1201,13 @@ class Engine:
                 self.allocation_checks.get(s,[]),book,self.pending_cycles.get(s,{}),self.status.get(s,{}),
                 self.g.trade_cap(snap),self.g.runtime_execution_block or ('Sin Internet: nuevas entradas en pausa' if getattr(self.g,'network_available',True) is False else ''),self.cfg['mode'],self.paused)
         from operation_health import execution_gate
-        effective_gate=execution_gate(self.cfg['mode'],self.paused,self.g.runtime_execution_block,
+        safety=self.entry_safety()
+        entry_block=self.g.runtime_execution_block or (safety['reason'] if not safety['allowed'] else '')
+        effective_gate=execution_gate(self.cfg['mode'],self.paused,entry_block,
                                      getattr(self.g,'network_available',True),account)
         view={'build':BUILD_ID,'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
                 'execution_gate':effective_gate,
-                'execution_block':self.g.runtime_execution_block,'execution_allowed':not bool(self.g.runtime_execution_block) and self.cfg['mode']=='trade' and not self.paused and getattr(self.g,'network_available',True),
+                'execution_block':entry_block,'execution_allowed':not bool(entry_block) and self.cfg['mode']=='trade' and not self.paused and getattr(self.g,'network_available',True),
                 'account':account,'orders':rows,'positions':positions,'symbols':symbols,'as_of_utc':self.g.clock(),
                 'status':self.status,'candidates':{s:[p.to_dict() for p in ps[:16]] for s,ps in self.candidates.items()},
                 'audit':self.planner.pending_candidate_audit,'research':self.planner.research_context,
@@ -1214,7 +1216,7 @@ class Engine:
                 'cycle_ms':round(self.duration_ms,1),'cycle':self.cycle,'updated':self.g.clock(),
                 'position_closures':self.g.closure_monitor.rows(),
                 'position_management':{str(p.ticket):copy.deepcopy(self.g.journal.data['positions'].get(str(p.ticket),{})) for p in snap.positions if self.g.owned(p)},
-                'capital_protection':self.g.capital_status(snap),'risk_cap':ledger['cap_usd'],'trade_risk_cap':self.g.trade_cap(snap),'reserved_risk':ledger['reserved_usd'],
+                'capital_protection':self.g.capital_status(snap),'entry_safety':self.entry_safety(),'risk_cap':ledger['cap_usd'],'trade_risk_cap':self.g.trade_cap(snap),'reserved_risk':ledger['reserved_usd'],
                 'portfolio_risk':ledger,'risk_limits':self._risk_limits,
                 'selection_evidence':self.planner.selection_summary,
                 'selection_configuration':self.verification_configuration(),
@@ -1270,6 +1272,10 @@ class Engine:
         evidence=evaluate(plan,self.planner.caches[plan.symbol].frames,
             owned_outcomes(self.g) if live else self._confirmed_outcomes,self.g.clock(),
             strict=self.cfg['execution'].get('require_primary_structural_engine',True))
+        safety=self.entry_safety(live=live)
+        if not safety['allowed']:
+            evidence.update(allowed=False,reason=safety['reason'])
+            evidence['checks'].append({'name':'Pausa tras racha de pérdidas propias','passed':False,'reason':safety['reason']})
         for meta in self.g.journal.data.get('positions',{}).values():
             if meta.get('symbol')==plan.symbol and meta.get('closed_observed_at') and not meta.get('closure') and 0<=self.g.clock()-float(meta['closed_observed_at'])<=900:
                 reason='Cierre propio aún sin confirmar en MT5; esperar su resultado antes de reabrir '+plan.symbol
@@ -1286,12 +1292,18 @@ class Engine:
         if len(self._quality_notices)>128:self._quality_notices={key}
         self.log.event(plan.symbol,'ENTRADA EVITADA · '+reason,operation='quality_entry_blocked',reason=reason,event_key=key)
 
+    def entry_safety(self,live=False):
+        from entry_safety import entry_policy
+        from trade_quality_gate import owned_outcomes
+        return entry_policy(self.cfg,owned_outcomes(self.g) if live else self._confirmed_outcomes,self.g.clock())
+
     def enforce_capital_protection(self,snap):
         from capital_guard import pending_reduction
         g=self.g
-        if self.paused or self.cfg['mode']!='trade' or g.runtime_execution_block or getattr(g,'network_available',True) is False:return snap
+        safety=self.entry_safety()
+        if ((self.paused or getattr(g,'network_available',True) is False) and safety['allowed']) or self.cfg['mode']!='trade' or g.runtime_execution_block:return snap
         state=g.capital_status(snap,refresh=True)
-        entry_block=g.daily_loss_reason(snap)
+        entry_block=g.daily_loss_reason(snap) or (safety['reason'] if not safety['allowed'] else '')
         for _ in range(len(snap.orders)):
             choice=pending_reduction(g,snap,g.reservation_ledger(snap),state,entry_block)
             if choice is None:break
@@ -1319,6 +1331,10 @@ class Engine:
             if continuous and not self.market_state(o.symbol)['open']:continue
             p=order_plan(o,(self.g.journal.data['orders'].get(str(o.ticket)) or {}).get('plan'))
             evidence=evaluate(p,self.planner.caches[o.symbol].frames,self._confirmed_outcomes,self.g.clock(),strict=continuous)
+            if continuous:
+                from trade_quality_gate import pending_admission
+                admission=pending_admission(self.cfg,p)
+                if not admission['allowed']:evidence.update(allowed=False,reason=admission['reason'])
             if evidence['allowed']:continue
             try:
                 if self.g.cancel(o,('Revisión tras pérdida confirmada: ' if lost else 'Revisión continua de tesis: ')+evidence['reason']):

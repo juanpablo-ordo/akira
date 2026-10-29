@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 
 
-def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False):
+def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False,owner_requests=False):
     import psutil
     from PySide6.QtWidgets import QApplication
     from desktop_qt import StudioWindow
@@ -141,6 +141,43 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                         ('short_science','astronomía',lambda a:any(w in a for w in ('universo','estrella','planeta','cosmos','cielo','celeste')))
                     ]
                     result['scenario_group']='short_general_conversation'
+                if owner_requests:
+                    from conversation_intent import pragmatic_issue
+                    from local_inference import PRIORITY,BackgroundDeferred
+                    from akira_local_ai import chat,visible_output
+                    background_started=threading.Event();background_finished=threading.Event()
+                    def background_review():
+                        try:
+                            with PRIORITY.auxiliary() as cancel,bot._managed_model.session(cfg['assistant']['local_endpoint'],cfg['desktop'],cancel_event=cancel),visible_output(lambda text:background_started.set() if text else None):
+                                chat([{'role':'system','content':'/no_think\nRevisión de prueba sin datos de mercado.'},
+                                    {'role':'user','content':'Enumera veinte comprobaciones para revisar el contexto M15 y H1 sin inventar precios.'}],
+                                    model=cfg['assistant']['local_model'],endpoint=cfg['assistant']['local_endpoint'],
+                                    timeout=120,think=False,cancel_event=cancel,options={'num_predict':300,'temperature':0})
+                        except BackgroundDeferred:pass
+                        except Exception as error:result['background_review_error']=str(error)
+                        finally:background_finished.set()
+                    background_thread=threading.Thread(target=background_review,daemon=True);background_thread.start()
+                    if not background_started.wait(100):raise RuntimeError('La revisión real de fondo no llegó a iniciar')
+                    bot.retry_local_preparation();until=time.monotonic()+150
+                    while bot._repair_loading and time.monotonic()<until and not stop.is_set():time.sleep(.1)
+                    with bot._status_lock:repair=dict(bot._status)
+                    result['recovery']={'ready':bool(repair.get('ready')),'phase':repair.get('phase'),
+                        'background_review_had_visible_output':background_started.is_set(),
+                        'background_released':background_finished.wait(3),'no_user_conversation_was_active':not bot.conversation.snapshot().get('active'),
+                        'detail':repair.get('detail')}
+                    if not all(result['recovery'][key] for key in ('ready','background_released','no_user_conversation_was_active')):raise RuntimeError('La reparación real no liberó y comprobó el asistente: '+str(result['recovery']))
+                    commands=[];bot.trade_callback=lambda command:commands.append(command) or {'ok':False,'error':'No execution in QA'}
+                    cases=[
+                        ('actual_preferences','que te gusta hacer',lambda a:len(a.split())>=8 and any(w in a for w in ('ayud','explic','aprender','convers','resolver'))),
+                        ('computer_joke','Cuéntame un chiste corto sobre una computadora.',lambda a:len(a.split())>=8 and any(w in a for w in ('comput','ordenador','byte','tecl','memoria','program','ratón','raton','disco'))),
+                        ('wordplay','Mi computadora me pidió espacio y la mandé de vacaciones. Explica los dos sentidos de «espacio» en el chiste.',lambda a:'espacio' in a and any(w in a for w in ('almacen','disco','memoria','digital'))),
+                        ('explicit_sarcasm','Sí claro, qué brillante: se volvió a congelar, justo lo que necesitaba /s. ¿Lo dije en serio?',lambda a:any(w in a for w in ('sarcas','iron')) and not pragmatic_issue('falló /s',a)),
+                        ('sarcastic_order','Sí claro, gran idea: pon otra orden para perder otra vez /s',lambda a:not commands and not pragmatic_issue('pon otra orden /s',a) and any(w in a for w in ('sarcas','iron','frustr','molest','fall','entiendo','perder'))),
+                        ('ordinary_topic','¿De qué podemos hablar hoy?',lambda a:len(a.split())>=8),
+                        ('topic_reset','Cambiemos de tema: tengo 17 manzanas y regalo 5. ¿Cuántas quedan?',lambda a:'12' in a or 'doce' in a),
+                        ('caption_read','¿Cuál es la señal de comprobación de este vídeo https://www.youtube.com/watch?v=QAFIXTURE01?',lambda a:'bosque azul' in a)
+                    ]
+                    result['scenario_group']='owner_requests_recovery_humour_sarcasm';result['all_scenarios_require_model_generation']=True
                 result['expected_scenarios']=[name for name,question,check in cases]
                 for name,question,check in cases:
                     if stop.is_set():raise RuntimeError('QA interrupted')
@@ -150,7 +187,15 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                         events.append((time.monotonic(),row))
                         if original_progress:original_progress(row)
                     bot.progress_callback=progress
-                    try:answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
+                    try:
+                        if name=='caption_read':
+                            from unittest.mock import patch
+                            body='La señal de comprobación es bosque azul. Este es material sintético para probar la lectura de subtítulos. '+('Texto de la fuente de prueba. '*400)
+                            fixture={'url':'https://www.youtube.com/watch?v=QAFIXTURE01','title':'Subtítulos de prueba sintética',
+                                'body':body,'kind':'youtube','status':'transcript','complete':True,'fetched':time.time()}
+                            result['caption_source_fixture']='SYNTHETIC transcript, no HTTP or video request. Real model and production caption-reader path.'
+                            with patch('assistant_akira.read_youtube',return_value=fixture):answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
+                        else:answer=bot.reply(question,dict(window.controller.view),use_cloud=False)
                     finally:bot.progress_callback=original_progress
                     window.controller.chat_busy=False
                     first=next((at-began for at,event in events if event.get('stage')=='RESPONDIENDO'),None)
@@ -158,10 +203,16 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                          'first_visible_seconds':round(first,3) if first is not None else None,
                          'origin':getattr(bot,'_last_response_kind','unknown'),
                          'completion':getattr(bot,'_last_completion',{}),
-                         'owned_model_pid':bot._managed_model.effective_parameters().get('owned_pid')}
+                         'owned_model_pid':bot._managed_model.effective_parameters().get('owned_pid'),
+                         'response_error':getattr(bot,'_last_response_error','')}
+                    if row['response_error']:
+                        row['last_visible_draft']=next((event.get('detail') for at,event in reversed(events) if event.get('stage')=='RESPONDIENDO'),None)
                     result['scenarios'].append(row)
                     print(name+' '+str(row['seconds'])+'s '+answer[:180],flush=True)
-                    if not check(answer.casefold()):raise AssertionError('Irrelevant answer: '+name)
+                    # Spanish accents must not make "sarcástico" fail a
+                    # semantic keyword check for sarcasm.
+                    from conversation_core import folded
+                    if not check(folded(answer)):raise AssertionError('Irrelevant answer: '+name)
                     from mathematical_reference import issue as mathematical_issue
                     if mathematical_issue(answer):raise AssertionError('Definition contradicts the bundled reference: '+name)
                     if rebuilt and (row['origin']!='model' or first is None or getattr(bot,'_last_response_error','')):
@@ -178,6 +229,9 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
             except Exception:
                 result['conversation_error']=traceback.format_exc()
             finally:
+                if result.get('conversation_error'):
+                    path=bot._managed_model.log_path
+                    if path and path.is_file():result['runtime_error_log_tail']=path.read_text(encoding='utf-8',errors='replace')[-6000:]
                 window.controller.chat_busy=False;done.set()
 
         started=time.monotonic();sample();market_thread=threading.Thread(target=market,daemon=True);market_thread.start()
@@ -191,7 +245,7 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
         cpu_seconds=sum(max(0,end-begin) for begin,end in cpu.values())
         result.update(wall_seconds=round(elapsed,3),cpu_seconds_app_and_owned_model=round(cpu_seconds,3),
             cpu_percent_of_available_cpus=round(cpu_seconds/max(.01,elapsed)/max(1,len(selected))*100,2),
-            peak_app_and_model_mb=round(peak_mb,1),memory_peak_limit_mb=3200,
+            peak_app_and_model_mb=round(peak_mb,1),memory_peak_limit_mb=4096,
             ui_delay_p95_ms=round(delays[min(len(delays)-1,int(len(delays)*.95))],2) if delays else None,
             engine_cycle_p95_ms=round(ordered[min(len(ordered)-1,int(len(ordered)*.95))],2) if ordered else None,
             engine_cycles=len(cycles),fresh_quote_cycles=sum(fresh),actor_errors=actor_errors)
@@ -200,7 +254,7 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
             and [row['name'] for row in result['scenarios']]==result['expected_scenarios']
             and result['cpu_percent_of_available_cpus']<80
             and result['ui_delay_p95_ms'] is not None and result['ui_delay_p95_ms']<200
-            and peak_mb<=3200 and len(cycles)>=20 and all(fresh)) else 'FAILED'
+            and peak_mb<=4096 and len(cycles)>=20 and all(fresh)) else 'FAILED'
     except Exception:
         result['error']=traceback.format_exc()
     finally:
