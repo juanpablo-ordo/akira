@@ -205,6 +205,8 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                          'completion':getattr(bot,'_last_completion',{}),
                          'owned_model_pid':bot._managed_model.effective_parameters().get('owned_pid'),
                          'response_error':getattr(bot,'_last_response_error','')}
+                    if row['response_error']:
+                        row['last_visible_draft']=next((event.get('detail') for at,event in reversed(events) if event.get('stage')=='RESPONDIENDO'),None)
                     result['scenarios'].append(row)
                     print(name+' '+str(row['seconds'])+'s '+answer[:180],flush=True)
                     # Spanish accents must not make "sarcástico" fail a

@@ -1252,7 +1252,7 @@ class AkiraAssistant:
             else:allowed={'research_public_web','read_public_source','search_youtube'} if re.search(r'\byoutube\b',message,re.I) else {'research_public_web','read_public_source'}
             tools=[t for t in tools if t['function']['name'] in allowed]
         timeout=float(cfg.get('local_timeout_seconds',120) if deep else max(120 if source_rows and fresh else 75,cfg.get('fast_chat_timeout_seconds',75)))
-        if (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía':
+        if small_context or (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía':
             timeout=max(120,timeout)  # Small CPU budgets need time to finish; Engine stays independent.
         rounds=min(5,int(cfg.get('local_agent_rounds',4))) if deep else 2 if tools else 1
         inference_deadline=time.monotonic()+timeout

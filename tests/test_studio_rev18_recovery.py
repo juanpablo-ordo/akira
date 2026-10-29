@@ -14,13 +14,13 @@ from execution import Blocked
 
 
 class ModelMigrationAndTemplate(unittest.TestCase):
-    def test_bundled_gemma_on_small_cpu_keeps_weights_file_backed_without_an_extra_repacked_copy(self):
+    def test_bundled_gemma_on_small_cpu_avoids_a_duplicate_mapping_and_keeps_cpu_kernels(self):
         from akira_model_runtime import ManagedLlamaProcess,hardware_profile
         from bundled_model import MODEL_NAME
         runtime=ManagedLlamaProcess({'local_runtime_enabled':True},profile=hardware_profile(8,0,4))
         with patch.object(runtime,'_paths',return_value=(Path('/cpu/llama-server.exe'),Path('/models')/MODEL_NAME)):
             command=runtime.command('http://127.0.0.1:18987/v1/chat/completions',{'performance_profile':'Ahorro de energía','model_use_gpu':False})
-        self.assertEqual(command[command.index('--load-mode')+1],'mmap');self.assertIn('--no-repack',command)
+        self.assertEqual(command[command.index('--load-mode')+1],'dio');self.assertNotIn('--no-repack',command)
         self.assertEqual(command[command.index('--cache-ram')+1],'0')
 
     def test_relative_bundled_model_migrates_without_rewriting_custom_gguf_or_money(self):

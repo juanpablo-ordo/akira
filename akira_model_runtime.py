@@ -142,10 +142,11 @@ class ManagedLlamaProcess:
         elif mode=='Equilibrado':threads=min(4,threads)
         batch,ubatch=(128,64) if mode=='Ahorro de energía' else (256,128)
         cache_mb=0 if mode=='Ahorro de energía' else 512 if mode=='Equilibrado' else 1024
-        # Gemma's large embedding tables should stay file-backed. Copying the
-        # whole GGUF into anonymous RAM duplicates the OS cache on an 8 GB PC.
+        # Load the small bundled CPU model without retaining an mmap of the
+        # original weights alongside repacked buffers. Direct I/O also avoids
+        # duplicating those weights in the OS file cache where supported.
         gemma_bundle=paths[1].name==MODEL_NAME
-        loading='none' if mode=='Ahorro de energía' and gpu==0 and not gemma_bundle else 'mmap'
+        loading=('dio' if gemma_bundle else 'none') if mode=='Ahorro de energía' and gpu==0 else 'mmap'
         command=[str(exe),'--model',str(paths[1]),'--host','127.0.0.1','--port',str(port),
                 '--ctx-size',str(ctx),'--n-gpu-layers',str(gpu),
                 '--threads',str(threads),'--threads-batch',str(threads),
@@ -154,7 +155,6 @@ class ManagedLlamaProcess:
                 '--poll','0','--poll-batch','0','--parallel','1','--jinja']
         if mode=='Ahorro de energía' and gpu==0:
             command+=['--flash-attn','on','--cache-type-k','q8_0','--cache-type-v','q8_0']
-            if gemma_bundle:command+=['--no-repack']
         return command
 
     def reconfigure(self,desktop):
