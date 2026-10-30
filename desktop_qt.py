@@ -552,6 +552,10 @@ class StudioWindow(QMainWindow):
         self.clock_label.setText(self.controller.cfg['locale']['timezone']+'\n'+when(view.get('as_of_utc') or view.get('updated'),self.controller.cfg))
         from conversation_core import presentation
         summary=['● '+presentation(self.controller.assistant.conversation.snapshot(),self._model_status,self.controller.chat_busy)['label']]
+        health=self.controller.assistant.ai_health.snapshot()
+        if health.get('provider'):
+            summary.append('IA: '+str(health.get('provider'))+' · '+str(health.get('model'))+' · '+str(health.get('phase'))+' · primer texto '+str(health.get('first_token_seconds') or '—')+' s')
+            if health.get('last_error'):summary.append('Último error IA: '+health['last_error'])
         summary.append('● MT5 conectado' if connected else '◷ Esperando conexión con MT5')
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
         self.system_text.setText('\n\n'.join(summary))

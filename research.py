@@ -803,7 +803,8 @@ class ContextWorker:
                         continue
                     if name.startswith('derivatives:') and isinstance(data,dict) and data.get('state')!='OK':
                         raise RuntimeError('Derivados públicos sin datos: '+str(data.get('errors',{})))
-                    self.sources[name]={'data':data,'updated':now,'last_attempt':now,'error':''};self.failures[name]=0
+                    digest=__import__('hashlib').sha256(json.dumps(data,sort_keys=True,default=str).encode()).hexdigest()
+                    self.sources[name]={'data':data,'content_digest':digest,'updated':now,'last_attempt':now,'error':''};self.failures[name]=0
                 except BackgroundDeferred:
                     deferred=True
                     self.sources[name]={**old,'last_attempt':now}
@@ -949,7 +950,7 @@ class ContextWorker:
                             'usable':usable and not bool(r.get('error')) and self.source_enabled(name),
                             'enabled':self.source_enabled(name),'fresh':freshness(name)>0 and name not in component_errors,'inflight':name in inflight and self.source_enabled(name),'error':component_errors.get(name) or r.get('error',''),
                             'last_attempt':r.get('last_attempt',0),'retry_after_seconds':round(max(0,self.due.get(name,0)-now),1),
-                            'updated':r.get('updated',0),'detail':str((r.get('data') or {}).get('detail',''))[:300] if isinstance(r.get('data'),dict) else ''}
+                            'updated':r.get('updated',0),'content_digest':r.get('content_digest'),'detail':str((r.get('data') or {}).get('detail',''))[:300] if isinstance(r.get('data'),dict) else ''}
             statuses[name]['automatic_pause']=bool(r.get('automatic_pause'))
             statuses[name]['waiting_for_worker']=bool(r.get('waiting_for_worker'))
             statuses[name]['circuit_open']=bool(r.get('circuit_open'))

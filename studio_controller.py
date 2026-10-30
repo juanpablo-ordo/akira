@@ -298,6 +298,7 @@ class StudioController:
     def save_keys(self,keys):return self.job('save_keys:'+str(time.monotonic_ns()),lambda:self._save_keys(keys),'keys_saved',executor=self.settings_io)
 
     def repair_ai(self):
+        if self.cfg.get('assistant',{}).get('provider_mode')=='cloud':return self.check_ai_provider()
         if self.chat_busy:self.cancel_chat()
         def work():
             thread=getattr(self,'_chat_thread',None)

@@ -1652,7 +1652,10 @@ class AkiraAssistant:
             state=self.compact(snapshot) if self._is_trading_question(message) else {'conversation_memory':snapshot.get('conversation_memory',{})},
             evidence=source_brief(rows),continuity=routing,budget=24000)
         def progress(text):self.ai_health.token(text);self._progress('RESPONDIENDO',text)
-        answer=provider.complete(messages,cancel_event=self._cancel_event,progress=progress)
+        deep=bool(re.search(r'\b(?:a fondo|investigaci[oó]n profunda|an[aá]lisis exhaustivo|investiga todo)\b',message,re.I))
+        purpose='research' if deep else 'conversation'
+        budget=self._turn_budget.remaining('deep_research' if deep else 'conversation')
+        answer=provider.complete(messages,purpose=purpose,cancel_event=self._cancel_event,progress=progress,timeout=budget)
         if rows:answer=self._append_source_list(answer,rows,max_sources=5)
         self._last_response_kind='cloud';self.conversation.update('READY','Respuesta generada por el proveedor configurado',generated=True,backend='cloud')
         self._remember_turn(message,answer);return answer

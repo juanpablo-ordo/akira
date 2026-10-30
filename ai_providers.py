@@ -78,7 +78,7 @@ class AIProviderManager:
         errors=[]
         for provider in self.order():
             if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
-            if self.health:self.health.begin(provider,str(self.config['assistant'].get('local_model' if provider=='local' else 'general_model')))
+            if self.health:self.health.begin(provider,str(self.config['assistant'].get('local_model' if provider=='local' else {'conversation':'general_model','research':'research_model','trade_review':'trading_model'}[purpose])))
             try:
                 answer=(local if provider=='local' else cloud)()
                 if not str(answer).strip():raise ValueError('Respuesta vacía')
