@@ -63,6 +63,7 @@ var
   EraseUserData: Boolean;
   UninstallCloseCode: Integer;
   UserDataArguments: String;
+  HadDesktopShortcut: Boolean;
 
 function ValidUserDataArguments(Arguments: String): String;
 var
@@ -85,6 +86,10 @@ var
 begin
   UserDataArguments := ValidUserDataArguments(GetPreviousData('UserDataArguments', ''));
   LinkName := ExpandConstant('{autodesktop}\AKIRA.lnk');
+  { Remember existence before uninstall/upgrade rewrites shortcuts.
+    During /TASKS= or a silent upgrade, the previous installer can remove
+    its desktop shortcut before [Icons] Check is evaluated. }
+  HadDesktopShortcut := FileExists(LinkName);
   if not FileExists(LinkName) then
     LinkName := ExpandConstant('{autoprograms}\AKIRA.lnk');
   if FileExists(LinkName) then
@@ -113,7 +118,7 @@ end;
 
 function ShouldWriteDesktopShortcut(): Boolean;
 begin
-  Result := WizardIsTaskSelected('desktopicon') or FileExists(ExpandConstant('{autodesktop}\AKIRA.lnk'));
+  Result := WizardIsTaskSelected('desktopicon') or HadDesktopShortcut;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
