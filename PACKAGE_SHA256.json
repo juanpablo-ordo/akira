@@ -306,7 +306,7 @@
   "tests/test_restored_akira.py": "4f106137e9810233ebf271f08d9de5583693c41573ce0173dd76d5cd7973d9ce",
   "tests/test_rev19_live_defects.py": "51e2f9fe152af49a6f97aecdf2cfe258ae12c00cc700f58bc68e37712cfd62d3",
   "tests/test_scheduled_events_rev18.py": "413c8d3e2a1122065c46b6eb526ce831197085e44467f00b14d28ef392b3e036",
-  "tests/test_studio_rev10_sources_speed.py": "7abb41346a287e58d1dab8474d2a8389940f7786897fd751f5279ff7213d2a32",
+  "tests/test_studio_rev10_sources_speed.py": "453dcd0cc4a3c52ae48182d6b77f1a46a9b45685218ba8b7bb0eccfd3b4d9d38",
   "tests/test_studio_rev11_capital_chat_timing.py": "bf3ac1a636d0f2a50a6fd1cd5f7ef92fdf5155144c19ce32f5390beed7d16501",
   "tests/test_studio_rev12_mt5_reconnect.py": "4e5f6885a2a51febee38fc470afd8bf49e04a7b50b21ddbb22478258d0fcd572",
   "tests/test_studio_rev13_mt5_accounts.py": "280788ad7e20dc054f73ef79829e9e48957e11639cf5254b3f4593fc9bf9ed40",
