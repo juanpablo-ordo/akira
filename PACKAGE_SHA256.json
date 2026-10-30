@@ -281,7 +281,7 @@
   "tests/test_installation.py": "f994c3f1f56fdb3c7abf56930aaaaa24c8bf9062557db71449a91d08bfe3ccfb",
   "tests/test_installed_local_ai.py": "8e0d3e0ee46c534c069b6631699adaa64b974085b30a60d402d5aa46133526b9",
   "tests/test_installer_entrypoints.py": "9bfd1ad57ada6fa599921107bd0b058b56484a44d81eab338fa7eb110bf0a84c",
-  "tests/test_learning_research.py": "4ac5f0a4dda14cf0e00bfe0194cef5b6da6d89fb76dda2ceea3015f3eb615bc5",
+  "tests/test_learning_research.py": "08d90666c719ddc08935b393a04135a698da587d99d8ceab4deeab158bba0c73",
   "tests/test_memory_migration.py": "4b2e4785a46075908e0aff41f0abd39897df3fb646cff6b4c81e4bccfbc2e4ec",
   "tests/test_public_ai.py": "8fa91eb7df3924d1fc9c1b0b64b89a12c9e05216904873ac6640ac1d063d91d4",
   "tests/test_quality_first_v121.py": "2d7f326ada303e83e4a6b94da44119d5b2e5702db579b006ff725b4316f5290e",
