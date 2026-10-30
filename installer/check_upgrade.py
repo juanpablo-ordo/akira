@@ -74,7 +74,7 @@ def verify(previous_setup,setup,root,report,previous_source,remove_previous_setu
                 shortcut(old_exe,arguments)
                 install(setup,root,report.with_suffix('.'+name+'.log'),'')
                 target,saved_arguments=read_shortcut()
-                checks[name+'_shortcut_targets_new_executable']=target==(root/'AKIRA.exe').resolve() and version(target)==(16,5,3,0)
+                checks[name+'_shortcut_targets_new_executable']=target==(root/'AKIRA.exe').resolve() and version(target)==(16,5,4,0)
                 checks[name+'_shortcut_keeps_data_arguments']=saved_arguments==arguments
                 menu=Path(shell.SHGetFolderPath(0,shellcon.CSIDL_PROGRAMS,None,0))/'AKIRA.lnk'
                 menu_target,menu_arguments=read_shortcut(menu)
