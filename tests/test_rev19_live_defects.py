@@ -57,6 +57,15 @@ class LiveDefectsRev19(unittest.TestCase):
         self.assertIn('18:36', format_local(utc, cfg))
         self.assertEqual(local_now(cfg).tzinfo.key, 'America/New_York')
 
+    def test_upgrade_preserves_previous_desktop_shortcut_before_uninstall(self):
+        from pathlib import Path
+        script=(Path(__file__).resolve().parents[1]/'installer'/'akira.iss').read_text(encoding='utf-8')
+        # The previous uninstall can delete the desktop link before the
+        # [Icons] Check callback runs. Persist initial existence in the wizard.
+        self.assertIn('HadDesktopShortcut := FileExists(LinkName);',script)
+        self.assertIn("Result := WizardIsTaskSelected('desktopicon') or HadDesktopShortcut;",script)
+        self.assertNotIn("Result := WizardIsTaskSelected('desktopicon') or FileExists(",script)
+
     def test_dns_failure_does_not_spin_across_query_variants(self):
         source = SourceDeadline()
         calls = []
