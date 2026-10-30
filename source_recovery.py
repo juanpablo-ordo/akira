@@ -29,14 +29,17 @@ class SourceDeadline:
         if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
         provider=self._provider(name)
         with self.lock:
+            for key,row in list(self.tasks.items()):
+                if row['done'].is_set():self.tasks.pop(key)
+            if self.closed.is_set():raise RuntimeError('Consultas de fuentes cerradas')
+            # Preserve the exact, actionable duplicate-request diagnosis while
+            # a timed-out worker is still alive. Provider cooldown applies to
+            # *new* requests after this check, not to the existing invocation.
+            if name in self.tasks:raise TimeoutError('La conexión anterior sigue bloqueada; no se duplicará la consulta. Otras fuentes continúan.')
             cooldown=self.cooldowns.get(provider)
             if cooldown and time.monotonic()<cooldown['until']:
                 raise TimeoutError('Fuente temporalmente suspendida tras '+cooldown['reason']+
                     '; reintento en '+str(round(cooldown['until']-time.monotonic()))+' s. Otras fuentes siguen disponibles.')
-            for key,row in list(self.tasks.items()):
-                if row['done'].is_set():self.tasks.pop(key)
-            if self.closed.is_set():raise RuntimeError('Consultas de fuentes cerradas')
-            if name in self.tasks:raise TimeoutError('La conexión anterior sigue bloqueada; no se duplicará la consulta. Otras fuentes continúan.')
             if len(self.tasks)>=self.limit:raise TimeoutError('Se alcanzó el límite de conexiones públicas pendientes; no se crean más hilos.')
             row={'done':threading.Event()};self.tasks[name]=row
             def work():
