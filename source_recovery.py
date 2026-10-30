@@ -21,7 +21,11 @@ class SourceDeadline:
             previous=self.cooldowns.get(provider) or {}
             count=min(6,int(previous.get('count',0))+1)
             dns=any(word in str(reason).lower() for word in ('11002','getaddrinfo','name resolution'))
-            delay=min(180,30*(2**(count-1))) if dns else min(90,5*(2**(count-1)))
+            # A generic timeout does not prove DNS failure. Once its orphaned
+            # worker has completed, the next explicit request may retry. Keep
+            # throttling only confirmed name-resolution failures (WinError 11002).
+            if not dns:return
+            delay=min(180,30*(2**(count-1)))
             self.cooldowns[provider]={'count':count,'until':time.monotonic()+delay,
                 'reason':type(reason).__name__}
 
