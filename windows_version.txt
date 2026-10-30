@@ -3,7 +3,7 @@ VSVersionInfo(
       flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0,0)),
   kids=[StringFileInfo([StringTable('040904B0', [
       StringStruct('CompanyName','AKIRA'), StringStruct('FileDescription','AKIRA'),
-      StringStruct('FileVersion','16.5.3.0'), StringStruct('InternalName','AKIRA'),
+      StringStruct('FileVersion','16.5.4.0'), StringStruct('InternalName','AKIRA'),
       StringStruct('OriginalFilename','AKIRA.exe'), StringStruct('ProductName','AKIRA'),
-      StringStruct('ProductVersion','16.5.3.0')])]),
+      StringStruct('ProductVersion','16.5.4.0')])]),
       VarFileInfo([VarStruct('Translation',[1033,1200])])])
