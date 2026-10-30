@@ -266,7 +266,7 @@
   "research": {
     "enabled": true,
     "refresh_minutes": 2.0,
-    "youtube": true,
+    "youtube": false,
     "investing": true,
     "coinglass": true,
     "cloud": false,
@@ -369,7 +369,7 @@
     "deep_research_default": true,
     "multisource_factual": true,
     "auto_research": true,
-    "auto_youtube_research": true,
+    "auto_youtube_research": false,
     "research_pages": 5,
     "research_youtube_results": 5,
     "research_youtube_transcripts": 2,
@@ -552,8 +552,14 @@
     "selected": "AKIRA_ADAPTATIVA",
     "version": 1
   },
+  "locale": {
+    "country": "Guatemala",
+    "region": "",
+    "timezone": "America/Guatemala"
+  },
   "capital_protection": {
     "enabled": true,
+    "loss_streak_enabled": true,
     "trade_pct": 2.0,
     "portfolio_pct": 6.0,
     "symbol_pct": 3.0,

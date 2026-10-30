@@ -62,7 +62,7 @@ class AtlasV123Tests(unittest.TestCase):
         self.assertTrue(any(x.side==-1 and x.level>current for x in rows))
         self.assertTrue(all('PRESENCE RESERVE' in x.reason for x in rows))
 
-    def test_aggressive_research_uses_multiple_web_queries_and_youtube(self):
+    def test_aggressive_research_uses_multiple_web_queries_without_automatic_youtube(self):
         with tempfile.TemporaryDirectory() as td:
             cfg=copy.deepcopy(DEFAULT); cfg['assistant']['local_runtime_enabled']=False
             bot=AkiraAssistant(cfg,Path(td)); calls=[]
@@ -75,7 +75,7 @@ class AtlasV123Tests(unittest.TestCase):
                 answer=bot.reply('Analiza el mercado de oro y dime qué contexto hay',{'symbols':{},'account':{},'orders':[],'positions':[],'status':{},'research':{},'as_of_utc':__import__('time').time()},use_cloud=False)
             self.assertIn('Respuesta investigada',answer)
             self.assertGreaterEqual(sum(1 for n,_ in calls if n=='research_public_web'),2)
-            self.assertGreaterEqual(sum(1 for n,_ in calls if n=='search_youtube'),1)
+            self.assertEqual(sum(1 for n,_ in calls if n=='search_youtube'),0)
 
     def test_project_builder_can_write_read_and_zip_without_touching_runtime(self):
         with tempfile.TemporaryDirectory() as td:

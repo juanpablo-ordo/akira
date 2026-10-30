@@ -60,7 +60,7 @@ class LlamaSetupTests(unittest.TestCase):
     def test_ci_generates_actual_installer_artifact(self):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
-        self.assertIn('AKIRA-16.5.3-Studio-Rev18-recuperacion-fuentes-dialogo-instalador-Windows-IA-INCLUIDA',workflow)
+        self.assertIn('AKIRA-16.5.4-Studio-Rev19-correcciones-Windows-IA-INCLUIDA',workflow)
         self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
         import shlex

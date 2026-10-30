@@ -33,7 +33,18 @@ def configured_limits(config,account):
         if not all(math.isfinite(v) for v in (balance,equity)):raise ValueError()
     except (KeyError,TypeError,ValueError):return {**raw,'ready':False}
     basis=max(0.0,min(balance,equity));trade=trade_cap(rules,equity,protection);total=portfolio_cap(rules,balance,equity,protection)
-    return {**raw,'capital_protection':protection,'ready':True,'balance':balance,'equity':equity,'capital_basis':basis,
+    # Disclose every distinct bound with an amount. A high portfolio cap
+    # never overrides a lower per-trade cap, nor vice versa.
+    trade_bounds={'monetary_cap':float(rules['max_trade_money']),
+        'percentage_cap':max(0.0,equity)*float(rules['max_trade_pct'])/100}
+    if protection.get('enabled'):
+        trade_bounds['protected_cap']=max(0.0,equity)*float(protection['trade_pct'])/100
+    limiting=min(trade_bounds,key=trade_bounds.get)
+    if rules.get('min_lot_structural_override_enabled',False):
+        # An override can supersede the two user caps, but never the
+        # enabled capital-protection cap.
+        limiting='structural_override' if trade>min(trade_bounds['monetary_cap'],trade_bounds['percentage_cap']) else limiting
+    return {**raw,'trade_bounds':trade_bounds,'trade_limiting_rule':limiting,'capital_protection':protection,'ready':True,'balance':balance,'equity':equity,'capital_basis':basis,
         'per_trade':trade,'runner':trade*max(0,min(1,raw['runner_pct']/100)),
         'portfolio':total,'portfolio_capital_pct':min(100,max(0,total/basis*100)) if basis>0 else 0,
         'override':bool(rules.get('min_lot_structural_override_enabled',False))}

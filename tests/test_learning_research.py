@@ -109,8 +109,15 @@ class ResearchTests(unittest.TestCase):
     def test_public_derivatives_are_not_fabricated_for_gold(self):
         jobs=self.w.jobs_for({},{});self.assertIn('derivatives:BTCUSDm',jobs);self.assertNotIn('derivatives:XAUUSDm',jobs)
     def test_provider_intervals_are_independent(self):
-        jobs=self.w.jobs_for({},{});self.assertEqual(jobs['fed'][0],8);self.assertGreaterEqual(jobs['youtube'][0],900);self.assertEqual(jobs['derivatives:BTCUSDm'][0],60)
+        jobs=self.w.jobs_for({},{})
+        self.assertEqual(jobs['fed'][0],8)
+        self.assertEqual(jobs['derivatives:BTCUSDm'][0],60)
+        self.assertNotIn('youtube',jobs)  # Rev19 removes automatic YouTube discovery.
         self.assertNotIn('coinglass:BTCUSDm',jobs)
+        # If a user explicitly opts in, independent source intervals still work.
+        self.cfg['research']['youtube']=True
+        enabled=self.w.jobs_for({},{})
+        self.assertGreaterEqual(enabled['youtube'][0],900)
     def test_paid_cloud_is_not_automatically_enabled(self):
         self.assertNotIn('cloud',self.w.jobs_for({'symbols':{'BTCUSDm':{}}},{}))
     def test_ambiguous_local_model_abstains(self):

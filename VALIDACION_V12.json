@@ -1,11 +1,12 @@
 {
-  "build": "AKIRA_16_5_3_STUDIO_REV18",
+  "build": "AKIRA_16_5_4_STUDIO_REV19",
   "tests": 1594,
   "pytest_tests": 1597,
   "status": "PENDING_WINDOWS",
-  "date": "2026-10-28",
+  "date": "2026-10-29",
   "skipped": 0,
-  "scope": "Regresiones completas en Windows; los contadores de unittest y pytest son métodos de colección distintos. No certifica exactitud universal del modelo, hardware físico ni rentabilidad.",
+  "scope": "Datos de pruebas históricas de Rev18. La validación completa Windows de Rev19 sigue pendiente hasta la publicación de sus diagnósticos específicos; no certifica rentabilidad ni uso en una laptop física.",
+  "historical_counts_from": "AKIRA_16_5_3_STUDIO_REV18",
   "notes_file": "ACEPTACION_REV18.md",
   "evidence_file": "VALIDACION_REV18.json",
   "pytest_subtests": 214

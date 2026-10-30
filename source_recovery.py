@@ -1,18 +1,49 @@
 """Bound public-source work and name real alternatives without relabelling data."""
 import threading,time
+from urllib.parse import urlparse
 
 
 class SourceDeadline:
     def __init__(self,limit=64):
-        self.lock=threading.Lock();self.tasks={};self.limit=limit;self.closed=threading.Event()
+        self.lock=threading.Lock();self.tasks={};self.limit=limit;self.closed=threading.Event();self.cooldowns={}
+
+    @staticmethod
+    def _provider(name):
+        # Limit repeated DNS failures across query variants while allowing
+        # unrelated sources to continue working.
+        if name.startswith(('fact:', 'verified:')):return 'fact-provider'
+        if name.startswith('web:'):
+            return 'web:'+(urlparse(name[4:]).hostname or name[4:])
+        return name.split(':',1)[0] or name
+
+    def _failed(self,provider,reason):
+        with self.lock:
+            previous=self.cooldowns.get(provider) or {}
+            count=min(6,int(previous.get('count',0))+1)
+            dns=any(word in str(reason).lower() for word in ('11002','getaddrinfo','name resolution'))
+            # A generic timeout does not prove DNS failure. Once its orphaned
+            # worker has completed, the next explicit request may retry. Keep
+            # throttling only confirmed name-resolution failures (WinError 11002).
+            if not dns:return
+            delay=min(180,30*(2**(count-1)))
+            self.cooldowns[provider]={'count':count,'until':time.monotonic()+delay,
+                'reason':type(reason).__name__}
 
     def run(self,name,function,timeout=45,cancel_event=None):
         if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
+        provider=self._provider(name)
         with self.lock:
             for key,row in list(self.tasks.items()):
                 if row['done'].is_set():self.tasks.pop(key)
             if self.closed.is_set():raise RuntimeError('Consultas de fuentes cerradas')
+            # Preserve the exact, actionable duplicate-request diagnosis while
+            # a timed-out worker is still alive. Provider cooldown applies to
+            # *new* requests after this check, not to the existing invocation.
             if name in self.tasks:raise TimeoutError('La conexión anterior sigue bloqueada; no se duplicará la consulta. Otras fuentes continúan.')
+            cooldown=self.cooldowns.get(provider)
+            if cooldown and time.monotonic()<cooldown['until']:
+                raise TimeoutError('Fuente temporalmente suspendida tras '+cooldown['reason']+
+                    '; reintento en '+str(round(cooldown['until']-time.monotonic()))+' s. Otras fuentes siguen disponibles.')
             if len(self.tasks)>=self.limit:raise TimeoutError('Se alcanzó el límite de conexiones públicas pendientes; no se crean más hilos.')
             row={'done':threading.Event()};self.tasks[name]=row
             def work():
@@ -24,11 +55,17 @@ class SourceDeadline:
         while not row['done'].wait(min(.1,max(.001,deadline-time.monotonic()))):
             if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
             if self.closed.is_set():raise RuntimeError('Consultas de fuentes cerradas')
-            if time.monotonic()>=deadline:raise TimeoutError('La fuente superó su plazo; resultado tardío descartado y conexión aislada.')
+            if time.monotonic()>=deadline:
+                exc=TimeoutError('La fuente superó su plazo; resultado tardío descartado y conexión aislada.')
+                self._failed(provider,exc)
+                raise exc
         with self.lock:
             if self.tasks.get(name) is row:self.tasks.pop(name)
         if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
-        if 'error' in row:raise row['error']
+        if 'error' in row:
+            self._failed(provider,row['error'])
+            raise row['error']
+        with self.lock:self.cooldowns.pop(provider,None)
         return row.get('result')
 
 

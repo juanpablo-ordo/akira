@@ -1,11 +1,11 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.5.3 Studio Rev18 · recuperación, fuentes y conversación · ${{ github.ref_name }}
+run-name: AKIRA 16.5.4 Studio Rev19 · correcciones en producción y compilación · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - akira-rev18-recovery-sources-dialogue
+      - akira-rev19-live-defects-20261029
 
 permissions:
   contents: read
@@ -53,11 +53,11 @@ jobs:
           python -m installer.check_tk_runtime --dest "$env:RUNNER_TEMP/AKIRA_TCL_TK_VERIFICADO" --report diagnostics/TK_RUNTIME.json --github-env "$env:GITHUB_ENV"
           if ($LASTEXITCODE -ne 0) { throw 'La biblioteca gráfica de Python está incompleta o no carga. Revisa TK_RUNTIME.json.' }
 
-      - name: Verificar que se incorporo REV18 antes de construir el instalador
+      - name: Verificar REV19 y sus regresiones antes de construir el instalador
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $required = @('scheduled_events.py','tests/test_scheduled_events_rev18.py','tests/test_chat_sources_rev18.py','bundled_model.py','entry_safety.py','tests/test_entry_safety_rev18.py','source_recovery.py','qa_conversation_rev18.py','tests/test_studio_rev18_recovery.py','response_quality.py','mathematical_reference.py','tests/test_response_quality_rev17.py','capital_guard.py','mentor_context.py','tests/test_studio_rev17_capital_mentor.py','studio_interaction.py','installation_info.py','qa_user_flow_rev16.py','qa_conversation_rev16.py','installer/check_upgrade.py','tests/test_studio_rev16_user_requests.py','conversation_core.py','qa_chat_lifecycle_rev15.py','qa_conversation_rev15.py','tests/test_studio_rev15_conversation_core.py','akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
+          $required = @('user_locale.py','tests/test_rev19_live_defects.py','scheduled_events.py','tests/test_scheduled_events_rev18.py','tests/test_chat_sources_rev18.py','bundled_model.py','entry_safety.py','tests/test_entry_safety_rev18.py','source_recovery.py','qa_conversation_rev18.py','tests/test_studio_rev18_recovery.py','response_quality.py','mathematical_reference.py','tests/test_response_quality_rev17.py','capital_guard.py','mentor_context.py','tests/test_studio_rev17_capital_mentor.py','studio_interaction.py','installation_info.py','qa_user_flow_rev16.py','qa_conversation_rev16.py','installer/check_upgrade.py','tests/test_studio_rev16_user_requests.py','conversation_core.py','qa_chat_lifecycle_rev15.py','qa_conversation_rev15.py','tests/test_studio_rev15_conversation_core.py','akira_studio.py', 'akira_studio_ui.py', 'operation_health.py',
                         'activity_watchdog.py', 'studio_theme.py', 'REQUISITOS_232_ESTADO.csv',
                         'installer/smoke_local_ai.py', 'installer/akira.iss', 'studio_presenter.py',
                         'studio_editors.py', 'local_ai_repair.py', 'qa_real_conversation_rev6.py',
@@ -68,21 +68,21 @@ jobs:
             }
           }
           $build = python -c "from akira_version import BUILD_ID; print(BUILD_ID)"
-          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_5_3_STUDIO_REV18') {
+          if ($LASTEXITCODE -ne 0 -or $build.Trim() -ne 'AKIRA_16_5_4_STUDIO_REV19') {
             throw "Identidad de compilación inesperada: $build"
           }
-          python -m py_compile studio_interaction.py installation_info.py qa_user_flow_rev16.py qa_conversation_rev16.py installer/check_upgrade.py risk_limits.py qa_risk_resources_rev14.py qa_ui_cost_rev14.py mt5_connection.py qa_mt5_accounts_rev13.py qa_mt5_reconnect_rev12.py runtime.py answer_grounding.py runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
+          python -m py_compile user_locale.py source_recovery.py engine.py assistant_akira.py studio_settings_qt.py settings.py studio_presenter.py risk_limits.py entry_safety.py operation_health.py installation_info.py studio_interaction.py qa_user_flow_rev16.py qa_conversation_rev16.py installer/check_upgrade.py risk_limits.py qa_risk_resources_rev14.py qa_ui_cost_rev14.py mt5_connection.py qa_mt5_accounts_rev13.py qa_mt5_reconnect_rev12.py runtime.py answer_grounding.py runner_protection.py conversation_intent.py order_timing.py qa_conversation_rev11.py installer/summarize_revision.py
           if ($LASTEXITCODE -ne 0) { throw 'Un archivo nuevo contiene errores de sintaxis.' }
           python -m installer.summarize_revision --manifest-only
           if ($LASTEXITCODE -ne 0) { throw 'Los archivos no coinciden con el manifiesto SHA256.' }
-          Write-Host 'Fuente Studio Rev18 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
+          Write-Host 'Fuente Studio Rev19 encontrada. Esta prueba no certifica MT5 demo ni rentabilidad.'
 
       - name: Comprobar primero reconexión MT5, runners, chat y recursos
         timeout-minutes: 5
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_scheduled_events_rev18.py tests/test_chat_sources_rev18.py tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV18_TARGETED.xml
+          python -u -m pytest -vv tests/test_rev19_live_defects.py tests/test_scheduled_events_rev18.py tests/test_chat_sources_rev18.py tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV18_TARGETED.xml
           if ($LASTEXITCODE -ne 0) { throw 'Una regresión de Rev18 falló; revisar REV16_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar
@@ -90,6 +90,18 @@ jobs:
         run: |
           python qa_sources_rev10.py --report diagnostics/PUBLIC_SOURCES_SOURCE_REV10.json
           if ($LASTEXITCODE -ne 0) { throw 'No se verificaron las lecturas públicas reales; revisar cobertura y diagnóstico antes de compilar.' }
+
+      - name: Pruebas de regresion principales
+        timeout-minutes: 15
+        shell: pwsh
+        env:
+          AKIRA_TEST_DIAGNOSTICS: diagnostics
+        run: |
+          New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
+          python -u -m pytest -vv tests -ra -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa la prueba indicada y REGRESSION_TESTS.xml en los diagnósticos.' }
+          python -c "from xml.etree import ElementTree as E; r=E.parse('diagnostics/REGRESSION_TESTS.xml').getroot(); n=len(r.findall('.//testcase/skipped')); print('Pruebas omitidas:',n); assert n==0, 'La regresión debe comprobar también todos los paneles gráficos'"
+          if ($LASTEXITCODE -ne 0) { throw 'La regresión omitió comprobaciones; no se publica una validación parcial.' }
 
       - name: Comprobar recuperación y diálogo real antes de compilar
         shell: pwsh
@@ -108,18 +120,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'No se verificó el modelo incluido.' }
           python qa_conversation_rev18.py --exe "$($server.FullName)" --model "$env:RUNNER_TEMP/gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/REAL_CHAT_REV18.json
           if ($LASTEXITCODE -ne 0) { throw 'La recuperación o el diálogo real falló; no compilar un instalador defectuoso.' }
-
-      - name: Pruebas de regresion principales
-        timeout-minutes: 15
-        shell: pwsh
-        env:
-          AKIRA_TEST_DIAGNOSTICS: diagnostics
-        run: |
-          New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests -ra -x -o faulthandler_timeout=30 --junitxml=diagnostics/REGRESSION_TESTS.xml
-          if ($LASTEXITCODE -ne 0) { throw 'Fallaron las regresiones. Revisa la prueba indicada y REGRESSION_TESTS.xml en los diagnósticos.' }
-          python -c "from xml.etree import ElementTree as E; r=E.parse('diagnostics/REGRESSION_TESTS.xml').getroot(); n=len(r.findall('.//testcase/skipped')); print('Pruebas omitidas:',n); assert n==0, 'La regresión debe comprobar también todos los paneles gráficos'"
-          if ($LASTEXITCODE -ne 0) { throw 'La regresión omitió comprobaciones; no se publica una validación parcial.' }
 
       - name: Obtener referencia Rev13 para comparar la interfaz
         uses: actions/checkout@v4
@@ -338,7 +338,7 @@ jobs:
           python -m installer.check_upgrade --previous-setup "$($previous.FullName)" --setup "$($setup.FullName)" --previous-source baseline_rev17 --remove-previous-setup --root "$target" --report diagnostics/UPGRADE_REV16.json
           if ($LASTEXITCODE -ne 0) { throw 'La actualización real perdió datos o mantuvo un acceso a la versión anterior.' }
 
-      - name: Resumir comprobaciones reales y verificar integridad de Rev18
+      - name: Resumir comprobaciones reales y verificar integridad de Rev19
         shell: pwsh
         run: |
           python -m installer.summarize_revision --diagnostics diagnostics
@@ -348,7 +348,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.5.3-Studio-Rev18-recuperacion-fuentes-dialogo-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.5.4-Studio-Rev19-correcciones-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

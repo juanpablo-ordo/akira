@@ -95,7 +95,16 @@ class WorkerFieldTests(unittest.TestCase):
     def test_video_opinion_does_not_become_an_entry_vote(self):
         row={'topic':'BTCUSDm','status':'analyzed','complete':True,'summary':json.dumps({'bias':1,'confidence':1,'source_complete':True})}
         self.worker.sources={'youtube':{'updated':self.now,'data':{'rows':[row]}}}
-        context=self.worker.read();self.assertEqual(context['fusion']['BTCUSDm']['confidence'],0)
+        # Rev19 disables the source by default: even cached metadata must not
+        # appear as an active research source or affect financial decisions.
+        disabled=self.worker.read()
+        self.assertEqual(disabled['fusion']['BTCUSDm']['confidence'],0)
+        self.assertFalse(disabled['videos'])
+        # An explicitly enabled educational source may show videos, but its
+        # opinions still have zero weight as trading confirmations.
+        self.cfg['research']['youtube']=True
+        context=self.worker.read()
+        self.assertEqual(context['fusion']['BTCUSDm']['confidence'],0)
         self.assertTrue(context['videos'])
     def test_stuck_request_stops_showing_loading_without_launching_duplicates(self):
         self.restrict_to_reviews();self.worker.tick();first=self.worker.jobs['local_ai:BTCUSDm']

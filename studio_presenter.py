@@ -111,6 +111,15 @@ def risk_dashboard(view,config,private=False):
     configured=(f"Por orden: hasta {money(limits['per_trade'])}\nElegiste {money(limits['trade_money'])} y {limits['trade_pct']:g}% del patrimonio."
         f"\nRunner directo: hasta {money(limits['runner'])}\nPresupuesto conjunto: {money(cap)}"
         f"\nElegiste {limits['portfolio_pct']:g}% del capital y {total_choice}. Se usa el menor límite aplicable.")
+    # Explain the *effective* order limit, not just the edited raw percent.
+    bounds=limits.get('trade_bounds') or {}
+    labels={'monetary_cap':'tope en dinero','percentage_cap':'porcentaje del patrimonio',
+            'protected_cap':'protección proporcional','structural_override':'permiso estructural explícito'}
+    if bounds:
+        configured+='\nDesglose por operación: '+', '.join(
+            labels.get(k,k)+' '+money(value) for k,value in bounds.items())
+        configured+='\nRegla determinante: '+labels.get(limits.get('trade_limiting_rule'),
+            str(limits.get('trade_limiting_rule') or 'sin identificar'))+'.'
     protection=limits.get('capital_protection') or {}
     if protection.get('enabled'):
         configured+=f"\nProtección activa: {protection['trade_pct']:g}% por orden, {protection['portfolio_pct']:g}% conjunto y {protection['symbol_pct']:g}% por símbolo."

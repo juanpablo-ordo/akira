@@ -11,7 +11,7 @@ from capital_guard import rules
 def loss_pause(config,outcomes,now):
     policy=rules(config);limit=int(policy['loss_streak_limit'])
     seconds=float(policy['loss_pause_hours'])*3600
-    result={'enabled':bool(policy['enabled']),'allowed':True,'reason':'',
+    result={'enabled':bool(policy['enabled']) and bool(config.get('capital_protection',{}).get('loss_streak_enabled',True)),'allowed':True,'reason':'',
             'loss_streak':0,'loss_streak_limit':limit,'paused_until':None,'closed_ids':[]}
     if not result['enabled']:return result
     unique={}

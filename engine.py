@@ -108,8 +108,10 @@ class Engine:
 
     def market_state(self,symbol):
         state=state_for(symbol,datetime.fromtimestamp(self.g.clock(),timezone.utc),self.cfg)
+        from user_locale import format_local
+        next_open=(format_local(state.next_open_utc,self.cfg) if state.next_open_utc else '')
         return {'open':state.open,'scheduled_closed':not state.open,'state':state.state,
-            'next_open':state.next_open_guatemala,'schedule_source':state.source}
+            'next_open':next_open,'schedule_source':state.source}
 
     def try_runner(self,symbol,q,required_side=0):
         """Retirar pendientes propias y confirmar antes de un runner; no duplicar."""
@@ -893,14 +895,27 @@ class Engine:
                     self.runner_views[symbol]={'state':'MERCADO CERRADO','detail':'Seguimiento operativo en pausa; se conserva el riesgo de tickets existentes.'}
                     self.quotes.pop(symbol,None)
                     continue
-                if self.status.get(symbol,{}).get('state')=='MERCADO CERRADO':
-                    cache=self.planner.caches[symbol];cache.prime_critical(now);cache.prime_fast_structural(now);cache.prime_deep_structural(now)
+                # The session has reopened, but the runner UI can still contain a
+                # cached CLOSED state while MT5 is recovering historical candles.
+                # Market session, technical readiness and execution risk are
+                # independent states: do not display a stale market closure.
+                was_closed=(self.status.get(symbol,{}).get('state')=='MERCADO CERRADO'
+                            or self.runner_views.get(symbol,{}).get('state')=='MERCADO CERRADO')
+                if was_closed:
+                    cache=self.planner.caches[symbol]
+                    cache.prime_critical(now);cache.prime_fast_structural(now);cache.prime_deep_structural(now)
+                    self.runner_views[symbol]={'state':'RECUPERANDO DATOS',
+                        'detail':'La sesión está abierta; actualizando velas y cotizaciones antes de evaluar runners.'}
                 cache=self.planner.caches[symbol];cache.advance(now)
                 ready,detail=self.evidence_ready(symbol,now)
                 q=g.quote(symbol);self.quotes[symbol]=q;self.planner.tapes[symbol].update(q,cache.frames,now)
                 self.update_book(symbol)
                 self.planner.flow[symbol]={'live':self.planner.tapes[symbol].last_metrics}
-                if not ready:self.status[symbol]={'state':'CARGANDO','detail':detail};continue
+                if not ready:
+                    self.status[symbol]={'state':'DATOS NO ACTUALIZADOS','detail':detail}
+                    self.runner_views[symbol]={'state':'ESPERANDO DATOS',
+                        'detail':detail+'; la sesión está abierta, pero no se permiten nuevas entradas sin velas válidas.'}
+                    continue
                 plans=self.scan_plans(symbol,q,snapshot=snap)
                 self.candidates[symbol]=plans;self.last_scan[symbol]=now
                 if g.runtime_execution_block:
