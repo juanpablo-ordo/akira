@@ -7,7 +7,7 @@ from __future__ import annotations
 import hashlib, json, os,base64,threading,uuid
 from pathlib import Path
 
-NAMES=("OPENAI_API_KEY","COINGLASS_API_KEY","YOUTUBE_API_KEY","YOUTUBE_COOKIES_FILE")
+NAMES=("OPENAI_API_KEY","CUSTOM_AI_API_KEY","COINGLASS_API_KEY","YOUTUBE_API_KEY","YOUTUBE_COOKIES_FILE")
 _WRITE_LOCK=threading.RLock()
 
 def canonical_path():
@@ -22,7 +22,7 @@ def _clean(name,value):
     if name=="OPENAI_API_KEY" and low.startswith("bearer "): v=v[7:].strip()
     if name=="COINGLASS_API_KEY" and low.startswith("cg-api-key:"): v=v.split(":",1)[1].strip()
     if name=="YOUTUBE_API_KEY" and low.startswith("key="): v=v.split("=",1)[1].strip()
-    if name in ('OPENAI_API_KEY','COINGLASS_API_KEY','YOUTUBE_API_KEY'): v="".join(v.split())
+    if name in ('OPENAI_API_KEY','CUSTOM_AI_API_KEY','COINGLASS_API_KEY','YOUTUBE_API_KEY'): v="".join(v.split())
     # Nunca usar la representación enmascarada que muestra un dashboard.
     if "*" in v or "…" in v: return ""
     return v

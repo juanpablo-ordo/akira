@@ -86,18 +86,10 @@ class PreferenceAcceptance(unittest.TestCase):
             value=dialog.result_avatar();self.assertFalse(value['animate']);self.assertFalse(value['repeat']);self.assertEqual(value['entries'][0]['duration_ms'],731)
         finally:dialog.close()
 
-    def test_required_ai_checkbox_survives_old_snapshot_and_navigation_until_ack(self):
-        from execution import Gateway,Journal,Reporter
-        from engine import Engine
-        from tests.fake_mt5 import Clock,FakeMT5
-        root=Path(self.tmp.name);clock=Clock();api=FakeMT5(clock);cfg=load_config(DEFAULT)
-        gateway=Gateway(api,cfg,Journal(root/'journal.json'),Reporter(root/'logs',console=False),clock);engine=Engine(gateway,cfg,gateway.log)
-        try:
-            view=engine.step();self.w.controller.view=view;self.w.render(view);self.w.navigate(1);self.w.render_pending();self.w.pending_table.selectRow(0);self.w.pending_selected()
-            self.assertIsNotNone(self.w.pending_table.selected_key());self.w.controller.request=Mock(return_value=True);self.w.require_ai.setChecked(True);key=self.w.pending_table.selected_key()
-            self.w.controller.view=copy.deepcopy(view);self.w.navigate(2);self.w.navigate(1);self.w.render_pending();self.w.pending_selected();self.assertTrue(self.w.require_ai.isChecked());self.assertTrue(self.w._review_overrides[key])
-            self.assertTrue(self.w.controller.request.call_args.args[0]['require'])
-        finally:engine.close()
+    def test_mandatory_ai_has_no_disable_checkbox(self):
+        from PySide6.QtWidgets import QLabel
+        self.assertFalse(hasattr(self.w,'require_ai'))
+        self.assertTrue(any('obligatoria' in w.text().lower() for w in self.w.findChildren(QLabel)))
 
 class DataAndChatAcceptance(unittest.TestCase):
     def test_budget_uses_reserved_fraction_instead_of_constant_zero(self):

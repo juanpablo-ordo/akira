@@ -266,7 +266,7 @@
   "research": {
     "enabled": true,
     "refresh_minutes": 2.0,
-    "youtube": true,
+    "youtube": false,
     "investing": true,
     "coinglass": true,
     "cloud": false,
@@ -337,7 +337,8 @@
     "protect_progress": true,
     "pending_fills_as_runners": true,
     "extend_targets": false,
-    "extension_min_r": 1.8
+    "extension_min_r": 1.8,
+    "respect_entry_horizon": true
   },
   "assistant": {
     "enabled": true,
@@ -369,7 +370,7 @@
     "deep_research_default": true,
     "multisource_factual": true,
     "auto_research": true,
-    "auto_youtube_research": true,
+    "auto_youtube_research": false,
     "research_pages": 5,
     "research_youtube_results": 5,
     "research_youtube_transcripts": 2,
@@ -407,7 +408,17 @@
     "local_runtime_idle_seconds": 60,
     "local_runtime_start_on_launch": true,
     "chat_warm_seconds": 30,
-    "conversation_style": "natural"
+    "conversation_style": "natural",
+    "provider_mode": "local",
+    "provider_primary": "local",
+    "cloud_endpoint": "https://api.openai.com/v1/chat/completions",
+    "research_model": "gpt-4.1",
+    "prepare_timeout_seconds": 180,
+    "conversation_timeout_seconds": 150,
+    "sources_timeout_seconds": 35,
+    "deep_research_timeout_seconds": 90,
+    "trade_review_timeout_seconds": 150,
+    "preload": false
   },
   "desktop": {
     "width": 1580,
@@ -564,6 +575,22 @@
     "loss_streak_limit": 3,
     "loss_pause_hours": 24.0,
     "fomc_pause": true,
-    "event_pause_minutes": 60
+    "event_pause_minutes": 60,
+    "loss_pause_enabled": true
+  },
+  "operation_profile": "AUTO",
+  "locale": {
+    "country": "GT",
+    "region": "",
+    "city": "Ciudad de Guatemala",
+    "timezone": "America/Guatemala",
+    "automatic": false,
+    "date_format": "%d/%m/%Y",
+    "time_format": "%H:%M:%S"
+  },
+  "extensions": {
+    "youtube": {
+      "enabled": false
+    }
   }
 }

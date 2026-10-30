@@ -68,7 +68,7 @@ def owned_outcomes(g):
             out[str(pid)].update(pnl=r['pnl'],net=r['pnl'],deal_ids=r['deal_ids'])
     return sorted(out.values(),key=lambda r:(num(r.get('closed_at')),str(r.get('position_id'))))
 
-def evaluate(plan,frames,outcomes,now,strict=True):
+def evaluate(plan,frames,outcomes,now,strict=True,config=None):
     side=int(value(plan,'side',0));symbol=value(plan,'symbol');checks=[]
     def check(name,ok,reason):checks.append({'name':name,'passed':bool(ok),'reason':reason});return bool(ok)
     recent=[r for r in outcomes if r.get('symbol')==symbol and int(r.get('side',0))==side
@@ -80,7 +80,10 @@ def evaluate(plan,frames,outcomes,now,strict=True):
         ready=bool(m15 and h1 and bars and (value(h1,'bars',[]) or []))
         if ready:
             ht=value(h1,'bars')[-1]
-            ready=0<=now-(num(value(last_bar,'time'))+900)<=960 and 0<=now-(num(value(ht,'time'))+3600)<=7200
+            if config is not None:
+                from market_state import MarketDataFreshnessValidator
+                ready=all(MarketDataFreshnessValidator.inspect(symbol,tf,frames[tf],now,config)['ready'] for tf in ('M15','H1'))
+            else:ready=0<=now-(num(value(last_bar,'time'))+900)<=960 and 0<=now-(num(value(ht,'time'))+3600)<=7200
         check('Velas estructurales cerradas y actuales',ready,'Faltan M15/H1 cerradas y actuales; no convertir datos ausentes en una entrada de alta calidad.')
     if lost:
         # One full structural candle must start after the actual exit. A new tick

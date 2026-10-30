@@ -12,8 +12,8 @@ class LiveBlockersV133(PendingCase,unittest.TestCase):
         self.api.set_quote('BTCUSDm',self.api.ticks['BTCUSDm'].bid,fill=False)
         e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)
         view=e.step()
-        self.assertEqual(view['status']['XAUUSDm']['state'],'MERCADO EN PAUSA')
-        self.assertIn('cotización nueva',view['status']['XAUUSDm']['detail'])
+        self.assertEqual(view['status']['XAUUSDm']['state'],'SESIÓN POR COMPROBAR')
+        self.assertIn('Cotización desactualizada',view['status']['XAUUSDm']['detail'])
         self.assertFalse(any(x['symbol']=='XAUUSDm' for x in self.api.sent))
         self.assertTrue(all(x['action']==PENDING for x in self.api.sent))
         self.assertTrue(any(x['symbol']=='BTCUSDm' for x in self.api.sent))
@@ -22,11 +22,11 @@ class LiveBlockersV133(PendingCase,unittest.TestCase):
         self.clock.advance(60)
         self.api.set_quote('BTCUSDm',self.api.ticks['BTCUSDm'].bid,fill=False)
         e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)
-        self.assertEqual(e.step()['status']['XAUUSDm']['state'],'MERCADO EN PAUSA')
+        self.assertEqual(e.step()['status']['XAUUSDm']['state'],'SESIÓN POR COMPROBAR')
         self.api.set_quote('XAUUSDm',self.api.ticks['XAUUSDm'].bid,fill=False)
         # Closed M1 candles may still be behind after reopening: no unsafe send.
         view=e.step()
-        self.assertNotEqual(view['status']['XAUUSDm']['state'],'MERCADO EN PAUSA')
+        self.assertNotEqual(view['status']['XAUUSDm']['state'],'SESIÓN POR COMPROBAR')
 
     def test_heartbeat_writes_estado_json_with_real_symbol_states(self):
         e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)

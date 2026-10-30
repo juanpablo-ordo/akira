@@ -29,11 +29,11 @@ def build_command(source,destination,work):
  command=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--onedir','--windowed','--name','AKIRA',
   '--distpath',str(destination),'--workpath',str(work/'objects'),'--specpath',str(work),
   '--icon',str(source/'assets'/'akira.ico'),'--version-file',str(source/'windows_version.txt')]
- for filename in ('default_config.json','akira_config.json'):
+ for filename in ('default_config.json','akira_config.json','selector_validation.json'):
   command+=['--add-data',str(source/filename)+os.pathsep+'.']
  command+=['--add-data',str(source/'assets')+os.pathsep+'assets']
  command+=['--add-data',str(source/'third_party')+os.pathsep+'licenses']
- for package in ('certifi','truststore','MetaTrader5','ctranslate2','faster_whisper','sounddevice','pyttsx3','piper','reportlab','PIL','imageio_ffmpeg','yt_dlp','yt_dlp_ejs','docx','tzdata','pypdf','onnxruntime','tokenizers'):
+ for package in ('certifi','truststore','MetaTrader5','ctranslate2','faster_whisper','sounddevice','pyttsx3','piper','reportlab','PIL','imageio_ffmpeg','yt_dlp','yt_dlp_ejs','docx','tzdata','tzlocal','pypdf','onnxruntime','tokenizers'):
   command+=['--collect-all',package]
  for package in ('pyttsx3.drivers.sapi5','tests.fake_mt5','numpy','onnxruntime','av','win32com.propsys.propsys','win32com.propsys.pscon','win32com.shell.shell','pythoncom','win32crypt'):
   command+=['--hidden-import',package]

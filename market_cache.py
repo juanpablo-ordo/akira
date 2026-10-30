@@ -1,5 +1,6 @@
 from collections import Counter
 from strategy import Bar,frame,build_setups,symbol_strategy
+from market_state import MarketDataFreshnessValidator,CandleGapRecovery
 
 def _compute_frame_and_setups(name,bars,other_frames,rules):
     """Pure CPU work: no MT5, journal, or UI calls in a worker thread."""
@@ -23,6 +24,7 @@ class MarketCache:
         self.analysis_future=None
         self.analysis_name=None
         self.analysis_signature=()
+        self.recovery=CandleGapRecovery()
 
     def poll_analysis(self):
         future=self.analysis_future
@@ -81,8 +83,15 @@ class MarketCache:
             if rows is None or len(rows)==0:
                 raise ValueError(f"sin historial: {self.api.last_error()}")
             if old and int(rows[-1]["time"])==old.bars[-1].time:
-                self.errors.pop(name,None)
-                return
+                health=MarketDataFreshnessValidator.inspect(self.symbol,name,old,now,self.cfg)
+                if health['ready']:
+                    self.errors.pop(name,None);self.recovery.succeeded(self.symbol,name)
+                    return
+                self.errors[name]=health['reason']
+                recovered=self.recovery.recover(self.api,self.symbol,tf,name,now,self.cfg)
+                if recovered is None or not len(recovered) or int(recovered[-1]['time'])<=old.bars[-1].time:return
+                rows=recovered
+                old=None
             if old:
                 rows=self.closed_rates(tf,320)
                 if rows is None:
@@ -223,11 +232,7 @@ class MarketCache:
         return result
 
     def ready(self,now):
-        for name,max_age in (("M1",150),("M5",660)):
-            f=self.frames.get(name)
-            if not f:
-                return False,f"cargando {name}: {self.errors.get(name,'historial MT5')}"
-            age=now-f.bars[-1].time
-            if age>max_age or age<0:
-                return False,f"{name} atrasado ({age:.0f}s) o reloj desajustado"
+        for name in ('M1','M5'):
+            health=MarketDataFreshnessValidator.inspect(self.symbol,name,self.frames.get(name),now,self.cfg)
+            if not health['ready']:return False,health['reason']
         return True,"OK"

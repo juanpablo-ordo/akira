@@ -13,6 +13,7 @@ import re
 import urllib.parse
 import urllib.request
 from network_tls import https_context
+from network_diagnostics import guarded_open
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -78,7 +79,7 @@ def needs_web_verification(message: str) -> bool:
 
 def _get_json(url: str, timeout: float = 7.0):
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout, context=https_context()) as r:
+    with guarded_open(urllib.request.urlopen,req, timeout=timeout, context=https_context()) as r:
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
@@ -154,7 +155,7 @@ def _duck_html(query: str, timeout: float = 7.0):
     """DuckDuckGo HTML result snippets."""
     url = "https://html.duckduckgo.com/html/?" + urllib.parse.urlencode({"q": query})
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
-    with urllib.request.urlopen(req, timeout=timeout, context=https_context()) as r:
+    with guarded_open(urllib.request.urlopen,req, timeout=timeout, context=https_context()) as r:
         raw = r.read(1_200_000).decode("utf-8", "replace")
     links = re.findall(r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', raw, flags=re.I|re.S)
     snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</(?:a|div)>', raw, flags=re.I|re.S)
@@ -175,7 +176,7 @@ def _bing_rss(query: str, timeout: float = 7.0):
     """Public Bing RSS endpoint; no key required.  Used as a second index."""
     url="https://www.bing.com/search?"+urllib.parse.urlencode({"q":query,"format":"rss","setlang":"es"})
     req=urllib.request.Request(url,headers={"User-Agent":UA,"Accept":"application/rss+xml,application/xml,text/xml"})
-    with urllib.request.urlopen(req,timeout=timeout, context=https_context()) as r:
+    with guarded_open(urllib.request.urlopen,req,timeout=timeout, context=https_context()) as r:
         raw=r.read(1_200_000)
     root=ET.fromstring(raw)
     rows=[]
@@ -194,7 +195,7 @@ def _google_news_rss(query: str, timeout: float = 7.0):
     params={"q":query,"hl":"es-419","gl":"US","ceid":"US:es-419"}
     url="https://news.google.com/rss/search?"+urllib.parse.urlencode(params)
     req=urllib.request.Request(url,headers={"User-Agent":UA,"Accept":"application/rss+xml,application/xml,text/xml"})
-    with urllib.request.urlopen(req,timeout=timeout, context=https_context()) as r:
+    with guarded_open(urllib.request.urlopen,req,timeout=timeout, context=https_context()) as r:
         raw=r.read(1_200_000)
     root=ET.fromstring(raw);rows=[]
     for item in root.findall('.//item')[:12]:
@@ -235,7 +236,7 @@ def _official_presidency(query,timeout):
     if 'guatemala' not in question or not re.search(r'\bpresidente\b',question):return []
     url='https://presidencia.gob.gt/'
     request=urllib.request.Request(url,headers={'User-Agent':UA,'Accept':'text/html'})
-    with urllib.request.urlopen(request,timeout=timeout, context=https_context()) as response:
+    with guarded_open(urllib.request.urlopen,request,timeout=timeout, context=https_context()) as response:
         final=response.geturl();host=_host(final)
         if host!='presidencia.gob.gt' and not host.endswith('.presidencia.gob.gt'):
             raise ValueError('La Presidencia redirigió fuera de su dominio oficial')

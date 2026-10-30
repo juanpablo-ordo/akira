@@ -41,7 +41,7 @@ class RunnerV134Tests(PendingCase, unittest.TestCase):
             bars=[Bar(b.time,200-b.open,200-b.low,200-b.high,200-b.close,b.volume) for b in bars]
         m=replace(f,bars=tuple(bars),atr=5,trend=.8*side,rsi=60 if side==1 else 40,
                   volume_ratio=1.6,highs=(),lows=())
-        h=replace(m,name='H1')
+        h=replace(m,name='H1',bars=tuple(replace(b,time=int(self.clock()//3600)*3600-(len(m.bars)-i)*3600) for i,b in enumerate(m.bars)))
         return {'M15':m,'H1':h}
 
     def test_confirmed_long_and_short_use_m15_structure(self):
