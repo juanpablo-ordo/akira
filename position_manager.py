@@ -48,19 +48,17 @@ class PositionManager:
                 cache=self.planner.caches.get(p.symbol);frames=cache.frames if cache else {}
                 structural_runner=(plan.get('lane')=='RUNNER' or (plan.get('lane')=='PENDING' and g.cfg['management'].get('pending_fills_as_runners',False))) and g.cfg['management'].get('runner_structure_only',True)
                 if structural_runner:row['management_style']='RUNNER_ESTRUCTURAL'
-                f=frames.get('M15') if structural_runner else frames.get('M15') or frames.get('M5')
+                from runner_policy import RunnerExitPolicy,RunnerPerformanceTracker
+                exit_tf=RunnerExitPolicy.timeframe(plan,g.cfg)
+                f=frames.get(exit_tf) if structural_runner else frames.get('M15') or frames.get('M5')
                 if structural_runner and not f:
-                    row['protection_state']='Runner conserva SL: esperando estructura M15 confirmada'
+                    row['protection_state']=f'Runner conserva SL: esperando estructura {exit_tf} confirmada'
                 if not f and not structural_runner:continue
                 q=g.quote(p.symbol);exit=q.bid if side==1 else q.ask
                 risk=side*(float(p.price_open)-initial)
                 if risk<=0:continue
                 gained=side*(exit-float(p.price_open));rr=gained/risk
-                row.setdefault('tracking_started_at',now)
-                row['max_favorable_r']=max(float(row.get('max_favorable_r',0)),rr)
-                row['max_adverse_r']=max(float(row.get('max_adverse_r',0)),-rr)
-                row['last_rr']=rr
-                row['max_favorable_usd']=max(float(row.get('max_favorable_usd',0)),float(getattr(p,'profit',0)))
+                RunnerPerformanceTracker.update(row,plan,rr,float(getattr(p,'profit',0)),now)
                 if now-self.last_stats_save>=10:g.journal.save();self.last_stats_save=now
                 if now-float(row.get('time',getattr(p,'time',now)))<g.cfg['management']['minimum_hold_seconds']:continue
                 if now-float(row.get('last_modify',0))<g.cfg['management']['modify_seconds']:continue
@@ -68,7 +66,7 @@ class PositionManager:
                     entry_time=float(row.get('time',getattr(p,'time',now)))
                     reason=runner_exit(plan,frames,side,rr,g.cfg,entry_time=entry_time,now=now)
                     row['exit_review']={'time':now,'entry_time':entry_time,
-                        'last_closed_m15':f.bars[-1].time+900,
+                        'timeframe':exit_tf,'last_closed_bar':f.bars[-1].time+__import__('trade_review').PERIODS[exit_tf],
                         'post_entry_candle':f.bars[-1].time>=entry_time,'reason':reason or 'Sin invalidación nueva posterior a la entrada'}
                     if reason:
                         if g.close_runner(p,reason):g.reconcile(g.snapshot())
@@ -101,18 +99,18 @@ class PositionManager:
                         and side*(exit-v)>max(f.atr*.3,noise)]
                     if not swings:
                         if not progress:
-                            row['protection_state']='Runner conserva SL: falta pivote M15 posterior confirmado';continue
-                        reason='avance hasta umbral R: cubrir costes estimados sin esperar pivote M15'
-                        row['protection_state']='Candidato de protección de avance; aún sin pivote M15 posterior'
+                            row['protection_state']=f'Runner conserva SL: falta pivote {exit_tf} posterior confirmado';continue
+                        reason=f'avance hasta umbral R: cubrir costes estimados sin esperar pivote {exit_tf}'
+                        row['protection_state']=f'Candidato de protección de avance; aún sin pivote {exit_tf} posterior'
                     else:
                         swing=max(swings) if side==1 else min(swings)
                         structural=swing-side*max(f.atr*g.cfg['management']['trail_atr'],noise)
                         if not progress or side*(structural-target)>0:
                             target=structural
-                            reason='runner: pivote M15 posterior confirmado; conservar margen ATR'
+                            reason=f'runner: pivote {exit_tf} posterior confirmado; conservar margen ATR'
                         else:
-                            reason='avance hasta umbral R: cubrir costes estimados; pivote M15 no mejora protección'
-                        row['protection_state']='Candidato de protección: avance y pivote M15 revisados'
+                            reason=f'avance hasta umbral R: cubrir costes estimados; pivote {exit_tf} no mejora protección'
+                        row['protection_state']=f'Candidato de protección: avance y pivote {exit_tf} revisados'
                 else:
                     reason='pendiente activada: breakeven/trailing de estructura'
                 if not structural_runner:

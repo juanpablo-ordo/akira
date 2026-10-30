@@ -49,7 +49,9 @@ class ExitsTests(PendingCase,unittest.TestCase):
     def test_new_closed_m15_can_exit_a_genuinely_broken_structure(self):
         p,pos=self.position();entered=self.clock();f=self.broken_frame(p,entered)
         shifted=replace(f,bars=tuple(replace(b,time=b.time+2700) for b in f.bars))
-        self.assertIn('rompió',runner_exit(p.to_dict(),{'M15':shifted},1,-.1,self.cfg,entry_time=entered,now=entered+2700))
+        direct={**p.to_dict(),'lane':'RUNNER','signal_timeframe':'M15'}
+        self.assertIn('rompió',runner_exit(direct,{'M15':shifted},1,-.1,self.cfg,entry_time=entered,now=entered+2700))
+        self.assertEqual(runner_exit(p.to_dict(),{'M15':shifted},1,-.1,self.cfg,entry_time=entered,now=entered+2700),'')
     def test_forming_m15_is_not_exit_evidence(self):
         p,pos=self.position();entered=self.clock();f=self.broken_frame(p,entered)
         shifted=replace(f,bars=tuple(replace(b,time=b.time+2700) for b in f.bars))

@@ -51,6 +51,8 @@ class Engine:
         self._quality_notices=set()
         from activity_watchdog import SessionWatchdog
         self.session_watchdog=SessionWatchdog(self.g.clock())
+        from market_state import BrokerSessionService
+        self.broker_sessions=BrokerSessionService(self.g)
 
     def close(self):
         # Existing broker SL/TP and pending orders survive application shutdown.
@@ -107,9 +109,10 @@ class Engine:
         self.deep_initialized=True
 
     def market_state(self,symbol):
-        state=state_for(symbol,datetime.fromtimestamp(self.g.clock(),timezone.utc),self.cfg)
-        return {'open':state.open,'scheduled_closed':not state.open,'state':state.state,
-            'next_open':state.next_open_guatemala,'schedule_source':state.source}
+        state=self.broker_sessions.states.get(symbol)
+        if state is None or self.g.clock()-state['checked_at']>2:
+            state=self.broker_sessions.refresh(symbol)
+        return state
 
     def try_runner(self,symbol,q,required_side=0):
         """Retirar pendientes propias y confirmar antes de un runner; no duplicar."""
@@ -211,10 +214,10 @@ class Engine:
     def evidence_ready(self,symbol,now):
         cache=self.planner.caches[symbol];ok,reason=cache.ready(now)
         if not ok:return False,reason
-        for name,seconds in (('M15',1800),('H1',7200)):
-            f=cache.frames.get(name)
-            if f is None or now-f.bars[-1].time>seconds or now-f.bars[-1].time<0:
-                return False,'Esperando estructura cerrada y reciente '+name
+        from market_state import MarketDataFreshnessValidator
+        for name in ('M15','H1'):
+            health=MarketDataFreshnessValidator.inspect(symbol,name,cache.frames.get(name),now,self.cfg)
+            if not health['ready']:return False,health['reason']
         return True,'Datos técnicos vigentes'
 
     def confirm(self,key,q,reason,seconds=None):
@@ -835,7 +838,9 @@ class Engine:
                     paper_costs[s]={'profit_per_price_unit':unit,'round_turn_fee':float(self.cfg['risk']['round_turn_commission_per_lot'])*lot,
                         'lot':lot,'source':'order_calc_profit MT5; comisión estimada de ajustes'}
                 except Blocked:pass
-        return {'symbols':out,'as_of_utc':self.g.clock(),'markets':{s:self.market_state(s) for s in out},
+        return {'account':{k:getattr(snap.account,k,None) for k in ('login','server','currency','balance','equity','margin_free','trade_mode')},
+                'research':{'sources':copy.deepcopy(self.planner.research_context.get('sources',{}))},
+                'symbols':out,'as_of_utc':self.g.clock(),'markets':{s:self.market_state(s) for s in out},
                 'pending_performance':{s:self.learner.metrics(s) for s in out},
                 'confirmed_learning_outcomes':list(self.learner.records.values()),'learning_account':list(self.g.identity or ()),
                 'confirmed_strategy_outcomes':copy.deepcopy(self._confirmed_outcomes[-300:]),'paper_costs':paper_costs,
@@ -881,16 +886,16 @@ class Engine:
         snap=self.review_loss_pendings(snap)
         # El primer envío no espera una consulta de 90 días de deals.
         self.planner.research_context=self.read_context()
-        if not self.paused and not g.runtime_execution_block and getattr(g,'network_available',True) is not False:self.positions.step(snap)
+        if not self.paused and not g.runtime_execution_block:self.positions.step(snap)
         symbols=list(self.planner.caches)
         # Rotate first priority so one symbol cannot consume every available turn.
         shift=self.cycle%max(1,len(symbols));symbols=symbols[shift:]+symbols[:shift]
         for symbol in symbols:
             try:
-                market=self.market_state(symbol)
+                market=self.broker_sessions.refresh(symbol,snap)
                 if not market['open']:
-                    self.status[symbol]={'state':'MERCADO CERRADO','detail':market['state']+'. Próxima apertura estimada: '+market['next_open']}
-                    self.runner_views[symbol]={'state':'MERCADO CERRADO','detail':'Seguimiento operativo en pausa; se conserva el riesgo de tickets existentes.'}
+                    self.status[symbol]={'state':market['state'],'detail':market['reason']+'. Próxima apertura estimada: '+market['next_open']}
+                    self.runner_views[symbol]={'state':market['state'],'detail':market['reason'],'session':market['session']}
                     self.quotes.pop(symbol,None)
                     continue
                 if self.status.get(symbol,{}).get('state')=='MERCADO CERRADO':
@@ -900,7 +905,10 @@ class Engine:
                 q=g.quote(symbol);self.quotes[symbol]=q;self.planner.tapes[symbol].update(q,cache.frames,now)
                 self.update_book(symbol)
                 self.planner.flow[symbol]={'live':self.planner.tapes[symbol].last_metrics}
-                if not ready:self.status[symbol]={'state':'CARGANDO','detail':detail};continue
+                if not ready:
+                    self.status[symbol]={'state':'DATOS PENDIENTES','detail':detail,'analysis':'WAITING_CANDLE'}
+                    self.runner_views[symbol]={'state':'DATOS PENDIENTES','detail':detail,'analysis':'WAITING_CANDLE','session':market['session']}
+                    continue
                 plans=self.scan_plans(symbol,q,snapshot=snap)
                 self.candidates[symbol]=plans;self.last_scan[symbol]=now
                 if g.runtime_execution_block:
@@ -909,8 +917,8 @@ class Engine:
                         'technical_detail':runner_detail,'plan':plan.to_dict() if plan else None}
                     self.status[symbol]={'state':'EJECUCIÓN BLOQUEADA','detail':g.runtime_execution_block};continue
                 if self.paused:self.status[symbol]={'state':'PAUSA','detail':'Niveles conservados en MT5; análisis sigue activo'};continue
-                if getattr(g,'network_available',True) is False:
-                    self.status[symbol]={'state':'SIN INTERNET','detail':'Nuevas entradas en pausa; reconexión automática. Se conservan los niveles confirmados en MT5.'};continue
+                if not market['permissions']:
+                    self.status[symbol]={'state':'PERMISOS MT5','detail':'Trading algorítmico o permisos de cuenta no disponibles; consultar MT5.'};continue
                 if self.cfg['mode']!='trade':self.status[symbol]={'state':'OBSERVAR','detail':f'Solo análisis: {len(plans)} candidatas evaluadas; no se envían órdenes. Activa la operativa desde el encabezado o Ajustes → Operación.'};continue
                 if symbol in g.journal.data['intents']:self.status[symbol]={'state':'RECONCILIANDO','detail':'Esperando evidencia MT5 de la solicitud anterior'};continue
                 # Fund valid pending entries first. Runners use remaining capacity
@@ -920,8 +928,11 @@ class Engine:
             except MarketPaused as e:
                 # No fabricar nuevas órdenes con el último precio de oro durante
                 # el cierre diario. Mantener la última propuesta visible.
-                self.status[symbol]={'state':'MERCADO EN PAUSA','detail':str(e)}
-            except Blocked as e:self.status[symbol]={'state':'ESPERANDO','detail':str(e)}
+                self.status[symbol]={'state':'COTIZACIÓN NO DISPONIBLE','detail':str(e)}
+                self.runner_views[symbol]={'state':'COTIZACIÓN NO DISPONIBLE','detail':str(e)}
+            except Blocked as e:
+                self.status[symbol]={'state':'ESPERANDO','detail':str(e)}
+                self.runner_views[symbol]={'state':'ESPERANDO','detail':str(e)}
             finally:self.last_checked[symbol]=g.clock()
         # Los primeros intentos BTC+XAU usan M15/H1 antes de consultas profundas.
         # Completar H4/D1 ahora conserva el análisis visible sin bloquear el envío.
@@ -1054,12 +1065,18 @@ class Engine:
             revision=int(cmd.get('settings_revision') or 0)
             if revision and revision<=getattr(self,'settings_revision',0):return {'ok':False,'settings_applied':False,'stale_settings':True,'error':'Se descartó una solicitud de ajustes anterior a la última ya aplicada.'}
             saved=validate_form(cmd['config']);rows=changes(self.cfg,saved);self.cfg.update(saved)
-            if revision:self.settings_revision=revision
+            self.settings_revision=max(revision,getattr(self,'settings_revision',0)+1)
+            import hashlib,json
+            self.configuration={'revision':self.settings_revision,'applied_at':self.g.clock(),'digest':hashlib.sha256(json.dumps(saved,sort_keys=True).encode()).hexdigest(),'changed_paths':[r['path'] for r in rows]}
+            audit=self.g.journal.data.setdefault('settings_audit',[])
+            audit.append({**self.configuration,'changes':[r for r in rows if r['path'].startswith(('risk.','capital_protection.','runner.','sizing.','management.','operation_profile'))]})
+            del audit[:-200]
+            self.g.journal.save()
             paths=cmd.get('changed_paths') or [r['path'] for r in rows]
             if any(not p.startswith(('desktop.','assistant.','knowledge.','charts.','studio.')) for p in paths):
                 self.map_cache.clear();self.allocation_cache.clear();self._analysis_evaluations.clear()
-            if self.context and any(p.startswith(('research.','assistant.')) for p in paths):self.context.refresh()
-            return {'ok':True,'settings_applied':True,'changed_paths':paths,'detail':'Cambios aplicados por sus componentes: '+', '.join(paths),'effective':{p:__import__('settings_effects').value_at(self.cfg,p) for p in paths}}
+            if self.context and any(p.startswith(('research.','assistant.','extensions.')) for p in paths):self.context.refresh()
+            return {'ok':True,'settings_applied':True,'configuration':dict(self.configuration),'changed_paths':paths,'detail':'Cambios aplicados por sus componentes: '+', '.join(paths),'effective':{p:__import__('settings_effects').value_at(self.cfg,p) for p in paths}}
         if action=='reverify':
             self.map_cache.clear();self.allocation_cache.clear();self._analysis_evaluations.clear()
             return {'ok':True,'detail':'Evaluación técnica renovada; envío mantiene sus validaciones críticas.'}
@@ -1199,15 +1216,16 @@ class Engine:
             symbols[s]['decision']=decision_status(s,self.candidates.get(s,[]),
                 self.planner.pending_candidate_audit.get(s,[]),symbols[s]['scenario_book'],
                 self.allocation_checks.get(s,[]),book,self.pending_cycles.get(s,{}),self.status.get(s,{}),
-                self.g.trade_cap(snap),self.g.runtime_execution_block or ('Sin Internet: nuevas entradas en pausa' if getattr(self.g,'network_available',True) is False else ''),self.cfg['mode'],self.paused)
+                self.g.trade_cap(snap),self.g.runtime_execution_block,self.cfg['mode'],self.paused)
         from operation_health import execution_gate
         safety=self.entry_safety()
         entry_block=self.g.runtime_execution_block or (safety['reason'] if not safety['allowed'] else '')
-        effective_gate=execution_gate(self.cfg['mode'],self.paused,entry_block,
-                                     getattr(self.g,'network_available',True),account)
-        view={'build':BUILD_ID,'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
+        effective_gate=execution_gate(self.cfg['mode'],self.paused,self.g.runtime_execution_block,
+                                     getattr(self.g,'network_available',True),account,risk_state=safety,
+                                     broker_available=bool(getattr(snap.terminal,'connected',False)))
+        view={'build':BUILD_ID,'locale':copy.deepcopy(self.cfg.get('locale',{})),'configuration':copy.deepcopy(getattr(self,'configuration',{})),'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
                 'execution_gate':effective_gate,
-                'execution_block':entry_block,'execution_allowed':not bool(entry_block) and self.cfg['mode']=='trade' and not self.paused and getattr(self.g,'network_available',True),
+                'execution_block':entry_block,'execution_allowed':effective_gate['execution_allowed'],
                 'account':account,'orders':rows,'positions':positions,'symbols':symbols,'as_of_utc':self.g.clock(),
                 'status':self.status,'candidates':{s:[p.to_dict() for p in ps[:16]] for s,ps in self.candidates.items()},
                 'audit':self.planner.pending_candidate_audit,'research':self.planner.research_context,
@@ -1258,7 +1276,7 @@ class Engine:
     def verification_configuration(self):
         return {**{k:copy.deepcopy(self.cfg[k]) for k in ('strategy_choice','strategy','symbol_profiles','execution','pending','risk','sizing','management','runner','lot','mode')},
             'research':{k:v for k,v in self.cfg['research'].items() if isinstance(v,bool) or k in ('model','pending_score_weight','dom_score_weight','cloud_pick_bonus','pending_activation_weight')},
-            'model_configuration':{k:self.cfg.get('assistant',{}).get(k) for k in ('cloud','local_primary','model','trading_model','local_model','local_model_lite','local_vision_model')},
+            'model_configuration':{k:self.cfg.get('assistant',{}).get(k) for k in ('provider_mode','provider_primary','cloud_endpoint','general_model','research_model','cloud','local_primary','model','trading_model','local_model','local_model_lite','local_vision_model')},
             'evolution_model':self.cfg.get('evolution',{}).get('analysis_model')}
 
     def entry_quality_guard(self,plan,snap):
@@ -1271,7 +1289,7 @@ class Engine:
         from trade_quality_gate import evaluate,owned_outcomes
         evidence=evaluate(plan,self.planner.caches[plan.symbol].frames,
             owned_outcomes(self.g) if live else self._confirmed_outcomes,self.g.clock(),
-            strict=self.cfg['execution'].get('require_primary_structural_engine',True))
+            strict=self.cfg['execution'].get('require_primary_structural_engine',True),config=self.cfg)
         safety=self.entry_safety(live=live)
         if not safety['allowed']:
             evidence.update(allowed=False,reason=safety['reason'])
@@ -1343,33 +1361,32 @@ class Engine:
         return snap
 
     def pending_review_guard(self,plan,snap,volume,ticket=0):
-        """Optional, user-demanded gate immediately before a new send or edit."""
-        if list(self.g.identity or ())!=self.review_account:return
-        policy=next(((pid,r) for pid,r in self.review_requirements.items() if r['symbol']==plan.symbol
-            and (int(r.get('ticket') or 0)==ticket if ticket else not r.get('ticket') and r['key']==plan.key)),None)
-        if not policy:return
-        from pending_verification import fingerprint,identity
-        pid,_=policy
-        current={'symbols':{s:{'frames':{tf:self.frame_summary(f) for tf,f in c.frames.items()},
-            'bid':self.quotes[s].bid if s in self.quotes else None,'ask':self.quotes[s].ask if s in self.quotes else None,
-            'spread':self.quotes[s].spread if s in self.quotes else None,'quote_time':self.quotes[s].time if s in self.quotes else None} for s,c in self.planner.caches.items()},
+        """Mandatory neural review of exactly the order about to increase exposure."""
+        from execution_review import fingerprint,valid_receipt,request_id
+        symbol=plan.symbol
+        account={k:getattr(snap.account,k,None) for k in ('login','server','currency','balance','equity','margin_free','trade_mode')}
+        q=self.g.quote(symbol)
+        current={'account':account,'symbols':{symbol:{'frames':{tf:self.frame_summary(f) for tf,f in self.planner.caches[symbol].frames.items()},
+            'bid':q.bid,'ask':q.ask,'spread':q.spread,'quote_time':q.time}},
             'research':self.planner.research_context,'selection_configuration':self.verification_configuration(),
-            'markets':{s:self.market_state(s) for s in self.planner.caches},'updated':self.g.clock()}
-        proposed={**plan.to_dict(),'volume':None}
-        choices=[(pid,{**plan.to_dict(),'volume':volume})] if ticket else []
-        if ticket:choices[0][1]['ticket']=ticket
-        choices.append((identity(proposed),proposed))
-        reviews=self.planner.research_context.get('pending_reviews') or {};reason='revisión individual aún pendiente, desactualizada o sin asistente disponible'
-        for review_id,row in choices:
-            review=reviews.get(review_id) or {};data=review.get('data') or {}
-            if not isinstance(data,dict):data={}
-            valid=review.get('fingerprint')==fingerprint(current,row) and review.get('state')=='COMPLETE' and -5<=self.g.clock()-float(review.get('updated') or 0)<=180
-            if valid and data.get('verdict')=='APPROVE' and isinstance(data.get('reason'),str) and data['reason'].strip() and isinstance(data.get('missing'),list) and not data['missing']:return
-            reason=review.get('error') or data.get('reason') or reason
+            'markets':{symbol:self.market_state(symbol)},'updated':self.g.clock()}
+        risk,reward=self.g.plan_money(plan,volume)
+        proposed={**plan.to_dict(),'volume':float(volume),'risk_usd':risk,'reward_usd':reward,
+            'net_rr':reward/risk if risk>0 else 0,'review_scope':'EXECUTION'}
+        if ticket:proposed['ticket']=ticket
+        pid=request_id(proposed);expected=fingerprint(proposed,current)
+        review=(self.planner.research_context.get('pending_reviews') or {}).get(pid) or {}
+        if valid_receipt(review,expected,self.g.clock()):
+            receipt={**copy.deepcopy(review),'review_id':pid,'levels':proposed,'checked_at':self.g.clock()}
+            self.g.journal.data.setdefault('execution_reviews',{})[expected]=receipt
+            while len(self.g.journal.data['execution_reviews'])>200:self.g.journal.data['execution_reviews'].pop(next(iter(self.g.journal.data['execution_reviews'])))
+            return receipt
         if self.context and hasattr(self.context,'request_pending_reviews'):
-            current['required_pending_reviews']=[identity(proposed)]
+            current['required_pending_reviews']=[pid]
             self.context.request_pending_reviews([proposed],current)
-        raise Blocked('Verificación IA exigida para '+pid+': '+str(reason)[:240]+'. Revisa su ficha o desactiva la exigencia y solicita de nuevo.')
+        reason=review.get('error') or (review.get('data') or {}).get('reason') or 'Esperando dictamen de estos niveles, volumen, cuenta y datos'
+        self.runner_views.setdefault(symbol,{})['review_state']='REVIEW_REQUIRED'
+        raise Blocked('Revisión IA obligatoria: '+str(reason)[:240]+'. Sin aprobación vigente no se envía la propuesta.')
 
     def queue_pending_verification(self,plans,view,deep=True,force=False):
         from pending_verification import identity,levels

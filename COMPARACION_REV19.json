@@ -1,0 +1,122 @@
+{
+  "status": "PASSED",
+  "scope": "SYNTHETIC_FUNCTIONAL_REGRESSION",
+  "input_sha256": "708f5c0900ec65444ec32746cf58062c8cb6c5477322b78b9b3c4a5488d34696",
+  "inputs": {
+    "plan": {
+      "lane": "PENDING",
+      "key": "SWING:1:LIMIT:H1:1",
+      "bar_time": 0,
+      "signal_timeframe": "H1"
+    },
+    "side": 1,
+    "rr": -0.2,
+    "entry_time": 100,
+    "now": 14400,
+    "M15": [
+      {
+        "time": 10800,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 100,
+        "volume": 100
+      },
+      {
+        "time": 11700,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 100,
+        "volume": 100
+      },
+      {
+        "time": 12600,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 100,
+        "volume": 100
+      },
+      {
+        "time": 13500,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 90,
+        "volume": 100
+      }
+    ],
+    "H1": [
+      {
+        "time": 0,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 100,
+        "volume": 100
+      },
+      {
+        "time": 3600,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 100,
+        "volume": 100
+      },
+      {
+        "time": 7200,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 100,
+        "volume": 100
+      },
+      {
+        "time": 10800,
+        "open": 100,
+        "high": 102,
+        "low": 98,
+        "close": 100,
+        "volume": 100
+      }
+    ]
+  },
+  "results": {
+    "Rev10": {
+      "m15_noise_exit": true,
+      "reason_noise": "Cierre M15 rompió la estructura de continuación del runner",
+      "h1_break_exit": true,
+      "reason_h1": "Cierre M15 rompió la estructura de continuación del runner",
+      "function_sha256": "5750fc89598445558d698f3a9e0e803b87d6ecefef7c61cf9636d21c7da63875",
+      "git_commit": "201e839aea9f6aecf85f500cad4e075c9e885750"
+    },
+    "Rev18": {
+      "m15_noise_exit": true,
+      "reason_noise": "Cierre M15 rompió la estructura de continuación del runner",
+      "h1_break_exit": true,
+      "reason_h1": "Cierre M15 rompió la estructura de continuación del runner",
+      "function_sha256": "5750fc89598445558d698f3a9e0e803b87d6ecefef7c61cf9636d21c7da63875",
+      "git_commit": "de98b491fdb67ca0e207b0bca379e77da5f1df51"
+    },
+    "Rev19": {
+      "m15_noise_exit": false,
+      "reason_noise": "",
+      "h1_break_exit": true,
+      "reason_h1": "Cierre H1 rompió la estructura de continuación del runner",
+      "function_sha256": "18c12216e941dc1da391fbfe01cfa75a8060f98a6a755818de9ea676c3a187fa",
+      "git_commit": "ff225e714fd0c4c7c1791b46d5485e798bc8ff36"
+    }
+  },
+  "profitability": {
+    "status": "NOT_EVALUATED",
+    "reason": "Falta el historial bid/ask y comisiones de la prueba histórica referida. Estos casos solo comparan las salidas con las mismas velas y tiempos. No simulan fills, spreads ni curva de patrimonio.",
+    "net_profit": null,
+    "profit_factor": null,
+    "drawdown": null,
+    "trades_per_day": null,
+    "holding_time": null,
+    "activation_rate": null
+  },
+  "finding": "Rev10 y Rev18 cerraban una tesis H1 por M15. Rev19 requiere invalidación H1 posterior a la entrada. No demuestra mayor rentabilidad."
+}

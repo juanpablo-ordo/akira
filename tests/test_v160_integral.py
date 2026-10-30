@@ -60,7 +60,7 @@ class ChatPersistenceTests(unittest.TestCase):
 class MarketAndRiskTests(PendingCase,unittest.TestCase):
  def test_saturday_only_btc_is_evaluated_and_printed(self):
   self.clock.now=datetime(2026,10,10,14,tzinfo=timezone.utc).timestamp()
-  for symbol in self.api.ticks:self.api.set_quote(symbol,self.api.ticks[symbol].bid,fill=False)
+  self.api.set_quote('BTCUSDm',self.api.ticks['BTCUSDm'].bid,fill=False)  # no fresh gold tick during weekend
   engine=Engine(self.g,self.cfg,self.g.log);self.addCleanup(engine.close)
   original=self.api.copy_rates_from_pos;requests=[]
   def rates(symbol,*args):requests.append(symbol);return original(symbol,*args)

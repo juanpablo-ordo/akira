@@ -96,7 +96,7 @@ class WorkerFieldTests(unittest.TestCase):
         row={'topic':'BTCUSDm','status':'analyzed','complete':True,'summary':json.dumps({'bias':1,'confidence':1,'source_complete':True})}
         self.worker.sources={'youtube':{'updated':self.now,'data':{'rows':[row]}}}
         context=self.worker.read();self.assertEqual(context['fusion']['BTCUSDm']['confidence'],0)
-        self.assertTrue(context['videos'])
+        self.assertFalse(context['videos'])
     def test_stuck_request_stops_showing_loading_without_launching_duplicates(self):
         self.restrict_to_reviews();self.worker.tick();first=self.worker.jobs['local_ai:BTCUSDm']
         self.now+=301;self.worker.tick()

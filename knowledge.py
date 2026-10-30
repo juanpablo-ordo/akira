@@ -105,6 +105,9 @@ def public_url(url):
     if parts.scheme not in ('http','https') or not parts.hostname or parts.username or parts.password:
         raise ValueError('Solo URLs públicas HTTP/HTTPS sin credenciales')
     if parts.port and parts.port not in (80,443):raise ValueError('Puerto no público')
+    try:literal=ipaddress.ip_address(parts.hostname)
+    except ValueError:literal=None
+    if parts.hostname.lower()=='localhost' or literal is not None and not literal.is_global:raise ValueError('No se permite acceder a direcciones locales o privadas')
     try: addresses=socket.getaddrinfo(parts.hostname,parts.port or (443 if parts.scheme=='https' else 80),type=socket.SOCK_STREAM)
     except OSError as exc:raise ValueError('No se pudo resolver la fuente pública') from exc
     if not addresses or any(not ipaddress.ip_address(x[4][0]).is_global for x in addresses):
@@ -133,7 +136,8 @@ def read_public(url,timeout=10,max_bytes=1500000,headers=None,cookiejar=None):
     safe_headers={'User-Agent':'AkiraResearch/2.0','Accept':'text/html,application/json,text/plain,text/vtt'}
     safe_headers.update({k:v for k,v in (headers or {}).items() if k.lower() in ('user-agent','accept-language','referer')})
     req=Request(url,headers=safe_headers)
-    with public_opener(cookiejar).open(req,timeout=timeout) as res:
+    from network_diagnostics import guarded_open
+    with guarded_open(public_opener(cookiejar).open,req,timeout=timeout) as res:
         kind=str(res.headers.get('Content-Type','')).lower()
         if kind and not any(t in kind for t in ('text/','json','xml')):
             raise ValueError('La fuente no ofrece texto público legible')

@@ -11,8 +11,9 @@ from capital_guard import rules
 def loss_pause(config,outcomes,now):
     policy=rules(config);limit=int(policy['loss_streak_limit'])
     seconds=float(policy['loss_pause_hours'])*3600
-    result={'enabled':bool(policy['enabled']),'allowed':True,'reason':'',
-            'loss_streak':0,'loss_streak_limit':limit,'paused_until':None,'closed_ids':[]}
+    result={'enabled':bool(policy['enabled'] and policy['loss_pause_enabled']),'allowed':True,'reason':'','code':'ALLOWED',
+            'loss_streak':0,'loss_streak_limit':limit,'paused_from':None,'paused_until':None,'closed_ids':[],
+            'scope':'Nuevas entradas de BTC y oro; la gestión de posiciones abiertas continúa','trigger_closures':[]}
     if not result['enabled']:return result
     unique={}
     for row in outcomes:
@@ -22,7 +23,7 @@ def loss_pause(config,outcomes,now):
             pnl=float(row.get('pnl',row.get('net')))
         except (TypeError,ValueError,OverflowError):continue
         if identity is None or not row.get('deal_ids') or not math.isfinite(when) or not math.isfinite(pnl) or when>now:continue
-        unique[str(identity)]={'when':when,'pnl':pnl,'id':str(identity)}
+        unique[str(identity)]={'when':when,'pnl':pnl,'id':str(identity),'symbol':row.get('symbol'),'deal_ids':list(row['deal_ids'])}
     streak=[];last_trip=None
     for row in sorted(unique.values(),key=lambda r:(r['when'],r['id'])):
         if row['pnl']<0:streak.append(row)
@@ -32,7 +33,8 @@ def loss_pause(config,outcomes,now):
     # An already-open winning trade cannot silently reopen the circuit after
     # the threshold was reached. Wait the actual cooldown from the last trip.
     if last_trip and last_trip[0]+seconds>now:
-        result.update(allowed=False,paused_until=last_trip[0]+seconds,closed_ids=last_trip[1],
+        result.update(allowed=False,code='RISK_COOLDOWN',paused_from=last_trip[0],paused_until=last_trip[0]+seconds,closed_ids=last_trip[1],
+            trigger_closures=[unique[pid] for pid in last_trip[1]],
             reason=f'Pausa de nuevas entradas: {limit} pérdidas propias consecutivas confirmadas entre BTC y oro. '
                    f'Esperar {policy["loss_pause_hours"]:g} h desde el cierre que activó la pausa. '
                    'Se retiran pendientes propias; las posiciones conservan sus SL/TP.')
@@ -44,5 +46,5 @@ def entry_policy(config,outcomes,now):
     result=loss_pause(config,outcomes,now);event=fomc_window(rules(config),now)
     result['scheduled_event']=event
     if result['allowed'] and not event['allowed']:
-        result.update(allowed=False,reason=event['reason'],paused_until=event['paused_until'])
+        result.update(allowed=False,code='EVENT_COOLDOWN',reason=event['reason'],paused_until=event['paused_until'])
     return result

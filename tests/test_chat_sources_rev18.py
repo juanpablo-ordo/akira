@@ -55,7 +55,7 @@ class ChatSources(unittest.TestCase):
 
     def test_total_public_read_budget_does_not_restart_for_each_tool(self):
         with tempfile.TemporaryDirectory() as tmp:
-            bot=AkiraAssistant(load_config(DEFAULT),Path(tmp));bot._turn_started_at=time.time()-61
+            bot=AkiraAssistant(load_config(DEFAULT),Path(tmp));bot._turn_budget.starts['sources']=time.monotonic()-61
             try:
                 with self.assertRaisesRegex(TimeoutError,'plazo'):bot._read_public('read',lambda:'unused')
             finally:bot._managed_model.shutdown()

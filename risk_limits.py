@@ -36,4 +36,35 @@ def configured_limits(config,account):
     return {**raw,'capital_protection':protection,'ready':True,'balance':balance,'equity':equity,'capital_basis':basis,
         'per_trade':trade,'runner':trade*max(0,min(1,raw['runner_pct']/100)),
         'portfolio':total,'portfolio_capital_pct':min(100,max(0,total/basis*100)) if basis>0 else 0,
-        'override':bool(rules.get('min_lot_structural_override_enabled',False))}
+        'override':bool(rules.get('min_lot_structural_override_enabled',False)),
+        'explanation':EffectiveRiskResolver.explain(config,equity,balance)}
+
+
+class EffectiveRiskResolver:
+    """The same arithmetic and rule provenance consumed by Gateway and UI."""
+    @staticmethod
+    def explain(config,equity,balance):
+        from capital_guard import rules as protection_rules
+        r=config['risk'];p=protection_rules(config)
+        constraints=[{'rule':'risk.max_trade_money','label':'Tope monetario','amount':float(r['max_trade_money'])},
+                     {'rule':'risk.max_trade_pct','label':'Porcentaje del patrimonio','amount':float(equity)*float(r['max_trade_pct'])/100}]
+        normal=min(x['amount'] for x in constraints)
+        if r.get('min_lot_structural_override_enabled',False):
+            extra=min(float(r.get('min_lot_structural_override_money_cap',r['max_trade_money'])),float(equity)*float(r.get('min_lot_structural_override_max_pct',r['max_trade_pct']))/100)
+            constraints.append({'rule':'risk.min_lot_structural_override','label':'Permiso adicional de lote mínimo','amount':extra,'operation':'MAX_AFTER_BASE'})
+            normal=max(normal,extra)
+        if p['enabled']:constraints.append({'rule':'capital_protection.trade_pct','label':'Tope protegido','amount':max(0,float(equity))*p['trade_pct']/100})
+        final=trade_cap(r,equity,p)
+        winners=[c['rule'] for c in constraints if abs(c['amount']-final)<1e-9]
+        return {'constraints':constraints,'effective':final,'binding_rules':winners,
+            'formula':'menor(tope monetario, patrimonio × porcentaje), permiso adicional explícito si existe, luego tope protegido',
+            'portfolio_effective':portfolio_cap(r,balance,equity,p)}
+    @staticmethod
+    def profile(config,account):
+        chosen=config.get('operation_profile','AUTO');mode=account.get('trade_mode')
+        actual='DEMO_EXPERIMENT' if mode==0 else 'REAL_CAPITAL' if mode==2 else 'UNKNOWN'
+        allowed=not (chosen=='DEMO_EXPERIMENT' and actual!='DEMO_EXPERIMENT') and chosen!='HISTORICAL'
+        return {'configured':chosen,'effective':actual if chosen=='AUTO' else chosen,'account_type':actual,
+                'allows_broker_orders':allowed,'reason':('El perfil de simulación histórica nunca envía a MT5' if chosen=='HISTORICAL' else
+                'El perfil demo requiere una cuenta identificada por MT5 como demo' if not allowed else ''),
+                'optional_rules_explicit':True,'broker_checks_always_required':True}

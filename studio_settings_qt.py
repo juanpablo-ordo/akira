@@ -103,6 +103,7 @@ class SettingsPanel(QWidget):
     def operation(self):
         card=self.card(0,'OPERACIÓN','bolt')
         self.field(card,'mode','Modo de operación',(('observe','Solo análisis'),('trade','Operativa automática')),help='Solo análisis estudia sin enviar órdenes. Operativa automática envía, edita y retira propuestas válidas tras autorizar la cuenta y respetar los límites de riesgo.')
+        self.field(card,'operation_profile','Perfil de cuenta',(('AUTO','Detectar desde MT5'),('DEMO_EXPERIMENT','DEMO · Experimentación controlada'),('REAL_CAPITAL','REAL · Gestión de capital'),('HISTORICAL','Simulación histórica · sin envíos')),help='Demo permite experimentar con las reglas opcionales. MT5 debe identificar la cuenta como demo. Los precios, el volumen, el margen y la aceptación del bróker siempre se comprueban.')
         self.field(card,'terminal_path','Ruta de MetaTrader 5',help='Es el programa terminal64.exe del MetaTrader que quieres conectar. Puedes seleccionarlo con el botón de abajo. Déjalo vacío para detección automática; Akira recordará el último terminal comprobado.')
         self.add_button(card,'SELECCIONAR METATRADER 5',self.choose_terminal)
         self.use_mt5_button=self.add_button(card,'USAR CUENTA ABIERTA EN MT5',self.use_open_account,'primary','bolt')
@@ -136,6 +137,7 @@ class SettingsPanel(QWidget):
             self.field(card,'capital_protection.'+key,title,limits=(.1,100))
         self.field(card,'capital_protection.one_position_per_symbol','Una posición por símbolo')
         self.field(card,'capital_protection.strict_pending_quality','Exigir la misma calidad a las alternativas del mapa')
+        self.field(card,'capital_protection.loss_pause_enabled','Pausar nuevas entradas tras pérdidas consecutivas',help='Desactivado no aplica la pausa de racha. Las pérdidas y los cambios quedan registrados. Los demás límites siguen vigentes.')
         self.field(card,'capital_protection.loss_streak_limit','Pérdidas propias seguidas antes de pausar entradas')
         self.field(card,'capital_protection.loss_pause_hours','Pausa de nuevas entradas tras la racha (horas)')
         self.field(card,'capital_protection.fomc_pause','Evitar entradas alrededor de anuncios FOMC programados')
@@ -187,12 +189,27 @@ class SettingsPanel(QWidget):
         text+='\n\nCambios sin guardar. Pulsa Guardar límites de riesgo.' if changed else '\n\n'+data['state']
         self.risk_preview.setText(text)
     def ai_voice(self):
+        card=self.card(2,'PAÍS Y HORA LOCAL','chat')
+        self.field(card,'locale.country','País (código ISO)',help='GT = Guatemala. La zona IANA determina el reloj; cambiar país no modifica velas ni precios.')
+        self.field(card,'locale.region','Departamento o región')
+        self.field(card,'locale.city','Ciudad')
+        self.field(card,'locale.timezone','Zona horaria IANA',help='Ejemplos: America/Guatemala, America/Mexico_City, America/New_York, Europe/Madrid. Se aplica al chat, informes y vencimientos.')
+        self.field(card,'locale.automatic','Detectar zona del sistema cuando esté disponible')
+        self.field(card,'locale.date_format','Formato de fecha',[('%d/%m/%Y','Día/mes/año'),('%Y-%m-%d','Año-mes-día'),('%m/%d/%Y','Mes/día/año')])
+        self.field(card,'locale.time_format','Formato de hora',[('%H:%M:%S','24 horas'),('%I:%M:%S %p','12 horas')])
         card=self.card(2,'IDIOMAS DEL PROGRAMA','chat')
         names={'auto':'Automático','es':'Español','en':'English','pt':'Português','fr':'Français','de':'Deutsch','it':'Italiano','ja':'日本語','zh':'中文','ko':'한국어','ar':'العربية','ru':'Русский','hi':'हिन्दी','tr':'Türkçe','id':'Bahasa Indonesia','vi':'Tiếng Việt','nl':'Nederlands','pl':'Polski','uk':'Українська'}
         for path,title in [('studio.language_ui','Idioma de la interfaz'),('studio.language_chat','Idioma del chat'),('studio.language_voice_in','Idioma de reconocimiento'),('studio.language_voice_out','Idioma de la voz')]:self.field(card,path,title,[(k,v) for k,v in names.items() if k!='auto' or path!='studio.language_ui'])
         self.translation_status=label('','muted');self.translation_status.setWordWrap(True);card.body.addWidget(self.translation_status)
         note=label('Importa traducciones en un archivo .json con locale y translations. Ejemplo: {"locale":"es","translations":{"TRADING":"TRADING"}}. Las voces disponibles dependen del idioma.','muted');note.setWordWrap(True);card.body.addWidget(note);self.add_button(card,'IMPORTAR PAQUETE',self.choose_language)
         card=self.card(2,'IA LOCAL Y CONVERSACIÓN','chat')
+        self.field(card,'assistant.provider_mode','Proveedor de IA',[('local','IA local instalada'),('cloud','API compatible externa'),('auto','Automático · principal y respaldo')])
+        self.field(card,'assistant.provider_primary','Proveedor principal en automático',[('local','Local'),('cloud','Externo')])
+        self.field(card,'assistant.cloud_endpoint','Endpoint de la API compatible',help='URL HTTPS que termine en /v1/chat/completions. La clave se guarda en Fuentes y conexiones. Seleccionar un nombre no comprueba disponibilidad.')
+        for key,title in [('general_model','Modelo para conversar'),('research_model','Modelo para investigación'),('trading_model','Modelo para revisar órdenes')]:self.field(card,'assistant.'+key,title)
+        self.field(card,'assistant.preload','Precargar y comprobar el modelo local al iniciar')
+        for key,title in [('prepare','Preparación local'),('conversation','Generación conversacional'),('sources','Consulta de herramientas'),('deep_research','Investigación profunda'),('trade_review','Revisión de operaciones')]:self.field(card,'assistant.'+key+'_timeout_seconds',title+' (segundos)',limits=(1,900))
+        self.add_button(card,'COMPROBAR PROVEEDOR SELECCIONADO',self.controller.check_ai_provider)
         self.field(card,'assistant.conversation_style','Estilo de conversación',[('natural','Natural'),('mentor','Guía y mentor'),('detailed','Explicaciones detalladas')])
         self.field(card,'assistant.local_runtime_model','Archivo GGUF local (opcional)')
         self.add_button(card,'ELEGIR MODELO GGUF',self.choose_gguf)
@@ -222,19 +239,18 @@ class SettingsPanel(QWidget):
         health=credential_health()
         if not health['readable']:
             warning=label(health['detail'],'body',INK['amber']);warning.setWordWrap(True);card.body.addWidget(warning)
-        for key,title in [('COINGLASS_API_KEY','Clave CoinGlass (opcional)'),('YOUTUBE_API_KEY','Clave YouTube Data API (opcional)'),('OPENAI_API_KEY','Clave OpenAI (opcional)')]:
+        for key,title in [('COINGLASS_API_KEY','Clave CoinGlass (opcional)'),('OPENAI_API_KEY','Clave OpenAI (opcional)'),('CUSTOM_AI_API_KEY','Clave del proveedor IA compatible (opcional)')]:
             row=QHBoxLayout();caption=label(title);self.tr.bind(caption,title);row.addWidget(caption,1)
             entry=QLineEdit(str(saved.get(key) or ''));entry.setEchoMode(QLineEdit.EchoMode.Password);entry.setPlaceholderText('Guardada' if saved.get(key) else 'Sin configurar');row.addWidget(entry,1);eye=button('Mostrar',lambda _=False,w=entry:w.setEchoMode(QLineEdit.EchoMode.Normal if w.echoMode()==QLineEdit.EchoMode.Password else QLineEdit.EchoMode.Password),glyph='eye');row.addWidget(eye);card.body.addLayout(row);self.keys[key]=entry
         note=label('Guardar incluye estas claves. Un campo vacío conserva la clave anterior. Guardar no certifica acceso al proveedor.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
         self.add_button(card,'GUARDAR API',lambda:self.controller.save_keys({k:w.text() for k,w in self.keys.items()}),'primary')
-        note=label('Una clave nueva reemplaza la anterior del mismo proveedor. La sesión de YouTube es un archivo de cookies Netscape .txt de tu navegador; úsalo cuando YouTube pida iniciar sesión. No publiques ese archivo.','muted');note.setWordWrap(True);card.body.addWidget(note)
+        note=label('Una clave nueva reemplaza la anterior del mismo proveedor. YouTube no forma parte del análisis automático ni autoriza operaciones.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.add_button(card,'COMPROBAR FUENTES',self.window.check_sources)
-        self.add_button(card,'IMPORTAR SESIÓN YOUTUBE',self.window.import_youtube_session)
         self.add_button(card,'ELIMINAR UNA CLAVE GUARDADA',self.window.delete_key)
         card=self.card(3,'INVESTIGACIÓN Y CONOCIMIENTO','sources')
         self.field(card,'research.derivatives_provider','Datos de derivados BTC',(('public','Públicos sin plan (recomendado)'),('coinglass','CoinGlass opcional con mi plan')),
             help='Públicos consulta OKX, Bybit o Binance sin clave. La cobertura se muestra en Fuentes; no incluye un mapa agregado de liquidaciones. El oro usa sus propios datos MT5 y macro.')
-        for path,title in [('research.enabled','Investigación de mercado'),('research.youtube','Estudiar estrategias de YouTube'),('research.coinglass_public_fallback','Derivados públicos BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
+        for path,title in [('research.enabled','Investigación de mercado'),('research.coinglass_public_fallback','Derivados públicos BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
         self.field(card,'knowledge.mode','Actualización de conocimiento',(('automatic','Automática'),('request','Solo al solicitarla')))
         self.field(card,'knowledge.interval_hours','Intervalo de biblioteca (horas)',limits=(1,168))
         self.add_button(card,'ACTUALIZAR CONOCIMIENTO',self.window.refresh_knowledge)

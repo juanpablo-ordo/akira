@@ -26,12 +26,12 @@ def number(value,digits=2):
     try:return f'{float(value):,.{digits}f}'
     except (ValueError,TypeError):return '—'
 
-def when(value):
+def when(value,config=None):
     if not value:return '—'
     try:
         stamp=datetime.fromisoformat(value.replace('Z','+00:00')) if isinstance(value,str) and '-' in value else datetime.fromtimestamp(float(value),timezone.utc)
         if stamp.tzinfo is None:stamp=stamp.replace(tzinfo=timezone.utc)
-        return stamp.astimezone(ZoneInfo('America/Guatemala')).strftime('%d/%m %H:%M:%S')
+        return __import__('locale_time').LocaleTimeSettings.from_config(config).format(stamp.isoformat())
     except (ValueError,TypeError,OverflowError):return str(value or '—')[:19]
 
 
@@ -229,7 +229,7 @@ class StudioWindow(QMainWindow):
         self.pending_detail_tabs=QTabWidget();self.pending_text=QTextBrowser();self.pending_chart=CandleChart();self.pending_evidence=QTextBrowser();self.pending_timeframes=QTextBrowser()
         for title,widget in [('TESIS',self.pending_text),('GRÁFICO',self.pending_chart),('TEMPORALIDADES',self.pending_timeframes),('RIESGO Y EVIDENCIA',self.pending_evidence)]:self.pending_detail_tabs.addTab(widget,self.text(title))
         detail.body.addWidget(self.pending_detail_tabs,1);self.pending_state=label('','muted');self.pending_state.setWordWrap(True);detail.body.addWidget(self.pending_state)
-        self.require_ai=QCheckBox(self.text('Exigir revisión IA para esta propuesta'));self.require_ai.toggled.connect(self.require_selected_ai);detail.body.addWidget(self.require_ai);note=label('Activada: esta propuesta espera una revisión individual de IA antes de enviarse o modificarse. Desmarcada conserva las comprobaciones de precio, margen, cuenta y riesgo.','muted');note.setWordWrap(True);detail.body.addWidget(note)
+        note=label('La revisión IA es obligatoria antes de enviar o cambiar una propuesta automática. Debe corresponder a sus niveles, lote y evidencia actuales.','muted');note.setWordWrap(True);detail.body.addWidget(note)
         action=QGridLayout()
         for i,(title,callback,glyph) in enumerate([('REVISAR SELECCIONADA',self.verify_selected,'refresh'),('VERIFICAR EN MT5',lambda:self.navigate(2),'shield'),('RETIRAR PENDIENTE',self.cancel_selected,'pending')]):action.addWidget(self.btn(title,callback,'primary' if i==1 else '',glyph),i//2,i%2)
         detail.body.addLayout(action);right.addWidget(detail,1)
@@ -461,7 +461,7 @@ class StudioWindow(QMainWindow):
             QTimer.singleShot(6000,lambda:self.finish_chat_reaction())
         elif kind=='settings_saved':
             self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True)
-            self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.')
+            self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado · revisión '+str((data['result'].get('configuration') or {}).get('revision','—'))+'.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.')
             paths=data.get('paths') or []
             if any(p.startswith(('studio.','desktop.')) for p in paths):self.apply_visual(self.cfg['studio'])
             if any(p=='studio.avatar' or p.startswith('studio.avatar.') for p in paths):self.set_avatar(self.cfg['studio']['avatar'])
@@ -495,6 +495,7 @@ class StudioWindow(QMainWindow):
                 self.tr.change(self.tr.locale,self.tr.pack);self.retranslate();self.settings_panel.message.setText(('Traducción aplazada durante el chat. ' if data.get('paused') else '')+str(data['completed'])+'/'+str(data['total']))
         elif kind=='voices':self.populate_voices(data)
         elif kind=='voice':self.voice_event(data)
+        elif kind=='ai_provider_checked':self.information('Proveedor IA',str(data.get('answer') or data.get('error') or data))
         elif kind=='source_check':self.information('Fuentes',self.source_result(data))
         elif kind=='keys_saved':self.settings_panel.message.setText('Las claves se guardaron y reemplazan a las anteriores.');self.information('API guardadas','Las claves se guardaron en este equipo. Pulsa Comprobar fuentes para revisar el acceso.')
         elif kind=='voice_download':
@@ -548,9 +549,13 @@ class StudioWindow(QMainWindow):
         self.render_budget(view)
         self.mode_label.setText(('VISTA PREVIA · ' if self.controller.preview else '')+('Sin conexión con MT5: no se pueden enviar órdenes.' if not connected and not self.controller.preview else str(gate.get('reason')) if gate.get('reason') else self.text('SOLO ANÁLISIS · NO ENVÍA ÓRDENES') if mode!='trade' else self.text('OPERATIVA AUTORIZADA')))
         self.mode_button.setText(self.text('ACTIVAR OPERATIVA') if mode!='trade' else self.text('REANUDAR GESTIÓN' if view.get('paused') else 'PAUSAR GESTIÓN'))
-        self.clock_label.setText('America/Guatemala\n'+when(view.get('as_of_utc') or view.get('updated')))
+        self.clock_label.setText(self.controller.cfg['locale']['timezone']+'\n'+when(view.get('as_of_utc') or view.get('updated'),self.controller.cfg))
         from conversation_core import presentation
         summary=['● '+presentation(self.controller.assistant.conversation.snapshot(),self._model_status,self.controller.chat_busy)['label']]
+        health=self.controller.assistant.ai_health.snapshot()
+        if health.get('provider'):
+            summary.append('IA: '+str(health.get('provider'))+' · '+str(health.get('model'))+' · '+str(health.get('phase'))+' · primer texto '+str(health.get('first_token_seconds') or '—')+' s')
+            if health.get('last_error'):summary.append('Último error IA: '+health['last_error'])
         summary.append('● MT5 conectado' if connected else '◷ Esperando conexión con MT5')
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
         self.system_text.setText('\n\n'.join(summary))
@@ -615,8 +620,11 @@ class StudioWindow(QMainWindow):
         check=plan.get('verification') or {};set_document(self.pending_evidence,rich_text('\n\n'.join(str(s['name'])+' · '+str(s['state'])+'\n'+str(s['detail']) for s in check.get('stages') or [])+'\n\nTesis técnica completa:\n'+str(plan.get('reason',''))))
         info=(self.controller.view.get('symbols') or {}).get(plan['symbol']) or {};frames=info.get('frames') or {};set_document(self.pending_timeframes,frame_html(frames));set_document(self.pending_text,plan_summary(plan,frames))
         self.pending_chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [],{'Entrada':plan.get('entry'),'SL':plan.get('sl'),'TP':plan.get('tp')})
-        self.pending_state.setText(plan['display_state']+'\n'+str(check.get('detail') or 'El envío vuelve a verificar permisos, precio, margen y riesgo.'))
-        self.require_ai.blockSignals(True);self.require_ai.setChecked(self._review_overrides.get(self.pending_table.selected_key(),self.pending_table.selected_key() in (self.controller.view.get('required_pending_reviews') or [])));self.require_ai.blockSignals(False)
+        from execution_review import request_id
+        review=(self.controller.view.get('research',{}).get('pending_reviews') or {}).get(request_id(plan)) or {}
+        state=str(review.get('state') or 'PENDIENTE DE DICTAMEN EXACTO')
+        detail=str(review.get('error') or (review.get('data') or {}).get('reason') or 'El envío requiere niveles y volumen exactos aprobados por IA.')
+        self.pending_state.setText(plan['display_state']+'\nRevisión IA obligatoria: '+state+' · '+detail+'\n'+str(check.get('detail') or 'El envío vuelve a verificar permisos, precio, margen y riesgo.'))
         self.pending_state.setToolTip('Esenciales pendientes: '+', '.join(check.get('critical_missing') or [])+'\nIA: '+str(check.get('ai_gate') or 'opcional'))
         self.pending_timeline.setText('Tesis '+str(plan.get('key') or '')+'\n'+('Ticket MT5 '+str(plan['ticket']) if plan.get('ticket') else 'Sin ticket confirmado; es una propuesta.')+'\n'+str(plan.get('status_label','')))
 
@@ -636,7 +644,7 @@ class StudioWindow(QMainWindow):
         except TypeError:set_document(self.security,rich_text((v.get('execution_gate') or {}).get('reason') or 'Cada envío comprueba cuenta autorizada, margen y límite de pérdida.'))
         rows=[]
         for symbol,entries in (v.get('audit') or {}).items():
-            for index,row in enumerate(entries[-80:]):rows.append((symbol+str(index),[when(v.get('updated')),symbol,row.get('status'),row.get('reason')],row))
+            for index,row in enumerate(entries[-80:]):rows.append((symbol+str(index),[when(v.get('updated'),self.controller.cfg),symbol,row.get('status'),row.get('reason')],row))
         self.audit_table.update_rows(rows)
 
     def render_analysis(self):
@@ -660,7 +668,7 @@ class StudioWindow(QMainWindow):
             title,state,detail=source_presentation(name,row);age=number(row.get('age_seconds'),1)+' s' if row.get('age_seconds') is not None else '—'
             data={**row,'title':title,'presentation_state':state,'presentation_detail':detail}
             from studio_presenter import next_query
-            if not query or query in (title+state+detail).casefold():rows.append((name,[state,title,when(row.get('last_attempt')),when(row.get('updated')),age,next_query(row),detail],data))
+            if not query or query in (title+state+detail).casefold():rows.append((name,[state,title,when(row.get('last_attempt'),self.controller.cfg),when(row.get('updated'),self.controller.cfg),age,next_query(row),detail],data))
             analysis.append((name,[title,state,age,detail],data))
         if not visible_only or self.page_index==3:self.analysis_sources.update_rows(analysis)
         if visible_only and self.page_index==3:return
@@ -683,7 +691,7 @@ class StudioWindow(QMainWindow):
         row=self.source_table.rows.get(self.source_table.selected_key())
         if row:
             from studio_presenter import next_query
-            set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'))+'\nÚltimo contenido recibido: '+when(row.get('updated'))+'\nPróxima consulta: '+next_query(row)))
+            set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'),self.controller.cfg)+'\nÚltimo contenido recibido: '+when(row.get('updated'),self.controller.cfg)+'\nPróxima consulta: '+next_query(row)))
             self.source_detail.setToolTip('')
     def render_logs(self,*args,visible_only=False):
         if not hasattr(self,'terminal_table'):return
