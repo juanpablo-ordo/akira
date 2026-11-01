@@ -704,12 +704,14 @@ class StudioWindow(QMainWindow):
     def render_logs(self,*args,visible_only=False):
         if not hasattr(self,'terminal_table'):return
         rows=[];query=self.log_search.text().casefold();kind=self.activity_filter.currentText()
+        from activity_events import category_for_event
         for i,row in enumerate(self.controller.log_rows):
             state=str(row.get('state') or row.get('operation') or 'SISTEMA');module=str(row.get('symbol') or 'AKIRA');text=str(row.get('detail') or row.get('message') or '')
             if query and query not in (module+state+text).casefold():continue
-            rows.append((str(row.get('utc'))+module+state+text[:80],[str(row.get('utc',''))[11:19],module,state,text],row))
+            category=category_for_event(row)
+            rows.append((str(row.get('utc'))+module+state+text[:80],[str(row.get('utc',''))[11:19],module,state,text],{**row,'activity_category':category}))
         if not visible_only or self.page_index==7:self.terminal_table.update_rows(rows)
-        if not visible_only or self.page_index==0:self.activity.update_rows([r for r in rows if kind=='TODOS' or kind in str(r[1]).upper()][:120])
+        if not visible_only or self.page_index==0:self.activity.update_rows([r for r in rows if kind=='TODOS' or r[2]['activity_category']==kind][:120])
     def render_notices(self):
         if not hasattr(self,'home_notices'):return
         rows=self.controller.notices.list(limit=4);self.home_notices.setText('\n\n'.join(str(r.get('title'))+'\n'+('Detalle oculto por privacidad.' if self.private else str(r.get('body'))[:160]) for r in rows) or 'Sin avisos recientes.')
