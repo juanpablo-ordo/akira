@@ -65,7 +65,7 @@ class MarketCache:
             return alt[:-1]
         return rows
 
-    def advance(self,now,allowed=None):
+    def advance(self,now,allowed=None,closed_session=False):
         self.poll_analysis()
         if self.analysis_future is not None:
             return
@@ -76,10 +76,18 @@ class MarketCache:
             return
         name=min(due,key=lambda k:self.due[k])
         tf,interval=self.PERIODS[name]
-        self.due[name]=now+interval
+        self.due[name]=now+(max(60,interval) if closed_session else interval)
+        def read(count):
+            if not closed_session:return self.closed_rates(tf,count)
+            # During a weekend MT5's index zero can be the final, already
+            # closed Friday bar. Filter by UTC close, never drop it by index.
+            from market_state import PERIOD_SECONDS
+            rows=self.api.copy_rates_from_pos(self.symbol,tf,0,count+1)
+            if rows is None:return rows
+            return [r for r in rows if float(r['time'])+PERIOD_SECONDS[name]<=now][-count:]
         try:
             old=self.frames.get(name)
-            rows=self.closed_rates(tf,1 if old else 320)
+            rows=read(1 if old else 320)
             if rows is None or len(rows)==0:
                 raise ValueError(f"sin historial: {self.api.last_error()}")
             if old and int(rows[-1]["time"])==old.bars[-1].time:
@@ -93,7 +101,7 @@ class MarketCache:
                 rows=recovered
                 old=None
             if old:
-                rows=self.closed_rates(tf,320)
+                rows=read(320)
                 if rows is None:
                     raise ValueError(f"historial incompleto: {self.api.last_error()}")
             if self.analysis_executor is not None:
@@ -108,7 +116,7 @@ class MarketCache:
                 self.setups,self.rejections=build_setups(self.frames,symbol_strategy(self.cfg,self.symbol))
         except (ValueError,TypeError,KeyError,IndexError) as exc:
             self.errors[name]=str(exc)
-            self.due[name]=now+3
+            self.due[name]=now+(60 if closed_session else 3)
             self.log.report(self.symbol,"DATOS",f"{name}: {exc}")
 
 

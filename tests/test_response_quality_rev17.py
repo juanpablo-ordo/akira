@@ -28,6 +28,12 @@ class CompleteGenerationTests(unittest.TestCase):
         times=iter([0,0,120])
         with self.assertRaises(TimeoutError):self.run_reply([('Parcial','length')],clock=lambda:next(times))
         self.assertEqual(len(self.seen),1)
+    def test_large_monotonic_epoch_never_rounds_above_caller_budget(self):
+        seen=[]
+        def invoke(messages,tokens,remaining):seen.append(remaining);return 'Terminada.'
+        complete_reply(self.messages,invoke,lambda:{'finish_reason':'stop'},lambda:None,
+                       answer_plan('hola'),150,clock=lambda:362.4560000000001)
+        self.assertLessEqual(seen[0],150)
     def test_cancellation_prevents_even_the_first_inference(self):
         def invoke(*a):raise AssertionError('cancelled request invoked')
         with self.assertRaises(RuntimeError):

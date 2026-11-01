@@ -15,7 +15,7 @@ def build(snapshot,sources,now,stale=600):
     from pending_verification import relevant_source
     symbols={};omitted=0;count=0
     for symbol,info in (snapshot.get('symbols') or {}).items():
-        if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
+        if snapshot.get('analysis_mode')!='PREOPEN' and (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
         frames={}
         for tf,row in (info.get('frames') or {}).items():
             frames[tf]=[finite(row.get(k)) for k in FIELDS]

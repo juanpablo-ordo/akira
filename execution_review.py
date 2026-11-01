@@ -18,6 +18,11 @@ def facts(plan,snapshot):
     for k in ('balance','equity','margin_free'):
         v=(snapshot.get('account') or {}).get(k)
         if isinstance(v,(int,float)) and math.isfinite(v):out['account.'+k]=v
+    for i,event in enumerate((snapshot.get('research') or {}).get('events',[])[:3]):
+        if plan['symbol'] not in event.get('symbols',[]):continue
+        out[f'event.{i}.headline']=str(event.get('title',''))[:240]
+        out[f'event.{i}.published_utc']=event.get('published_utc')
+        out[f'event.{i}.verification']=str(event.get('verification','UNVERIFIED'))
     return out
 
 def fingerprint(plan,snapshot):
@@ -25,7 +30,7 @@ def fingerprint(plan,snapshot):
         'account':{k:(snapshot.get('account') or {}).get(k) for k in ('login','server','currency','balance','equity')},
         'facts':facts(plan,snapshot),'configuration':snapshot.get('selection_configuration',{}),
         'source_evidence':{k:{f:r.get(f) for f in ('fresh','usable','error','enabled','content_digest')} for k,r in (snapshot.get('research') or {}).get('sources',{}).items()
-                           if isinstance(r,dict) and not k.startswith(('local_ai','technical_review','pending_ai','youtube','strategy_reference')) and (not plan['symbol'].startswith('XAU') or not k.startswith(('venue:','derivatives:','search:BTC','technical:BTC')))}}
+                           if isinstance(r,dict) and not k.startswith(('local_ai','preopen_ai','technical_review','pending_ai','youtube','strategy_reference')) and (not plan['symbol'].startswith('XAU') or not k.startswith(('venue:','derivatives:','search:BTC','technical:BTC','event_news:BTC')))}}
     return hashlib.sha256(json.dumps(payload,sort_keys=True,ensure_ascii=False,allow_nan=False,default=str).encode()).hexdigest()
 
 def schema(evidence):

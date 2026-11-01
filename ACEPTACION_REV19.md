@@ -7,6 +7,8 @@ Estado: verificación de Windows pendiente. No presentar un instalador anterior 
 | Área | Comportamiento implementado | Comprobación |
 |---|---|---|
 | Oro / MT5 | Cotización, permisos y sesión separados; recuperación UTC de velas; H1 descuenta huecos de sesión | `tests/test_market_state_rev19.py` |
+| Fin de semana | Oro cerrado no detiene evaluación/entrada de BTC; lectura de la última vela cerrada, plan semanal H1/H4/D1, revisión IA separada y revalidación al abrir | `tests/test_weekend_events_rev19.py` |
+| Noticias relevantes | Alertas fechadas de seguridad, estado de exchanges y macro; reevaluación con motivo visible y contexto en el dictamen exacto | `market_events.py`, pruebas de eventos; un titular no es una señal de venta |
 | Órdenes automáticas | Revisión neuronal obligatoria de entrada, SL, TP, lote, cuenta y evidencia; vencimiento y cambios invalidan el dictamen | `tests/test_core_rev19.py`, `qa_execution_review_rev19.py` |
 | Runners | Una pendiente H1 necesita invalidación H1; conserva protección y registra origen, MFE/MAE y razón | `runner_policy.py`, `COMPARACION_REV19.json` |
 | Riesgo | Aritmética compartida con pantalla; regla limitante visible; pausa tras pérdidas configurable; perfiles histórico/demo/real | `risk_limits.py`, pruebas de riesgo y ajustes |
@@ -32,5 +34,9 @@ En Ajustes → IA elige local, proveedor externo o automático y pulsa **Comprob
 En Riesgo, la cifra efectiva usa el menor límite aplicable. Un presupuesto sin órdenes reservadas muestra uso cero; no significa que el límite guardado sea cero. La pausa por pérdidas muestra sus cierres y vencimiento. El perfil histórico nunca envía órdenes; un perfil demo no autoriza una cuenta real.
 
 La revisión IA evalúa coherencia con datos recibidos y puede rechazar o pedir datos. No convierte una predicción en certeza. Ausencia de aprobación, datos insuficientes o permisos inválidos siguen siendo razones visibles para no abrir una orden.
+
+Durante el cierre del oro, **Análisis** muestra el historial semanal recibido, posiciones conservadas y escenarios condicionales. Las noticias siguen consultándose. Al llegar un tick válido tras la reapertura, se vuelve a calcular el mapa y a verificar cada orden; el plan de fin de semana no contiene autorizaciones ejecutables. BTC conserva su sesión y sus evaluaciones independientes, sujeto al riesgo conjunto real de la cuenta.
+
+Las alertas distinguen titulares fechados y dominio de origen; no afirman haber leído un artículo completo. El panel de Análisis conserva el resultado de la reevaluación por símbolo. La búsqueda de un incidente no demuestra que fuese posible anticiparlo ni que una venta posterior hubiese ganado.
 
 No se ha operado una cuenta del usuario durante estas pruebas. La prueba de recursos limita CPU y configura el perfil Dell; no acredita rendimiento en su equipo físico. No se certifica conciencia, rentabilidad ni órdenes perfectas.

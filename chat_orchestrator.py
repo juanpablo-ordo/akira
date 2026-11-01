@@ -10,7 +10,7 @@ class TurnBudget:
     def remaining(self,phase):
         with self.lock:
             now=self.clock();self.starts.setdefault(phase,now)
-            return max(0.,self.limits[phase]-(now-self.starts[phase]))
+            return max(0.,min(self.limits[phase],self.limits[phase]-(now-self.starts[phase])))
     def diagnostics(self):
         with self.lock:return {k:{'budget_seconds':self.limits[k],'elapsed_seconds':round(max(0,self.clock()-v),3)} for k,v in self.starts.items()}
 

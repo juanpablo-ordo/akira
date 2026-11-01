@@ -52,7 +52,7 @@ def review_input(snapshot,sources,now=None,stale_seconds=600,max_chars=18000,sce
     """
     now=float(now if now is not None else time.time())
     symbols={s:r for s,r in (snapshot.get('symbols') or {}).items() if isinstance(r,dict)
-        and not (snapshot.get('markets') or {}).get(s,{}).get('scheduled_closed')}
+        and (snapshot.get('analysis_mode')=='PREOPEN' or not (snapshot.get('markets') or {}).get(s,{}).get('scheduled_closed'))}
     if not symbols:raise ValueError('No hay símbolos activos con datos para revisar')
     columns=sorted({str(k) for row in symbols.values() for frame in (row.get('frames') or {}).values()
         if isinstance(frame,dict) for k in frame})
@@ -237,7 +237,7 @@ class ContextWorker:
                     # A summary may already own the single local inference slot.
                     # Account for loading plus inference, not just pending peers.
                     summary_wait=max((max(0,300-(now-self._job_started.get(name,now)))
-                        for name in self.jobs if name.split(':')[0] in ('local_ai','cloud')),default=0)
+                        for name in self.jobs if name.split(':')[0] in ('local_ai','cloud','preopen_ai')),default=0)
                     self.pending_reviews[pid]['queue_budget_seconds']=min(900,100+300*ahead+summary_wait)
                 queued.append(pid)
                 if priority<=1 and self._summary_cancel is not None:self._summary_cancel.set()
@@ -472,7 +472,7 @@ class ContextWorker:
                     delay=min(3600,300*2**min(count-1,4));self._pending_retry_due[symbol]=now+delay
                     row['retry_at']=now+delay
                 else:self._pending_failures[symbol]=0;self._pending_retry_due.pop(symbol,None)
-        if self.pending_future is None and self.pending_queue and not PRIORITY.users and not any(name.split(':')[0] in ('local_ai','cloud') for name in self.jobs):
+        if self.pending_future is None and self.pending_queue and not PRIORITY.users and not any(name.split(':')[0] in ('local_ai','cloud','preopen_ai') for name in self.jobs):
             # Small batches bound CPU generation time. In-flight ids are never
             # displaced by a harmless source reception timestamp.
             ids=sorted(self.pending_queue,key=lambda k:self.pending_queue[k].get('priority',2))
@@ -625,7 +625,7 @@ class ContextWorker:
 
     def _summary_impl(self,snapshot,sources,cloud=False):
         """Fast structured review outside the MT5 loop; completion needs all assets."""
-        active=[s for s in (snapshot.get('symbols') or {}) if not (snapshot.get('markets') or {}).get(s,{}).get('scheduled_closed')]
+        active=[s for s in (snapshot.get('symbols') or {}) if snapshot.get('analysis_mode')=='PREOPEN' or not (snapshot.get('markets') or {}).get(s,{}).get('scheduled_closed')]
         if not cloud and (self.cfg.get('assistant') or {}).get('local_runtime_enabled') and len(active)>1:
             combined={};metas=[]
             for symbol in active:
@@ -651,6 +651,8 @@ class ContextWorker:
                 spec['properties']={k:v for k,v in spec['properties'].items() if k in ('bias','confidence','note')}
                 spec['properties']['note']['maxLength']=90;spec['required']=['bias','confidence','note']
         model_name='cloud';verified=False;verification_error=''
+        if snapshot.get('analysis_mode')=='PREOPEN':
+            prompt='Mercado cerrado: análisis histórico para preparar escenarios de reapertura. Sin precio ejecutable, sin aprobación de órdenes. Revalidar gap, spread, estructura y riesgo al abrir. '+prompt
         if cloud:
             response=openai_responses({'model':self.cfg['research']['model'],'input':prompt+payload,'max_output_tokens':700},
                 get_secret('OPENAI_API_KEY'),timeout=40,attempts=1,background=True)
@@ -689,6 +691,8 @@ class ContextWorker:
         return first
 
     def source_enabled(self,name):
+        if name.startswith('preopen_ai:'):
+            return bool(self.cfg.get('symbols',{}).get(name.partition(':')[2]) and self.source_enabled('local_ai'))
         if name in ('youtube','strategy_reference'):
             return bool(self.cfg.get('extensions',{}).get('youtube',{}).get('enabled',False) and self.cfg['research'].get('enabled',True) and self.cfg['research'].get('youtube',False))
         if name.startswith('local_ai:'):
@@ -723,6 +727,8 @@ class ContextWorker:
             if not on:continue
             q='Bitcoin BTC latest market news' if s.startswith('BTC') else 'gold XAUUSD latest market news'
             jobs['search:'+s]=(60,lambda query=q:market_search(query,limit=8))
+            if s.startswith('BTC') and r.get('global_news',True):
+                jobs['event_news:'+s]=(120,lambda:market_search('Bitcoin BTC exchange security incident hack withdrawals Binance latest',limit=8))
             if r.get('technical_search',True):
                 tq=('Bitcoin BTC technical analysis support resistance today' if s.startswith('BTC')
                     else 'gold XAUUSD technical analysis support resistance today')
@@ -743,11 +749,19 @@ class ContextWorker:
             interval=self._local_review_interval() if (self.cfg.get('assistant') or {}).get('local_runtime_enabled') else r.get('local_ai_summary_seconds',180)
             if (self.cfg.get('assistant') or {}).get('local_runtime_enabled'):
                 for symbol,row in snapshot['symbols'].items():
-                    if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
+                    if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):
+                        if all(tf in (row.get('frames') or {}) for tf in ('H1','H4','D1')):
+                            jobs['preopen_ai:'+symbol]=(max(900,interval),lambda s=symbol,v=row:self._preopen_summary(snapshot,s,v,sources))
+                        continue
                     jobs['local_ai:'+symbol]=(interval,lambda s=symbol,v=row:self._summary({**snapshot,'symbols':{s:v}},sources))
             else:jobs['local_ai']=(interval,lambda:self._summary(snapshot,sources))
         if r.get('cloud',False) and self.cfg.get('assistant',{}).get('cloud',False) and self.cfg.get('assistant',{}).get('cloud_optional',True) and snapshot.get('symbols'):jobs['cloud']=(r.get('cloud_refresh_seconds',180),lambda:self._summary(snapshot,sources,True))
         return jobs
+
+    def _preopen_summary(self,snapshot,symbol,row,sources):
+        result=self._summary({**snapshot,'analysis_mode':'PREOPEN','symbols':{symbol:row}},sources)
+        result['_meta'].update(mode='PREOPEN_ANALYSIS',execution_allowed=False,requires_revalidation=True)
+        return result
 
     def _merge_local_ai_sources(self):
         """Compatibility view only; each asset keeps its own evidence age/error."""
@@ -773,7 +787,7 @@ class ContextWorker:
         now=self.clock()
         with self.lock:
             for name,future in self.jobs.items():
-                limit=300 if name.split(':')[0] in ('local_ai','cloud') else 120 if name in ('youtube','strategy_reference') else 45
+                limit=300 if name.split(':')[0] in ('local_ai','cloud','preopen_ai') else 120 if name in ('youtube','strategy_reference') else 45
                 if name not in self._expired_jobs and not future.done() and now-self._job_started.get(name,now)>limit:
                     self._expired_jobs.add(name);old=self.sources.get(name) or {}
                     self.sources[name]={**old,'error':'TimeoutError: La consulta superó su plazo; el análisis técnico continúa.',
@@ -815,7 +829,7 @@ class ContextWorker:
                     from network_diagnostics import classify_failure
                     self.sources[name]['failure']=classify_failure(e)
                     self.due[name]=now+min(600,15*2**min(count,5))
-                    if count>=3 and name.split(':')[0] not in ('local_ai','cloud'):
+                    if count>=3 and name.split(':')[0] not in ('local_ai','cloud','preopen_ai'):
                         self.due[name]=max(self.due[name],now+3600)
                         self.sources[name]['circuit_open']=True
                     if name.startswith('local_ai:') and count>=2:
@@ -850,17 +864,17 @@ class ContextWorker:
                     self.evolution.submit(snapshot,videos);self._evolution_marker=evolution_marker
             for name,(interval,fn) in self.jobs_for(snapshot,sources).items():
                 kind=name.split(':')[0]
-                if not self.internet_available and kind not in ('local_ai','model'):continue
-                if kind in ('local_ai','cloud') and PRIORITY.users:continue
+                if not self.internet_available and kind not in ('local_ai','preopen_ai','model'):continue
+                if kind in ('local_ai','cloud','preopen_ai') and PRIORITY.users:continue
                 if name not in self.jobs and now>=self.due.get(name,0):
                     # One local inference at a time. On completion the other
                     # asset becomes eligible even when the first one failed.
-                    if kind=='local_ai' and any(k.split(':')[0]=='local_ai' for k in self.jobs):continue
+                    if kind in ('local_ai','preopen_ai') and any(k.split(':')[0] in ('local_ai','preopen_ai') for k in self.jobs):continue
                     if kind!='local_ai' and sum(k.split(':')[0]!='local_ai' for k in self.jobs)>=8:continue
-                    self.due[name]=now+max(5,float(interval));pool=(self.ai_pool or self.pool) if kind=='local_ai' else self.pool
+                    self.due[name]=now+max(5,float(interval));pool=(self.ai_pool or self.pool) if kind in ('local_ai','preopen_ai') else self.pool
                     self._job_started[name]=now
                     self.sources[name]={**(self.sources.get(name) or {}),'last_attempt':now}
-                    if kind not in ('local_ai','cloud','model'):
+                    if kind not in ('local_ai','cloud','preopen_ai','model'):
                         task=lambda n=name,f=fn:self.source_deadlines.run(n,f,120 if n in ('youtube','strategy_reference') else 40)
                     else:task=fn
                     self.jobs[name]=pool.submit(task)
@@ -892,6 +906,7 @@ class ContextWorker:
             if row.get('error'):return 0.0
             age=max(0.0,now-float(row.get('updated',0) or 0))
             if name=='macro:FRED':return 1.0 if row.get('updated') and age<86400 else 0.0
+            if name.startswith('preopen_ai:'):return 1.0 if row.get('updated') and age<1800 else 0.0
             if not row.get('updated') or age>=stale_seconds:return 0.0
             return 1.0 if age<=fresh_seconds else max(0.0,1-(age-fresh_seconds)/max(1,stale_seconds-fresh_seconds))
         def add(parts,name,result,fresh_source=None):
@@ -969,13 +984,16 @@ class ContextWorker:
                 statuses['technical_review:'+symbol]={'usable':True,'enabled':True,'fresh':True,'updated':stamp,
                     'age_seconds':round(now-stamp,1),'detail':summary['detail'],'neural_review':False,'origin':'technical_engine'}
         alternatives(statuses)
-        for name in [n for n in statuses if n.split(':')[0] in ('local_ai','cloud')]:
+        for name in [n for n in statuses if n.split(':')[0] in ('local_ai','cloud','preopen_ai')]:
             data=sources.get(name,{}).get('data') or {}
             meta=data.get('_meta') if isinstance(data,dict) else None
             if isinstance(meta,dict) and name in statuses and not statuses[name].get('error'):
                 covered=', '.join(meta.get('active_symbols') or [])
                 if not covered:
                     statuses[name]['detail']='Aún no hay una revisión de IA vigente. El análisis técnico conserva su estado independiente.'
+                    continue
+                if name.startswith('preopen_ai:'):
+                    statuses[name]['detail']='Análisis histórico de reapertura: '+covered+'. Sin permiso de ejecutar; requiere precios, estructura y revisión de orden nuevos.'
                     continue
                 statuses[name]['detail']=('Revisión IA resumida por recursos: '+covered+'. El motor técnico conserva el análisis completo.' if meta.get('input_scope')=='COMPACT_INDICATORS_COMPLETE_TIMEFRAMES' else 'Indicadores revisados: '+covered+'; '+('doble revisión completada' if meta.get('verified_twice') else 'una revisión completada'))
                 if meta.get('verification_error'):statuses[name]['detail']+='; verificador: '+meta['verification_error']
@@ -1000,12 +1018,15 @@ class ContextWorker:
             if freshness('technical:'+symbol)>0 and 'technical:'+symbol not in component_errors:news.extend(sources.get('technical:'+symbol,{}).get('data',[]))
         for name,row in sources.items():
             if name.startswith('global_news:') and freshness(name)>0 and not row.get('error'):news.extend(row.get('data',[]))
+            if name.startswith('event_news:') and freshness(name)>0 and not row.get('error'):news.extend(row.get('data',[]))
         seen=set();dedup=[]
         for item in news:
             key=' '.join(str(item.get('title','')).casefold().split())
             if not key or key in seen:continue
             seen.add(key);dedup.append(item)
         news=dedup
+        from market_events import event_alerts
+        events=event_alerts(news,now);weekly_events=event_alerts(news,now,7*86400)
         deep_raw=sources.get('local_ai',{}).get('data',{})
         deep_review={}
         for symbol in fusion:
@@ -1018,7 +1039,8 @@ class ContextWorker:
         updated_iso=datetime.fromtimestamp(context_updated,timezone.utc).isoformat() if context_updated else ''
         return {**evolution,'updated':updated_iso,'fusion':fusion,'sources':statuses,'quality_study':self.study.summary(),'strategy_lab':self.strategy_lab.read(),'pending_reviews':pending_reviews,
                 'videos':videos,'video_analysis':videos,
-                'coinglass':coinglass,'derivatives':derivatives,'news':news[:24],
+                'coinglass':coinglass,'derivatives':derivatives,'news':news[:24],'events':events,'weekly_events':weekly_events,
+                'preopen_reviews':{name.partition(':')[2]:row.get('data') for name,row in sources.items() if name.startswith('preopen_ai:') and freshness(name)>0},
                 'global_markets':{name.removeprefix('venue:'):row.get('data',{}) for name,row in sources.items() if name.startswith('venue:') and freshness(name)>0 and not row.get('error')},
                 'macro':sources.get('macro:FRED',{}).get('data',{}) if freshness('macro:FRED') and not sources.get('macro:FRED',{}).get('error') else {},
                 'reference_sources':{name:{'url':url,'state':'Referencia pública; sin precio en tiempo real confirmado'} for name,url in REFERENCE_SOURCES.items()},

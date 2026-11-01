@@ -44,7 +44,7 @@ class MarketStateResolver:
         next_open=LocaleTimeSettings.from_config(config).format(calendar.next_open_utc.timestamp()) if calendar.next_open_utc else ''
         return {'open':session=='OPEN','session':session,'state':labels[session],'reason':reason,
                 'quote':quote,'execution':execution,'permissions':permissions,'trade_mode':mode,
-                'scheduled_closed':not calendar.open,'schedule_source':calendar.source,
+                'scheduled_closed':session=='CLOSED','calendar_closed':not calendar.open,'schedule_source':calendar.source,
                 'next_open':next_open,'source':source,'checked_at':now,
                 'execution_confirmed':False}
 

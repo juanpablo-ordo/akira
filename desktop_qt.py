@@ -656,7 +656,15 @@ class StudioWindow(QMainWindow):
             keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo'];rows=[]
             for key in keys:rows.append((key,[INDICATORS.get(key,key.upper()),number(values.get(key)),tf],{}))
             table.update_rows(rows);chart.set_data((info.get('bars_by_timeframe') or {}).get(tf) or info.get('bars') or [])
-        self.render_sources(visible_only=True);set_plain_document(self.decision_text,'\n\n'.join(symbol+'\n'+str(state.get('detail') or '') for symbol,state in (v.get('status') or {}).items()))
+        from market_preparation import preopen_text
+        sections=[]
+        for symbol,state in (v.get('status') or {}).items():
+            plan=((v.get('symbols') or {}).get(symbol) or {}).get('preopen_plan')
+            sections.append(symbol+'\n'+str(state.get('detail') or '')+('\n\n'+preopen_text(plan) if plan else ''))
+        for event in v.get('event_reviews',[])[-5:]:
+            decisions='; '.join(s+': '+str(r.get('detail') or r.get('state') or '') for s,r in event.get('symbols_reviewed',{}).items())
+            sections.append('Evento: '+event['title']+'\n'+decisions)
+        self.render_sources(visible_only=True);set_plain_document(self.decision_text,'\n\n'.join(sections))
 
     def render_sources(self,*args,visible_only=False):
         if not hasattr(self,'source_table'):return

@@ -53,6 +53,7 @@ class Engine:
         self.session_watchdog=SessionWatchdog(self.g.clock())
         from market_state import BrokerSessionService
         self.broker_sessions=BrokerSessionService(self.g)
+        self.preopen_plans={};self._preopen_due={};self.event_reviews={}
 
     def close(self):
         # Existing broker SL/TP and pending orders survive application shutdown.
@@ -113,6 +114,30 @@ class Engine:
         if state is None or self.g.clock()-state['checked_at']>2:
             state=self.broker_sessions.refresh(symbol)
         return state
+
+    def prepare_closed_market(self,symbol,market,snap,now):
+        from market_preparation import build_preopen_plan
+        cache=self.planner.caches[symbol]
+        cache.advance(now,allowed=('H1','H4','D1','W1'),closed_session=True)
+        marker=tuple((tf,f.bars[-1].time) for tf,f in cache.frames.items())
+        events=self.planner.research_context.get('weekly_events') or []
+        marker+=(tuple(e.get('id') for e in events),)
+        if marker==getattr(self,'_preopen_markers',{}).get(symbol) and now<self._preopen_due.get(symbol,0):return
+        plan=build_preopen_plan(symbol,cache.frames,now,self.cfg,market,events,snap.positions)
+        self.preopen_plans[symbol]=plan;self._preopen_due[symbol]=now+60
+        if not hasattr(self,'_preopen_markers'):self._preopen_markers={}
+        self._preopen_markers[symbol]=marker
+        self.g.journal.data.setdefault('preopen_plans',{})[symbol]=plan
+        self.g.journal.save()
+
+    def observe_market_events(self,now):
+        for event in self.planner.research_context.get('events',[]):
+            if event['id'] in self.event_reviews:continue
+            self.event_reviews[event['id']]={**copy.deepcopy(event),'observed_at':now,'symbols_reviewed':{}}
+            for symbol in event.get('symbols',[]):self.map_cache.pop(symbol,None)
+            self.log.event('CONTEXTO','Evento fechado recibido; revaluar estructura y riesgo: '+event['title'],
+                           operation='market_event_received',event_id=event['id'],source=event['url'])
+        while len(self.event_reviews)>100:self.event_reviews.pop(next(iter(self.event_reviews)))
 
     def try_runner(self,symbol,q,required_side=0):
         """Retirar pendientes propias y confirmar antes de un runner; no duplicar."""
@@ -839,13 +864,13 @@ class Engine:
                         'lot':lot,'source':'order_calc_profit MT5; comisión estimada de ajustes'}
                 except Blocked:pass
         return {'account':{k:getattr(snap.account,k,None) for k in ('login','server','currency','balance','equity','margin_free','trade_mode')},
-                'research':{'sources':copy.deepcopy(self.planner.research_context.get('sources',{}))},
+                'research':{k:copy.deepcopy(self.planner.research_context.get(k,{} if k=='sources' else [])) for k in ('sources','events')},
                 'symbols':out,'as_of_utc':self.g.clock(),'markets':{s:self.market_state(s) for s in out},
                 'pending_performance':{s:self.learner.metrics(s) for s in out},
                 'confirmed_learning_outcomes':list(self.learner.records.values()),'learning_account':list(self.g.identity or ()),
                 'confirmed_strategy_outcomes':copy.deepcopy(self._confirmed_outcomes[-300:]),'paper_costs':paper_costs,
                 'selection_configuration':self.verification_configuration(),'research_sources':copy.deepcopy(self.planner.research_context.get('sources',{})),
-                'build':BUILD_ID}
+                'preopen_plans':copy.deepcopy(self.preopen_plans),'build':BUILD_ID}
 
     @staticmethod
     def frame_summary(f):
@@ -886,6 +911,7 @@ class Engine:
         snap=self.review_loss_pendings(snap)
         # El primer envío no espera una consulta de 90 días de deals.
         self.planner.research_context=self.read_context()
+        self.observe_market_events(now)
         if not self.paused and not g.runtime_execution_block:self.positions.step(snap)
         symbols=list(self.planner.caches)
         # Rotate first priority so one symbol cannot consume every available turn.
@@ -894,12 +920,18 @@ class Engine:
             try:
                 market=self.broker_sessions.refresh(symbol,snap)
                 if not market['open']:
+                    if market['session'] in ('CLOSED','CLOSE_ONLY'):
+                        self.prepare_closed_market(symbol,market,snap,now)
                     self.status[symbol]={'state':market['state'],'detail':market['reason']+'. Próxima apertura estimada: '+market['next_open']}
+                    if symbol in self.preopen_plans:self.status[symbol]['detail']+=' '+self.preopen_plans[symbol]['detail']
                     self.runner_views[symbol]={'state':market['state'],'detail':market['reason'],'session':market['session']}
                     self.quotes.pop(symbol,None)
                     continue
-                if self.status.get(symbol,{}).get('state')=='MERCADO CERRADO':
+                if self.status.get(symbol,{}).get('state') in ('MERCADO CERRADO','SOLO CIERRES'):
                     cache=self.planner.caches[symbol];cache.prime_critical(now);cache.prime_fast_structural(now);cache.prime_deep_structural(now)
+                    if symbol in self.preopen_plans:
+                        self.preopen_plans[symbol].update(state='REVALIDATING',execution_allowed=False,reopened_at=now,
+                            detail='Sesión reabierta: se recalcula el mapa con tick, spread y riesgo actuales; el plan del cierre no autoriza órdenes.')
                 cache=self.planner.caches[symbol];cache.advance(now)
                 ready,detail=self.evidence_ready(symbol,now)
                 q=g.quote(symbol);self.quotes[symbol]=q;self.planner.tapes[symbol].update(q,cache.frames,now)
@@ -933,7 +965,13 @@ class Engine:
             except Blocked as e:
                 self.status[symbol]={'state':'ESPERANDO','detail':str(e)}
                 self.runner_views[symbol]={'state':'ESPERANDO','detail':str(e)}
-            finally:self.last_checked[symbol]=g.clock()
+            finally:
+                self.last_checked[symbol]=g.clock()
+                for event in self.event_reviews.values():
+                    if symbol in event.get('symbols',[]) and 0<=now-event['published_utc']<=86400:
+                        event['symbols_reviewed'][symbol]={'at':now,'cycle':self.cycle,**self.status.get(symbol,{}),
+                            'candidates':len(self.candidates.get(symbol,[])),
+                            'runner':copy.deepcopy(self.runner_views.get(symbol,{}))}
         # Los primeros intentos BTC+XAU usan M15/H1 antes de consultas profundas.
         # Completar H4/D1 ahora conserva el análisis visible sin bloquear el envío.
         self.complete_warmup()
@@ -1212,6 +1250,8 @@ class Engine:
                         'allocation_checks':self.allocation_checks.get(s,[]),
                         'allocation_reasons':self.allocation_reasons.get(s,[]),
                         'broker_rejections':list(self.planner.pending_filter_reasons.get(s,{}).values())[:10],
+                        'preopen_plan':{**copy.deepcopy(self.preopen_plans.get(s,{})),
+                            'neural_review':copy.deepcopy((self.planner.research_context.get('preopen_reviews') or {}).get(s,{}))} if s in self.preopen_plans else {},
                         'cache_errors':dict(c.errors),'analysis_inflight':c.analysis_future is not None}
             symbols[s]['decision']=decision_status(s,self.candidates.get(s,[]),
                 self.planner.pending_candidate_audit.get(s,[]),symbols[s]['scenario_book'],
@@ -1245,6 +1285,7 @@ class Engine:
                 'broker_terms':copy.deepcopy(getattr(self.g,'broker_terms',{})),
                 'data_limits':{'max_tick_age_seconds':self.cfg['strategy']['max_tick_age_seconds']},
                 'verification_receipts':copy.deepcopy(getattr(self.g,'verification_receipts',{})),
+                'event_reviews':copy.deepcopy(list(self.event_reviews.values())[-20:]),
                 'unconfirmed':list(self.g.journal.data['intents'])}
         from pending_verification import reports
         if self.review_requirements and list(self.g.identity or ())==self.review_account:
