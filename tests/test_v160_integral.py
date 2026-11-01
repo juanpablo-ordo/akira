@@ -65,7 +65,8 @@ class MarketAndRiskTests(PendingCase,unittest.TestCase):
   original=self.api.copy_rates_from_pos;requests=[]
   def rates(symbol,*args):requests.append(symbol);return original(symbol,*args)
   with patch.object(self.api,'copy_rates_from_pos',side_effect=rates):view=engine.step()
-  self.assertTrue(view['markets']['XAUUSDm']['scheduled_closed']);self.assertEqual(view['status']['XAUUSDm']['state'],'MERCADO CERRADO');self.assertNotIn('XAUUSDm',requests)
+  # Recuperar historial H1/H4 del oro cerrado es lectura, no una entrada.
+  self.assertTrue(view['markets']['XAUUSDm']['scheduled_closed']);self.assertEqual(view['status']['XAUUSDm']['state'],'MERCADO CERRADO');self.assertIn('XAUUSDm',requests);self.assertIn('BTCUSDm',requests)
   self.assertTrue(all(r['symbol']!='XAUUSDm' for r in self.api.sent));self.assertFalse(view['markets']['BTCUSDm']['scheduled_closed'])
  def test_extraordinary_broker_closure_is_applied_at_gateway(self):
   now=datetime.fromtimestamp(self.clock(),timezone.utc);self.cfg['market_hours']={'closures':[{'symbol':'BTCUSDm','start':now.isoformat(),'end':datetime.fromtimestamp(self.clock()+3600,timezone.utc).isoformat(),'reason':'Mantenimiento anunciado','source':'Comunicado del bróker'}]}
