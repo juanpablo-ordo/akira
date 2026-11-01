@@ -79,10 +79,12 @@ class MarketCache:
         self.due[name]=now+(max(60,interval) if closed_session else interval)
         def read(count):
             if not closed_session:return self.closed_rates(tf,count)
-            # During a weekend MT5's index zero can be the final, already
-            # closed Friday bar. Filter by UTC close, never drop it by index.
+            # Closed markets must not request index zero: some brokers keep an
+            # unfinished bar there even while their session is paused.
+            # Index one is the most recent broker-confirmed closed bar.
+            # Filter UTC close times again to protect against stale/odd feeds.
             from market_state import PERIOD_SECONDS
-            rows=self.api.copy_rates_from_pos(self.symbol,tf,0,count+1)
+            rows=self.api.copy_rates_from_pos(self.symbol,tf,1,count)
             if rows is None:return rows
             return [r for r in rows if float(r['time'])+PERIOD_SECONDS[name]<=now][-count:]
         try:
