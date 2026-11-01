@@ -206,9 +206,11 @@ class Gateway:
         from market_calendar import state_for
         from datetime import datetime,timezone
         market=state_for(symbol,datetime.fromtimestamp(self.clock(),timezone.utc),self.cfg)
-        if not market.open:
-            raise MarketPaused('MERCADO CERRADO · '+market.state+'. Próxima apertura estimada: '+market.next_open_guatemala+'. MT5 confirma disponibilidad al reabrir.')
         t=self.valuation_call(evaluation,'symbol_info_tick',symbol)
+        from market_state import TimeSynchronizationService
+        freshness=TimeSynchronizationService.tick(t,self.clock(),self.cfg['strategy']['max_tick_age_seconds'])
+        if not market.open and (freshness['state']!='FRESH' or market.state.startswith('CIERRE EXTRAORDINARIO')):
+            raise MarketPaused('MERCADO CERRADO · '+market.state+'. Próxima apertura estimada: '+market.next_open_guatemala+'. MT5 confirma disponibilidad al reabrir.')
         if t is None:raise MarketPaused(symbol+': esperando cotización nueva de MT5')
         ms=int(getattr(t,'time_msc',0)) or int(t.time)*1000
         q=Quote(float(t.bid),float(t.ask),ms/1000,ms)
@@ -233,9 +235,14 @@ class Gateway:
 
     def permissions(self,snap,entry=True):
         a,t=snap.account,snap.terminal
+        from risk_limits import EffectiveRiskResolver
+        profile=EffectiveRiskResolver.profile(self.cfg,{'trade_mode':getattr(a,'trade_mode',None)})
+        if self.cfg.get('operation_profile')=='HISTORICAL' or entry and not profile['allows_broker_orders']:raise Blocked(profile['reason'])
         if self.runtime_execution_block:raise Blocked(self.runtime_execution_block)
         if self.cfg['mode']=='trade' and getattr(self,'requires_execution_lease',False) and not getattr(self,'execution_lease_active',False):raise Blocked('Activando operativa: esperando bloqueo exclusivo de la cuenta')
-        if entry and getattr(self,'network_available',True) is False:raise Blocked('Sin Internet: nuevas entradas en pausa; reconexión automática pendiente')
+        # A failed public-source probe is not evidence of MT5 disconnection.
+        # terminal.connected, fresh quotes, permissions and order_check below
+        # remain mandatory for every send.
         if self.cfg['mode']!='trade':raise Blocked('OBSERVAR: sin envíos ni modificaciones')
         if not getattr(t,'connected',False):raise Blocked('MT5 desconectado')
         if not getattr(t,'trade_allowed',False) or getattr(t,'tradeapi_disabled',False):raise Blocked('Activa Trading algorítmico y API Python en MT5')
@@ -508,6 +515,8 @@ class Gateway:
         if r is None:raise Blocked('order_check sin respuesta; no se envió la solicitud')
         code=int(r.retcode)
         if code!=0:
+            if not hasattr(self,'session_rejections'):self.session_rejections={}
+            self.session_rejections[str(request.get('symbol',''))]={'code':code,'at':self.clock()}
             comment='order_check: '+str(getattr(r,'comment','rechazo'))
             self.last_rejection[str(request.get('symbol',''))]=f'MT5 {code}: {comment}'
             if plan is not None and plan.lane=='PENDING' and int(request.get('action',-1))==PENDING and code in PENDING_ALTERNATIVE_REJECTIONS:
@@ -706,9 +715,12 @@ class Gateway:
                 if side*(float(request['sl'])-float(found.sl))<=0 and not target_only:raise Blocked('Nunca ampliar un SL existente')
             if operation=='close':
                 if not self.managed_runner(found) or float(request.get('volume',0))!=float(found.volume) or int(request.get('type',-1))==int(found.type):raise Blocked('Cierre runner inválido')
-        if operation in ('open','modify_order') and plan is not None and plan.lane=='PENDING' and getattr(self,'pending_review_guard',None):
-            self.pending_review_guard(plan,snap,float(request.get('volume',0)) if operation=='open' else float(found.volume_current),
+        if operation in ('open','modify_order') and plan is not None:
+            guard=getattr(self,'pending_review_guard',None)
+            if guard is None:raise Blocked('Revisión IA obligatoria: el revisor de ejecución no está disponible')
+            receipt=guard(plan,snap,float(request.get('volume',0)) if operation=='open' else float(found.volume_current),
                 int(request.get('order',0)) if operation=='modify_order' else 0)
+            meta['ai_review']=receipt
         if operation=='modify_order' and self.pending_parameters_unchanged(found,request):
             return None
         self.check(request,plan)
@@ -726,6 +738,9 @@ class Gateway:
         except Exception as e:intent['error']=type(e).__name__+': '+str(e)
         self.last_order_send_ms[symbol]=(time.perf_counter()-started)*1000
         code=int(result.retcode) if result is not None else None
+        if code in REJECTED:
+            if not hasattr(self,'session_rejections'):self.session_rejections={}
+            self.session_rejections[symbol]={'code':code,'at':self.clock()}
         intent.update(retcode=code,order=int(getattr(result,'order',0) or 0),deal=int(getattr(result,'deal',0) or 0))
         if code in REJECTED and not (code==10036 and operation in ('cancel','modify_order')):
             self.journal.data['intents'].pop(symbol,None)

@@ -1,0 +1,10 @@
+{
+  "build": "AKIRA_16_5_4_STUDIO_REV19",
+  "status": "PENDING_WINDOWS",
+  "live_account_used": false,
+  "physical_dell_tested": false,
+  "cloud_credentials_available_for_real_external_test": false,
+  "historical_profitability": "NOT_EVALUATED",
+  "local_core_tests": 33,
+  "installer": "NOT_YET_VERIFIED"
+}

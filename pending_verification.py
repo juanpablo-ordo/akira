@@ -12,6 +12,7 @@ def number(value):
     except (ValueError,TypeError,OverflowError):return None
 
 def identity(plan):
+    if plan.get('review_scope')=='EXECUTION':return __import__('execution_review').request_id(plan)
     return str(plan.get('symbol',''))+' / '+('MT5 #'+str(plan['ticket']) if plan.get('ticket') else str(plan.get('key') or 'SIN CLAVE'))
 
 def levels(plan):
@@ -39,6 +40,7 @@ def context_fingerprint(snapshot):
     return {'frames':frames,'sources':sources,'configuration':digest(snapshot.get('selection_configuration') or {})}
 
 def fingerprint(snapshot,plan,context=None):
+    if plan.get('review_scope')=='EXECUTION':return __import__('execution_review').fingerprint(plan,snapshot)
     context=context or context_fingerprint(snapshot)
     return digest({'levels':levels(plan),'frames':context['frames'].get(plan['symbol']),
         'sources':context['sources'].get(plan['symbol']),'configuration':context['configuration']})

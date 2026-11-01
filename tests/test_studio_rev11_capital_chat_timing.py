@@ -277,7 +277,7 @@ class ConversationRoutingTests(unittest.TestCase):
             self.assertEqual(self.bot._local_llm_reply_impl(message,snapshot),'Te leo. Cuéntame qué pasó hoy.')
 
     def test_eco_chat_uses_production_cpu_deadline_instead_of_a_qa_override(self):
-        for profile,expected in [('Ahorro de energía',120),('Equilibrado',120)]:
+        for profile,expected in [('Ahorro de energía',150),('Equilibrado',150)]:
             self.cfg['desktop']['performance_profile']=profile
             self.cfg['assistant']['fast_chat_timeout_seconds']=25
             with self.subTest(profile=profile), \

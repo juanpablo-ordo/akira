@@ -45,6 +45,16 @@ def load_config(path):
     raw=copy.deepcopy(path) if isinstance(path,dict) else json.loads(Path(path).read_text(encoding='utf-8-sig'))
     if not isinstance(raw,dict):raise ValueError('Configuración: se requiere un objeto JSON')
     cfg=merge(DEFAULT,raw)
+    from locale_time import LocaleTimeSettings
+    LocaleTimeSettings.from_config(cfg)
+    if cfg['operation_profile'] not in ('AUTO','DEMO_EXPERIMENT','REAL_CAPITAL','HISTORICAL'):raise ValueError('Perfil de operación desconocido')
+    if cfg['assistant']['provider_mode'] not in ('local','cloud','auto'):raise ValueError('Proveedor IA inválido')
+    from ai_providers import validate_endpoint
+    validate_endpoint(cfg['assistant']['cloud_endpoint'])
+    if cfg['assistant']['provider_primary'] not in ('local','cloud'):raise ValueError('Proveedor principal inválido')
+    for key in ('prepare','conversation','sources','deep_research','trade_review'):
+        v=cfg['assistant'][key+'_timeout_seconds']
+        if isinstance(v,bool) or not isinstance(v,(float,int)) or not math.isfinite(v) or not 1<=v<=900:raise ValueError('Plazo IA inválido: '+key)
     from akira_studio import safe_studio
     cfg['studio']=safe_studio(raw)
     # Migrate only the legacy default Ollama endpoint when a complete, local
@@ -379,7 +389,7 @@ def load_config(path):
     if cfg['execution']['pending_rejection_retry_seconds']<1:raise ValueError('Reintento de pendiente rechazada debe esperar al menos 1 segundo')
     if cfg['assistant'].get('conversation_style') not in ('natural','mentor','detailed'):raise ValueError('Estilo de conversación inválido')
     guard=cfg['capital_protection']
-    for key in ('enabled','one_position_per_symbol','strict_pending_quality','fomc_pause'):
+    for key in ('enabled','one_position_per_symbol','strict_pending_quality','fomc_pause','loss_pause_enabled'):
         if type(guard[key]) is not bool:raise ValueError('capital_protection.'+key+' debe ser booleano')
     for key in ('trade_pct','portfolio_pct','symbol_pct','daily_loss_pct','max_drawdown_pct'):
         if isinstance(guard[key],bool) or not .1<=guard[key]<=100:raise ValueError('capital_protection.'+key+' debe estar entre 0.1 y 100')

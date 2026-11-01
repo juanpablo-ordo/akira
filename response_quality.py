@@ -23,7 +23,9 @@ def complete_reply(messages,invoke,receipt,clear,plan,timeout,on_repair=lambda r
     base=list(messages);previous_issue=''
     for attempt in range(2):
         if cancelled():raise RuntimeError('Análisis detenido por el usuario')
-        remaining=deadline-clock()
+        # Subtraction at a large monotonic epoch may round a few ULPs above
+        # the requested budget on Windows. Never extend the caller's budget.
+        remaining=min(float(timeout),deadline-clock())
         if remaining<=1:raise TimeoutError('No quedó tiempo para terminar y comprobar la respuesta')
         words=plan['words'] if attempt==0 else min(90,plan['words'])
         instruction=(f'Redacta una respuesta completa en hasta {words} palabras. '

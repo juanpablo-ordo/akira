@@ -147,7 +147,7 @@ class SelectorEvidence:
         return strength * math.tanh(prediction)
 
     def summary(self):
-        return {'status': 'ESTUDIO DISPONIBLE' if self.document else 'SIN ESTUDIO COMPARABLE',
+        return {'status': 'ESTUDIO DISPONIBLE' if self.document.get('models') else 'PROBABILIDAD NO CALIBRADA',
                 'source': self.document.get('provider', ''),
                 'scope': 'Selección de pendientes en datos externos; no es rentabilidad ni probabilidad en la cuenta MT5.',
                 'period': self.document.get('evaluation_period', []),

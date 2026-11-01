@@ -9,7 +9,7 @@ from copy import deepcopy
 
 
 def execution_gate(mode, paused=False, runtime_block='', network_available=True,
-                   account=None, preview=False):
+                   account=None, preview=False, risk_state=None,broker_available=None):
     """Explain why operations are or are not permitted, without changing mode.
 
     An installation starts in OBSERVE by design.  Never silently transition to
@@ -28,7 +28,10 @@ def execution_gate(mode, paused=False, runtime_block='', network_available=True,
     elif runtime_block:
         code, reason, action = ('BROKER_BLOCK', str(runtime_block)[:400],
                                'Revisa el terminal, los permisos, el margen o las restricciones indicadas.')
-    elif network_available is False:
+    elif risk_state and not risk_state.get('allowed',True):
+        code,reason,action=(risk_state.get('code','RISK_COOLDOWN'),risk_state['reason'],
+                           'Consulta los cierres, el inicio y el vencimiento en Riesgo. Las posiciones abiertas siguen bajo gestión.')
+    elif network_available is False and broker_available is not True:
         code, reason, action = ('OFFLINE',
             'La conectividad esencial no está disponible; nuevas entradas suspendidas.',
             'Esperar reconexión y reconciliación de posiciones y órdenes; no duplicar solicitudes.')

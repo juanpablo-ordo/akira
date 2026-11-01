@@ -111,6 +111,11 @@ def risk_dashboard(view,config,private=False):
     configured=(f"Por orden: hasta {money(limits['per_trade'])}\nElegiste {money(limits['trade_money'])} y {limits['trade_pct']:g}% del patrimonio."
         f"\nRunner directo: hasta {money(limits['runner'])}\nPresupuesto conjunto: {money(cap)}"
         f"\nElegiste {limits['portfolio_pct']:g}% del capital y {total_choice}. Se usa el menor límite aplicable.")
+    explanation=limits.get('explanation') or {}
+    if explanation:
+        configured+='\nCálculo: '+'; '.join(c['label']+' = '+money(c['amount']) for c in explanation['constraints'])
+        labels=[c['label'] for c in explanation['constraints'] if c['rule'] in explanation['binding_rules']]
+        configured+='\nRegla efectiva: '+', '.join(labels)+'. Resultado: '+money(explanation['effective'])
     protection=limits.get('capital_protection') or {}
     if protection.get('enabled'):
         configured+=f"\nProtección activa: {protection['trade_pct']:g}% por orden, {protection['portfolio_pct']:g}% conjunto y {protection['symbol_pct']:g}% por símbolo."
@@ -123,6 +128,11 @@ def risk_dashboard(view,config,private=False):
     guard=view.get('capital_protection') or {}
     safety=view.get('entry_safety') or {}
     if safety.get('enabled') and not safety.get('allowed',True):usage+='\n'+safety.get('reason','Nuevas entradas en pausa por pérdidas confirmadas.')
+    if safety.get('paused_until'):
+        from locale_time import LocaleTimeSettings
+        zone=LocaleTimeSettings.from_config(config)
+        usage+='\nPausa: '+zone.format(safety.get('paused_from'))+' → '+zone.format(safety['paused_until'])+' '+zone.timezone
+        if not private:usage+='\nCierres que la activaron: '+', '.join(str(x) for x in safety.get('closed_ids',[]))
     if guard.get('enabled'):
         usage+='\n'+(guard.get('reason') or f"Protección activa; caída desde referencia: {guard.get('drawdown_pct',0):.2f}%.")
     if used>cap:usage+='\nEl riesgo reservado supera el límite guardado; no queda presupuesto para nuevas entradas.'

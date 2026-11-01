@@ -248,7 +248,8 @@ class ManagedLlamaProcess:
             self.start(endpoint,desktop)
             # Give the server a short bootstrap window, never block MT5.
             port=self._port(endpoint)
-            deadline=self.clock()+90
+            preparation=float(self.settings.get('prepare_timeout_seconds',180))
+            deadline=self.clock()+preparation
             while self.clock()<deadline and not self._health(port):
                 if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
                 with self.lock:
@@ -261,7 +262,7 @@ class ManagedLlamaProcess:
                         else:
                             raise RuntimeError('El motor local no pudo iniciar, ni con CPU')
                 time.sleep(.4)
-            if not self._health(port):raise TimeoutError('llama.cpp no completó el inicio en 90 s')
+            if not self._health(port):raise TimeoutError(f'llama.cpp no completó el inicio en {preparation:g} s')
             from akira_local_ai import owned_context
             with owned_context(self.effective_parameters().get('context_tokens') or int((desktop or {}).get('model_context_tokens',self.profile['context_tokens']))):yield
         finally:

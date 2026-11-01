@@ -1,6 +1,7 @@
 MetaTrader5==5.0.6180
 yt-dlp[default]==2026.8.19
 tzdata>=2025.2
+tzlocal>=5,<6
 Pillow
 imageio-ffmpeg
 imageio>=2.34,<3

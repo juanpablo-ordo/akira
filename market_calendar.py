@@ -53,8 +53,10 @@ def _us_summer(dt):
 
 
 def _next_sunday_open(dt, summer):
-    hour,minute=(22,5) if summer else (23,5)
     days=(6-dt.weekday())%7
+    # A Friday before a DST switch must use Sunday's offset, not Friday's.
+    target=dt+timedelta(days=days)
+    hour,minute=(22,5) if _us_summer(target) else (23,5)
     candidate=(dt+timedelta(days=days)).replace(hour=hour,minute=minute,second=0,microsecond=0)
     if candidate<=dt:
         candidate+=timedelta(days=7)

@@ -33,7 +33,7 @@ def summarize(root, folder):
     names=('SOURCE_SELF_CHECK','NATIVE_APPLICATION','NATIVE_FIRST_RUN','SPRITE_AI_SOURCE',
         'SPRITE_AI_FROZEN','HTTPS_SOURCE_REV10','HTTPS_FROZEN_REV10','LOW_RESOURCE_FROZEN_REV10',
         'PUBLIC_SOURCES_SOURCE_REV10','PUBLIC_SOURCES_FROZEN_REV10','LOCAL_AI_SCENARIOS',
-        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','REAL_CHAT_DELL_7280_REV14','UI_COMPARISON_REV14','REAL_CHAT_REV15','REAL_CHAT_REV16','INSTALLED_LOCAL_AI','UPGRADE_REV16','REAL_CHAT_REV18')
+        'REAL_REVIEW_REV10','REAL_CONVERSATION_REV6_WINDOWS','REAL_CHAT_LOW_RESOURCE_REV11','REAL_CHAT_DELL_7280_REV14','UI_COMPARISON_REV14','REAL_CHAT_REV15','REAL_CHAT_REV16','INSTALLED_LOCAL_AI','UPGRADE_REV16','REAL_CHAT_REV18','REAL_CHAT_REV19','EXACT_REVIEW_REV19')
     reports={}
     for name in names:
         path=folder/(name+'.json');raw=path.read_bytes();data=json.loads(raw)
@@ -101,8 +101,11 @@ def summarize(root, folder):
     if any(row.get('origin')!='model' or row.get('completion',{}).get('finish_reason')!='stop' or row.get('completion',{}).get('truncated') for row in owner['scenarios']):
         raise RuntimeError('Owner conversation was incomplete or canned')
     result['owner_requests_and_recovery']=owner
-    (folder/'VERIFICATION_REV18.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('AKIRA_REV18_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
+    twenty=json.loads((folder/'REAL_CHAT_REV19.json').read_text(encoding='utf-8'))
+    if twenty.get('status')!='PASSED' or len(twenty.get('scenarios',[]))!=20:raise RuntimeError('Veinte conversaciones no verificadas')
+    result['twenty_consecutive_turns']=twenty
+    (folder/'VERIFICATION_REV19.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('AKIRA_REV19_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
 
 

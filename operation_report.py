@@ -33,7 +33,8 @@ def action_name(operation,event=None):
 def stamp(value):
     value=finite(value)
     if value is None:return ''
-    try:return datetime.fromtimestamp(value,LOCAL).strftime('%d/%m/%Y %H:%M:%S')
+    from locale_time import current_locale
+    try:return current_locale().format(value)
     except (ValueError,OverflowError,OSError):return ''
 
 
@@ -150,6 +151,10 @@ def source_rows(research,as_of):
 
 
 def build_report(snapshot,hours=24):
+    from locale_time import presentation_time
+    with presentation_time({'locale':snapshot.get('locale',{})}):return _build_report(snapshot,hours)
+
+def _build_report(snapshot,hours=24):
     snapshot=redact_snapshot(snapshot);as_of=finite(snapshot.get('as_of_utc'),finite(snapshot.get('updated'),0))
     cutoff=as_of-float(hours)*3600 if hours else as_of
     account=snapshot.get('account') or {};ledger=snapshot.get('portfolio_risk') or {};symbols=snapshot.get('symbols') or {}
@@ -165,7 +170,7 @@ def build_report(snapshot,hours=24):
     if history.get('error'):warnings.append('Historial de cierres: '+str(history['error']))
     if finite(account.get('equity')) is None:warnings.append('Patrimonio no disponible: el límite de riesgo no se interpreta como saldo.')
     pendings=[];seen=set();runners=[];decisions=[];overview=[];times=pending_times(snapshot)
-    summary=[['Cuenta','Hora de la captura',stamp(as_of),'America/Guatemala (UTC-6)'],['Cuenta','Versión',snapshot.get('build','No registrada'),'Versión del motor que produjo los datos'],
+    summary=[['Cuenta','Hora de la captura',stamp(as_of),__import__('locale_time').current_locale().timezone],['Cuenta','Versión',snapshot.get('build','No registrada'),'Versión del motor que produjo los datos'],
         ['Cuenta','Patrimonio USD',finite(account.get('equity')),'Dato MT5; ausente no significa cero'],
         ['Riesgo','Límite conjunto USD',finite(ledger.get('cap_usd')),'Compartido entre BTC, oro y operaciones manuales'],
         ['Riesgo','Reservado USD',finite(ledger.get('reserved_usd')),'Suma de posiciones, pendientes y solicitudes sin confirmar'],

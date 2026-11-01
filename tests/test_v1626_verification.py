@@ -153,18 +153,20 @@ class BrokerTests(PendingCase,unittest.TestCase):
 
     def required(self,verdict=None):
         from execution import order_plan
+        for stub in self.review_stubs:stub.stop()
+        self.g.pending_review_guard=self.e.pending_review_guard
         r=self.e.handle_command({'action':'verify_pending','id':identity(self.p),'deep':True,'require':True})
         o=next(o for o in self.api.orders if o.ticket==self.p['ticket'])
         plan=order_plan(o,self.g.journal.data['orders'][str(o.ticket)]['plan'])
         if verdict:
-            self.e.planner.research_context['pending_reviews']={identity(self.p):{'levels':levels(self.p),'fingerprint':fingerprint(self.view,self.p),
-                'state':'COMPLETE','updated':self.clock(),'data':{'verdict':verdict,'reason':'Dictamen de prueba','missing':[]}}}
+            from tests.review_fixture import approve_exact
+            approve_exact(self.e,plan,o.volume_current,o.ticket,verdict='REJECT' if verdict=='REVISE' else verdict)
         return o,plan
     def test_demanded_review_blocks_before_any_order_send(self):
         from execution import MODIFY,Blocked
         o,plan=self.required();self.cfg['mode']='trade';before=len(self.api.sent)
         req={'action':MODIFY,'order':o.ticket,'symbol':o.symbol,'price':o.price_open,'sl':o.sl,'tp':o.tp}
-        with self.assertRaisesRegex(Blocked,'IA exigida'):self.g._send(o.symbol,req,'modify_order',plan,before=self.g.fingerprint(o,'order'))
+        with self.assertRaisesRegex(Blocked,'IA obligatoria'):self.g._send(o.symbol,req,'modify_order',plan,before=self.g.fingerprint(o,'order'))
         self.assertEqual(len(self.api.sent),before)
     def test_matching_approved_review_allows_the_user_demanded_gate(self):
         o,p=self.required('APPROVE')
@@ -172,24 +174,25 @@ class BrokerTests(PendingCase,unittest.TestCase):
     def test_rejected_review_cannot_satisfy_a_user_demand(self):
         from execution import Blocked
         o,p=self.required('REVISE')
-        with self.assertRaisesRegex(Blocked,'IA exigida'):self.e.pending_review_guard(p,self.g.snapshot(),o.volume_current,o.ticket)
+        with self.assertRaisesRegex(Blocked,'IA obligatoria'):self.e.pending_review_guard(p,self.g.snapshot(),o.volume_current,o.ticket)
     def test_old_review_does_not_approve_new_levels_at_send(self):
         from execution import Blocked
         from dataclasses import replace
         o,p=self.required('APPROVE')
-        with self.assertRaisesRegex(Blocked,'IA exigida'):self.e.pending_review_guard(replace(p,sl=p.sl-.01),self.g.snapshot(),o.volume_current,o.ticket)
+        with self.assertRaisesRegex(Blocked,'IA obligatoria'):self.e.pending_review_guard(replace(p,sl=p.sl-.01),self.g.snapshot(),o.volume_current,o.ticket)
     def test_user_requirement_is_saved_and_can_be_disabled_explicitly(self):
         o,p=self.required();self.assertTrue(self.e.review_preferences.is_file())
         self.e.handle_command({'action':'verify_pending','id':identity(self.p),'deep':False,'require':False})
         self.assertFalse(self.e.review_requirements)
 
-    def test_new_proposal_approval_can_verify_a_required_existing_order_change(self):
+    def test_unbound_proposal_cannot_approve_an_existing_order_change(self):
         from dataclasses import replace
         o,p=self.required();proposed=replace(p,tp=p.tp+10)
         data={**proposed.to_dict(),'volume':None}
         self.e.planner.research_context['pending_reviews']={identity(data):{'levels':levels(data),'fingerprint':fingerprint(self.view,data),
             'state':'COMPLETE','updated':self.clock(),'data':{'verdict':'APPROVE','reason':'Nuevo objetivo revisado','missing':[]}}}
-        self.e.pending_review_guard(proposed,self.g.snapshot(),o.volume_current,o.ticket)
+        from execution import Blocked
+        with self.assertRaises(Blocked):self.e.pending_review_guard(proposed,self.g.snapshot(),o.volume_current,o.ticket)
     def test_required_review_never_prevents_cancelling_an_invalid_own_order(self):
         o,p=self.required();self.cfg['mode']='trade'
         with patch.object(self.g,'pending_review_guard',side_effect=AssertionError('IA gate on cancellation')):

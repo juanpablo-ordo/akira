@@ -283,9 +283,22 @@ class StudioController:
         if updated:save_secrets(updated,merge=True);self.refresh_provider_access()
         return {'saved':True,'changed':len(updated)}
 
+    def check_ai_provider(self):
+        def check():
+            if self.chat_busy:raise RuntimeError('Termina o cancela la conversación antes de comprobar el proveedor')
+            from chat_orchestrator import TurnBudget
+            self.assistant._turn_budget=TurnBudget(self.cfg);self.assistant.reset_cancel()
+            from ai_providers import AIProviderManager
+            manager=AIProviderManager(self.cfg,self.assistant.ai_health)
+            result=manager.run('conversation',lambda:self.assistant.local_llm_reply('Responde con una frase breve: estás listo para conversar.',self.view),
+                lambda:manager.cloud.complete([{'role':'user','content':'Responde con una frase breve: estás listo para conversar.'}]))
+            return {'ok':bool(result.strip()),'answer':result,'health':self.assistant.ai_health.snapshot()}
+        return self.job('check_ai_provider',check,'ai_provider_checked')
+
     def save_keys(self,keys):return self.job('save_keys:'+str(time.monotonic_ns()),lambda:self._save_keys(keys),'keys_saved',executor=self.settings_io)
 
     def repair_ai(self):
+        if self.cfg.get('assistant',{}).get('provider_mode')=='cloud':return self.check_ai_provider()
         if self.chat_busy:self.cancel_chat()
         def work():
             thread=getattr(self,'_chat_thread',None)
@@ -366,6 +379,10 @@ class StudioController:
                 'runtime_active_requests':self.assistant._managed_model.active,
                 'runtime':self.assistant._managed_model.effective_parameters(),'priority':priority}
             data['youtube_access']=youtube_access_status()
+            data['assistant']['provider_health']=self.assistant.ai_health.snapshot()
+            data['assistant']['budgets']=self.assistant._turn_budget.diagnostics()
+            from network_diagnostics import NetworkDiagnostics
+            data['network']=NetworkDiagnostics.inspect()
             Path(path).write_text(json.dumps(data,ensure_ascii=False,indent=2,default=str),encoding='utf-8');return {'path':str(path)}
         return self.job('export_diagnostic',export,'exported')
 

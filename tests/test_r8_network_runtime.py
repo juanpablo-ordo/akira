@@ -34,7 +34,10 @@ class RuntimeNetwork(PendingCase,unittest.TestCase):
     def test_offline_blocks_new_entries_but_keeps_protection_permission(self):
         before=copy.deepcopy(self.cfg);order=self.api.add_pending(self.plan())
         self.e.handle_command({'action':'network_state','online':False})
-        with self.assertRaisesRegex(Blocked,'Sin Internet'):self.g.permissions(self.g.snapshot())
+        self.g.permissions(self.g.snapshot())
+        self.api.terminal.connected=False
+        with self.assertRaisesRegex(Blocked,'MT5 desconectado'):self.g.permissions(self.g.snapshot())
+        self.api.terminal.connected=True
         self.g.permissions(self.g.snapshot(),entry=False)
         self.assertEqual(self.cfg,before);self.assertEqual([o.ticket for o in self.api.orders],[order.ticket]);self.assertFalse(self.api.sent)
 

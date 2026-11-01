@@ -17,6 +17,8 @@ def row(key='es_ES-one-medium',speaker=0):
 
 class AllVoicesTests(unittest.TestCase):
  def setUp(self):
+  from network_diagnostics import HTTP_HEALTH
+  HTTP_HEALTH.rows.clear()
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
  def opener(self,data):
   def open_(url,timeout,**kwargs):return io.BytesIO(data[url.removeprefix(voice.PIPER_ROOT)])
@@ -53,6 +55,8 @@ class AllVoicesTests(unittest.TestCase):
    return self.opener(data)(url,timeout)
   with patch('urllib.request.urlopen',side_effect=fail_one):result=voice.install_all_voices(self.root,[first,second])
   self.assertEqual(result['state'],'partial');self.assertEqual(result['downloaded'],1);self.assertEqual(result['failed'],1)
+  from network_diagnostics import HTTP_HEALTH
+  for state in HTTP_HEALTH.rows.values():state['retry_at']=0  # next permitted retry
   with patch('urllib.request.urlopen',side_effect=self.opener(data)) as request:retry=voice.install_all_voices(self.root,[first,second])
   self.assertEqual(retry['skipped'],1);self.assertEqual(retry['downloaded'],1);self.assertEqual(request.call_count,2)
  def test_cancel_before_download_never_opens_network(self):

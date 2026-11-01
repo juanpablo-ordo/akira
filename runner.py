@@ -204,21 +204,5 @@ def runner_plan(symbol,frames,quote,cfg,context=None):
 
 
 def runner_exit(plan, frames, side, rr, cfg, *, entry_time=None, now=None):
-    """Solo cerrar por deterioro observado; un tick contrario no es una reversión."""
-    f = frames.get('M15')
-    period=300 if plan.get('signal_timeframe')=='M5' else 900
-    if not f or len(f.bars) < 4 or f.bars[-1].time+900 <= int(plan.get('bar_time', 0))+period:
-        return ''
-    last, previous = f.bars[-1], f.bars[-2]
-    # A pending thesis can be hours old. Only a full M15 candle that started
-    # after the actual fill can invalidate a newly activated continuation.
-    if entry_time is not None and last.time < float(entry_time):return ''
-    if now is not None and last.time+900 > float(now)+2:return ''
-    anchor = min(b.low for b in f.bars[-4:-1]) if side == 1 else max(b.high for b in f.bars[-4:-1])
-    if side*(last.close-anchor) < -f.atr*.05:
-        return 'Cierre M15 rompió la estructura de continuación del runner'
-    reversal = all(side*(b.close-b.open) < -f.atr*.20 and
-        (entry_time is None or b.time>=float(entry_time)) for b in (last, previous))
-    if rr >= cfg['runner']['reversal_exit_min_r'] and reversal and side*f.trend < .05:
-        return 'Dos cierres M15 contrarios y pérdida de impulso; proteger recorrido del runner'
-    return ''
+    from runner_policy import RunnerExitPolicy
+    return RunnerExitPolicy.evaluate(plan,frames,side,rr,cfg,entry_time,now)['reason']

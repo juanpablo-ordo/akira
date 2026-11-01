@@ -16,6 +16,11 @@ def optional_ollama_fixture(cfg):
 
 class PendingCase:
     def setUp(self):
+        self.review_stubs=[]
+        if not getattr(self,'live_review_guard',False):
+            # Transport fixtures isolate AI; dedicated Rev19 tests use the real guard.
+            for target in ('engine.Engine.pending_review_guard','execution.Gateway.pending_review_guard'):
+                stub=patch(target,create=True,return_value={'test_fixture':'APPROVED_TRANSPORT_ONLY'});stub.start();self.addCleanup(stub.stop);self.review_stubs.append(stub)
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name);self.clock=Clock();self.api=FakeMT5(self.clock);self.cfg=load_config(DEFAULT);self.cfg['mode']='trade'  # fixtures de ejecución usan opt-in explícito
         optional_ollama_fixture(self.cfg)

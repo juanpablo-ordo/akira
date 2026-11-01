@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 
 
-def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False,owner_requests=False):
+def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False,owner_requests=False,twenty_turns=False):
     import psutil
     from PySide6.QtWidgets import QApplication
     from desktop_qt import StudioWindow
@@ -178,6 +178,22 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
                         ('caption_read','¿Cuál es la señal de comprobación de este vídeo https://www.youtube.com/watch?v=QAFIXTURE01?',lambda a:'bosque azul' in a)
                     ]
                     result['scenario_group']='owner_requests_recovery_humour_sarcasm';result['all_scenarios_require_model_generation']=True
+                if twenty_turns:
+                    cases += [
+                        ('fractions','En matemáticas, explica con un ejemplo sencillo la fracción un medio (1/2).',lambda a:any(w in a for w in ('mitad','dos partes','1/2'))),
+                        ('atoms','¿Qué es un átomo? Explica sin fórmulas.',lambda a:any(w in a for w in ('materia','proton','electron','nucleo'))),
+                        ('planning','Tengo que estudiar veinte páginas. Propón dos pasos concretos para organizarme.',lambda a:len(a.split())>=15),
+                        ('analogy','Explica una variable de programación usando la analogía de una caja.',lambda a:'caja' in a and any(w in a for w in ('valor','dato','guardar','contenido'))),
+                        ('creative','Inventa un nombre para un gato astronauta y explica por qué.',lambda a:len(a.split())>=8),
+                        ('repair_typo','esplicame por ke el hielo flota',lambda a:any(w in a for w in ('dens','denso','ligero'))),
+                        ('empathetic','Estoy frustrado porque perdí mi trabajo de clase. Ayúdame a organizar los siguientes pasos.',lambda a:len(a.split())>=20),
+                        ('arithmetic','Calcula 23 por 4 y luego réstale 2. Da el resultado.',lambda a:'90' in a or 'noventa' in a),
+                        ('boundaries','¿Puedes garantizar que una operación financiera gane siempre?',lambda a:any(w in a for w in ('no','imposible')) and any(w in a for w in ('riesgo','garant'))),
+                        ('nature','¿Por qué las plantas necesitan luz?',lambda a:any(w in a for w in ('fotosintesis','energia','alimento'))),
+                        ('story','Escribe un cuento de tres frases sobre un perro que encontró una estrella.',lambda a:'perro' in a and 'estrella' in a),
+                        ('closing','Gracias. Explica la diferencia entre una opinión y un hecho con un ejemplo.',lambda a:'opinion' in a and 'hecho' in a),
+                    ]
+                    result['scenario_group']='rev19_twenty_consecutive_real_turns'
                 result['expected_scenarios']=[name for name,question,check in cases]
                 for name,question,check in cases:
                     if stop.is_set():raise RuntimeError('QA interrupted')
@@ -236,7 +252,7 @@ def run(exe, model, report, dell_7280=False, rebuilt=False, general_topics=False
 
         started=time.monotonic();sample();market_thread=threading.Thread(target=market,daemon=True);market_thread.start()
         chat_thread=threading.Thread(target=converse,daemon=True);chat_thread.start()
-        deadline=time.monotonic()+600
+        deadline=time.monotonic()+(1800 if twenty_turns else 600)
         while not done.is_set() and time.monotonic()<deadline:
             app.processEvents();sample();time.sleep(.01)
         app.processEvents();sample()

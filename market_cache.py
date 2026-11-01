@@ -1,5 +1,6 @@
 from collections import Counter
 from strategy import Bar,frame,build_setups,symbol_strategy
+from market_state import MarketDataFreshnessValidator,CandleGapRecovery
 
 def _compute_frame_and_setups(name,bars,other_frames,rules):
     """Pure CPU work: no MT5, journal, or UI calls in a worker thread."""
@@ -23,6 +24,7 @@ class MarketCache:
         self.analysis_future=None
         self.analysis_name=None
         self.analysis_signature=()
+        self.recovery=CandleGapRecovery()
 
     def poll_analysis(self):
         future=self.analysis_future
@@ -63,7 +65,7 @@ class MarketCache:
             return alt[:-1]
         return rows
 
-    def advance(self,now,allowed=None):
+    def advance(self,now,allowed=None,closed_session=False):
         self.poll_analysis()
         if self.analysis_future is not None:
             return
@@ -74,17 +76,32 @@ class MarketCache:
             return
         name=min(due,key=lambda k:self.due[k])
         tf,interval=self.PERIODS[name]
-        self.due[name]=now+interval
+        self.due[name]=now+(max(60,interval) if closed_session else interval)
+        def read(count):
+            if not closed_session:return self.closed_rates(tf,count)
+            # During a weekend MT5's index zero can be the final, already
+            # closed Friday bar. Filter by UTC close, never drop it by index.
+            from market_state import PERIOD_SECONDS
+            rows=self.api.copy_rates_from_pos(self.symbol,tf,0,count+1)
+            if rows is None:return rows
+            return [r for r in rows if float(r['time'])+PERIOD_SECONDS[name]<=now][-count:]
         try:
             old=self.frames.get(name)
-            rows=self.closed_rates(tf,1 if old else 320)
+            rows=read(1 if old else 320)
             if rows is None or len(rows)==0:
                 raise ValueError(f"sin historial: {self.api.last_error()}")
             if old and int(rows[-1]["time"])==old.bars[-1].time:
-                self.errors.pop(name,None)
-                return
+                health=MarketDataFreshnessValidator.inspect(self.symbol,name,old,now,self.cfg)
+                if health['ready']:
+                    self.errors.pop(name,None);self.recovery.succeeded(self.symbol,name)
+                    return
+                self.errors[name]=health['reason']
+                recovered=self.recovery.recover(self.api,self.symbol,tf,name,now,self.cfg)
+                if recovered is None or not len(recovered) or int(recovered[-1]['time'])<=old.bars[-1].time:return
+                rows=recovered
+                old=None
             if old:
-                rows=self.closed_rates(tf,320)
+                rows=read(320)
                 if rows is None:
                     raise ValueError(f"historial incompleto: {self.api.last_error()}")
             if self.analysis_executor is not None:
@@ -99,7 +116,7 @@ class MarketCache:
                 self.setups,self.rejections=build_setups(self.frames,symbol_strategy(self.cfg,self.symbol))
         except (ValueError,TypeError,KeyError,IndexError) as exc:
             self.errors[name]=str(exc)
-            self.due[name]=now+3
+            self.due[name]=now+(60 if closed_session else 3)
             self.log.report(self.symbol,"DATOS",f"{name}: {exc}")
 
 
@@ -223,11 +240,7 @@ class MarketCache:
         return result
 
     def ready(self,now):
-        for name,max_age in (("M1",150),("M5",660)):
-            f=self.frames.get(name)
-            if not f:
-                return False,f"cargando {name}: {self.errors.get(name,'historial MT5')}"
-            age=now-f.bars[-1].time
-            if age>max_age or age<0:
-                return False,f"{name} atrasado ({age:.0f}s) o reloj desajustado"
+        for name in ('M1','M5'):
+            health=MarketDataFreshnessValidator.inspect(self.symbol,name,self.frames.get(name),now,self.cfg)
+            if not health['ready']:return False,health['reason']
         return True,"OK"

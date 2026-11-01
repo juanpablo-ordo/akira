@@ -293,7 +293,7 @@ class ActorAssetHeartbeat(PendingCase,unittest.TestCase):
         self.clock.advance(60);self.api.set_quote('BTCUSDm',self.api.ticks['BTCUSDm'].bid,fill=False)
         engine=Engine(self.g,self.cfg,self.g.log);self.addCleanup(engine.close)
         view=engine.step();gold=market_activity(view,'XAUUSDm')
-        self.assertIn('cotización',gold['detail']);self.assertIn('0 s',gold['checked'])
+        self.assertIn('Cotización',gold['detail']);self.assertIn('0 s',gold['checked'])
         self.assertFalse(any(row['symbol']=='XAUUSDm' for row in self.api.sent))
         self.assertTrue(any(row['symbol']=='BTCUSDm' for row in self.api.sent))
 

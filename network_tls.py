@@ -37,12 +37,15 @@ def trusted_root_count():
 def urlopen(url, data=None, timeout=10, **kwargs):
     # An explicit context is also needed after an HTTP -> HTTPS redirect.
     if data is not None:kwargs['data']=data
-    return request.urlopen(url, timeout=timeout,context=https_context(), **kwargs)
+    from network_diagnostics import guarded_open
+    return guarded_open(request.urlopen,url, timeout=timeout,context=https_context(), **kwargs)
 
 
 def connection_message(error):
     """Public message only; the original exception stays in diagnostics."""
     text = str(error).lower()
+    if any(s in text for s in ('11002','getaddrinfo','name resolution','dns_error')):
+        return ('ERROR DNS DE ESTA FUENTE','Windows no pudo resolver el dominio. La consulta queda en espera con plazo; se usan fuentes alternativas disponibles. MT5 y el chat mantienen estados independientes.')
     if any(s in text for s in ('certificate_verify_failed','certificate verify failed','local issuer certificate')):
         return ('CONEXIÓN SEGURA PENDIENTE',
                 'No se pudo verificar el certificado de esta fuente. Comprueba la fecha de Windows y sus certificados. Akira reintentará automáticamente; las demás fuentes siguen activas.')
