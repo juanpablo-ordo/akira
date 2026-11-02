@@ -714,6 +714,7 @@ class ContextWorker:
         if name=='local_ai':return bool(r.get('local_model',True) and r.get('local_ai_summary',True))
         if name=='model':return bool(r.get('local_model',True))
         if name=='cloud':return bool(r.get('cloud',False) and self.cfg.get('assistant',{}).get('cloud',False) and self.cfg.get('assistant',{}).get('cloud_optional',True))
+        if name.startswith('coinglass_heatmap:'):return bool(r.get('coinglass',False))
         if name.startswith('coinglass:') and r.get('derivatives_provider','public')!='coinglass':return False
         flags={'news':'investing','youtube':'youtube','macro':'global_news','global_news':'global_news','venue':'global_markets','coinglass':'coinglass','derivatives':'coinglass_public_fallback','technical':'technical_search'}
         return bool(r.get(flags.get(name.split(':')[0],''),True))
@@ -744,6 +745,9 @@ class ContextWorker:
                 tq=('Bitcoin BTC technical analysis support resistance today' if s.startswith('BTC')
                     else 'gold XAUUSD technical analysis support resistance today')
                 jobs['technical:'+s]=(r.get('technical_search_seconds',45),lambda query=tq:market_search(query,limit=10))
+            if s.startswith('BTC') and self.source_enabled('coinglass_heatmap:'+s):
+                from coinglass_heatmap import fetch_heatmap
+                jobs['coinglass_heatmap:'+s]=(max(300,float(r['coinglass_refresh_seconds'])),fetch_heatmap)
             if self.source_enabled('coinglass:'+s):
                 # Gold derivatives are only accepted when the provider supports them.
                 asset='BTC' if s.startswith('BTC') else 'XAU'
@@ -816,7 +820,7 @@ class ContextWorker:
                     if isinstance(data,dict) and data.get('error') and not data.get('items'):raise RuntimeError(str(data['error']))
                     if name=='news' and isinstance(data,dict) and not data.get('items') and data.get('errors'):
                         raise RuntimeError('RSS sin datos: '+str(data['errors']))
-                    if name.startswith('coinglass:') and isinstance(data,dict) and data.get('state')=='PLAN_LIMITED':
+                    if name.startswith(('coinglass:','coinglass_heatmap:')) and isinstance(data,dict) and data.get('state')=='PLAN_LIMITED':
                         # A recognized API key with an inadequate plan is not a
                         # transient outage. Do not hammer a forbidden endpoint.
                         detail=str(data.get('detail') or 'El plan CoinGlass no habilita este endpoint')
@@ -1027,6 +1031,12 @@ class ContextWorker:
         videos=[{k:v for k,v in row.items() if k!='body'} for row in sources.get('youtube',{}).get('data',{}).get('rows',[])] if self.source_enabled('youtube') else []
         coinglass={s:sources.get('coinglass:'+s,{}).get('data',{}) for s in fusion if freshness('coinglass:'+s)>0 and 'coinglass:'+s not in component_errors}
         derivatives={s:sources.get('derivatives:'+s,{}).get('data',{}) for s in fusion if freshness('derivatives:'+s)>0 and 'derivatives:'+s not in component_errors}
+        liquidation_levels={}
+        for symbol in fusion:
+            key='coinglass_heatmap:'+symbol
+            value=sources.get(key,{}).get('data') or {}
+            if freshness(key)>0 and key not in component_errors and value.get('status')=='PROVIDER_MODELLED':
+                liquidation_levels[symbol]=value
         news_data=sources.get('news',{}).get('data') or {};news=list(news_data.get('items',[])) if freshness('news')>0 and isinstance(news_data,dict) and 'news' not in component_errors else []
         for symbol in fusion:
             if freshness('search:'+symbol)>0 and 'search:'+symbol not in component_errors:news.extend(sources.get('search:'+symbol,{}).get('data',[]))
@@ -1054,7 +1064,7 @@ class ContextWorker:
         updated_iso=datetime.fromtimestamp(context_updated,timezone.utc).isoformat() if context_updated else ''
         return {**evolution,'updated':updated_iso,'fusion':fusion,'sources':statuses,'quality_study':self.study.summary(),'strategy_lab':self.strategy_lab.read(),'pending_reviews':pending_reviews,
                 'videos':videos,'video_analysis':videos,
-                'coinglass':coinglass,'derivatives':derivatives,'news':news[:24],'events':events,'weekly_events':weekly_events,
+                'coinglass':coinglass,'derivatives':derivatives,'liquidation_levels':liquidation_levels,'news':news[:24],'events':events,'weekly_events':weekly_events,
                 'preopen_reviews':{name.partition(':')[2]:row.get('data') for name,row in sources.items() if name.startswith('preopen_ai:') and freshness(name)>0},
                 'global_markets':{name.removeprefix('venue:'):row.get('data',{}) for name,row in sources.items() if name.startswith('venue:') and freshness(name)>0 and not row.get('error')},
                 'macro':sources.get('macro:FRED',{}).get('data',{}) if freshness('macro:FRED') and not sources.get('macro:FRED',{}).get('error') else {},
