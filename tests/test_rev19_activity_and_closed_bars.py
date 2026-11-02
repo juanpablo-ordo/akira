@@ -78,8 +78,10 @@ class AtomicResearchStorage(unittest.TestCase):
         with TemporaryDirectory() as td:
             target=Path(td)/'pending_research.json'
             save_atomic_json(target,{'sources':{'ok':True}})
+            circular={}
+            circular['loop']=circular
             with self.assertRaises(ValueError):
-                save_atomic_json(target,{'sources':{float('nan'):1}})
+                save_atomic_json(target,circular)
             self.assertEqual(json.loads(target.read_text(encoding='utf-8')),
                              {'sources':{'ok':True}})
 
