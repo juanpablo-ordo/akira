@@ -675,7 +675,10 @@ class StudioWindow(QMainWindow):
         sections=[]
         for symbol,state in (v.get('status') or {}).items():
             plan=((v.get('symbols') or {}).get(symbol) or {}).get('preopen_plan')
-            sections.append(symbol+'\n'+str(state.get('detail') or '')+('\n\n'+preopen_text(plan) if plan else ''))
+            regime=(((v.get('symbols') or {}).get(symbol) or {}).get('adaptive_regime') or {})
+            candidates=', '.join(regime.get('candidates') or [])
+            regime_text='\nAkira Adaptativa: '+str(regime.get('regime') or 'Sin datos')+(('\nHipótesis: '+candidates) if candidates else '')+'\nEstado: descripción, no validación de rentabilidad'
+            sections.append(symbol+'\n'+str(state.get('detail') or '')+regime_text+('\n\n'+preopen_text(plan) if plan else ''))
         for event in v.get('event_reviews',[])[-5:]:
             decisions='; '.join(s+': '+str(r.get('detail') or r.get('state') or '') for s,r in event.get('symbols_reviewed',{}).items())
             sections.append('Evento: '+event['title']+'\n'+decisions)
