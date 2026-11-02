@@ -36,7 +36,9 @@ class IndicatorAudit(unittest.TestCase):
         bars=candles()
         ext=context_indicators(bars,1.2)
         self.assertGreater(len(ext),20)
-        self.assertTrue(all(isinstance(v,(int,float)) and math.isfinite(v) for v in ext.values()))
+        # A ZigZag pivot may legitimately be absent until both sides close.
+        self.assertTrue(all(v is None or (isinstance(v,(int,float)) and math.isfinite(v))
+                            for v in ext.values()))
         self.assertEqual(indicator_provenance()['decision_use'],'CONTEXT_ONLY')
         self.assertFalse(indicator_provenance()['independent_confirmation'])
         base=enrich(bars,1.2)
