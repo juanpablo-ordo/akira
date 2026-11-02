@@ -491,7 +491,7 @@
   "COBERTURA_PDF_REV19.md": "c82f31a78c73a00ee36762174c668bf58e1878598cb7998009a776c8fdeb1399",
   "indicator_decision.py": "50ea4d0083fdc847b6f2ac3dfbbc94778214cd7fb153e845612a5935d36ac4ed",
   "adaptive_route.py": "bdb0ba91afa1633497359667cd69ad330829dc54e4758bc1aeeac0f8cccc2a01",
-  "coinglass_heatmap.py": "9d74e8daee440e00424dc750dda0738572e8d0e2f4e4bbcb1dff9e9dcfaf63d9",
-  "tests/test_rev19_three_integrations.py": "67c2a9ef399adb79a45927b3b4a9bde9344ad3339f97f9c73163c6a00fb7c243",
+  "coinglass_heatmap.py": "4b1844b9868fd1007589883735585c9643e91b9df22527eeeab634de9c187097",
+  "tests/test_rev19_three_integrations.py": "518ca7f6cbe0f1c79262a058397a941e0ce0bf049d69f773915d07a825f09cbc",
   "INTEGRACION_TRES_MODULOS_REV19.md": "d391ca584497954cd1920ec1fe7c4accb01745b99fbc9ea5c034684d9acda41d"
 }
