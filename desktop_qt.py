@@ -263,10 +263,10 @@ class StudioWindow(QMainWindow):
             stats=self.table(['Indicador','Valor','Contexto']);stats.setMaximumHeight(175);card.body.addWidget(stats)
             chart=CandleChart();card.body.addWidget(chart,1);left.addWidget(card,1);self.analysis_widgets[symbol]=(price,stats,chart)
         card=self.card('ESTADO Y ANTIGÜEDAD DE DATOS','clock');self.analysis_sources=self.table(['Fuente','Estado','Antigüedad','APORTE O MOTIVO']);card.body.addWidget(self.analysis_sources,1);right.addWidget(card,3)
-        heat=self.card('MAPA ESTIMADO DE LIQUIDEZ · SIN LIQUIDACIONES REALES','chart')
+        heat=self.card('MAPA DE LIQUIDEZ · MODELOS Y DATOS DE ORIGEN','chart')
         self.heatmap_scope=ChoiceBox();self.heatmap_scope.addItems(['Actual','Histórico']);self.heatmap_scope.currentTextChanged.connect(lambda:self.render_analysis());heat.body.addWidget(self.heatmap_scope)
         self.heatmap_table=self.table(['Activo','Zona de precio','Intensidad','Origen']);self.heatmap_table.setMinimumHeight(180);heat.body.addWidget(self.heatmap_table,1)
-        self.heatmap_note=label('Estimación basada en velas cerradas y volumen de ticks de MT5. No son órdenes ni liquidaciones observadas. No constituye una señal de entrada.','muted');self.heatmap_note.setWordWrap(True);heat.body.addWidget(self.heatmap_note);right.addWidget(heat,2)
+        self.heatmap_note=label('Fuente del mapa indicada en cada fila. CoinGlass modela exposición apalancada y MT5 estima actividad; ninguno equivale a liquidaciones ejecutadas por precio.','muted');self.heatmap_note.setWordWrap(True);heat.body.addWidget(self.heatmap_note);right.addWidget(heat,2)
         decision=self.card('PROCESO DE DECISIÓN','shield');self.decision_text=QTextBrowser();decision.body.addWidget(self.decision_text,1);right.addWidget(decision,2)
 
     def build_sources(self):
@@ -664,13 +664,21 @@ class StudioWindow(QMainWindow):
         scope='historical_intensity' if self.heatmap_scope.currentText()=='Histórico' else 'current_intensity'
         for symbol in ('BTCUSDm','XAUUSDm'):
             source=(((v.get('symbols') or {}).get(symbol) or {}).get('liquidity_heatmap') or {})
-            if source.get('status')!='ESTIMATED':continue
+            if source.get('status') not in ('ESTIMATED','PROVIDER_MODELLED'):continue
             for level in sorted(source.get('bands') or [],key=lambda x:x.get(scope,0),reverse=True)[:8]:
                 intensity=max(0,min(100,float(level.get(scope,0))))
                 bar='▰'*max(0,min(10,round(intensity/10)))
                 key=symbol+':'+str(level.get('low'))+':'+scope
-                bands.append((key,[symbol,f"{level['low']:,.2f}–{level['high']:,.2f}",bar+f" {intensity:.0f}%",'MT5 · ESTIMACIÓN'],level))
+                origin='CoinGlass · NIVELES MODELADOS' if source['status']=='PROVIDER_MODELLED' else 'MT5 · ACTIVIDAD ESTIMADA'
+                bands.append((key,[symbol,f"{level['low']:,.2f}–{level['high']:,.2f}",bar+f" {intensity:.0f}%",origin],level))
         self.heatmap_table.update_rows(bands)
+        btc=((v.get('symbols') or {}).get('BTCUSDm') or {})
+        real=btc.get('liquidations_reported') or {}
+        if real.get('status')=='PROVIDER_REPORTED_AGGREGATED_EXECUTIONS':
+            reported=f"CoinGlass · ejecuciones agregadas por periodo: LONG {real['long_liquidations_usd']:,.0f} USD; SHORT {real['short_liquidations_usd']:,.0f} USD. No tienen niveles de precio individuales."
+        else:
+            reported='Liquidaciones ejecutadas: sin datos agregados actuales confirmados.'
+        self.heatmap_note.setText('BTC: CoinGlass (niveles apalancados modelados, cuando el plan permite acceso), o estimación por ticks MT5. Oro: estimación por ticks MT5; no se atribuyen liquidaciones BTC al oro. '+reported+' El mapa no autoriza operaciones.')
         from market_preparation import preopen_text
         sections=[]
         for symbol,state in (v.get('status') or {}).items():
