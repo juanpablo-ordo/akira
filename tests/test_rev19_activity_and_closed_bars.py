@@ -1,0 +1,55 @@
+"""Regressions for the photographed empty ActivityFeed tabs and closed-session bars."""
+import unittest
+
+from activity_events import category_for_event
+from market_cache import MarketCache
+from tests.fixtures import PendingCase
+
+
+class ActivityCategories(unittest.TestCase):
+    def test_explicit_category_is_authoritative_and_not_overridden_by_text(self):
+        row={'category':'ANÁLISIS','state':'SISTEMA',
+             'message':'ERROR and TRADING in the headline are not categories'}
+        self.assertEqual(category_for_event(row),'ANÁLISIS')
+        self.assertEqual(category_for_event({'activity_category':'ERROR',**row}),'ANÁLISIS')
+        self.assertEqual(category_for_event({**row,'activity_category':'ERROR'}),'ERROR')
+
+    def test_categories_reflect_structured_event_type(self):
+        cases=[
+            ({'state':'SISTEMA','symbol':'BTCUSDm'},'SISTEMA'),
+            ({'operation':'protect','symbol':'XAUUSDm'},'TRADING'),
+            ({'state':'MAPA','symbol':'BTCUSDm'},'ANÁLISIS'),
+            ({'state':'RECHAZO MT5','symbol':'BTCUSDm'},'AVISO'),
+            ({'severity':'ERROR','state':'DATOS'},'ERROR'),
+            ({'message':'ERROR desactivado sin fallos'},'SISTEMA'),
+            ({'state':'RUNNER','symbol':'XAUUSDm'},'TRADING'),
+        ]
+        for row,expected in cases:
+            with self.subTest(row=row):
+                self.assertEqual(category_for_event(row),expected)
+
+    def test_filter_matches_the_same_category_painted_on_the_row(self):
+        rows=[{'state':'MAPA'},{'operation':'protect'}, {'severity':'ERROR'}, {'state':'SISTEMA'}]
+        indexed=[{**row,'activity_category':category_for_event(row)} for row in rows]
+        for tab in ('TRADING','ANÁLISIS','ERROR','SISTEMA'):
+            selected=[row for row in indexed if row['activity_category']==tab]
+            self.assertEqual(len(selected),1)
+            self.assertEqual(category_for_event(selected[0]),tab)
+
+
+class WeekendClosedBars(PendingCase,unittest.TestCase):
+    def test_closed_session_reads_only_confirmed_bars(self):
+        # FakeMT5 rejects start_pos=0 as an unclosed-bar read.
+        # Move the wall clock beyond the synthetic H1 history.
+        rows=self.api.rates[('XAUUSDm',16385)]
+        self.clock.now=int(rows[-1]['time'])+4*86400
+        cache=MarketCache(self.api,'XAUUSDm',self.g.log,self.cfg)
+        cache.advance(self.clock.now,allowed=('H1',),closed_session=True)
+        calls=[c for c in self.api.rate_calls if c[0]=='XAUUSDm']
+        self.assertTrue(calls)
+        self.assertTrue(all(c[2]==1 for c in calls))
+        self.assertIn('H1',cache.frames)
+        self.assertTrue(all(b.time+3600<=self.clock.now for b in cache.frames['H1'].bars))
+
+
+if __name__=='__main__':unittest.main()
