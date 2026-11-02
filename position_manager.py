@@ -59,6 +59,17 @@ class PositionManager:
                 if risk<=0:continue
                 gained=side*(exit-float(p.price_open));rr=gained/risk
                 RunnerPerformanceTracker.update(row,plan,rr,float(getattr(p,'profit',0)),now)
+                row['last_protection_review']={
+                    'at_utc':now,'ticket':int(p.ticket),'symbol':p.symbol,
+                    'side':'BUY' if side==1 else 'SELL',
+                    'quote_bid':float(q.bid),'quote_ask':float(q.ask),
+                    'spread':float(q.spread),'price_exit_executable':float(exit),
+                    'entry':float(p.price_open),'initial_sl':initial,
+                    'live_sl':float(p.sl),'live_tp':float(p.tp),
+                    'current_r':round(rr,6),'max_favorable_r_observed':row.get('max_favorable_r'),
+                    'net_profit_current':float(getattr(p,'profit',0)),
+                    'mfe_recovered':'OBSERVED_AFTER_START_ONLY' if row.get('restored_without_mfe') else 'JOURNAL_OBSERVATIONS_ONLY',
+                    'requires_broker_confirmation':True}
                 from management_safety import protection_config_warning
                 warning=protection_config_warning(g.cfg['management'])
                 if warning:
@@ -138,4 +149,11 @@ class PositionManager:
                         g.journal.save()
                 else:
                     row['protection_state']='SL vigente en MT5; sin mejora de protección disponible'
-            except Blocked as e:g.log.report(p.symbol,'PROTECCIÓN',str(e))
+            except Blocked as e:
+                row=g.journal.data['positions'].get(str(p.ticket))
+                if isinstance(row,dict):
+                    row['protection_state']='Bloqueada por MT5 o información insuficiente: '+str(e)[:220]
+                    row['protection_last_error']={'at_utc':g.clock(),'ticket':int(p.ticket),'reason':str(e)[:250]}
+                    if g.clock()-self.last_stats_save>=5:
+                        g.journal.save();self.last_stats_save=g.clock()
+                g.log.report(p.symbol,'PROTECCIÓN',f'Ticket {p.ticket}: {e}')

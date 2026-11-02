@@ -907,12 +907,15 @@ class Engine:
         except Exception as exc:self.log.report('MT5','HISTORIAL DE CIERRE','No se pudo confirmar el cierre: '+type(exc).__name__)
         from trade_quality_gate import owned_outcomes
         self._confirmed_outcomes=owned_outcomes(g)
+        # FIRST service owned positions using broker facts, before any research,
+        # model call, event scan or admission of new risk. Manual PAUSE retains
+        # its existing meaning; risk cooldowns never stop this supervisor.
+        if not self.paused and not g.runtime_execution_block:self.positions.step(snap)
         snap=self.enforce_capital_protection(snap)
         snap=self.review_loss_pendings(snap)
-        # El primer envío no espera una consulta de 90 días de deals.
+        # Research can be slow or unavailable; it is never a stop-management dependency.
         self.planner.research_context=self.read_context()
         self.observe_market_events(now)
-        if not self.paused and not g.runtime_execution_block:self.positions.step(snap)
         symbols=list(self.planner.caches)
         # Rotate first priority so one symbol cannot consume every available turn.
         shift=self.cycle%max(1,len(symbols));symbols=symbols[shift:]+symbols[:shift]
@@ -1257,6 +1260,11 @@ class Engine:
                 self.planner.pending_candidate_audit.get(s,[]),symbols[s]['scenario_book'],
                 self.allocation_checks.get(s,[]),book,self.pending_cycles.get(s,{}),self.status.get(s,{}),
                 self.g.trade_cap(snap),self.g.runtime_execution_block,self.cfg['mode'],self.paused)
+            # The heatmap is purely observational and may never approve a trade.
+            from liquidation_heatmap import estimate_bands
+            symbols[s]['liquidity_heatmap']=estimate_bands(s,c.frames,self.g.clock())
+            from market_regime import classify_regime
+            symbols[s]['adaptive_regime']=classify_regime(c.frames,self.broker_sessions.states.get(s))
         from operation_health import execution_gate
         safety=self.entry_safety()
         entry_block=self.g.runtime_execution_block or (safety['reason'] if not safety['allowed'] else '')
@@ -1270,6 +1278,7 @@ class Engine:
                 'status':self.status,'candidates':{s:[p.to_dict() for p in ps[:16]] for s,ps in self.candidates.items()},
                 'audit':self.planner.pending_candidate_audit,'research':self.planner.research_context,
                 'analysis':{s:self.analysis_evidence(s) for s in self.planner.caches},
+                'indicator_audit':__import__('technical_indicator_extensions').indicator_provenance(),
                 'learning':{s:self.learner.metrics(s) for s in self.planner.caches},
                 'cycle_ms':round(self.duration_ms,1),'cycle':self.cycle,'updated':self.g.clock(),
                 'position_closures':self.g.closure_monitor.rows(),
@@ -1402,7 +1411,17 @@ class Engine:
         return snap
 
     def pending_review_guard(self,plan,snap,volume,ticket=0):
-        """Mandatory neural review of exactly the order about to increase exposure."""
+        """Exact-order neural review, unless the user explicitly chooses technical-only.
+
+        The technical alternative still passes every deterministic Gateway risk,
+        structural quality, pricing and MT5 check. It never impersonates an AI approval.
+        """
+        policy=self.cfg['execution'].get('review_policy','required')
+        if policy=='technical':
+            return {'review_policy':'technical','neural_review':False,
+                    'verdict':'TECHNICAL_ONLY','checked_at':self.g.clock(),
+                    'reason':'Evaluación técnica determinista configurada; sin dictamen de IA',
+                    'symbol':plan.symbol,'ticket':int(ticket or 0)}
         from execution_review import fingerprint,valid_receipt,request_id
         symbol=plan.symbol
         account={k:getattr(snap.account,k,None) for k in ('login','server','currency','balance','equity','margin_free','trade_mode')}

@@ -224,6 +224,7 @@
     "orphan_min_m15_bars": 2
   },
   "execution": {
+    "review_policy": "required",
     "execute_ai_pending_exact": true,
     "direct_pending_from_map": true,
     "pending_candidates_per_quadrant": 6,
@@ -328,8 +329,8 @@
     "deep_review_scenario_penalty": 6.5
   },
   "management": {
-    "breakeven_at_r": 1.25,
-    "trail_at_r": 1.8,
+    "breakeven_at_r": 0.95,
+    "trail_at_r": 1.4,
     "minimum_hold_seconds": 60.0,
     "trail_atr": 0.7,
     "modify_seconds": 5.0,

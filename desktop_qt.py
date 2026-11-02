@@ -263,6 +263,10 @@ class StudioWindow(QMainWindow):
             stats=self.table(['Indicador','Valor','Contexto']);stats.setMaximumHeight(175);card.body.addWidget(stats)
             chart=CandleChart();card.body.addWidget(chart,1);left.addWidget(card,1);self.analysis_widgets[symbol]=(price,stats,chart)
         card=self.card('ESTADO Y ANTIGÜEDAD DE DATOS','clock');self.analysis_sources=self.table(['Fuente','Estado','Antigüedad','APORTE O MOTIVO']);card.body.addWidget(self.analysis_sources,1);right.addWidget(card,3)
+        heat=self.card('MAPA ESTIMADO DE LIQUIDEZ · SIN LIQUIDACIONES REALES','chart')
+        self.heatmap_scope=ChoiceBox();self.heatmap_scope.addItems(['Actual','Histórico']);self.heatmap_scope.currentTextChanged.connect(lambda:self.render_analysis());heat.body.addWidget(self.heatmap_scope)
+        self.heatmap_table=self.table(['Activo','Zona de precio','Intensidad','Origen']);self.heatmap_table.setMinimumHeight(180);heat.body.addWidget(self.heatmap_table,1)
+        self.heatmap_note=label('Estimación basada en velas cerradas y volumen de ticks de MT5. No son órdenes ni liquidaciones observadas. No constituye una señal de entrada.','muted');self.heatmap_note.setWordWrap(True);heat.body.addWidget(self.heatmap_note);right.addWidget(heat,2)
         decision=self.card('PROCESO DE DECISIÓN','shield');self.decision_text=QTextBrowser();decision.body.addWidget(self.decision_text,1);right.addWidget(decision,2)
 
     def build_sources(self):
@@ -653,14 +657,28 @@ class StudioWindow(QMainWindow):
         for symbol,widget in self.asset_activity_labels.items():widget.setText(market_activity(v,symbol)['text'])
         for symbol,(price,table,chart) in self.analysis_widgets.items():
             info=(v.get('symbols') or {}).get(symbol) or {};frames=info.get('frames') or {};values=frames.get(tf) or {};price.setText(number(info.get('bid')))
-            keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo'];rows=[]
+            keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo','sma20','wma20','hma20','ichimoku_tenkan','ichimoku_kijun','ichimoku_span_a_current','ichimoku_span_b_current','parabolic_sar','supertrend','supertrend_direction','zigzag_last_confirmed','donchian_high20','donchian_low20','keltner_upper','keltner_lower','chandelier_buy_stop','chandelier_sell_stop','cmf20','accumulation_distribution','demarker14','pivot_pp_previous','fvg_last_three','volume_profile_poc_estimated'];rows=[]
             for key in keys:rows.append((key,[INDICATORS.get(key,key.upper()),number(values.get(key)),tf],{}))
             table.update_rows(rows);chart.set_data((info.get('bars_by_timeframe') or {}).get(tf) or info.get('bars') or [])
+        bands=[]
+        scope='historical_intensity' if self.heatmap_scope.currentText()=='Histórico' else 'current_intensity'
+        for symbol in ('BTCUSDm','XAUUSDm'):
+            source=(((v.get('symbols') or {}).get(symbol) or {}).get('liquidity_heatmap') or {})
+            if source.get('status')!='ESTIMATED':continue
+            for level in sorted(source.get('bands') or [],key=lambda x:x.get(scope,0),reverse=True)[:8]:
+                intensity=max(0,min(100,float(level.get(scope,0))))
+                bar='▰'*max(0,min(10,round(intensity/10)))
+                key=symbol+':'+str(level.get('low'))+':'+scope
+                bands.append((key,[symbol,f"{level['low']:,.2f}–{level['high']:,.2f}",bar+f" {intensity:.0f}%",'MT5 · ESTIMACIÓN'],level))
+        self.heatmap_table.update_rows(bands)
         from market_preparation import preopen_text
         sections=[]
         for symbol,state in (v.get('status') or {}).items():
             plan=((v.get('symbols') or {}).get(symbol) or {}).get('preopen_plan')
-            sections.append(symbol+'\n'+str(state.get('detail') or '')+('\n\n'+preopen_text(plan) if plan else ''))
+            regime=(((v.get('symbols') or {}).get(symbol) or {}).get('adaptive_regime') or {})
+            candidates=', '.join(regime.get('candidates') or [])
+            regime_text='\nAkira Adaptativa: '+str(regime.get('regime') or 'Sin datos')+(('\nHipótesis: '+candidates) if candidates else '')+'\nEstado: descripción, no validación de rentabilidad'
+            sections.append(symbol+'\n'+str(state.get('detail') or '')+regime_text+('\n\n'+preopen_text(plan) if plan else ''))
         for event in v.get('event_reviews',[])[-5:]:
             decisions='; '.join(s+': '+str(r.get('detail') or r.get('state') or '') for s,r in event.get('symbols_reviewed',{}).items())
             sections.append('Evento: '+event['title']+'\n'+decisions)

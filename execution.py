@@ -78,8 +78,12 @@ class Reporter:
         self.recent_events=deque(maxlen=300)
 
     def event(self,symbol,text,**values):
-        row={"utc":datetime.now(timezone.utc).isoformat(),"symbol":symbol,"message":text,**values}
-        if values.get('operation') or symbol=='ERROR':self.recent_events.append(row)
+        from activity_event_schema import normalize_event
+        row=normalize_event({"utc":datetime.now(timezone.utc).isoformat(),"symbol":symbol,
+                             "message":text,**values})
+        # Reports about protection, stale prices and AI timeouts belong in
+        # ActivityFeed too, not just rows containing an MT5 operation.
+        self.recent_events.append(row)
         if self.console:
             print(f"{row['utc'][11:19]} | {symbol} | {text}",flush=True)
         # Rotación diaria; no crecer indefinidamente en un único archivo.
@@ -96,7 +100,7 @@ class Reporter:
         now=time.monotonic()
         if before is None or now-before>=30:
             self.last[key]=now
-            self.event(symbol,f"{state} | {detail}",**values)
+            self.event(symbol,f"{state} | {detail}",**{**values,'state':state,'detail':detail})
 
     def dump(self):
         target=self.folder/"estado.json"

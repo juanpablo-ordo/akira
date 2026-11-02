@@ -310,9 +310,20 @@ class ContextWorker:
     def _model_input(self,snapshot,sources,max_chars=6500,scenario_limit=2,cloud=False):
         desktop=self.cfg.get('desktop') or {}
         context=int(owned_context_tokens() or desktop.get('model_context_tokens') or 4096)
-        if not cloud and (self.cfg.get('assistant') or {}).get('local_runtime_enabled') and (context<=4096 or desktop.get('performance_profile')=='Ahorro de energía'):
+        managed=bool((self.cfg.get('assistant') or {}).get('local_runtime_enabled'))
+        if not cloud and managed and (context<=4096 or desktop.get('performance_profile')=='Ahorro de energía'):
             from compact_review import build
             return build(snapshot,sources,self.clock(),self.cfg['research'].get('external_stale_seconds',600))
+        if cloud or not managed:
+            # Rev19 adds closed-candle context indicators to every timeframe.
+            # The old 6500/8500-character envelope fitted the smaller Rev18
+            # matrix but now rejects complete BTC+XAU evidence before inference.
+            # These providers use an 8192-token local context (or a cloud model)
+            # and already support the bounded 18000-character review_input.
+            # Keep ALL indicators and active symbols; never truncate JSON or
+            # relabel an omitted indicator as model-reviewed. Small managed
+            # models continue through the separate compact digest above.
+            max_chars=max(max_chars,18000)
         return self._review_input(snapshot,sources,max_chars,scenario_limit)
 
     def _pending_summary(self,batch,sources):

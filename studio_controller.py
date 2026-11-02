@@ -170,6 +170,26 @@ class StudioController:
         signature=tuple(sorted((str(o.get('ticket')),o.get('entry'),o.get('sl'),o.get('tp')) for o in view.get('orders') or [] if o.get('owned')))
         if self._pending_signature is not None and signature!=self._pending_signature and self.cfg['desktop'].get('notify_pending_change',True):self.notify('Pendientes actualizadas','MT5 confirmó un cambio en el mapa. Consulta los tickets y niveles en Cuenta.')
         self._pending_signature=signature
+        # A failed stop improvement is financially relevant even if entry
+        # permissions or a source review are blocked. Persistent deduplication
+        # avoids a popup on every engine tick or application restart.
+        for ticket,meta in (view.get('position_management') or {}).items():
+            if not isinstance(meta,dict):continue
+            warning=str(meta.get('protection_configuration_warning') or '')
+            failed=meta.get('protection_last_error') or {}
+            if warning:
+                key='protection:config:'+str(ticket)+':'+__import__('hashlib').sha256(warning.encode()).hexdigest()[:12]
+                if self.notices.add_once('Protección por configuración · #'+str(ticket),
+                        warning,key,severity='warning',category='trading'):
+                    self.emit('notice',{'title':'Protección por configuración · #'+str(ticket),
+                        'body':warning,'severity':'warning','ticket':ticket})
+            elif failed and 0<=time.time()-float(failed.get('at_utc',0))<=180:
+                key='protection:blocked:'+str(ticket)+':'+str(int(float(failed.get('at_utc',0))//600))
+                reason=str(failed.get('reason') or 'MT5 no confirmó la mejora del SL.')
+                if self.notices.add_once('SL sin modificar · #'+str(ticket),
+                        reason,key,severity='warning',category='trading'):
+                    self.emit('notice',{'title':'SL sin modificar · #'+str(ticket),
+                        'body':reason,'severity':'warning','ticket':ticket})
 
     def ask(self,message,use_cloud=False):
         message=str(message).strip()

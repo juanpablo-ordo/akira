@@ -50,12 +50,16 @@ def enrich(bars,atr):
     bos=1 if last.close>top else -1 if last.close<bottom else 0
     sweep=1 if last.low<bottom and last.close>bottom else -1 if last.high>top and last.close<top else 0
     range_hi=max(b.high for b in bars[-50:]); range_lo=min(b.low for b in bars[-50:])
-    return {"ema50":ema(close,50),"ema200":ema(close,200),"ema200_warm":len(close)>=200,
+    base={"ema50":ema(close,50),"ema200":ema(close,200),"ema200_warm":len(close)>=200,
             "adx":adx,"stochastic":stochastic,"williams":stochastic-100,"cci":cci,"mfi":mfi,
             "roc":100*(close[-1]/close[-4]-1),"obv_slope":(obv[-1]-obv[-6])/max(sum(volumes[-5:]),1),
             "vwap":vwap,"vwap_bars":len(session),"bos":bos,"sweep":sweep,
             "fib382":range_hi-(range_hi-range_lo)*.382,"fib50":(range_hi+range_lo)/2,
             "fib618":range_hi-(range_hi-range_lo)*.618,"range_hi":range_hi,"range_lo":range_lo}
+    from technical_indicator_extensions import context_indicators
+    # Context only: no correlated-indicator double counting in the entry score.
+    base.update(context_indicators(bars,atr))
+    return base
 
 
 def context_vote(extra,side,price,atr):
