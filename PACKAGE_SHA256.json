@@ -486,7 +486,7 @@
   "technical_indicator_extensions.py": "68d6df15463985214ca2c8c8753196a9ff30fb88fa2dace41e2fe26d41ee15f4",
   "activity_event_schema.py": "e257872bee3c06a06ed0719edc3bbf57f1dac3cf6b36b62b684b6e15e70d0873",
   "incident_replay.py": "656cc6063421e55e1f6e007938d22167d7b331d21e6f528023241994bbf41333",
-  "tests/test_rev19_pdf_integral.py": "88f5ffa254874b563df4e6486e29057fe816531209f7d3f90d32b173e3bdc2a2",
+  "tests/test_rev19_pdf_integral.py": "d81d329e1bc90708507157409c076d61d9ccc942232e3f4d9c39f259831a4365",
   "market_regime.py": "4d5544f133c33ae9cc63c926b15f9792247314dfafe35f8a07ccc59e48559413",
   "COBERTURA_PDF_REV19.md": "6128e56c3fc9de0ca7537cb69c344e0f41c50aaa296dc4ee4b83867ea4696bab"
 }
