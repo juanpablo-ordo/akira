@@ -132,6 +132,8 @@ class ForensicIncident(unittest.TestCase):
 
 
 class NeuralPolicy(PendingCase,unittest.TestCase):
+    # Test the actual execution review policy, not the transport mock from PendingCase.
+    live_review_guard=True
     def test_technical_mode_is_explicitly_not_neural(self):
         from engine import Engine
         self.cfg['execution']['review_policy']='technical'
