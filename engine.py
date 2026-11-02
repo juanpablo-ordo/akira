@@ -1263,6 +1263,8 @@ class Engine:
             # The heatmap is purely observational and may never approve a trade.
             from liquidation_heatmap import estimate_bands
             symbols[s]['liquidity_heatmap']=estimate_bands(s,c.frames,self.g.clock())
+            from market_regime import classify_regime
+            symbols[s]['adaptive_regime']=classify_regime(c.frames,self.broker_sessions.states.get(s))
         from operation_health import execution_gate
         safety=self.entry_safety()
         entry_block=self.g.runtime_execution_block or (safety['reason'] if not safety['allowed'] else '')
@@ -1276,6 +1278,7 @@ class Engine:
                 'status':self.status,'candidates':{s:[p.to_dict() for p in ps[:16]] for s,ps in self.candidates.items()},
                 'audit':self.planner.pending_candidate_audit,'research':self.planner.research_context,
                 'analysis':{s:self.analysis_evidence(s) for s in self.planner.caches},
+                'indicator_audit':__import__('technical_indicator_extensions').indicator_provenance(),
                 'learning':{s:self.learner.metrics(s) for s in self.planner.caches},
                 'cycle_ms':round(self.duration_ms,1),'cycle':self.cycle,'updated':self.g.clock(),
                 'position_closures':self.g.closure_monitor.rows(),
