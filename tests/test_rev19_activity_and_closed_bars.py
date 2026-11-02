@@ -54,6 +54,36 @@ class ManagementConfigurationWarning(unittest.TestCase):
             {'breakeven_at_r':1.25,'trail_at_r':1.8,'trail_atr':0.7}),'')
 
 
+class AtomicResearchStorage(unittest.TestCase):
+    def test_parallel_research_writers_keep_valid_json_and_clean_temps(self):
+        from atomic_json import save_atomic_json
+        from concurrent.futures import ThreadPoolExecutor
+        from tempfile import TemporaryDirectory
+        from pathlib import Path
+        import json
+        with TemporaryDirectory() as td:
+            target=Path(td)/'state'/'pending_research.json'
+            with ThreadPoolExecutor(max_workers=6) as pool:
+                list(pool.map(lambda n: save_atomic_json(
+                    target,{'sources':{'test':{'seq':n}}}),range(200)))
+            document=json.loads(target.read_text(encoding='utf-8'))
+            self.assertIn(document['sources']['test']['seq'],range(200))
+            self.assertEqual(list(target.parent.glob('*.tmp')),[])
+
+    def test_invalid_payload_does_not_replace_last_good_snapshot(self):
+        from atomic_json import save_atomic_json
+        from tempfile import TemporaryDirectory
+        from pathlib import Path
+        import json
+        with TemporaryDirectory() as td:
+            target=Path(td)/'pending_research.json'
+            save_atomic_json(target,{'sources':{'ok':True}})
+            with self.assertRaises(ValueError):
+                save_atomic_json(target,{'sources':{float('nan'):1}})
+            self.assertEqual(json.loads(target.read_text(encoding='utf-8')),
+                             {'sources':{'ok':True}})
+
+
 class WeekendClosedBars(PendingCase,unittest.TestCase):
     def test_closed_session_reads_only_confirmed_bars(self):
         # FakeMT5 rejects start_pos=0 as an unclosed-bar read.
