@@ -304,7 +304,7 @@
   "reference_library.py": "ce71af0f6cd3c2de8bc6284d2211e36d728635a9da1f2f48843902297839d356",
   "regime.py": "c4768fe41deb1c746ab752c29625fc10ae195b18bcf427a8ae336225f91e328b",
   "requirements.txt": "41007e0b98f798f984792b25798be0d831a41e639d0f1f14f655f9db35da6d15",
-  "research.py": "e8c962caadd8cc1b210377457da5e3dba73e27f60f24f0678cbb0505ba5f66c5",
+  "research.py": "70fbcf8b77d85d2d35d0dec96921e8497bc8f2a3c1dd9f6c53082f888c5edded",
   "resource_optimizer.py": "4c37fec00aa3cd2dc2697d83683566ec7e1cf808d9c50f37f9bc6077a68fb58f",
   "response_quality.py": "92e991ba75df0910e9a22924c093289df832c4852e44cd5e0e79e868bdfda619",
   "risk_limits.py": "0c97bbf72050d7391c18a87ac86df55c8deab20d359489523deb919c98c6ece4",
@@ -478,7 +478,8 @@
   "windows_identity.py": "12516c28395aaacba01368b0cbea587197e71ae19aa6ecdb1cdc28dc6cda3141",
   "windows_version.txt": "30684554c37c4776b6c6acda4732a4a70bf04988cde1da19ca4e80ca72a0e937",
   "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8",
-  "tests/test_rev19_activity_and_closed_bars.py": "64fbae2f47e49ee8c8f0ccc20780445c315c3f7b745833da3c0a5097a233bf92",
+  "tests/test_rev19_activity_and_closed_bars.py": "d0aae854cde3fd86c141f8ab9a50e5e87063676711e3b6777dcbec5e1877aaf1",
   "activity_events.py": "c96eb24b4a8d0ca7ddf9304774824aaeb3fcce223b223e4fdde56e0d4521e4c6",
-  "management_safety.py": "5bafb2a2808126e76a36e36f506579da18ef6e4726818029a2ebfaf4cfc0489a"
+  "management_safety.py": "5bafb2a2808126e76a36e36f506579da18ef6e4726818029a2ebfaf4cfc0489a",
+  "atomic_json.py": "f43e97002950035a66fa122e950ac928f929c1e6334de41adb50f815702ee6f0"
 }
