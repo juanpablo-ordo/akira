@@ -162,7 +162,7 @@ class SettingsPanel(QWidget):
         card=self.card(1,'GESTIÓN DE RUNNERS','analysis')
         self.field(card,'management.protect_progress','Proteger el avance aunque falte un pivote M15',help='Al alcanzar el umbral R configurado, solicita un SL que cubra costes estimados. Afecta runners directas y pendientes activadas gestionadas como runners; conserva el TP. Respeta la espera mínima y los límites del bróker. No garantiza el precio de ejecución ni elimina pérdidas por saltos de precio.')
         note=label('El equilibrio se evalúa con el precio ejecutable y costes conocidos. Valores de millones de R desactivan la protección en la práctica; Akira los señalará sin modificar preferencias anteriores. Perfiles nuevos: 0.95R para equilibrio, 1.4R para trailing y sin espera mínima. No garantiza un cierre sin pérdidas.','muted');note.setWordWrap(True);card.body.addWidget(note)
-        for path,title in [('management.breakeven_at_r','Equilibrio a partir de R'),('management.trail_at_r','Trailing a partir de R'),('management.trail_atr','Distancia de trailing (ATR)'),('management.runner_structure_only','Gestión estructural de runners'),('management.pending_fills_as_runners','Gestionar pendientes activadas como runners')]:self.field(card,path,title)
+        for path,title in [('management.breakeven_at_r','Equilibrio a partir de R'),('management.trail_at_r','Trailing a partir de R'),('management.trail_atr','Distancia de trailing (ATR)'),('management.minimum_hold_seconds','Espera mínima antes de proteger (segundos)'),('management.modify_seconds','Separación entre solicitudes SLTP (segundos)'),('management.runner_structure_only','Gestión estructural de runners'),('management.pending_fills_as_runners','Gestionar pendientes activadas como runners'),('management.respect_entry_horizon','Respetar horizonte temporal original'),('management.extend_targets','Permitir ampliación de objetivos por estructura')]:self.field(card,path,title)
         self.risk_paths=set(self.fields)-before
         for path in self.risk_paths:
             widget=self.fields[path][0];signal=widget.toggled if isinstance(widget,QCheckBox) else widget.valueChanged
@@ -181,11 +181,15 @@ class SettingsPanel(QWidget):
     def refresh_risk_preview(self,force=False):
         if not hasattr(self,'risk_paths') or (not force and not self.risk_preview.isVisible()):return
         from studio_presenter import risk_dashboard
-        config={'risk':dict(self.controller.cfg['risk']),'runner':dict(self.controller.cfg['runner']),'capital_protection':dict(self.controller.cfg['capital_protection'])}
+        config={'risk':dict(self.controller.cfg['risk']),'runner':dict(self.controller.cfg['runner']),'capital_protection':dict(self.controller.cfg['capital_protection']),
+                'management':dict(self.controller.cfg['management'])}
         for path in self.risk_paths:put(config,path,self.fields[path][1]())
         data=risk_dashboard(self.controller.view,config,self.window.private)
         text='Vista previa de lo que estás editando\n'+data['configured']
         text+='\n\nEl motor recalcula el lote admisible con estos límites y conserva la protección estructural. El margen disponible y el lote mínimo del bróker también deben permitir la orden.'
+        from management_safety import protection_config_warning
+        warning=protection_config_warning(config['management'])
+        if warning:text+='\n\nATENCIÓN · '+warning
         if data['ready'] and not self.window.private:text+='\nCapital usado para el presupuesto: '+format(data['limits']['capital_basis'],',.2f')+' '+data['limits']['currency']
         changed=any(self.fields[p][1]()!=get(self.controller.cfg,p) for p in self.risk_paths)
         text+='\n\nCambios sin guardar. Pulsa Guardar límites de riesgo.' if changed else '\n\n'+data['state']
