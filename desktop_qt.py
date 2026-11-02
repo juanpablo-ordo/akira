@@ -657,7 +657,7 @@ class StudioWindow(QMainWindow):
         for symbol,widget in self.asset_activity_labels.items():widget.setText(market_activity(v,symbol)['text'])
         for symbol,(price,table,chart) in self.analysis_widgets.items():
             info=(v.get('symbols') or {}).get(symbol) or {};frames=info.get('frames') or {};values=frames.get(tf) or {};price.setText(number(info.get('bid')))
-            keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo'];rows=[]
+            keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo','sma20','wma20','hma20','ichimoku_tenkan','ichimoku_kijun','ichimoku_span_a_current','ichimoku_span_b_current','parabolic_sar','supertrend','supertrend_direction','zigzag_last_confirmed','donchian_high20','donchian_low20','keltner_upper','keltner_lower','chandelier_buy_stop','chandelier_sell_stop','cmf20','accumulation_distribution','demarker14','pivot_pp_previous','fvg_last_three','volume_profile_poc_estimated'];rows=[]
             for key in keys:rows.append((key,[INDICATORS.get(key,key.upper()),number(values.get(key)),tf],{}))
             table.update_rows(rows);chart.set_data((info.get('bars_by_timeframe') or {}).get(tf) or info.get('bars') or [])
         bands=[]
