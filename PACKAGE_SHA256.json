@@ -220,10 +220,10 @@
   "default_config.json": "176610a796871b4321413f4b01511a49924f457e40dfd784a8a76f64138765c7",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "c3a9c08697dd19f97bdec88345a1918a154d77c3ffcefffc65cf8a2866ec3b19",
+  "desktop_qt.py": "278b414ce7e8cad21816e6840df80a498d15e2d9a3f1c193cca8f2dfb9b6d83d",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
-  "engine.py": "df41f21003286d501382a16833e6d641010d047a875e87ec66fe736fdb9d78d5",
+  "engine.py": "f5e169485e60cce01909b920d7538acd21aef3b3b563569e67b6fe90c1bd3e2d",
   "entry_momentum.py": "4e9cc9c25664e1bf69f9a7de28cbb68498a653e9e9eb30912664bb8ba49c977e",
   "entry_safety.py": "d2083c29794f46e005d8e4e347d74aef516c3959943c99a6e0af7fee5049c4c0",
   "evolution.py": "fee094557e4630fa837c2f5e6b1466693fe49e3fcc6cac3cfa5cc12e6ad9d5b6",
@@ -486,5 +486,7 @@
   "technical_indicator_extensions.py": "68d6df15463985214ca2c8c8753196a9ff30fb88fa2dace41e2fe26d41ee15f4",
   "activity_event_schema.py": "e257872bee3c06a06ed0719edc3bbf57f1dac3cf6b36b62b684b6e15e70d0873",
   "incident_replay.py": "656cc6063421e55e1f6e007938d22167d7b331d21e6f528023241994bbf41333",
-  "tests/test_rev19_pdf_integral.py": "448a557761a94e37cb46402401cd5ecb5582f9f4958eb5c2176a6dcc9d19dd3a"
+  "tests/test_rev19_pdf_integral.py": "88f5ffa254874b563df4e6486e29057fe816531209f7d3f90d32b173e3bdc2a2",
+  "market_regime.py": "4d5544f133c33ae9cc63c926b15f9792247314dfafe35f8a07ccc59e48559413",
+  "COBERTURA_PDF_REV19.md": "6128e56c3fc9de0ca7537cb69c344e0f41c50aaa296dc4ee4b83867ea4696bab"
 }
