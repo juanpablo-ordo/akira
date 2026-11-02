@@ -163,7 +163,10 @@ def indicator_provenance():
         'volatility':['donchian_high20','donchian_low20','keltner_upper','keltner_lower','chandelier_buy_stop','chandelier_sell_stop'],
         'volume_tick_proxy':['cmf20','accumulation_distribution','volume_profile_poc_estimated'],
         'structure':['pivot_pp_previous','pivot_r1_previous','pivot_s1_previous','pivot_fib_r1_previous','pivot_fib_s1_previous','fibonacci_extension_1272','fvg_last_three']},
-        'decision_use':'CONTEXT_ONLY',
+        'decision_use':'BOUNDED_INDEPENDENT_FAMILY_RANKING',
         'independent_confirmation':False,
+        'decision_module':'indicator_decision.indicator_evidence',
+        'maximum_score_adjustment':2.4,
+        'entry_authorization':False,
         'price_data':'CLOSED_MT5_BARS',
         'volume_data':'BROKER_TICK_VOLUME_NOT_EXCHANGE_VOLUME'}

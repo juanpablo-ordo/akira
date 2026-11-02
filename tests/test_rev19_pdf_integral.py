@@ -39,7 +39,8 @@ class IndicatorAudit(unittest.TestCase):
         # A ZigZag pivot may legitimately be absent until both sides close.
         self.assertTrue(all(v is None or (isinstance(v,(int,float)) and math.isfinite(v))
                             for v in ext.values()))
-        self.assertEqual(indicator_provenance()['decision_use'],'CONTEXT_ONLY')
+        self.assertEqual(indicator_provenance()['decision_use'],'BOUNDED_INDEPENDENT_FAMILY_RANKING')
+        self.assertFalse(indicator_provenance()['entry_authorization'])
         self.assertFalse(indicator_provenance()['independent_confirmation'])
         base=enrich(bars,1.2)
         self.assertEqual(base['sma20'],ext['sma20'])

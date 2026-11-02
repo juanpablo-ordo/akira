@@ -104,6 +104,9 @@ class PendingPlanner:
         review_bonus_cap=float(self.cfg.get('final_architecture',{}).get('deep_review_scenario_bonus',5.0))
         review_penalty_cap=float(self.cfg.get('final_architecture',{}).get('deep_review_scenario_penalty',6.5))
         pending_regime=self.v203_regime(symbol)
+        from indicator_decision import indicator_evidence
+        from adaptive_route import route
+        indicator_by_side={side:indicator_evidence(self.caches[symbol].frames,side) for side in (-1,1)}
         out=[]
         for p in plans:
             if p.lane!="PENDING":
@@ -179,8 +182,13 @@ class PendingPlanner:
                 elif 0<=wr<.40: empirical_adjust-=1.5
                 empirical_adjust=max(-6.0,min(6.0,empirical_adjust))
 
+            indicator_result=indicator_by_side[p.side]
+            indicator_adjust=float(indicator_result['adjustment'])
+            adaptive_result=route(p,self.cfg,pending_regime)
+            adaptive_adjust=float(adaptive_result['adjustment'])
             quality=max(0.0,min(100.0,float(getattr(p,"quality_score",p.score) or p.score)+
-                                      source_adjust+cloud_adjust+review_adjust+geometry_adjust+empirical_adjust))
+                                      source_adjust+cloud_adjust+review_adjust+geometry_adjust+empirical_adjust+
+                                      indicator_adjust+adaptive_adjust))
             # Solo un modelo de pendientes promovido sobre resultados fuera de muestra.
             daily=self.research_context.get('daily_learning') or {}
             from trade_quality_gate import family as strategy_family
@@ -212,7 +220,7 @@ class PendingPlanner:
                 except Exception:
                     final_pending_edge=None
             reason=(p.reason+f"; TORNEO FINAL {source}: calidad {quality:.1f}, activación {activation:.1f}, "
-                    f"fuentes {source_adjust:+.1f} (fresh {freshness:.2f}; consenso +{agreeing_sources}/-{opposite_sources}), ORACLE {review_adjust:+.1f}, geometría {geometry_adjust:+.1f}, historial {empirical_adjust:+.1f}, modelo de cierres {learned_adjust:+.1f}")
+                    f"fuentes {source_adjust:+.1f} (fresh {freshness:.2f}; consenso +{agreeing_sources}/-{opposite_sources}), ORACLE {review_adjust:+.1f}, geometría {geometry_adjust:+.1f}, historial {empirical_adjust:+.1f}, modelo de cierres {learned_adjust:+.1f}; familias técnicas {indicator_adjust:+.2f}, régimen {pending_regime.get('regime')} {adaptive_adjust:+.2f} ({adaptive_result['state']})")
             if deep_review.get('thesis'):reason+='; ORACLE tesis: '+str(deep_review.get('thesis'))[:220]
             if final_pending_edge is not None:
                 reason+=(f"; META-EDGE pendiente util {float(final_pending_edge.get('utility',0)):.1f}/100 "
@@ -912,6 +920,11 @@ class PendingPlanner:
             if not variant_ok:
                 reject(plan,'variant_conditions',variant_detail);continue
             if variant_detail:plan=replace(plan,reason=plan.reason+' · '+variant_detail)
+            from adaptive_route import route
+            adaptive=route(plan,self.cfg,self.v203_regime(symbol))
+            if not adaptive['entry_allowed']:
+                reject(plan,'adaptive_shock_safety',adaptive['reason'])
+                continue
             allowed,detail=candidate_decision(plan,features,self.research_context,self.g.clock())
             if allowed:fused.append(replace(plan,reason=plan.reason+' · '+detail) if detail else plan)
             else:

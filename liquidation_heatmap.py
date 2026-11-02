@@ -56,3 +56,31 @@ def estimate_bands(symbol, frames, now, bins=16):
 def heatmap_is_execution_evidence(heatmap):
     """Estimation never supplies an entry approval or broker-order verdict."""
     return False
+
+
+def realized_liquidations_summary(bundle):
+    """Time-bucket realized liquidation totals, NEVER a price-level map.
+
+    Consume only explicit CoinGlass aggregate-history fields. Unsupported,
+    stale or malformed responses have no values and no implied liquidation.
+    """
+    try:
+        from providers import _cg_rows
+        rows=_cg_rows((bundle or {}).get('liquidations'))
+    except (TypeError,AttributeError):
+        rows=[]
+    for row in reversed(rows):
+        if not isinstance(row,dict):continue
+        if not any(k in row for k in ('aggregated_long_liquidation_usd','aggregated_short_liquidation_usd')):
+            continue
+        try:
+            long=float(row.get('aggregated_long_liquidation_usd') or 0)
+            short=float(row.get('aggregated_short_liquidation_usd') or 0)
+            if not all(math.isfinite(v) and 0<=v<=1e15 for v in (long,short)):continue
+            return {'status':'PROVIDER_REPORTED_AGGREGATED_EXECUTIONS',
+                    'symbol':'BTC','long_liquidations_usd':long,
+                    'short_liquidations_usd':short,'provider':'CoinGlass',
+                    'per_price_level':False,'period':'provider aggregation interval',
+                    'note':'Liquidaciones históricas agregadas por tiempo; no se conoce su precio individual.'}
+        except (ValueError,TypeError,OverflowError):continue
+    return {'status':'UNAVAILABLE','per_price_level':False}

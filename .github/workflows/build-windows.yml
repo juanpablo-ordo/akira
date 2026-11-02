@@ -8,13 +8,16 @@ on:
       - akira-rev19-verifiable-core
       - akira-rev19-safe-repair-20261101
       - akira-rev19-integral-pdf-20261101
+      - akira-rev19-full-technical-adaptive-liquidity-20261102
 
 permissions:
   contents: read
 
+# Do not let an older queued push cancel validation of the newest commit.
+# Builds are identified by SHA so the exact packaged revision is verified.
 concurrency:
-  group: akira-windows-${{ github.ref }}
-  cancel-in-progress: true
+  group: akira-windows-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 env:
   PYTHONUTF8: '1'
@@ -84,7 +87,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_v1625_recovery.py::ReviewTests tests/test_rev19_pdf_integral.py tests/test_rev19_activity_and_closed_bars.py tests/test_core_rev19.py tests/test_market_state_rev19.py tests/test_weekend_events_rev19.py tests/test_scheduled_events_rev18.py tests/test_chat_sources_rev18.py tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV19_TARGETED.xml
+          python -u -m pytest -vv tests/test_rev19_three_integrations.py tests/test_v1625_recovery.py::ReviewTests tests/test_rev19_pdf_integral.py tests/test_rev19_activity_and_closed_bars.py tests/test_core_rev19.py tests/test_market_state_rev19.py tests/test_weekend_events_rev19.py tests/test_scheduled_events_rev18.py tests/test_chat_sources_rev18.py tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV19_TARGETED.xml
           if ($LASTEXITCODE -ne 0) { throw 'Una regresión de Rev19 falló; revisar REV19_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar

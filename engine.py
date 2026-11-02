@@ -149,6 +149,17 @@ class Engine:
         row={'state':'ESPERANDO CONFIRMACIÓN','detail':detail,'plan':plan.to_dict() if plan else None}
         self.runner_views[symbol]=row
         if plan is None:return False
+        from adaptive_route import route
+        route_info=route(plan,self.cfg,self.planner.v203_regime(symbol))
+        row['adaptive_route']=route_info
+        # In automatic adaptive mode a strongly mismatched runner yields to
+        # the pending map. A specifically requested direction is still checked
+        # by the ordinary structural, account, and MT5 gateway.
+        if required_side==0 and route_info['state']=='DEPRIORITIZED' and (
+                self.planner.v203_regime(symbol).get('confidence',0)>=.80):
+            row.update(state='RUNNER POSPUESTO POR RÉGIMEN',
+                       detail='La estrategia runner no coincide con el régimen confirmado; evaluar pendientes estructurales.')
+            return False
         if required_side and plan.side!=required_side:
             row.update(state='DIRECCIÓN SOLICITADA SIN CONFIRMACIÓN',plan=None,
                        detail=f'Solicitaste {"LONG" if required_side==1 else "SHORT"}; la señal disponible confirma el lado contrario. Conservar pendientes.')
@@ -1260,11 +1271,22 @@ class Engine:
                 self.planner.pending_candidate_audit.get(s,[]),symbols[s]['scenario_book'],
                 self.allocation_checks.get(s,[]),book,self.pending_cycles.get(s,{}),self.status.get(s,{}),
                 self.g.trade_cap(snap),self.g.runtime_execution_block,self.cfg['mode'],self.paused)
-            # The heatmap is purely observational and may never approve a trade.
+            # Provider levels are modelled leverage exposure, NOT realized
+            # liquidations. Never use them to approve an MT5 order.
             from liquidation_heatmap import estimate_bands
-            symbols[s]['liquidity_heatmap']=estimate_bands(s,c.frames,self.g.clock())
-            from market_regime import classify_regime
-            symbols[s]['adaptive_regime']=classify_regime(c.frames,self.broker_sessions.states.get(s))
+            provider=(self.planner.research_context.get('liquidation_levels') or {}).get(s) or {}
+            symbols[s]['liquidity_heatmap']=(copy.deepcopy(provider) if s.startswith('BTC') and
+                provider.get('status')=='PROVIDER_MODELLED' else estimate_bands(s,c.frames,self.g.clock()))
+            if s.startswith('BTC'):
+                from liquidation_heatmap import realized_liquidations_summary
+                symbols[s]['liquidations_reported']=realized_liquidations_summary(
+                    (self.planner.research_context.get('coinglass') or {}).get(s))
+            from adaptive_route import PREFERENCES
+            regime=self.planner.v203_regime(s)
+            symbols[s]['adaptive_regime']={**regime,
+                'candidates':list(PREFERENCES.get(regime.get('regime'),())),
+                'validation':'REAL_SELECTOR_BOUNDED_PRIORITY_AND_EXISTING_HOLDOUT',
+                'profitability_claim':'NONE'}
         from operation_health import execution_gate
         safety=self.entry_safety()
         entry_block=self.g.runtime_execution_block or (safety['reason'] if not safety['allowed'] else '')
@@ -1330,6 +1352,13 @@ class Engine:
             'evolution_model':self.cfg.get('evolution',{}).get('analysis_model')}
 
     def entry_quality_guard(self,plan,snap):
+        # Direct runners use the same market-regime caution as pending entries.
+        # Existing positions are supervised separately and are never blocked.
+        if getattr(plan,'lane','')=='RUNNER':
+            from adaptive_route import route
+            route_info=route(plan,self.cfg,self.planner.v203_regime(plan.symbol))
+            if not route_info['entry_allowed']:
+                raise Blocked('Entrada runner pospuesta: '+route_info['reason'])
         evidence=self.evaluate_entry_quality(plan,live=True)
         if not evidence['allowed']:
             self.notice_quality_block(plan,evidence['reason'])
