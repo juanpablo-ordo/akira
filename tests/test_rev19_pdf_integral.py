@@ -50,6 +50,21 @@ class IndicatorAudit(unittest.TestCase):
         self.assertNotEqual(old['sma20'],context_indicators(bars,1.2)['sma20'])
 
 
+class RegimeClassification(unittest.TestCase):
+    def test_closed_bar_regimes_do_not_authorize_orders(self):
+        from market_regime import classify_regime
+        f=frame('M15',candles());h=frame('H1',candles())
+        result=classify_regime({'M15':f,'H1':h},{'session':'OPEN'})
+        self.assertFalse(result['can_authorize_entry'])
+        self.assertIn(result['regime'],('TREND_UP','TREND_DOWN','RANGE',
+                                        'VOLATILE_EXPANSION','CONFIRMED_REVERSAL_CANDIDATE'))
+        closed=classify_regime({'M15':f,'H1':h},{'session':'CLOSED'})
+        self.assertEqual(closed['regime'],'SESSION_CLOSED')
+        self.assertFalse(closed['can_authorize_entry'])
+        missing=classify_regime({'M15':f},{'session':'OPEN'})
+        self.assertEqual(missing['regime'],'INSUFFICIENT_DATA')
+
+
 class HeatmapEvidence(unittest.TestCase):
     def test_estimated_not_observed_liquidations_and_never_trade_verdict(self):
         b=candles()
