@@ -13,9 +13,11 @@ on:
 permissions:
   contents: read
 
+# Do not let an older queued push cancel validation of the newest commit.
+# Builds are identified by SHA so the exact packaged revision is verified.
 concurrency:
-  group: akira-windows-${{ github.ref }}
-  cancel-in-progress: true
+  group: akira-windows-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 env:
   PYTHONUTF8: '1'
