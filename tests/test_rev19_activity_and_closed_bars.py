@@ -86,6 +86,49 @@ class AtomicResearchStorage(unittest.TestCase):
                              {'sources':{'ok':True}})
 
 
+class BrokerStopProtection(PendingCase,unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        from execution import SELL,OWN_PENDING
+        q=self.g.quote('XAUUSDm')
+        self.initial_quote=q
+        # Own SELL; executable ask is below entry. This is a synthetic
+        # broker-only scenario, not the missing historic ticks of #727149702.
+        self.position=self.api.add_position(
+            'XAUUSDm',side=SELL,entry=q.ask+5,
+            sl=q.ask+13,tp=q.ask-18,magic=OWN_PENDING)
+
+    def test_breakeven_stop_is_sent_and_only_confirmed_after_snapshot(self):
+        from execution import SLTP
+        candidate=self.initial_quote.ask+4
+        self.assertTrue(self.g.update_stop(self.position,candidate))
+        self.assertEqual(self.api.sent[-1]['action'],SLTP)
+        self.assertIn('XAUUSDm',self.g.journal.data['intents'])
+        self.g.reconcile(self.g.snapshot())
+        self.assertNotIn('XAUUSDm',self.g.journal.data['intents'])
+        self.assertAlmostEqual(self.position.sl,candidate,places=2)
+
+    def test_stop_never_moves_against_position_and_broker_reject_leaves_it(self):
+        old=self.position.sl
+        self.assertFalse(self.g.update_stop(self.position,old+3))
+        self.assertFalse(self.api.sent)
+        self.api.fail_check=10016
+        from execution import Blocked
+        with self.assertRaises(Blocked):
+            self.g.update_stop(self.position,self.initial_quote.ask+4)
+        self.assertAlmostEqual(self.position.sl,old)
+        self.assertFalse(self.api.sent)
+
+    def test_manual_ticket_cannot_be_modified(self):
+        from execution import Blocked,SELL
+        manual=self.api.add_position('XAUUSDm',side=SELL,
+            entry=self.initial_quote.ask+5,sl=self.initial_quote.ask+13,
+            tp=self.initial_quote.ask-18,magic=0)
+        with self.assertRaises(Blocked):
+            self.g.update_stop(manual,self.initial_quote.ask+4)
+        self.assertFalse(self.api.sent)
+
+
 class WeekendClosedBars(PendingCase,unittest.TestCase):
     def test_closed_session_reads_only_confirmed_bars(self):
         # FakeMT5 rejects start_pos=0 as an unclosed-bar read.
