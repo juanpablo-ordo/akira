@@ -1260,6 +1260,9 @@ class Engine:
                 self.planner.pending_candidate_audit.get(s,[]),symbols[s]['scenario_book'],
                 self.allocation_checks.get(s,[]),book,self.pending_cycles.get(s,{}),self.status.get(s,{}),
                 self.g.trade_cap(snap),self.g.runtime_execution_block,self.cfg['mode'],self.paused)
+            # The heatmap is purely observational and may never approve a trade.
+            from liquidation_heatmap import estimate_bands
+            symbols[s]['liquidity_heatmap']=estimate_bands(s,c.frames,self.g.clock())
         from operation_health import execution_gate
         safety=self.entry_safety()
         entry_block=self.g.runtime_execution_block or (safety['reason'] if not safety['allowed'] else '')
