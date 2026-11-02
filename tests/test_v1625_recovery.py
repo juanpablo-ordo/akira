@@ -97,6 +97,22 @@ class ReviewTests(PendingCase,unittest.TestCase):
                 values=dict(zip(data['indicator_columns'],data['symbols'][s]['frames'][tf]))
                 for k,v in frame.items():
                     self.assertEqual(values[k],round(v,4) if isinstance(v,float) else v)
+    def test_expanded_indicator_matrix_fits_structured_legacy_review(self):
+        # The external/8K review must include both assets, every timeframe,
+        # and the new context-only indicator values after the Rev19 expansion.
+        text,meta=self.worker._model_input(self.view,{},max_chars=6500,scenario_limit=2)
+        data=json.loads(text)
+        self.assertLessEqual(len(text),18000)
+        self.assertEqual(set(meta['active_symbols']),{'BTCUSDm','XAUUSDm'})
+        for symbol,info in self.view['symbols'].items():
+            self.assertEqual(set(data['symbols'][symbol]['frames']),set(info['frames']))
+            for timeframe,original in info['frames'].items():
+                values=dict(zip(data['indicator_columns'],
+                                data['symbols'][symbol]['frames'][timeframe]))
+                for key,value in original.items():
+                    self.assertIn(key,values)
+                    self.assertEqual(values[key],round(value,4) if isinstance(value,float) else value)
+
     def test_large_news_and_candles_do_not_cut_off_gold_or_json(self):
         sources={'news':{'updated':self.clock(),'data':[{'title':'BTC oro','body':'x'*1000000} for _ in range(100)]}}
         text,meta=review_input(self.view,sources,self.clock());data=json.loads(text)
