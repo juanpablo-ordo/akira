@@ -191,8 +191,8 @@ class ActivityFeed(DataTable):
         presented=[]
         for key,values,data in rows:
             stamp,module,state,detail=values
-            words=(module+' '+state).upper()
-            kind='ERROR' if any(w in words for w in ('ERROR','FALLO')) else 'AVISO' if any(w in words for w in ('AVISO','RECHAZ','BLOQUE')) else 'ANÁLISIS' if any(w in words for w in ('ANÁLISIS','REVISION','REVISIÓN','MAPA','DATOS')) else 'TRADING' if any(w in words for w in ('PENDIENT','RUNNER','ORDEN','BTC','XAU','MT5')) else 'SISTEMA'
+            from activity_events import category_for_event
+            kind=category_for_event(data)
             presented.append((key,[stamp,kind,state+'\n'+detail],data))
         super().update_rows(presented)
 

@@ -880,7 +880,11 @@ class ContextWorker:
                     self.jobs[name]=pool.submit(task)
 
     def _save(self):
-        temp=self.path.with_suffix('.tmp');temp.write_text(json.dumps({'sources':self.sources},ensure_ascii=False,default=str),encoding='utf-8');temp.replace(self.path)
+        # Keep a single in-process snapshot while an interprocess OS lock
+        # serializes writers. A failed replace leaves the previous JSON valid.
+        from atomic_json import save_atomic_json
+        with self.lock:
+            save_atomic_json(self.path,{'sources':self.sources})
 
     def run(self):
         while not self.stop.is_set():

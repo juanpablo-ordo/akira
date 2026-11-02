@@ -59,6 +59,17 @@ class PositionManager:
                 if risk<=0:continue
                 gained=side*(exit-float(p.price_open));rr=gained/risk
                 RunnerPerformanceTracker.update(row,plan,rr,float(getattr(p,'profit',0)),now)
+                from management_safety import protection_config_warning
+                warning=protection_config_warning(g.cfg['management'])
+                if warning:
+                    row['protection_state']=warning
+                    if row.get('protection_configuration_warning')!=warning:
+                        row['protection_configuration_warning']=warning
+                        g.log.report(p.symbol,'PROTECCIÓN',f'Ticket {p.ticket}: {warning}')
+                        g.journal.save()
+                elif row.get('protection_configuration_warning'):
+                    row.pop('protection_configuration_warning',None)
+                    g.journal.save()
                 if now-self.last_stats_save>=10:g.journal.save();self.last_stats_save=now
                 if now-float(row.get('time',getattr(p,'time',now)))<g.cfg['management']['minimum_hold_seconds']:continue
                 if now-float(row.get('last_modify',0))<g.cfg['management']['modify_seconds']:continue
