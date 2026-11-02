@@ -65,9 +65,9 @@ class AtomicResearchStorage(unittest.TestCase):
             target=Path(td)/'state'/'pending_research.json'
             with ThreadPoolExecutor(max_workers=6) as pool:
                 list(pool.map(lambda n: save_atomic_json(
-                    target,{'sources':{'test':{'seq':n}}}),range(200)))
+                    target,{'sources':{'test':{'seq':n}}}),range(1000)))
             document=json.loads(target.read_text(encoding='utf-8'))
-            self.assertIn(document['sources']['test']['seq'],range(200))
+            self.assertIn(document['sources']['test']['seq'],range(1000))
             self.assertEqual(list(target.parent.glob('*.tmp')),[])
 
     def test_invalid_payload_does_not_replace_last_good_snapshot(self):
