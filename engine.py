@@ -149,6 +149,17 @@ class Engine:
         row={'state':'ESPERANDO CONFIRMACIÓN','detail':detail,'plan':plan.to_dict() if plan else None}
         self.runner_views[symbol]=row
         if plan is None:return False
+        from adaptive_route import route
+        route_info=route(plan,self.cfg,self.planner.v203_regime(symbol))
+        row['adaptive_route']=route_info
+        # In automatic adaptive mode a strongly mismatched runner yields to
+        # the pending map. A specifically requested direction is still checked
+        # by the ordinary structural, account, and MT5 gateway.
+        if required_side==0 and route_info['state']=='DEPRIORITIZED' and (
+                self.planner.v203_regime(symbol).get('confidence',0)>=.80):
+            row.update(state='RUNNER POSPUESTO POR RÉGIMEN',
+                       detail='La estrategia runner no coincide con el régimen confirmado; evaluar pendientes estructurales.')
+            return False
         if required_side and plan.side!=required_side:
             row.update(state='DIRECCIÓN SOLICITADA SIN CONFIRMACIÓN',plan=None,
                        detail=f'Solicitaste {"LONG" if required_side==1 else "SHORT"}; la señal disponible confirma el lado contrario. Conservar pendientes.')
