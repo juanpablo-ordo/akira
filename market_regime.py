@@ -7,7 +7,8 @@ import math
 
 
 def _finite(frame,key,default=None):
-    value=(frame.extra or {}).get(key,default) if key not in ('trend','atr','regime') else getattr(frame,key,default)
+    value=getattr(frame,key,None)
+    if value is None:value=(getattr(frame,'extra',{}) or {}).get(key,default)
     try:
         value=float(value)
         return value if math.isfinite(value) else None
