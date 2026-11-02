@@ -263,6 +263,10 @@ class StudioWindow(QMainWindow):
             stats=self.table(['Indicador','Valor','Contexto']);stats.setMaximumHeight(175);card.body.addWidget(stats)
             chart=CandleChart();card.body.addWidget(chart,1);left.addWidget(card,1);self.analysis_widgets[symbol]=(price,stats,chart)
         card=self.card('ESTADO Y ANTIGÜEDAD DE DATOS','clock');self.analysis_sources=self.table(['Fuente','Estado','Antigüedad','APORTE O MOTIVO']);card.body.addWidget(self.analysis_sources,1);right.addWidget(card,3)
+        heat=self.card('MAPA ESTIMADO DE LIQUIDEZ · SIN LIQUIDACIONES REALES','chart')
+        self.heatmap_scope=ChoiceBox();self.heatmap_scope.addItems(['Actual','Histórico']);self.heatmap_scope.currentTextChanged.connect(lambda:self.render_analysis());heat.body.addWidget(self.heatmap_scope)
+        self.heatmap_table=self.table(['Activo','Zona de precio','Intensidad','Origen']);self.heatmap_table.setMinimumHeight(180);heat.body.addWidget(self.heatmap_table,1)
+        self.heatmap_note=label('Estimación basada en velas cerradas y volumen de ticks de MT5. No son órdenes ni liquidaciones observadas. No constituye una señal de entrada.','muted');self.heatmap_note.setWordWrap(True);heat.body.addWidget(self.heatmap_note);right.addWidget(heat,2)
         decision=self.card('PROCESO DE DECISIÓN','shield');self.decision_text=QTextBrowser();decision.body.addWidget(self.decision_text,1);right.addWidget(decision,2)
 
     def build_sources(self):
@@ -656,6 +660,17 @@ class StudioWindow(QMainWindow):
             keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo'];rows=[]
             for key in keys:rows.append((key,[INDICATORS.get(key,key.upper()),number(values.get(key)),tf],{}))
             table.update_rows(rows);chart.set_data((info.get('bars_by_timeframe') or {}).get(tf) or info.get('bars') or [])
+        bands=[]
+        scope='historical_intensity' if self.heatmap_scope.currentText()=='Histórico' else 'current_intensity'
+        for symbol in ('BTCUSDm','XAUUSDm'):
+            source=(((v.get('symbols') or {}).get(symbol) or {}).get('liquidity_heatmap') or {})
+            if source.get('status')!='ESTIMATED':continue
+            for level in sorted(source.get('bands') or [],key=lambda x:x.get(scope,0),reverse=True)[:8]:
+                intensity=max(0,min(100,float(level.get(scope,0))))
+                bar='▰'*max(0,min(10,round(intensity/10)))
+                key=symbol+':'+str(level.get('low'))+':'+scope
+                bands.append((key,[symbol,f"{level['low']:,.2f}–{level['high']:,.2f}",bar+f" {intensity:.0f}%",'MT5 · ESTIMACIÓN'],level))
+        self.heatmap_table.update_rows(bands)
         from market_preparation import preopen_text
         sections=[]
         for symbol,state in (v.get('status') or {}).items():
