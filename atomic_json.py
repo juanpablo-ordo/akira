@@ -8,6 +8,11 @@ import os
 from pathlib import Path
 import tempfile
 import time
+import threading
+
+# The research workers within one process share this lock. Prevent local
+# starvation before arbitrating with writers from another AKIRA process.
+_LOCAL_SAVE_LOCK=threading.RLock()
 
 
 def _lock_byte(fd, unlock=False):
@@ -20,7 +25,13 @@ def _lock_byte(fd, unlock=False):
         fcntl.flock(fd, fcntl.LOCK_UN if unlock else fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
-def save_atomic_json(path, payload, *, lock_attempts=150, replace_attempts=8):
+def save_atomic_json(path, payload, *, lock_attempts=600, replace_attempts=8):
+    with _LOCAL_SAVE_LOCK:
+        return _save_atomic_json_locked(path,payload,lock_attempts=lock_attempts,
+                                        replace_attempts=replace_attempts)
+
+
+def _save_atomic_json_locked(path,payload,*,lock_attempts,replace_attempts):
     path=Path(path)
     path.parent.mkdir(parents=True,exist_ok=True)
     # Serialize only supported JSON values before locking or touching disk.
