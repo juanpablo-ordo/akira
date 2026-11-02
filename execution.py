@@ -100,7 +100,7 @@ class Reporter:
         now=time.monotonic()
         if before is None or now-before>=30:
             self.last[key]=now
-            self.event(symbol,f"{state} | {detail}",state=state,detail=detail,**values)
+            self.event(symbol,f"{state} | {detail}",**{**values,'state':state,'detail':detail})
 
     def dump(self):
         target=self.folder/"estado.json"
