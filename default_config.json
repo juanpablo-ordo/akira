@@ -331,7 +331,7 @@
   "management": {
     "breakeven_at_r": 0.95,
     "trail_at_r": 1.4,
-    "minimum_hold_seconds": 0,
+    "minimum_hold_seconds": 60,
     "trail_atr": 0.7,
     "modify_seconds": 5,
     "runner_structure_only": true,
