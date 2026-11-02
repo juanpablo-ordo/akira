@@ -68,7 +68,18 @@ def next_query(row):
     if seconds>=60:return 'En '+str((seconds+59)//60)+' min'
     return 'En '+str(seconds)+' s' if seconds else 'Al estar lista'
 
-INDICATORS={'ema9':'Tendencia rápida (9 velas)','ema21':'Tendencia corta (21 velas)','ema50':'Tendencia media (50 velas)','ema200':'Tendencia de fondo (200 velas)','rsi':'Fuerza de compras y ventas (RSI)','atr':'Movimiento habitual del precio (ATR)','adx':'Fuerza de la tendencia (ADX)','macd':'Impulso (MACD)','volume_ratio':'Volumen frente a lo habitual','bos':'Ruptura de estructura','sweep':'Barrido de liquidez','range_hi':'Techo del rango','range_lo':'Suelo del rango','vwap':'Precio medio ponderado por volumen'}
+INDICATORS={'sma20':'Media simple 20 (contexto)','wma20':'Media ponderada 20 (contexto)','hma20':'Hull 20 (contexto)',
+    'ichimoku_tenkan':'Ichimoku Tenkan (contexto)','ichimoku_kijun':'Ichimoku Kijun (contexto)',
+    'ichimoku_span_a_current':'Ichimoku A sin proyección (contexto)','ichimoku_span_b_current':'Ichimoku B sin proyección (contexto)',
+    'parabolic_sar':'Parabolic SAR (contexto)','supertrend':'Supertrend (contexto)','supertrend_direction':'Dirección Supertrend (contexto)',
+    'zigzag_last_confirmed':'Último pivote confirmado (contexto)',
+    'donchian_high20':'Donchian techo 20 (contexto)','donchian_low20':'Donchian suelo 20 (contexto)',
+    'keltner_upper':'Keltner superior (contexto)','keltner_lower':'Keltner inferior (contexto)',
+    'chandelier_buy_stop':'Chandelier para compra (contexto)','chandelier_sell_stop':'Chandelier para venta (contexto)',
+    'cmf20':'CMF sobre ticks (contexto)','accumulation_distribution':'Acumulación/distribución por ticks (contexto)',
+    'demarker14':'DeMarker (contexto)','pivot_pp_previous':'Pivote barra anterior (contexto)',
+    'fvg_last_three':'FVG tres velas (contexto)','volume_profile_poc_estimated':'POC estimado por ticks (contexto)',
+    'ema9':'Tendencia rápida (9 velas)','ema21':'Tendencia corta (21 velas)','ema50':'Tendencia media (50 velas)','ema200':'Tendencia de fondo (200 velas)','rsi':'Fuerza de compras y ventas (RSI)','atr':'Movimiento habitual del precio (ATR)','adx':'Fuerza de la tendencia (ADX)','macd':'Impulso (MACD)','volume_ratio':'Volumen frente a lo habitual','bos':'Ruptura de estructura','sweep':'Barrido de liquidez','range_hi':'Techo del rango','range_lo':'Suelo del rango','vwap':'Precio medio ponderado por volumen'}
 
 def frame_html(frames):
     result=[]
