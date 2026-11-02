@@ -1266,6 +1266,10 @@ class Engine:
             provider=(self.planner.research_context.get('liquidation_levels') or {}).get(s) or {}
             symbols[s]['liquidity_heatmap']=(copy.deepcopy(provider) if s.startswith('BTC') and
                 provider.get('status')=='PROVIDER_MODELLED' else estimate_bands(s,c.frames,self.g.clock()))
+            if s.startswith('BTC'):
+                from liquidation_heatmap import realized_liquidations_summary
+                symbols[s]['liquidations_reported']=realized_liquidations_summary(
+                    (self.planner.research_context.get('coinglass') or {}).get(s))
             from adaptive_route import PREFERENCES
             regime=self.planner.v203_regime(s)
             symbols[s]['adaptive_regime']={**regime,
