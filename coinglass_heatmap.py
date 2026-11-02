@@ -74,4 +74,7 @@ def fetch_heatmap():
             return {'status':'PLAN_LIMITED','state':'PLAN_LIMITED','detail':
                 'El mapa por precio de CoinGlass requiere un plan Professional o Enterprise; se conserva la estimación local.'}
         raise
-    return normalize_heatmap(data,time.time())
+    result=normalize_heatmap(data,time.time())
+    if result['status']!='PROVIDER_MODELLED':
+        raise ValueError('CoinGlass devolvió un mapa sin índices de precio/tiempo verificables')
+    return result
