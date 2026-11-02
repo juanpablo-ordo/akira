@@ -37,6 +37,23 @@ class ActivityCategories(unittest.TestCase):
             self.assertEqual(category_for_event(selected[0]),tab)
 
 
+class ManagementConfigurationWarning(unittest.TestCase):
+    def test_replay_export_does_not_claim_automatic_protection_active(self):
+        from management_safety import protection_config_warning
+        bad={'breakeven_at_r':10_000_000,'trail_at_r':100_000_000,'trail_atr':10_000}
+        copy=dict(bad)
+        warning=protection_config_warning(bad)
+        self.assertIn('deshabilitada',warning)
+        self.assertIn('breakeven=',warning)
+        self.assertIn('trailing=',warning)
+        self.assertEqual(bad,copy)  # never silently migrate the user's settings
+
+    def test_normal_defaults_do_not_warn(self):
+        from management_safety import protection_config_warning
+        self.assertEqual(protection_config_warning(
+            {'breakeven_at_r':1.25,'trail_at_r':1.8,'trail_atr':0.7}),'')
+
+
 class WeekendClosedBars(PendingCase,unittest.TestCase):
     def test_closed_session_reads_only_confirmed_bars(self):
         # FakeMT5 rejects start_pos=0 as an unclosed-bar read.
