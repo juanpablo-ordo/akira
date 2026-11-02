@@ -87,6 +87,33 @@ class EventSchema(unittest.TestCase):
             self.assertEqual(log.recent_events[0]['category'],'ANÁLISIS')
 
 
+class ForensicIncident(unittest.TestCase):
+    def test_observed_mfe_without_ticks_never_claims_a_preventable_loss(self):
+        from incident_replay import audit_ticket
+        source={'closed':[{'ticket':'123','symbol':'XAUUSDm','entry':3886.565,
+                           'initial_sl':3896.849,'exit_price':3896.849,'net_usd':-10.28,
+                           'mfe_r':1.426}],
+                'snapshot':{'position_journal':{'123':{'initial_sl':3896.849,
+                  'plan':{'side':-1},'last_modify':0.0,
+                  'max_favorable_usd':14.67,'management_events':[]}}}}
+        result=audit_ticket(source,'123')
+        self.assertAlmostEqual(result['facts']['risk_price'],10.284)
+        self.assertAlmostEqual(result['facts']['mfe_r_observed'],1.426)
+        self.assertEqual(result['facts']['documented_accepted_requests'],0)
+        self.assertFalse(result['loss_avoidable_proven'])
+        self.assertFalse(result['evidence_complete'])
+        self.assertTrue(result['missing'])
+
+    def test_partial_quotes_do_not_invent_broker_result(self):
+        from incident_replay import audit_ticket
+        source={'closed':[{'ticket':'123','symbol':'BTCUSDm','entry':100,
+                           'initial_sl':95,'mfe_r':1.2}],
+                'snapshot':{'position_journal':{'123':{'plan':{'side':1}}}}}
+        result=audit_ticket(source,123,[{'utc':123,'bid':103,'ask':104}])
+        self.assertEqual(result['observed_quotes'][0]['current_r'],.6)
+        self.assertFalse(result['evidence_complete'])
+
+
 class NeuralPolicy(PendingCase,unittest.TestCase):
     def test_technical_mode_is_explicitly_not_neural(self):
         from engine import Engine
