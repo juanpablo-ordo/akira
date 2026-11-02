@@ -10,7 +10,7 @@ La aplicación conserva restricciones monetarias, propiedad de tickets, anti-dup
 
 - `engine.py`: ejecutar supervisión de posiciones ANTES de actualización de investigación o revisión de noticias.
 - `position_manager.py`: auditoría por ticket de bid/ask ejecutable, spread, R actual, MFE observado, SL/TP actuales, estado de protección y fallos de comprobación; diario persistente.
-- `default_config.json`: perfiles **nuevos** con BE de ensayo 0.95R, trailing 1.4R y mínima espera inicial 0. Todos son hipótesis, no óptimos demostrados.
+- `default_config.json`: perfiles **nuevos** con BE de ensayo 0.95R, trailing 1.4R y espera mínima conservada en 60 segundos (ajustable). Todos son hipótesis, no óptimos demostrados.
 - `studio_settings_qt.py`: controles explícitos de umbral, ATR, espera, frecuencia de modificación, horizonte y política de TP; previsualización de umbrales de protección absurda. Preferencias antiguas no se reemplazan.
 - `execution.py`: comprobaciones existentes de identidad del ticket, cotización reciente, stops/freeze, `order_check`, `order_send` y conciliación antes de declarar protegido. No se anulan.
 - `incident_replay.py`: auditoría read-only de exportaciones; no inventa ticks ni confirma hipótesis contrafácticas.
