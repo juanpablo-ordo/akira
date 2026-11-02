@@ -11,7 +11,7 @@ class ActivityCategories(unittest.TestCase):
         row={'category':'ANÁLISIS','state':'SISTEMA',
              'message':'ERROR and TRADING in the headline are not categories'}
         self.assertEqual(category_for_event(row),'ANÁLISIS')
-        self.assertEqual(category_for_event({'activity_category':'ERROR',**row}),'ANÁLISIS')
+        self.assertEqual(category_for_event({'activity_category':'ERROR',**row}),'ERROR')
         self.assertEqual(category_for_event({**row,'activity_category':'ERROR'}),'ERROR')
 
     def test_categories_reflect_structured_event_type(self):
