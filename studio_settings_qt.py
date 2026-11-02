@@ -112,6 +112,7 @@ class SettingsPanel(QWidget):
         self.mt5_status=label('Esperando conexión con MT5. Guarda los cambios de cuenta o ruta antes de reconectar.','muted');self.mt5_status.setWordWrap(True);card.body.addWidget(self.mt5_status)
         self.add_button(card,'RECONECTAR MT5',self.controller.reconnect_mt5,'','bolt')
         self.field(card,'execution.pending_only','Entradas únicamente mediante pendientes',help='Desmarcado permite runners directos confirmados. Las posiciones activadas desde pendientes pueden gestionarse como runners.')
+        self.field(card,'execution.review_policy','Revisión previa a nuevas órdenes',(('required','IA obligatoria · sin respuesta no se entra'),('technical','Motor técnico · sin dictamen neuronal')),help='La IA obligatoria rechaza nuevas entradas si no confirma exactamente sus niveles y volumen. El modo técnico conserva todas las reglas deterministas, el presupuesto y las comprobaciones MT5. Nunca bloquea por sí mismo la supervisión de posiciones abiertas.')
         self.field(card,'runner.enabled','Gestionar runners normales')
         self.field(card,'lot','Lote base',limits=(.001,100))
         self.field(card,'symbols.BTCUSDm','Bitcoin · BTCUSDm');self.field(card,'symbols.XAUUSDm','Oro · XAUUSDm')
@@ -160,6 +161,7 @@ class SettingsPanel(QWidget):
         self.field(card,'runner.allow_size_boost','Permitir aumentar lote de runners por puntuación',help='Desactivado por defecto. Una puntuación técnica alta no demuestra una mayor probabilidad de ganar.')
         card=self.card(1,'GESTIÓN DE RUNNERS','analysis')
         self.field(card,'management.protect_progress','Proteger el avance aunque falte un pivote M15',help='Al alcanzar el umbral R configurado, solicita un SL que cubra costes estimados. Afecta runners directas y pendientes activadas gestionadas como runners; conserva el TP. Respeta la espera mínima y los límites del bróker. No garantiza el precio de ejecución ni elimina pérdidas por saltos de precio.')
+        note=label('El equilibrio se evalúa con el precio ejecutable y costes conocidos. Valores de millones de R desactivan la protección en la práctica; Akira los señalará sin modificar preferencias anteriores. Perfiles nuevos: 0.95R para equilibrio, 1.4R para trailing y sin espera mínima. No garantiza un cierre sin pérdidas.','muted');note.setWordWrap(True);card.body.addWidget(note)
         for path,title in [('management.breakeven_at_r','Equilibrio a partir de R'),('management.trail_at_r','Trailing a partir de R'),('management.trail_atr','Distancia de trailing (ATR)'),('management.runner_structure_only','Gestión estructural de runners'),('management.pending_fills_as_runners','Gestionar pendientes activadas como runners')]:self.field(card,path,title)
         self.risk_paths=set(self.fields)-before
         for path in self.risk_paths:
