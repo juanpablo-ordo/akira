@@ -77,6 +77,14 @@ class CoinGlassLevelProvenance(unittest.TestCase):
         self.assertEqual(normalize_heatmap(source,123)['status'],'INVALID_DATA')
         self.assertEqual(normalize_heatmap(source,123,symbol='XAU')['status'],'INVALID_DATA')
 
+    def test_invalid_provider_response_fails_closed(self):
+        from unittest.mock import patch
+        from coinglass_heatmap import fetch_heatmap
+        with patch('providers.cg_get',return_value={'y_axis':[1,2],
+                'liquidation_leverage_data':[], 'price_candlesticks':[[1]]}):
+            with self.assertRaisesRegex(ValueError,'verificables'):
+                fetch_heatmap()
+
     def test_aggregate_executed_volume_not_misattributed_to_price_bands(self):
         x=realized_liquidations_summary({'liquidations':[
             {'aggregated_long_liquidation_usd':300,'aggregated_short_liquidation_usd':120}]})
