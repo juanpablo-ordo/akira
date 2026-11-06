@@ -21,7 +21,8 @@ def category_for_event(row):
     severity = str(row.get('severity') or row.get('level') or '').strip().upper()
     state = str(row.get('state') or '').strip().upper()
     operation = str(row.get('operation') or '').strip().lower()
-    if severity in ('ERROR', 'CRITICAL', 'FATAL') or any(
+    symbol = str(row.get('symbol') or '').strip().upper()
+    if severity in ('ERROR', 'CRITICAL', 'FATAL') or symbol in ERROR_STATES or any(
             state.startswith(value) for value in ERROR_STATES):
         return 'ERROR'
     if severity in ('WARN', 'WARNING') or any(
@@ -35,6 +36,6 @@ def category_for_event(row):
         return 'TRADING'
     if state in ('SISTEMA', 'SYSTEM', 'INICIO', 'CONFIGURACIÓN', 'CONFIGURACION'):
         return 'SISTEMA'
-    if str(row.get('symbol') or '').startswith(('BTC', 'XAU')):
+    if symbol.startswith(('BTC', 'XAU')):
         return 'TRADING'
     return 'SISTEMA'

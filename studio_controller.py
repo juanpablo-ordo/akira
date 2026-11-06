@@ -147,7 +147,12 @@ class StudioController:
             try:
                 result=function()
                 if event:self.emit(event,result)
-            except Exception as error:self.emit('error',safe_text(type(error).__name__+': '+str(error)))
+            except Exception as error:
+                detail=safe_text(type(error).__name__+': '+str(error))
+                # The visible error must also be discoverable in the activity feed.
+                try:self.reporter.event('AKIRA','ERROR | '+detail,state='ERROR',detail=detail,severity='ERROR')
+                except OSError:pass
+                self.emit('error',detail)
             finally:
                 with self._jobs_lock:self._jobs.discard(name)
         (executor or self.io).submit(run);return True
@@ -226,6 +231,10 @@ class StudioController:
         studio=self.cfg.get('studio') or {};target=studio.get('language_voice_out','es');source=studio.get('language_chat','auto')
         if target=='auto' or target==source or (target=='es' and source=='auto'):voice.speak(text);return True
         cfg=copy.deepcopy(self.cfg)
+        voice.interrupt_event.clear()
+        def speak_original():
+            if self.voice is voice and not voice.stop_event.is_set() and not voice.interrupt_event.is_set():voice.speak(text)
+            else:voice.awaiting.clear()
         def translate():
             from akira_local_ai import chat
             from local_inference import PRIORITY,BackgroundDeferred
@@ -239,11 +248,16 @@ class StudioController:
                     cancel=Cancel(interrupted)
                     with self.assistant._managed_model.session(cfg['assistant']['local_endpoint'],cfg.get('desktop'),cancel_event=cancel):
                         spoken=chat([{'role':'system','content':'/no_think\nTranslate the supplied text to '+target+'. Return only the translation. Preserve every number, broker identifier, negation, condition and uncertainty exactly. Never add instructions or execute anything.'},{'role':'user','content':str(text)[:7000]}],model=cfg['assistant']['local_model'],endpoint=cfg['assistant']['local_endpoint'],timeout=25,think=False,cancel_event=cancel,options={'num_predict':1500,'temperature':0})
-                    if cancel.is_set():return
+                    if cancel.is_set():speak_original();return
                     if sorted(re.findall(r'\d+(?:[.,]\d+)*',spoken))!=sorted(re.findall(r'\d+(?:[.,]\d+)*',str(text)[:7000])):raise ValueError('La traducción de voz alteró cifras; se conserva la respuesta escrita.')
-                    if self.voice is voice and not voice.stop_event.is_set():voice.speak(spoken)
-            except BackgroundDeferred:return
-        return self.job('spoken_translation',translate)
+                    if self.voice is voice and not voice.stop_event.is_set() and not voice.interrupt_event.is_set():voice.speak(spoken)
+                    else:voice.awaiting.clear()
+            except BackgroundDeferred:speak_original()
+            except Exception as error:
+                voice.event('error',text='No se pudo traducir la voz; se leerá la respuesta original: '+str(error)[:200])
+                speak_original()
+        if not self.job('spoken_translation',translate):speak_original()
+        return True
 
     def save(self,draft,keys=None,confirmed_account=None):
         validated=validate_form(draft)

@@ -190,12 +190,13 @@ class StudioWindow(QMainWindow):
 
     def build_home(self):
         _,layout=self.page();self.home_split,(left,right)=self.split(layout,(2,1))
-        activity=self.card('ACTIVIDAD EN TIEMPO REAL','trading');filters=QHBoxLayout()
-        self.activity_filter=ChoiceBox();self.activity_filter.addItems(['TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR']);self.activity_filter.currentTextChanged.connect(self.render_logs);self.activity_filter.hide();self.activity_tabs=[]
-        for title in ('TODOS','SISTEMA','TRADING','ANÁLISIS','ERROR'):
-            tab=self.btn(title,lambda _=False,t=title:self.activity_filter.setCurrentText(t));tab.setCheckable(True);tab.setChecked(title=='TODOS');filters.addWidget(tab);self.activity_tabs.append(tab)
-        self.activity_filter.currentTextChanged.connect(lambda current:[b.setChecked(b.text()==current) for b in self.activity_tabs]);filters.addStretch();activity.body.addLayout(filters)
-        self.activity=ActivityFeed();activity.body.addWidget(self.activity,1);left.addWidget(activity,3)
+        activity=self.card('ACTIVIDAD EN TIEMPO REAL','trading');filters=FlowLayout()
+        self.activity_filter=ChoiceBox();self.activity_filter.addItems(['TODOS','SISTEMA','TRADING','ANÁLISIS','AVISO','ERROR']);self.activity_filter.currentTextChanged.connect(self.render_logs);self.activity_filter.hide();self.activity_tabs=[]
+        for title in ('TODOS','SISTEMA','TRADING','ANÁLISIS','AVISO','ERROR'):
+            tab=self.btn(title,lambda _=False,t=title:self.activity_filter.setCurrentText(t));tab.setProperty('activity_filter',title);tab.setCheckable(True);tab.setChecked(title=='TODOS');filters.addWidget(tab);self.activity_tabs.append(tab)
+        self.activity_filter.currentTextChanged.connect(lambda current:[b.setChecked(b.property('activity_filter')==current) for b in self.activity_tabs]);activity.body.addLayout(filters)
+        self.activity=ActivityFeed();activity.body.addWidget(self.activity,1)
+        self.activity_empty=label('Esperando actividad del sistema.','muted');self.activity_empty.setWordWrap(True);activity.body.addWidget(self.activity_empty);left.addWidget(activity,3)
         coverage=self.card('COBERTURA DE MERCADO','analysis');grid=QHBoxLayout();self.home_markets={}
         for symbol,title in [('BTCUSDm','Bitcoin'),('XAUUSDm','Oro')]:
             card=self.card(symbol,'bitcoin' if symbol.startswith('BTC') else 'gold');price=label('—','metric',INK['cyan']);card.body.addWidget(price);status=label('','muted');status.setWordWrap(True);card.body.addWidget(status);chart=CandleChart();chart.setMinimumHeight(88);card.body.addWidget(chart,1);grid.addWidget(card,1);self.home_markets[symbol]=(price,status,chart)
@@ -360,8 +361,8 @@ class StudioWindow(QMainWindow):
         if sheet!=getattr(self,'_sheet',None):self.setStyleSheet(sheet);self._sheet=sheet
         brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
         QApplication.instance().setApplicationDisplayName(brand)
-        from akira_version import BUILD_ID
-        self.setWindowTitle(brand+' · Studio · '+BUILD_ID.removeprefix('AKIRA_').replace('_STUDIO_',' · ').replace('_','.'));desktop=effective_desktop(desktop or self.controller.cfg.get('desktop'));wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=.8 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
+        from akira_version import BUILD_ID,REPAIR_ID
+        self.setWindowTitle(brand+' · Studio · '+BUILD_ID.removeprefix('AKIRA_').replace('_STUDIO_',' · ').replace('_','.')+' · '+REPAIR_ID);desktop=effective_desktop(desktop or self.controller.cfg.get('desktop'));wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=.8 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
         self._saving_ui=profile=='Ahorro de energía'
         for wave in self.findChildren(SignalWave):wave.set_saving(self._saving_ui or bool(studio.get('reduce_motion')))
         if profile=='Ahorro de energía':wallpaper.update(fps=min(3,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
@@ -502,8 +503,7 @@ class StudioWindow(QMainWindow):
         elif kind=='ai_provider_checked':self.information('Proveedor IA',str(data.get('answer') or data.get('error') or data))
         elif kind=='source_check':self.information('Fuentes',self.source_result(data))
         elif kind=='keys_saved':self.settings_panel.message.setText('Las claves se guardaron y reemplazan a las anteriores.');self.information('API guardadas','Las claves se guardaron en este equipo. Pulsa Comprobar fuentes para revisar el acceso.')
-        elif kind=='voice_download':
-            if hasattr(self,'voice_state'):self.voice_state.setText(str(data))
+        elif kind=='voice_download':self.voice_download_event(data)
         elif kind=='repair_progress':self.chat_progress.setText(human(data));self.settings_panel.message.setText(human(data))
         elif kind=='ai_repair':
             self.chat_progress.setText('');self.settings_panel.message.setText('IA reparada y comprobada.' if data.get('ready') else human(data.get('detail')))
@@ -729,15 +729,24 @@ class StudioWindow(QMainWindow):
             self.source_detail.setToolTip('')
     def render_logs(self,*args,visible_only=False):
         if not hasattr(self,'terminal_table'):return
-        rows=[];query=self.log_search.text().casefold();kind=self.activity_filter.currentText()
+        rows=[];terminal_rows=[];query=self.log_search.text().casefold();kind=self.activity_filter.currentText()
         from activity_events import category_for_event
         for i,row in enumerate(self.controller.log_rows):
             state=str(row.get('state') or row.get('operation') or 'SISTEMA');module=str(row.get('symbol') or 'AKIRA');text=str(row.get('detail') or row.get('message') or '')
-            if query and query not in (module+state+text).casefold():continue
             category=category_for_event(row)
-            rows.append((str(row.get('utc'))+module+state+text[:80],[str(row.get('utc',''))[11:19],module,state,text],{**row,'activity_category':category}))
-        if not visible_only or self.page_index==7:self.terminal_table.update_rows(rows)
-        if not visible_only or self.page_index==0:self.activity.update_rows([r for r in rows if kind=='TODOS' or r[2]['activity_category']==kind][:120])
+            item=(str(row.get('event_id') or str(row.get('utc'))+module+state+text[:80]),[str(row.get('utc',''))[11:19],module,state,text],{**row,'activity_category':category})
+            rows.append(item)
+            if not query or query in (module+state+text).casefold():terminal_rows.append(item)
+        if not visible_only or self.page_index==7:self.terminal_table.update_rows(terminal_rows)
+        if not visible_only or self.page_index==0:
+            selected=[r for r in rows if kind=='TODOS' or r[2]['activity_category']==kind][:120]
+            self.activity.update_rows(selected);self.activity.setVisible(bool(selected));self.activity_empty.setVisible(not selected)
+            if not selected:
+                empty={'TODOS':'Esperando actividad del sistema.','SISTEMA':'No hay eventos de sistema recientes.',
+                       'TRADING':'No hay operaciones o gestiones registradas recientemente.',
+                       'ANÁLISIS':'Todavía no hay análisis registrados en esta sesión.',
+                       'AVISO':'No hay avisos recientes.','ERROR':'No hay errores registrados en esta sesión.'}
+                self.activity_empty.setText(empty.get(kind,'Sin actividad reciente.'))
     def render_notices(self):
         if not hasattr(self,'home_notices'):return
         rows=self.controller.notices.list(limit=4);self.home_notices.setText('\n\n'.join(str(r.get('title'))+'\n'+('Detalle oculto por privacidad.' if self.private else str(r.get('body'))[:160]) for r in rows) or 'Sin avisos recientes.')
@@ -1060,8 +1069,8 @@ class StudioWindow(QMainWindow):
             try:launch_uninstaller(self.controller.folder);self.close()
             except Exception as error:self.show_error(str(error))
     def about(self):
-        from akira_version import BUILD_ID
-        self.dialog_text('ACERCA DE',self.cfg['studio']['brand_name']+' · Studio\n'+BUILD_ID+'\n\nMotor financiero y datos de cuenta independientes de los fondos y avatares.\nQt for Python / PySide6 · LGPLv3 / GPLv3. Tipografía Rajdhani · SIL OFL 1.1.\nLas licencias se incluyen en la aplicación.')
+        from akira_version import BUILD_ID,REPAIR_ID
+        self.dialog_text('ACERCA DE',self.cfg['studio']['brand_name']+' · Studio\n'+BUILD_ID+' · '+REPAIR_ID+'\n\nMotor financiero y datos de cuenta independientes de los fondos y avatares.\nQt for Python / PySide6 · LGPLv3 / GPLv3. Tipografía Rajdhani · SIL OFL 1.1.\nLas licencias se incluyen en la aplicación.')
 
     def open_call(self):
         existing=getattr(self,'call_dialog',None)
@@ -1082,24 +1091,43 @@ class StudioWindow(QMainWindow):
             from voice_session import audio_inventory,voice_inventory
             try:devices=audio_inventory()
             except Exception as error:devices={'inputs':[],'outputs':[],'error':str(error)}
-            return {'voices':voice_inventory(self.controller.folder,include_online=online),'devices':devices}
+            error=''
+            try:voices=voice_inventory(self.controller.folder,include_online=online)
+            except Exception as exc:
+                error='No se pudo consultar el catálogo: '+str(exc)[:200]
+                voices=voice_inventory(self.controller.folder,include_online=False)
+            return {'voices':voices,'devices':devices,'catalog_error':error}
         if hasattr(self,'voice_state'):self.voice_state.setText('Buscando voces y dispositivos…')
-        self.controller.job('voice_inventory',load,'voices')
+        if not self.controller.job('voice_inventory',load,'voices') and hasattr(self,'voice_state'):
+            self.voice_state.setText('Ya se están consultando las voces; espera un momento.')
     def populate_voices(self,data):
         dialog=getattr(self,'call_dialog',None)
         if not dialog or not dialog.isVisible():return
+        selected_voice=self.voice_selector.currentData() or {};selected_voice=selected_voice.get('id') or self.cfg['voice'].get('voice_id')
+        selected_inputs={'inputs':self.voice_input.currentData(),'outputs':self.voice_output.currentData()}
         self.controller.voice_rows=data['voices'];self.voice_input.clear();self.voice_output.clear();self.voice_selector.clear()
         for widget,key in ((self.voice_input,'inputs'),(self.voice_output,'outputs')):
             widget.addItem('Predeterminado',-1)
             for row in data['devices'].get(key,[]):widget.addItem(row['name'],row['id'])
-            selected=self.cfg['voice'].get('input_device' if key=='inputs' else 'output_device');index=widget.findData(selected)
+            selected=selected_inputs[key]
+            if selected is None:selected=self.cfg['voice'].get('input_device' if key=='inputs' else 'output_device')
+            index=widget.findData(selected)
             if index>=0:widget.setCurrentIndex(index)
         language=self.cfg['studio'].get('language_voice_out','es').split('-')[0]
+        from voice_session import voice_matches_language
         for row in data['voices']:
-            if language in ('auto','') or language in str(row.get('language','')).lower() or language=='es' and any(x in str(row.get('language','')).lower() for x in ('spanish','español')):self.voice_selector.addItem(row['name']+(' · instalada' if row['installed'] else ' · descargar'),row)
+            if voice_matches_language(row,language):self.voice_selector.addItem(row['name']+(' · instalada' if row['installed'] else ' · descargar'),row)
+        selected_index=-1
         for i in range(self.voice_selector.count()):
-            if self.voice_selector.itemData(i)['id']==self.cfg['voice'].get('voice_id'):self.voice_selector.setCurrentIndex(i);break
-        self.voice_state.setText(data['devices'].get('error') or str(self.voice_selector.count())+' voces para '+language)
+            if self.voice_selector.itemData(i)['id']==selected_voice:selected_index=i;break
+        if selected_index<0:
+            selected_index=next((i for i in range(self.voice_selector.count()) if self.voice_selector.itemData(i).get('installed')),0)
+        if self.voice_selector.count():self.voice_selector.setCurrentIndex(selected_index)
+        problems=[str(getattr(self,'_voice_inventory_note','')),str(data['devices'].get('error') or ''),str(data.get('catalog_error') or '')]
+        self._voice_inventory_note=''
+        status=str(self.voice_selector.count())+' voces disponibles. Las voces de Windows también se muestran cuando no informan su idioma.'
+        if not self.voice_selector.count():status='No se encontraron voces. Pulsa Buscar voces para consultar el catálogo en Internet.'
+        self.voice_state.setText(' · '.join([p for p in problems if p]+[status]))
     def start_call(self):
         voice=self.voice_selector.currentData()
         if not voice or not voice.get('installed'):self.show_error('Selecciona o descarga una voz compatible con el idioma elegido.');return
@@ -1117,6 +1145,9 @@ class StudioWindow(QMainWindow):
         if not voice or data.get('session_id')!=voice.session_id:return
         kind=data.get('kind');text=data.get('text','')
         if hasattr(self,'voice_state'):self.voice_state.setText(text or kind)
+        if kind=='error':
+            try:self.controller.reporter.event('VOZ','ERROR | '+str(text),state='ERROR',detail=str(text),severity='ERROR')
+            except OSError:pass
         if kind=='partial':self.voice_transcript.setText(text)
         elif kind=='final':self.voice_transcript.setText(text);self.send_transcript()
         elif kind in ('playback_start','playback_end'):self.director.playback(kind=='playback_start')
@@ -1128,20 +1159,60 @@ class StudioWindow(QMainWindow):
         text=self.voice_transcript.text().strip()
         if not text:return
         from assistant_akira import AkiraAssistant
-        if AkiraAssistant.is_trade_control_message(text) and not self.confirm('Confirmar transcripción operativa',text):return
+        if AkiraAssistant.is_trade_control_message(text) and not self.confirm('Confirmar transcripción operativa',text):
+            if self.controller.voice:self.controller.voice.cancel_message()
+            return
         if self.controller.ask(text):self.director.busy(True);self.director.publish('thinking')
+        elif self.controller.voice:
+            self.controller.voice.cancel_message();self.voice_state.setText('El chat está ocupado. Espera a que termine y vuelve a hablar.')
     def download_voice(self):
         row=self.voice_selector.currentData()
-        if row:
-            from voice_session import install_voice
-            self._voice_download_cancel=__import__('threading').Event();self.controller.job('download_voice',lambda:install_voice(self.controller.folder,row,progress=lambda text:self.controller.emit('voice_download',text),cancel=self._voice_download_cancel),'voice_download')
+        if not row:
+            self.voice_state.setText('Primero pulsa Buscar voces y selecciona una voz.');return
+        if row.get('installed'):
+            self.voice_state.setText('La voz seleccionada ya está instalada. Puedes iniciar la llamada.');return
+        if getattr(self,'_voice_single_active',False) or getattr(getattr(self,'_voice_batch',None),'active',False):
+            self.voice_state.setText('Ya hay una descarga en curso.');return
+        from voice_session import install_voice
+        self._voice_download_cancel=__import__('threading').Event();cancel=self._voice_download_cancel
+        def download():
+            try:
+                install_voice(self.controller.folder,row,progress=lambda text:self.controller.emit('voice_download',text),cancel=cancel)
+                return {'state':'cancelled' if cancel.is_set() else 'complete_one','finished':True,'single':True}
+            except Exception as error:
+                return {'state':'cancelled' if cancel.is_set() else 'error','finished':True,'single':True,'error':str(error)[:240]}
+        self._voice_single_active=True
+        if not self.controller.job('download_voice',download,'voice_download'):
+            self._voice_single_active=False;self.voice_state.setText('No se pudo iniciar la descarga; vuelve a intentarlo.')
     def download_all_voices(self):
+        if getattr(self,'_voice_single_active',False) or getattr(getattr(self,'_voice_batch',None),'active',False):
+            self.voice_state.setText('Ya hay una descarga en curso.');return
         if not self.confirm('Descargar todas las voces','Puede ocupar varios GB. ¿Descargar el catálogo de voces?'):return
         from voice_session import VoiceDownloadBatch
         self._voice_batch=VoiceDownloadBatch(self.controller.folder,lambda row:self.controller.emit('voice_download',row),self.controller.stop);self._voice_batch.start()
     def cancel_voice_download(self):
         if hasattr(self,'_voice_download_cancel'):self._voice_download_cancel.set()
         if hasattr(self,'_voice_batch'):self._voice_batch.cancel()
+    def voice_download_event(self,data):
+        if not hasattr(self,'voice_state'):return
+        if not isinstance(data,dict):self.voice_state.setText(str(data));return
+        state=data.get('state');done=data.get('models_done',0);total=data.get('models_total',0)
+        captions={'catalog':'Consultando el catálogo de voces…','downloading':f'Descargando voces: {done}/{total} modelos. {data.get("current", "")}',
+                  'complete_one':'Voz instalada. Actualizando la lista…','complete':f'Descarga terminada: {done}/{total} modelos.',
+                  'partial':f'Descarga parcial: {data.get("failed",0)} modelos fallaron.',
+                  'cancelled':'Descarga cancelada.','disk_full':'No hay suficiente espacio para continuar.',
+                  'empty':'El catálogo no contiene modelos descargables.','error':'No se pudo descargar la voz: '+str(data.get('error') or 'Error desconocido')}
+        caption=captions.get(state,str(data.get('current') or state or 'Descargando voces…'))
+        errors=data.get('errors') or []
+        if state in ('partial','disk_full') and errors:caption+=' '+str(errors[0].get('error') or '')
+        self.voice_state.setText(caption)
+        if data.get('finished'):
+            if data.get('single'):self._voice_single_active=False
+            if state in ('complete_one','complete','partial'):
+                self._voice_inventory_note=caption;self.load_voices(False)
+            if state in ('error','partial','disk_full'):
+                try:self.controller.reporter.event('VOZ','ERROR | '+caption,state='ERROR',detail=caption,severity='ERROR')
+                except OSError:pass
 
     def closeEvent(self,event):
         if hasattr(self,'settings_panel'):self.settings_panel.persist_visual()

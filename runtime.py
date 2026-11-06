@@ -214,7 +214,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             if stop.is_set():break
             if not reconnect:wait_retry(min(30,3*2**min(max(0,failures-1),4)))
     except Exception as exc:
-        log.event('ERROR',type(exc).__name__+': '+str(exc),traceback=traceback.format_exc())
+        log.event('ERROR',type(exc).__name__+': '+str(exc),state='ERROR',severity='ERROR',traceback=traceback.format_exc())
         disconnected(ConnectionProblem('RUNTIME_UNAVAILABLE','No se pudo iniciar el componente de conexión MT5.',
             'Comprueba que estás usando Windows y el instalador completo de esta versión. Consulta Terminal → Diagnóstico.',str(exc)))
 

@@ -25,6 +25,13 @@ def audio_inventory():
   if d.get('max_output_channels',0)>0:outputs.append(item)
  return {'inputs':inputs,'outputs':outputs}
 
+def voice_matches_language(row,language):
+ """Keep Windows voices selectable even when SAPI reports numeric locales."""
+ language=str(language or 'auto').split('-')[0].split('_')[0].lower()
+ if language in ('auto','') or row.get('engine')=='system':return True
+ code=str(row.get('language') or '').lower().replace('_','-')
+ return code.split('-')[0]==language or language=='es' and any(x in code for x in ('spanish','español'))
+
 def voice_files_available(folder,files,metadata):
  try:
   for relative in files:
@@ -37,13 +44,25 @@ def voice_files_available(folder,files,metadata):
 
 def voice_inventory(root,include_online=False):
  root=Path(root);folder=root/'state'/'voices';folder.mkdir(parents=True,exist_ok=True);rows=[]
+ engine=None;com=None;com_initialized=False
  try:
+  # Inventory runs on a pooled worker, which may not have a COM apartment.
+  if sys.platform=='win32':
+   import pythoncom as com
+   com.CoInitialize();com_initialized=True
   import pyttsx3
   engine=pyttsx3.init()
   for v in engine.getProperty('voices'):
    rows.append({'id':'system:'+str(v.id),'name':str(v.name),'engine':'system','installed':True,'language':str(getattr(v,'languages',[])),'gender':str(getattr(v,'gender','') or 'sin especificar')})
-  engine.stop()
  except Exception:pass
+ finally:
+  if engine is not None:
+   try:engine.stop()
+   except Exception:pass
+   del engine
+  if com_initialized:
+   try:com.CoUninitialize()
+   except Exception:pass
  catalog=folder/'catalog.json';data={}
  try:data=json.loads(catalog.read_text(encoding='utf-8'))
  except (OSError,ValueError):pass
@@ -265,14 +284,15 @@ class VoiceSession:
  def _run(self):
   try:
    import numpy as np,sounddevice as sd
-   model_name=str(self.options.get('model','tiny'))
-   if model_name not in ('tiny','base','small'):model_name='tiny'
-   model=recognition_model(self.root,model_name)
-   if self.stop_event.is_set():return
    device=self.options.get('input_device');device=None if device in (None,-1,'') else int(device)
    inventory=audio_inventory()
    if device is not None and device not in [d['id'] for d in inventory['inputs']]:raise RuntimeError('El micrófono seleccionado se desconectó')
    if not inventory['inputs']:raise RuntimeError('No hay micrófonos disponibles. Revisa los permisos de Windows para AKIRA.')
+   model_name=str(self.options.get('model','tiny'))
+   if model_name not in ('tiny','base','small'):model_name='tiny'
+   self.event('state',text='Preparando reconocimiento. La primera vez puede necesitar Internet para descargar el modelo.')
+   model=recognition_model(self.root,model_name)
+   if self.stop_event.is_set():return
    reader=threading.Thread(target=self._capture,args=(sd,device),name='AkiraMicrophone',daemon=True);self._threads.append(reader);reader.start()
    active=[];silence=0;partial_due=0;epoch=self._revision
    while not self.stop_event.is_set():

@@ -840,7 +840,7 @@ class Engine:
             enviable=sum(bool(r.get('sendable')) and not r.get('confirmed') for r in scenarios)
             detail=status.get('detail','')[:500]
             runner=view['symbols'][symbol].get('runner',{})
-            self.log.event(symbol,f"CICLO {self.cycle} · {proposals} escenarios con parámetros · técnicas BUY {buy} / SELL {sell} · nuevas enviables {enviable} · MT5 confirmadas {live} · {status.get('state','')} · {detail} · RUNNER {runner.get('state','ESPERANDO')}: {str(runner.get('detail',''))[:240]}",build=BUILD_ID,portfolio_risk=ledger,runner=runner)
+            self.log.event(symbol,f"CICLO {self.cycle} · {proposals} escenarios con parámetros · técnicas BUY {buy} / SELL {sell} · nuevas enviables {enviable} · MT5 confirmadas {live} · {status.get('state','')} · {detail} · RUNNER {runner.get('state','ESPERANDO')}: {str(runner.get('detail',''))[:240]}",state='ANÁLISIS',activity_category='ANÁLISIS',build=BUILD_ID,portfolio_risk=ledger,runner=runner)
         # La función Reporter.dump existía pero nunca se llamaba: persistimos
         # el estado operativo de ambos símbolos para soporte y auditoría.
         # Reporter.status registra eventos de diagnóstico, pero el estado del
