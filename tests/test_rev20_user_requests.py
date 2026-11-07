@@ -34,6 +34,20 @@ class StableExactReviews(PendingCase,unittest.TestCase):
         self.api.account.equity=.001;self.api.account.margin_free=.001
         with self.assertRaises(Blocked):self.g.send_immediate_plan(self.p)
         self.assertFalse(self.api.sent)
+    def test_background_live_source_refresh_does_not_replace_inflight_exact_request(self):
+        from execution_review import fingerprint
+        from research import ContextWorker
+        _,plan,snapshot=approve_exact(self.e,self.p,.01)
+        snapshot['required_pending_reviews']=[__import__('execution_review').request_id(plan)]
+        worker=ContextWorker(self.cfg,self.root,clock=self.clock);self.addCleanup(worker.close)
+        self.assertTrue(worker.request_pending_reviews([plan],snapshot))
+        pid=__import__('execution_review').request_id(plan);attempt=worker.pending_reviews[pid]['attempt_id']
+        changed=copy.deepcopy(snapshot)
+        changed['research']['sources']={'venue:Binance':{'fresh':True,'content_digest':'another tick'},
+            'derivatives:BTCUSDm':{'fresh':True,'content_digest':'new book and provider timestamp'}}
+        self.assertEqual(fingerprint(plan,snapshot),fingerprint(plan,changed))
+        self.assertEqual(worker.request_pending_reviews([plan],changed),[])
+        self.assertEqual(worker.pending_reviews[pid]['attempt_id'],attempt)
     def test_new_closed_evidence_still_requires_new_verdict(self):
         from execution import Blocked
         approve_exact(self.e,self.p,.01)

@@ -32,9 +32,11 @@ def fingerprint(plan,snapshot):
     stable_facts={k:v for k,v in facts(plan,snapshot).items() if not k.startswith(('order.','account.'))}
     payload={'order':{k:plan.get(k) for k in ('symbol','side','lane','kind','entry','sl','tp','volume')},
         'account':{k:(snapshot.get('account') or {}).get(k) for k in ('login','server','currency','trade_mode')},
-        'facts':stable_facts,'configuration':snapshot.get('selection_configuration',{}),
-        'source_evidence':{k:{f:r.get(f) for f in ('fresh','usable','error','enabled','content_digest')} for k,r in (snapshot.get('research') or {}).get('sources',{}).items()
-                           if isinstance(r,dict) and not k.startswith(('local_ai','preopen_ai','technical_review','pending_ai','youtube','strategy_reference')) and (not plan['symbol'].startswith('XAU') or not k.startswith(('venue:','derivatives:','search:BTC','technical:BTC','event_news:BTC')))}}
+        'facts':stable_facts,'configuration':snapshot.get('selection_configuration',{})}
+    # Bind the evidence actually delivered to this exact-order reviewer.
+    # Unrelated API reception times, live books and derivatives digests were
+    # never in its prompt and can refresh faster than a CPU review completes.
+    # Dated relevant events ARE in facts; new ones still invalidate a receipt.
     return hashlib.sha256(json.dumps(payload,sort_keys=True,ensure_ascii=False,allow_nan=False,default=str).encode()).hexdigest()
 
 def schema(evidence):
