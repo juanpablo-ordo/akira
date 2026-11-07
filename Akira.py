@@ -6,7 +6,7 @@ from windows_identity import set_identity,application_root
 
 if __name__=='__main__':
     set_identity()
-    parser=argparse.ArgumentParser();parser.add_argument('--sources-check');parser.add_argument('--low-resource-check');parser.add_argument('--https-check');parser.add_argument('--prepare-uninstall',action='store_true');parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');parser.add_argument('--local-components-check');parser.add_argument('--sprite-ai-check');parser.add_argument('--installation-info');parser.add_argument('--legacy-ui',action='store_true',help=argparse.SUPPRESS);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--sources-check');parser.add_argument('--low-resource-check');parser.add_argument('--https-check');parser.add_argument('--prepare-uninstall',action='store_true');parser.add_argument('--preview',action='store_true');parser.add_argument('--speech-worker');parser.add_argument('--speech-server');parser.add_argument('--app-root');parser.add_argument('--self-check');parser.add_argument('--first-run-check');parser.add_argument('--local-components-check');parser.add_argument('--sprite-ai-check');parser.add_argument('--installation-info');parser.add_argument('--legacy-ui',action='store_true',help=argparse.SUPPRESS);args=parser.parse_args()
     if args.sources_check:
         import json
         from qa_sources_rev10 import run
@@ -59,6 +59,9 @@ if __name__=='__main__':
                 'expected_login':loaded.get('expected_login')}
         Path(args.first_run_check).write_text(json.dumps(result,indent=2),encoding='utf-8')
         sys.exit(0 if result['status']=='PASSED' else 1)
+    if args.speech_server:
+        from voice_session import speech_server
+        speech_server(args.speech_server);sys.exit(0)
     if args.speech_worker:
         from voice_session import speech_worker
         speech_worker(args.speech_worker);sys.exit(0)
@@ -97,6 +100,11 @@ if __name__=='__main__':
             diagnostics=getattr(exc,'render_diagnostics',None)
             if isinstance(diagnostics,dict):result['render_diagnostics']=diagnostics
         Path(args.self_check).write_text(json.dumps(result,indent=2),encoding='utf-8');sys.exit(0 if result['status']=='PASSED' else 1)
+    from startup_runtime import ApplicationLock,AlreadyRunning,duplicate_notice,prepare_hardware
+    try:application_lock=ApplicationLock()
+    except AlreadyRunning as error:
+        duplicate_notice(error);sys.exit(0)
+    prepare_hardware(Path(args.app_root) if args.app_root else application_root())
     try:
         if args.legacy_ui:
             from desktop import main

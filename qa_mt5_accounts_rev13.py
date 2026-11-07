@@ -22,7 +22,7 @@ def run_check():
             if 'server' in kwargs:api.account.server=kwargs['server']
             return True
         api.initialize=initialize;api.shutdown=lambda:None
-        cfg=load_config(DEFAULT);cfg.update(mode='observe',expected_login=123,expected_server='TEST',poll_seconds=.05)
+        cfg=load_config(DEFAULT);cfg.update(mode='observe',expected_login=123,expected_server='TEST',poll_seconds=.05,follow_terminal_account=False)
         cfg['assistant']['auto_install_local_ai']=False
         save_config(cfg,root/'akira_config.json');risk=copy.deepcopy(cfg['risk'])
         def wait_for(predicate,timeout=10):

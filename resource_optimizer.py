@@ -11,23 +11,38 @@ from functools import lru_cache
 @lru_cache(maxsize=1)
 def desktop_hardware():
     try:
-        import psutil
-        return {'ram_gb':psutil.virtual_memory().total/1073741824,
+        import psutil,platform,os,subprocess,json
+        memory=psutil.virtual_memory()
+        result={'ram_gb':memory.total/1073741824,'available_ram_gb':memory.available/1073741824,
             'physical_cores':psutil.cpu_count(logical=False) or 0,
-            'logical_cores':psutil.cpu_count() or 1}
+            'logical_cores':psutil.cpu_count() or 1,'cpu':platform.processor() or platform.machine(),
+            'architecture':platform.machine(),'gpus':[],'dedicated_gpu':False,'gpu_detection':'unavailable'}
+        if os.name=='nt':
+            try:
+                probe=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',
+                    'Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM | ConvertTo-Json -Compress'],
+                    capture_output=True,text=True,timeout=3,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+                data=json.loads(probe.stdout) if probe.returncode==0 else []
+                result['gpus']=[g for g in (data if isinstance(data,list) else [data]) if isinstance(g,dict)]
+                result['dedicated_gpu']=any(any(n in str(g.get('Name','')).lower() for n in ('nvidia','geforce','quadro','radeon rx','radeon pro','intel arc')) for g in result['gpus'])
+                result['gpu_detection']='windows_cim'
+            except (OSError,ValueError,subprocess.TimeoutExpired):pass
+        return result
     except (ImportError,OSError):return {'ram_gb':0,'physical_cores':0,'logical_cores':0}
 
 
 def effective_desktop(desktop,hardware=None):
     result=dict(desktop or {});hw=desktop_hardware() if hardware is None else hardware
-    light=(0<float(hw.get('ram_gb',0))<=9 and
-        (0<int(hw.get('physical_cores',0))<=2 or 0<int(hw.get('logical_cores',0))<=4)
-        and not hw.get('dedicated_gpu',False))
-    if result.get('adaptive_resources',True) and light:
+    result.pop('low_resource_active',None)
+    mode=result.get('low_resource_mode','auto')
+    light=mode=='ultra' or (mode!='off' and 0<float(hw.get('ram_gb',0))<=9 and not hw.get('dedicated_gpu',False))
+    active=mode=='ultra' or result.get('adaptive_resources',True) and light
+    if active:
         result.update(performance_profile='Ahorro de energía',model_use_gpu=False,
             memory_budget_mb=min(int(result.get('memory_budget_mb',4096)),4096),
             model_context_tokens=min(int(result.get('model_context_tokens',2048)),2048),
             model_keep_alive_seconds=0)
+    if active:result['low_resource_active']=True
     return result
 
 PROFILES = {

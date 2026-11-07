@@ -26,9 +26,13 @@ def facts(plan,snapshot):
     return out
 
 def fingerprint(plan,snapshot):
-    payload={'order':{k:plan.get(k) for k in ('symbol','side','lane','kind','entry','sl','tp','volume','risk_usd','reward_usd','net_rr')},
-        'account':{k:(snapshot.get('account') or {}).get(k) for k in ('login','server','currency','balance','equity')},
-        'facts':facts(plan,snapshot),'configuration':snapshot.get('selection_configuration',{}),
+    # Financial facts are audited with the verdict, but floating P/L and spread
+    # change every tick. Gateway recomputes affordability before EVERY send.
+    # A language-model round trip cannot be keyed to those moving observations.
+    stable_facts={k:v for k,v in facts(plan,snapshot).items() if not k.startswith(('order.','account.'))}
+    payload={'order':{k:plan.get(k) for k in ('symbol','side','lane','kind','entry','sl','tp','volume')},
+        'account':{k:(snapshot.get('account') or {}).get(k) for k in ('login','server','currency','trade_mode')},
+        'facts':stable_facts,'configuration':snapshot.get('selection_configuration',{}),
         'source_evidence':{k:{f:r.get(f) for f in ('fresh','usable','error','enabled','content_digest')} for k,r in (snapshot.get('research') or {}).get('sources',{}).items()
                            if isinstance(r,dict) and not k.startswith(('local_ai','preopen_ai','technical_review','pending_ai','youtube','strategy_reference')) and (not plan['symbol'].startswith('XAU') or not k.startswith(('venue:','derivatives:','search:BTC','technical:BTC','event_news:BTC')))}}
     return hashlib.sha256(json.dumps(payload,sort_keys=True,ensure_ascii=False,allow_nan=False,default=str).encode()).hexdigest()
@@ -66,3 +70,14 @@ def valid_receipt(row,expected,now):
 
 def request_id(plan):
     return str(plan['symbol'])+' / EXEC / '+str(plan.get('key') or plan.get('ticket'))
+
+def progress(row,now,expected=None):
+    state=row.get('state','WAITING');data=row.get('data') or {}
+    if expected and row and row.get('fingerprint')!=expected:state='CHANGED_EVIDENCE'
+    if state=='COMPLETE':
+        state='APPROVED' if valid_receipt(row,expected or row.get('fingerprint'),now) else ('EXPIRED' if now-float(row.get('updated',0))>180 else data.get('verdict','INVALID'))
+    return {'state':state,'phase':row.get('phase',''),'provider':row.get('provider') or row.get('model_mode') or '',
+        'model':row.get('model',''),'elapsed_seconds':round(max(0,now-float(row.get('started') or row.get('requested') or now)),1),
+        'queue_ahead':int(row.get('queue_ahead',0)),'retry_seconds':round(max(0,float(row.get('retry_at',0))-now),1),
+        'reason':str(row.get('error') or data.get('reason') or ('Cambiaron los niveles o la evidencia técnica; preparando revisión actual.' if state=='CHANGED_EVIDENCE' else 'Esperando revisión de la propuesta exacta.'))[:240],
+        'review_seconds':row.get('review_seconds'),'reviewed_at':row.get('created') or row.get('updated')}

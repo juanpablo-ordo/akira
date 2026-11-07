@@ -84,7 +84,16 @@ class MarketCache:
             # Index one is the most recent broker-confirmed closed bar.
             # Filter UTC close times again to protect against stale/odd feeds.
             from market_state import PERIOD_SECONDS
-            rows=self.api.copy_rates_from_pos(self.symbol,tf,1,count)
+            from datetime import datetime,timezone
+            rows=None
+            # At the weekend some terminals leave Friday's last bar at index
+            # zero. A timestamp-bounded history query can include that bar once
+            # its entire interval has closed, without treating it as a live tick.
+            if hasattr(self.api,'copy_rates_range'):
+                rows=self.api.copy_rates_range(self.symbol,tf,
+                    datetime.fromtimestamp(now-PERIOD_SECONDS[name]*(count+8),timezone.utc),
+                    datetime.fromtimestamp(now,timezone.utc))
+            if rows is None or not len(rows):rows=self.api.copy_rates_from_pos(self.symbol,tf,1,count)
             if rows is None:return rows
             return [r for r in rows if float(r['time'])+PERIOD_SECONDS[name]<=now][-count:]
         try:

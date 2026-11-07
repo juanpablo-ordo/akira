@@ -1,7 +1,7 @@
-"""Aprendizaje de resultados confirmados de pendientes propias por símbolo/lado."""
+"""Aprendizaje de cierres MT5 propios; conservar pendientes y runners separados."""
 from collections import defaultdict
 import math
-from execution import OWN_PENDING,LEGACY_PENDING
+from execution import OWN_PENDING,OWN_RUNNER,LEGACY_PENDING
 from statistical import wilson_lower
 
 
@@ -20,7 +20,7 @@ class PendingLearner:
                 groups[int(d.position_id)].append(d)
         changed=False
         active={int(getattr(p,'identifier',p.ticket)) for p in g.snapshot().positions}
-        allowed={OWN_PENDING}|(LEGACY_PENDING if g.cfg['manage_legacy_akira'] else set())
+        allowed={OWN_PENDING,OWN_RUNNER}|(LEGACY_PENDING if g.cfg['manage_legacy_akira'] else set())
         for pid,rows in groups.items():
             entries=[d for d in rows if int(getattr(d,'type',-1)) in (0,1) and int(d.entry)==0]
             exits=[d for d in rows if int(getattr(d,'type',-1)) in (0,1) and int(d.entry) in (1,3)]
@@ -42,19 +42,20 @@ class PendingLearner:
                 plan=next((g.journal.data['orders'].get(str(getattr(d,'order',0)),{}).get('plan') or {} for d in entries
                            if g.journal.data['orders'].get(str(getattr(d,'order',0)),{}).get('plan')), {})
             from trade_quality_gate import family
-            rec.update(opened_at=min(float(d.time) for d in entries),strategy_key=str(plan.get('key','')),
+            lane='RUNNER' if int(entries[0].magic)==OWN_RUNNER else str(plan.get('lane') or 'PENDING')
+            rec.update(lane=lane,opened_at=min(float(d.time) for d in entries),strategy_key=str(plan.get('key','')),
                 strategy_id=family(plan) if plan.get('key') else 'SIN_TESIS_REGISTRADA',
                 strategy_version=int(plan.get('strategy_version') or 0),
                 execution_build=str(plan.get('execution_build') or ''),
                 selector_id=str(plan.get('selector_id') or ''),selector_version=int(plan.get('selector_version') or 0))
             if plan.get('learning_feature_version')=='pending_entry_v1' and plan.get('learning_features'):
-                rec.update(confirmed=True,lane='PENDING',feature_version='pending_entry_v1',features=list(plan['learning_features']),
+                rec.update(confirmed=True,feature_version='pending_entry_v1',features=list(plan['learning_features']),
                            net=round(net,8),opened_at=min(float(d.time) for d in entries),
                            campaign_id=str(pid),campaign_complete=True)
             if self.records.get(str(pid))!=rec:self.records[str(pid)]=rec;changed=True
         if changed:
             self._metrics_cache.clear()
-            g.journal.save();g.log.event('IA','Aprendizaje actualizado con cierres confirmados de pendientes propias',samples=len(self.records))
+            g.journal.save();g.log.event('IA','Memoria actualizada con cierres MT5 confirmados de pendientes y runners propios',samples=len(self.records))
         return changed
 
     def metrics(self,symbol,plan=None):
@@ -63,14 +64,14 @@ class PendingLearner:
         from trade_quality_gate import family
         from strategy_choice import selected,STRATEGY_VERSION,SELECTOR_VERSION
         from akira_version import BUILD_ID
-        cohort=(family(plan),STRATEGY_VERSION,selected(self.g.cfg),SELECTOR_VERSION,BUILD_ID) if plan is not None else None
+        cohort=(family(plan),STRATEGY_VERSION,selected(self.g.cfg),SELECTOR_VERSION,BUILD_ID,getattr(plan,'lane','PENDING')) if plan is not None else None
         cache_key=(symbol,cohort,len(self.records))
         if cache_key in self._metrics_cache:return self._metrics_cache[cache_key]
         rows=sorted((r for r in self.records.values() if r['symbol']==symbol),key=lambda r:(r['closed_at'],r['position_id']))
         historical_samples=len(rows)
         if cohort is not None:
             rows=[r for r in rows if (r.get('strategy_id'),r.get('strategy_version'),r.get('selector_id'),
-                r.get('selector_version'),r.get('execution_build'))==cohort]
+                r.get('selector_version'),r.get('execution_build'),r.get('lane','PENDING'))==cohort]
         rows=rows[-200:]
         n=len(rows);wins=[r['pnl'] for r in rows if r['pnl']>0];losses=[-r['pnl'] for r in rows if r['pnl']<0]
         aw=sum(wins)/len(wins) if wins else 0.0;al=sum(losses)/len(losses) if losses else 0.0

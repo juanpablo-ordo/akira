@@ -30,7 +30,7 @@ class StudioController:
         self._settings_lock=threading.RLock();self._save_serial=0;self.log_rows=deque(maxlen=300);self._jobs=set();self._jobs_lock=threading.Lock()
         self.settings_io=ThreadPoolExecutor(max_workers=1,thread_name_prefix='AkiraPreference');self.io=ThreadPoolExecutor(max_workers=3,thread_name_prefix='AkiraStudioIO');self.chat_busy=False;self.closed=False
         self.notices=NotificationCenter(self.folder);self.network=None;self.online=None;self.last_evidence=-100
-        self.voice=None;self.voice_rows=[];self.resources={};self._usage_due=0;self._usage_loading=False
+        self.voice=None;self.call_conversation=None;self.voice_rows=[];self.resources={};self._usage_due=0;self._usage_loading=False
         self._closure_seen=set();self._pending_signature=None
         self.reporter=Reporter(self.folder/'logs',callback=lambda row:self.emit('log',row),console=False)
         self.assistant=AkiraAssistant(self.cfg,self.folder,trade_callback=self.bridge.request,
@@ -119,6 +119,10 @@ class StudioController:
         results=[]
         if view is not None:
             self.view=view;self.last_snapshot_at=time.monotonic();self.bridge.connected=bool(view.get('connected'));self.bridge.starting=False
+            adoption=view.get('account_adaptation') or {}
+            if adoption and adoption.get('at')!=getattr(self,'_account_adaptation_seen',None):
+                self._account_adaptation_seen=adoption['at']
+                self.job('persist_detected_account',lambda:self.persist_detected_account(adoption),executor=self.settings_io)
             from connectivity import recently_connected
             if recently_connected(view):self.last_evidence=time.monotonic()
             results.append({'kind':'snapshot','data':view})
@@ -138,6 +142,21 @@ class StudioController:
             elif row['kind']=='log':self.log_rows.appendleft(row['data'])
             results.append(row)
         return results
+
+    def persist_detected_account(self,adoption):
+        """Merge only actor-observed identity; never replace unrelated preferences."""
+        with self._settings_lock:
+            current=self.view.get('account') or {}
+            if (current.get('login'),current.get('server'))!=(adoption['login'],adoption['server']) or self.view.get('mode')!='observe':return
+            merged=copy.deepcopy(dict(self.cfg))
+            merged.update(mode='observe',expected_login=adoption['login'],expected_server=adoption['server'],operation_profile=adoption['operation_profile'])
+            merged=validate_form(merged);paths=[r['path'] for r in changes(self.cfg,merged)]
+            save_config(merged,self.folder/'akira_config.json')
+            self.cfg=ConfigSnapshot(merged);self.assistant.cfg=self.cfg
+            if hasattr(self,'knowledge'):self.knowledge.cfg=self.cfg
+            self.emit('settings_saved',{'config':copy.deepcopy(merged),'submitted':copy.deepcopy(merged),'paths':paths,
+                'adopted_mt5_account':True,'result':{'ok':True,'account_confirmation_required':True},'saved':True})
+            self.notify('Cuenta de MT5 detectada',adoption['detail'])
 
     def job(self,name,function,event=None,executor=None):
         with self._jobs_lock:
@@ -223,7 +242,21 @@ class StudioController:
 
     def cancel_chat(self):
         self.assistant.cancel_current_reply()
-        if self.voice:self.voice.interrupt()
+
+    def begin_call(self,voice):
+        self.end_call()
+        from voice_conversation import CallConversation
+        self.call_conversation=CallConversation(self.assistant,lambda:self.cfg,lambda:self.view,voice)
+
+    def ask_call(self,text):
+        return bool(self.call_conversation and self.call_conversation.ask(text))
+
+    def cancel_call(self):
+        if self.call_conversation:self.call_conversation.interrupt()
+        elif self.voice:self.voice.interrupt()
+
+    def end_call(self):
+        if self.call_conversation:self.call_conversation.close();self.call_conversation=None
 
     def speak(self,text):
         voice=self.voice
@@ -422,6 +455,7 @@ class StudioController:
 
     def close(self):
         self.closed=True;self.stop.set();self.cancel_chat()
+        self.end_call()
         if self.voice:self.voice.stop()
         if self.network:self.network.close()
         if hasattr(self,'knowledge'):self.knowledge.close()

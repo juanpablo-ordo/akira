@@ -134,6 +134,10 @@ class MT5Connection:
         self.observed = {'terminal_path': actual_path, 'login': int(account.login),
                          'server': str(account.server).strip()}
         if not verify_target:return account
+        self.remember_observed()
+        return account
+
+    def remember_observed(self):
         self.saved=dict(self.observed)
         # A read-only folder must not tear down a healthy broker connection.
         try:
@@ -143,5 +147,4 @@ class MT5Connection:
             temporary.replace(self.path)
         except OSError:
             pass
-        return account
 

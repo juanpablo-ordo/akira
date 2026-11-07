@@ -416,7 +416,8 @@
     "notification_sound": true,
     "notification_popup": true,
     "privacy": false,
-    "visibility_preference_saved": true
+    "visibility_preference_saved": true,
+    "low_resource_mode": "auto"
   },
   "final_v6": {
     "enabled": true,
@@ -542,5 +543,6 @@
     "max_drawdown_pct": 15.0,
     "one_position_per_symbol": true,
     "strict_pending_quality": true
-  }
+  },
+  "follow_terminal_account": true
 }

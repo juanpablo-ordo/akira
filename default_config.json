@@ -447,7 +447,8 @@
     "model_context_tokens": 4096,
     "model_keep_alive_seconds": 15,
     "model_use_gpu": true,
-    "pause_hidden_animations": true
+    "pause_hidden_animations": true,
+    "low_resource_mode": "auto"
   },
   "final_v6": {
     "enabled": true,
@@ -593,5 +594,6 @@
     "youtube": {
       "enabled": false
     }
-  }
+  },
+  "follow_terminal_account": true
 }

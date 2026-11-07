@@ -12,7 +12,9 @@ def recognition_model(root,name):
  with _STT_LOCK:
   if _STT_KEY!=key or _STT_MODEL is None:
    from faster_whisper import WhisperModel
-   model=WhisperModel(name,device='cpu',compute_type='int8',cpu_threads=2,num_workers=1,download_root=str(Path(root)/'state'/'speech_models'))
+   from resource_optimizer import desktop_hardware
+   hw=desktop_hardware();threads=1 if 0<hw.get('ram_gb',0)<=9 and not hw.get('dedicated_gpu') else 2
+   model=WhisperModel(name,device='cpu',compute_type='int8',cpu_threads=threads,num_workers=1,download_root=str(Path(root)/'state'/'speech_models'))
    _STT_MODEL=model;_STT_KEY=key
   return _STT_MODEL
 
@@ -232,17 +234,76 @@ def clean_speech(text):
  text=re.sub(r'\[([^\]]+)\]\(https?://[^)]+\)',r'\1',str(text))
  return re.sub(r'https?://\S+','fuente consultada',text).replace('★','').replace('☆','')[:4000]
 
-def speech_worker(request_path):
- data=json.loads(Path(request_path).read_text(encoding='utf-8'));voice=data['voice'];path=data['path'];text=clean_speech(data['text'])
+def render_speech(data,cache=None):
+ voice=data['voice'];path=data['path'];text=clean_speech(data['text']);cache={} if cache is None else cache
  if voice['engine']=='piper':
   from piper import PiperVoice,SynthesisConfig
-  model=PiperVoice.load(voice['model'])
+  key=voice['model']
+  if key not in cache:cache.clear();cache[key]=PiperVoice.load(key)
+  model=cache[key]
   config=SynthesisConfig(speaker_id=voice.get('speaker',0),length_scale=180/max(80,min(300,int(data.get('rate',180)))),volume=max(0,min(1,float(data.get('volume',.8)))))
   with wave.open(path,'wb') as wav:model.synthesize_wav(text,wav,syn_config=config)
  else:
   import pyttsx3
   engine=pyttsx3.init();engine.setProperty('voice',voice['id'].removeprefix('system:'));engine.setProperty('rate',int(data.get('rate',180)));engine.setProperty('volume',float(data.get('volume',.8)))
   engine.save_to_file(text,path);engine.runAndWait();engine.stop()
+
+def speech_worker(request_path):render_speech(json.loads(Path(request_path).read_text(encoding='utf-8')))
+
+def speech_server(folder):
+ """Private file IPC also works in PyInstaller's windowed build (no stdio)."""
+ import psutil
+ folder=Path(folder);parent=psutil.Process(int((folder/'parent.pid').read_text()));cache={}
+ request=folder/'request.json';response=folder/'response.json';last=time.monotonic()
+ while folder.is_dir() and parent.is_running() and time.monotonic()-last<120:
+  if not request.exists():time.sleep(.025);continue
+  try:
+   data=json.loads(request.read_text(encoding='utf-8'));request.unlink();last=time.monotonic()
+   render_speech(data['payload'],cache);result={'id':data['id'],'ok':True}
+  except Exception as error:result={'id':locals().get('data',{}).get('id'),'ok':False,'error':str(error)[:200]}
+  temporary=response.with_suffix('.tmp');temporary.write_text(json.dumps(result),encoding='utf-8');temporary.replace(response)
+
+class SpeechServer:
+ """One owned synthesizer per call; reuse the voice model between sentences."""
+ def __init__(self,command=None):self.proc=None;self.folder=None;self.command=command
+ def start(self):
+  if self.proc and self.proc.poll() is None:return
+  self.close();self.folder=tempfile.TemporaryDirectory(prefix='akira_speech_')
+  (Path(self.folder.name)/'parent.pid').write_text(str(os.getpid()))
+  args=[sys.executable,'--speech-server',self.folder.name] if getattr(sys,'frozen',False) else [sys.executable,str(Path(__file__).with_name('Akira.py')),'--speech-server',self.folder.name]
+  if self.command:args=[*self.command,'--speech-server',self.folder.name]
+  self.proc=subprocess.Popen(args,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+ def render(self,data,cancel):
+  self.start();proc=self.proc;folder=Path(self.folder.name);request_id=uuid.uuid4().hex
+  response=folder/'response.json';response.unlink(missing_ok=True)
+  temporary=folder/'request.tmp';temporary.write_text(json.dumps({'id':request_id,'payload':data}),encoding='utf-8');temporary.replace(folder/'request.json')
+  deadline=time.monotonic()+35
+  while time.monotonic()<deadline:
+   if cancel():self.close();raise RuntimeError('Reproducción interrumpida')
+   if proc.poll() is not None:raise RuntimeError('El sintetizador se cerró')
+   if not response.is_file():time.sleep(.025);continue
+   result=json.loads(response.read_text(encoding='utf-8'));response.unlink()
+   if result.get('id')!=request_id:continue
+   if not result.get('ok'):raise RuntimeError(result.get('error','Fallo de síntesis'))
+   return
+  self.close();raise TimeoutError('La voz tardó demasiado')
+ def close(self):
+  proc=self.proc;folder=self.folder;self.proc=None;self.folder=None
+  if not proc:
+   if folder:folder.cleanup()
+   return
+  if proc.poll() is None:
+   try:proc.terminate()
+   except OSError:pass
+  def reap():
+   try:proc.wait(timeout=2)
+   except subprocess.TimeoutExpired:
+    try:proc.kill();proc.wait(timeout=2)
+    except (OSError,subprocess.TimeoutExpired):pass
+   if folder:
+    try:folder.cleanup()
+    except OSError:pass
+  threading.Thread(target=reap,name='AkiraSpeechCleanup',daemon=True).start()
 
 class VoiceSession:
  def __init__(self,root,emit,options,voice):
@@ -251,6 +312,8 @@ class VoiceSession:
   self.stop_event=threading.Event();self.paused=threading.Event();self.awaiting=threading.Event();self.speaking=threading.Event();self.interrupt_event=threading.Event()
   self.audio=queue.Queue(maxsize=120);self.started=False;self.stream=None;self.process=None
   self.last_text='';self.samples=[];self._threads=[];self._revision=0
+  self.speech_chunks=queue.Queue(maxsize=32);self._response_streaming=threading.Event();self._speech_queue_thread=None;self._speech_server=None;self._speech_epoch=0
+  self._speech_queue_lock=threading.Lock()
  def event(self,kind,**data):self.emit({'kind':kind,'session_id':self.session_id,**data})
  def start(self):
   if self.started:return
@@ -271,16 +334,45 @@ class VoiceSession:
   self.samples=[]
  def stop(self):
   self.stop_event.set();self.interrupt();self._drain()
+  if self._speech_server:self._speech_server.close()
   if self.stream:
    try:self.stream.abort()
    except Exception:pass
   self.event('state',text='Llamada finalizada · Micrófono desactivado')
  def interrupt(self):
+  self._speech_epoch+=1;self._response_streaming.clear()
+  if self._speech_server:self._speech_server.close()
+  while True:
+   try:self.speech_chunks.get_nowait()
+   except queue.Empty:break
   self.interrupt_event.set()
   if self.process and self.process.poll() is None:
    try:self.process.terminate()
    except OSError:pass
   self.awaiting.clear()
+ def start_response(self):
+  self.interrupt_event.clear();self._response_streaming.set();self.awaiting.set();self.event('state',text='Pensando la respuesta…')
+ def finish_response(self):
+  self._response_streaming.clear()
+  if self.speech_chunks.empty() and not self.speaking.is_set():self.awaiting.clear();self.event('state',text='Escuchando')
+ def enqueue_speech(self,text):
+  if self.stop_event.is_set() or self.interrupt_event.is_set():return
+  try:self.speech_chunks.put_nowait((self._speech_epoch,str(text)))
+  except queue.Full:self.event('error',text='Respuesta de voz demasiado larga');return
+  def work():
+   while not self.stop_event.is_set():
+    try:epoch,piece=self.speech_chunks.get(timeout=.2)
+    except queue.Empty:
+     continue
+    if epoch!=self._speech_epoch:continue
+    while self.speaking.is_set() and not self.stop_event.is_set() and epoch==self._speech_epoch:self.stop_event.wait(.03)
+    if epoch!=self._speech_epoch or self.stop_event.is_set():continue
+    self.speak(piece,expected_epoch=epoch)
+    while self.speaking.is_set() and not self.stop_event.is_set():self.stop_event.wait(.03)
+   if not self._response_streaming.is_set() and not self.speaking.is_set():self.awaiting.clear()
+  with self._speech_queue_lock:
+   if self._speech_queue_thread and self._speech_queue_thread.is_alive():return
+   self._speech_queue_thread=threading.Thread(target=work,name='AkiraSpokenSentences',daemon=True);self._speech_queue_thread.start()
  def _run(self):
   try:
    import numpy as np,sounddevice as sd
@@ -304,7 +396,8 @@ class VoiceSession:
     if not active and not voiced:continue
     active.append(chunk);silence=0 if voiced else silence+1
     now=time.monotonic()
-    final=(silence>=8 and len(active)>=5) or len(active)>=150
+    final=(silence>=int(self.options.get('silence_chunks',5)) and len(active)>=5) or len(active)>=150
+    if self.options.get('streaming_call') and not final:continue
     if not final and (len(active)<10 or now<partial_due):continue
     self.event('state',text='Transcribiendo' if final else 'Escuchando · transcripción en directo')
     revision=self._revision;audio=np.concatenate(active[-150:]);segments,_=model.transcribe(audio,language=self.options.get('language','es'),beam_size=1,vad_filter=True,condition_on_previous_text=False)
@@ -355,9 +448,13 @@ class VoiceSession:
     try:stream.close()
     except Exception:pass
    self.stream=None
- def speak(self,text):
+ def speak(self,text,expected_epoch=None):
   if self.stop_event.is_set() or self.speaking.is_set():return
-  self.interrupt_event.clear();self.speaking.set()
+  if expected_epoch is not None and (expected_epoch!=self._speech_epoch or self.interrupt_event.is_set()):return
+  if expected_epoch is None:self.interrupt_event.clear()
+  speech_epoch=self._speech_epoch
+  def cancelled():return self.stop_event.is_set() or self.interrupt_event.is_set() or speech_epoch!=self._speech_epoch
+  self.speaking.set()
   def work():
    try:
     self.event('state',text='Preparando voz')
@@ -366,31 +463,38 @@ class VoiceSession:
      folder=Path(tmp);path=folder/'answer.wav';request=folder/'request.json'
      request.write_text(json.dumps({'voice':self.voice,'path':str(path),'text':clean_speech(text),'rate':self.options.get('rate',180),'volume':self.options.get('volume',.8)}),encoding='utf-8')
      args=[sys.executable,'--speech-worker',str(request)] if getattr(sys,'frozen',False) else [sys.executable,str(Path(__file__).with_name('Akira.py')),'--speech-worker',str(request)]
-     self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
-     deadline=time.monotonic()+35
-     while self.process.poll() is None:
-      if self.stop_event.is_set() or self.interrupt_event.is_set() or time.monotonic()>deadline:
-       self.process.terminate();self.process.wait(timeout=3)
-       if time.monotonic()>deadline:raise RuntimeError('La voz tardó demasiado. Selecciona otra voz e intenta la demostración.')
-       return
-      self.stop_event.wait(.05)
-     if self.process.returncode or not path.is_file():raise RuntimeError('El motor de voz no pudo generar audio. Comprueba la instalación de esa voz.')
+     if self.options.get('streaming_call'):
+      if self._speech_server is None:self._speech_server=SpeechServer()
+      self._speech_server.render(json.loads(request.read_text(encoding='utf-8')),cancelled)
+     else:
+      self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+      deadline=time.monotonic()+35
+      while self.process.poll() is None:
+       if cancelled() or time.monotonic()>deadline:
+        self.process.terminate();self.process.wait(timeout=3)
+        if time.monotonic()>deadline:raise RuntimeError('La voz tardó demasiado. Selecciona otra voz e intenta la demostración.')
+        return
+       self.stop_event.wait(.05)
+      if self.process.returncode:raise RuntimeError('El motor de voz no pudo generar audio. Comprueba la instalación de esa voz.')
+     if not path.is_file():raise RuntimeError('La voz no generó audio')
      with wave.open(str(path),'rb') as wav:
       width=wav.getsampwidth();rate=wav.getframerate();channels=wav.getnchannels();device=self.options.get('output_device')
       if width not in (2,4):raise RuntimeError('Formato de audio no compatible')
       dtype='int16' if width==2 else 'int32';device=None if device in (None,-1,'') else int(device)
       with sd.RawOutputStream(samplerate=rate,channels=channels,dtype=dtype,device=device) as output:
        self.event('playback_start')
-       while not (self.stop_event.is_set() or self.interrupt_event.is_set()):
+       while not cancelled():
         raw=wav.readframes(max(1,int(rate*.1)))
         if not raw:break
         level=float(np.sqrt(np.mean((np.frombuffer(raw,dtype=dtype).astype('float64')/float(2**(width*8-1)))**2)))
         self.event('playback_level',level=level)
         output.write(raw)
-   except Exception as exc:self.event('error',text=str(exc)[:400])
+   except Exception as exc:
+    if not cancelled():self.event('error',text=str(exc)[:400])
    finally:
     self.event('playback_end')
-    self.process=None;self.speaking.clear();self.awaiting.clear();self._drain()
+    self.process=None;self.speaking.clear();self._drain()
+    if not self._response_streaming.is_set() and self.speech_chunks.empty():self.awaiting.clear()
     if not self.stop_event.is_set():self.event('state',text=('Micrófono silenciado' if self.paused.is_set() else 'Reanudando escucha') if self.started else 'Demostración terminada · micrófono desactivado')
   self._threads=[t for t in self._threads if t.is_alive()]
   thread=threading.Thread(target=work,name='AkiraSpeech',daemon=True);self._threads.append(thread);thread.start()

@@ -10,6 +10,7 @@ on:
       - akira-rev19-integral-pdf-20261101
       - akira-rev19-full-technical-adaptive-liquidity-20261102
       - akira-rev19-actividad-voz-riesgo-20261106
+      - akira-rev20-voz-recursos-aprendizaje-20261107
 
 permissions:
   contents: read
@@ -88,7 +89,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -u -m pytest -vv tests/test_rev19_activity_call_repair.py tests/test_rev19_three_integrations.py tests/test_v1625_recovery.py::ReviewTests tests/test_rev19_pdf_integral.py tests/test_rev19_activity_and_closed_bars.py tests/test_core_rev19.py tests/test_market_state_rev19.py tests/test_weekend_events_rev19.py tests/test_scheduled_events_rev18.py tests/test_chat_sources_rev18.py tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV19_TARGETED.xml
+          python -u -m pytest -vv tests/test_rev20_user_requests.py tests/test_rev19_activity_call_repair.py tests/test_rev19_three_integrations.py tests/test_v1625_recovery.py::ReviewTests tests/test_rev19_pdf_integral.py tests/test_rev19_activity_and_closed_bars.py tests/test_core_rev19.py tests/test_market_state_rev19.py tests/test_weekend_events_rev19.py tests/test_scheduled_events_rev18.py tests/test_chat_sources_rev18.py tests/test_entry_safety_rev18.py tests/test_studio_rev18_recovery.py tests/test_response_quality_rev17.py tests/test_studio_rev17_capital_mentor.py tests/test_studio_rev16_user_requests.py tests/test_studio_rev15_conversation_core.py tests/test_studio_rev14_risk_resources.py tests/test_studio_rev5.py::NativeStudioTests::test_actual_default_frontend_passes_the_executable_contract tests/test_wallpaper_lifecycle.py tests/test_studio_rev13_mt5_accounts.py tests/test_studio_rev12_mt5_reconnect.py tests/test_v136_technical_funding.py tests/test_studio_rev11_capital_chat_timing.py tests/test_general_ai.py -x -o faulthandler_timeout=30 --junitxml=diagnostics/REV19_TARGETED.xml
           if ($LASTEXITCODE -ne 0) { throw 'Una regresión de Rev19 falló; revisar REV19_TARGETED.xml.' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar
@@ -231,6 +232,13 @@ jobs:
         run: |
           python -m installer.smoke_local_ai --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP\gemma-4-E2B-it-Q4_K_M.gguf" --report diagnostics/LOCAL_AI_SCENARIOS.json
           if ($LASTEXITCODE -ne 0) { throw 'La IA real no pasó los escenarios. Revisa LOCAL_AI_SCENARIOS.json y LOCAL_AI_SCENARIOS.llama.log.' }
+
+      - name: Probar llamada hablada con reconocimiento y síntesis reales en el ejecutable
+        shell: pwsh
+        timeout-minutes: 8
+        run: |
+          python qa_spoken_rev20.py --app native/AKIRA/AKIRA.exe --exe native/AKIRA/local_ai/cpu/llama-server.exe --model "$env:RUNNER_TEMP/gemma-4-E2B-it-Q4_K_M.gguf" --voice-root "$env:RUNNER_TEMP/AKIRA_VOICE_CHECK" --report diagnostics/SPOKEN_FROZEN_REV20.json
+          if ($LASTEXITCODE -ne 0) { throw 'La llamada no completó reconocimiento, respuesta neuronal y voz sin escribir al chat.' }
 
       - name: Probar IA real de BTC y oro, general e individual, con contexto pequeño
         shell: pwsh

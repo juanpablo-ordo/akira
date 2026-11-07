@@ -1,6 +1,7 @@
 """Independent broker/session/quote/analysis facts. No orders or fabricated bars."""
 from datetime import datetime, timezone
-import math
+from functools import lru_cache
+import json,math
 from market_calendar import state_for
 
 PERIOD_SECONDS={'M1':60,'M5':300,'M15':900,'M30':1800,'H1':3600,'H4':14400,'D1':86400,'W1':604800}
@@ -77,10 +78,8 @@ class MarketDataFreshnessValidator:
         # Unix epoch starts on Thursday; W1 opens Monday in UTC.
         anchor=345600 if timeframe=='W1' else 0
         latest=((int(now)-anchor)//period)*period+anchor-period
-        for _ in range(max(3,10*86400//period)):
-            if interval_has_session(symbol,latest,latest+period,config):return latest
-            latest-=period
-        return None
+        closures=json.dumps(config.get('market_hours',{}),sort_keys=True,default=str)
+        return _expected_closed_cached(symbol,timeframe,latest,closures)
 
     @classmethod
     def inspect(cls,symbol,timeframe,frame,now,config,grace=5):
@@ -96,6 +95,16 @@ class MarketDataFreshnessValidator:
             else:state,reason='STALE',f'DATOS {timeframe} DESACTUALIZADOS: solicitar historial MT5'
         return {'state':state,'ready':state=='FRESH','timeframe':timeframe,'last_open_utc':last,
                 'expected_open_utc':expected,'reason':reason,'analysis':'READY' if state=='FRESH' else 'WAITING_CANDLE'}
+
+@lru_cache(maxsize=512)
+def _expected_closed_cached(symbol,timeframe,latest,closures):
+    # A closed-bar reference changes at a timeframe boundary or on a schedule
+    # edit. Avoid scanning the entire weekend for every frame on every UI tick.
+    period=PERIOD_SECONDS[timeframe];config={'market_hours':json.loads(closures)}
+    for _ in range(max(3,10*86400//period)):
+        if interval_has_session(symbol,latest,latest+period,config):return latest
+        latest-=period
+    return None
 
 class CandleGapRecovery:
     """Bounded retries on the MT5 actor. A read never hides another data error."""

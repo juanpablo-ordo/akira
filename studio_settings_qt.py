@@ -95,7 +95,7 @@ class SettingsPanel(QWidget):
         row.addWidget(widget,1);card.body.addLayout(row);self.fields[path]=(widget,read);self.initial[path]=copy.deepcopy(read())
         signal=widget.valueChanged if isinstance(widget,ColorButton) else widget.currentTextChanged if isinstance(widget,QComboBox) else widget.toggled if isinstance(widget,QCheckBox) else widget.textChanged if isinstance(widget,QLineEdit) else widget.valueChanged
         signal.connect(lambda *args,p=path:self.touched.add(p))
-        if path.startswith('studio.') or path.startswith('desktop.model_') or path in ('desktop.performance_profile','desktop.memory_budget_mb','desktop.adaptive_resources'):
+        if path.startswith('studio.') or path.startswith('desktop.model_') or path in ('desktop.performance_profile','desktop.memory_budget_mb','desktop.adaptive_resources','desktop.low_resource_mode'):
             signal.connect(self.schedule_preview)
         return widget
     def add_button(self,card,title,callback,kind='',glyph=None):
@@ -104,6 +104,7 @@ class SettingsPanel(QWidget):
         card=self.card(0,'OPERACIÓN','bolt')
         self.field(card,'mode','Modo de operación',(('observe','Solo análisis'),('trade','Operativa automática')),help='Solo análisis estudia sin enviar órdenes. Operativa automática envía, edita y retira propuestas válidas tras autorizar la cuenta y respetar los límites de riesgo.')
         self.field(card,'operation_profile','Perfil de cuenta',(('AUTO','Detectar desde MT5'),('DEMO_EXPERIMENT','DEMO · Experimentación controlada'),('REAL_CAPITAL','REAL · Gestión de capital'),('HISTORICAL','Simulación histórica · sin envíos')),help='Demo permite experimentar con las reglas opcionales. MT5 debe identificar la cuenta como demo. Los precios, el volumen, el margen y la aceptación del bróker siempre se comprueban.')
+        self.field(card,'follow_terminal_account','Adaptarse a la cuenta abierta en MT5',help='Al detectar otra cuenta, conecta su historial y recalcula con su capital. Queda en Solo análisis hasta que autorices esa cuenta; conserva tus límites personales.')
         self.field(card,'terminal_path','Ruta de MetaTrader 5',help='Es el programa terminal64.exe del MetaTrader que quieres conectar. Puedes seleccionarlo con el botón de abajo. Déjalo vacío para detección automática; Akira recordará el último terminal comprobado.')
         self.add_button(card,'SELECCIONAR METATRADER 5',self.choose_terminal)
         self.use_mt5_button=self.add_button(card,'USAR CUENTA ABIERTA EN MT5',self.use_open_account,'primary','bolt')
@@ -284,7 +285,8 @@ class SettingsPanel(QWidget):
         self.add_button(card,'USAR AKIRA ORIGINAL',self.original_avatar)
         self.field(card,'studio.reduce_motion','Reducir movimiento')
         card=self.card(4,'RENDIMIENTO','bolt')
-        self.field(card,'desktop.adaptive_resources','Ajustar automáticamente equipos de pocos recursos',help='En equipos de hasta 8 GB y dos núcleos físicos, Akira usa CPU, un contexto de IA pequeño y menos efectos. Desactívalo para aplicar solo tus preferencias manuales.')
+        self.field(card,'desktop.adaptive_resources','Ajustar automáticamente equipos de pocos recursos',help='Detecta RAM, CPU y gráficos antes de abrir. En equipos de hasta 8 GB con gráficos integrados reduce IA auxiliar, contexto y efectos sin ralentizar la gestión MT5.')
+        self.field(card,'desktop.low_resource_mode','Perfil para equipos limitados',(('auto','Automático según componentes'),('ultra','Ultraligero'),('off','Preferencias manuales')))
         self.effective_profile=label('','muted');self.effective_profile.setWordWrap(True);card.body.addWidget(self.effective_profile)
         profile=self.field(card,'desktop.performance_profile','Perfil de recursos',('Rendimiento','Equilibrado','Ahorro de energía'))
         for path,title,low,high in [('desktop.memory_budget_mb','Presupuesto del modelo (MB)',512,16384),('desktop.model_context_tokens','Contexto (tokens)',1024,16384),('desktop.model_keep_alive_seconds','Mantener modelo cargado (s)',0,600)]:self.field(card,path,title,limits=(low,high))
@@ -354,9 +356,10 @@ class SettingsPanel(QWidget):
             draft=self.draft();self.window.apply_visual(draft['studio'],draft['desktop'])
         except (ValueError,TypeError,KeyError):pass
     def refresh_resources_preview(self,desktop):
-        from resource_optimizer import effective_desktop
+        from resource_optimizer import effective_desktop,desktop_hardware
         actual=effective_desktop(desktop)
-        self.effective_profile.setText('Configuración efectiva: '+actual['performance_profile']+' · '+str(actual['model_context_tokens'])+' de contexto · '+('GPU permitida' if actual['model_use_gpu'] else 'CPU, sin GPU del modelo')+'. Con el ajuste automático activo prevalece esta configuración sobre las preferencias manuales. Las cotizaciones y órdenes mantienen su frecuencia.')
+        hw=desktop_hardware();names=', '.join(str(g.get('Name','')) for g in hw.get('gpus',[])) or 'GPU no identificada'
+        self.effective_profile.setText('Equipo: '+str(round(hw.get('ram_gb',0),1))+' GB RAM · '+str(hw.get('logical_cores',0))+' hilos · '+names+'. Configuración efectiva: '+('Ultraligero · ' if actual.get('low_resource_active') else '')+actual['performance_profile']+' · '+str(actual['model_context_tokens'])+' de contexto · '+('GPU permitida' if actual['model_use_gpu'] else 'CPU, sin GPU del modelo')+'. '+('Fondos animados pausados. ' if actual.get('low_resource_active') else '')+'Las cotizaciones y órdenes mantienen su frecuencia.')
     def choose_color(self,path):
         color=QColorDialog.getColor(QColor(self.fields[path][1]()),self)
         if color.isValid():self.fields[path][0].setValue(color.name())

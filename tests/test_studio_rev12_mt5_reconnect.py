@@ -96,7 +96,7 @@ class ConnectionTargetTests(unittest.TestCase):
 class SessionReconnectTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
-        self.api=Terminal(self.root);self.cfg=load_config(DEFAULT);self.cfg['mode']='observe';self.cfg['expected_login']=123;self.cfg['poll_seconds']=.05
+        self.api=Terminal(self.root);self.cfg=load_config(DEFAULT);self.cfg['mode']='observe';self.cfg['expected_login']=123;self.cfg['poll_seconds']=.05;self.cfg['follow_terminal_account']=False
         self.stop=threading.Event();self.commands=queue.Queue();self.rows=[];self.engines=[];self.locks=[]
         self.log=Reporter(self.root/'logs',console=False);self.on_step=None
     def engine(self,g,cfg,log,context):

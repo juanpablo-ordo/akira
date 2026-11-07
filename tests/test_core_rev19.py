@@ -35,10 +35,12 @@ class ExactExecution(PendingCase,unittest.TestCase):
   with self.assertRaises(Blocked):self.g.send_immediate_plan(self.p)
   self.g.reconcile(self.g.snapshot());self.assertTrue(self.g.journal.data['orders']);self.assertEqual(len(self.api.sent),1)
  def test_changed_levels_volume_account_or_indicators_invalidate(self):
+  original_server=self.api.account.server
   for key in ('sl','tp','volume','account','indicators'):
+   self.api.account.server=original_server
    self.e.planner.research_context['pending_reviews']={};approve_exact(self.e,self.p,self.volume)
    p=replace(self.p,**{key:getattr(self.p,key)+.01}) if key in ('sl','tp') else self.p
-   if key=='account':self.api.account.equity+=.1
+   if key=='account':self.api.account.server+='-CHANGED'
    if key=='indicators':
     f=self.e.planner.caches[p.symbol].frames['H1'];self.e.planner.caches[p.symbol].frames['H1']=replace(f,rsi=f.rsi+.1)
    with self.subTest(key=key),self.assertRaises(Blocked):self.e.pending_review_guard(p,self.g.snapshot(),self.volume+.01 if key=='volume' else self.volume)

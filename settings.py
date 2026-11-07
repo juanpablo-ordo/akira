@@ -106,6 +106,8 @@ def load_config(path):
             cfg['research'][k]=True
     cfg['schema_version']=1600
     if type(cfg['desktop'].get('adaptive_resources',True)) is not bool:raise ValueError('El ajuste automático de recursos debe estar activado o desactivado')
+    if cfg['desktop'].get('low_resource_mode','auto') not in ('auto','ultra','off'):raise ValueError('Perfil para equipos limitados inválido')
+    if type(cfg.get('follow_terminal_account',True)) is not bool:raise ValueError('La adaptación de cuenta debe estar activada o desactivada')
     if cfg['research'].get('derivatives_provider') not in ('public','coinglass'):
         raise ValueError('Elige datos de derivados públicos o CoinGlass opcional')
     from datetime import datetime

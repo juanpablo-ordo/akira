@@ -65,7 +65,7 @@ def evaluate(weights,rows,base_rate):
 def campaign_rows(outcomes,symbol):
     grouped={}
     for row in outcomes:
-        if row.get('symbol')!=symbol or row.get('lane')!='PENDING' or not row.get('confirmed') or row.get('feature_version')!=FEATURE_VERSION:continue
+        if row.get('symbol')!=symbol or row.get('lane') not in ('PENDING','RUNNER') or not row.get('confirmed') or row.get('feature_version')!=FEATURE_VERSION:continue
         features=row.get('features') or []
         if len(features)!=len(FEATURES) or not all(math.isfinite(float(x)) for x in features):continue
         if not math.isfinite(float(row.get('net',0))):continue
@@ -147,19 +147,26 @@ class DailyLearner:
         rows=[r for r in outcomes if all(r.get(k)==v for k,v in cohort.items())
               and r.get('strategy_id') not in (None,'','SIN_TESIS_REGISTRADA')]
         groups={}
-        for row in rows:groups.setdefault((row.get('symbol'),row['strategy_id']),[]).append(row)
+        for row in rows:groups.setdefault((row.get('symbol'),row['strategy_id'],row.get('lane','PENDING')),[]).append(row)
         self._family_learners=getattr(self,'_family_learners',{})
         result={**cohort,'account':account,'family_champions':{},'family_reports':{},
-                'scope':'Familia, selector, versión y build; cierres completos con costes.',
+                'scope':'Cuenta, familia, vía, selector, versión y build; cierres completos con costes.',
                 'comparable_campaigns':len(rows),'excluded_campaigns':len(outcomes)-len(rows)}
-        for (symbol,family),cases in groups.items():
-            key=hashlib.sha256(json.dumps([cohort,symbol,family],sort_keys=True).encode()).hexdigest()[:24]
+        for (symbol,family,lane),cases in groups.items():
+            key=hashlib.sha256(json.dumps([cohort,account,symbol,family,lane],sort_keys=True).encode()).hexdigest()[:24]
             if key not in self._family_learners:
-                self._family_learners[key]=DailyLearner(self.path.parent/'family_models'/key)
+                learner=DailyLearner(self.path.parent/'family_models'/key)
+                # Preserve a previous matching account's champion while migrating
+                # the old filenames that omitted account and execution lane.
+                legacy=hashlib.sha256(json.dumps([cohort,symbol,family],sort_keys=True).encode()).hexdigest()[:24]
+                old=DailyLearner(self.path.parent/'family_models'/legacy)
+                if not learner.path.exists() and old.state.get('account')==account and lane=='PENDING':learner.state=copy.deepcopy(old.state)
+                self._family_learners[key]=learner
             state=self._family_learners[key].run(cases,now=now,account=account)
-            result['family_reports'].setdefault(symbol,{})[family]=(state.get('reports') or {}).get(symbol,{})
+            model_key=family if lane=='PENDING' else lane+':'+family
+            result['family_reports'].setdefault(symbol,{})[model_key]=(state.get('reports') or {}).get(symbol,{})
             champion=(state.get('champions') or {}).get(symbol)
-            if champion:result['family_champions'].setdefault(symbol,{})[family]=champion
+            if champion:result['family_champions'].setdefault(symbol,{})[model_key]=champion
         return result
 
 

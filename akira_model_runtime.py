@@ -30,7 +30,10 @@ def shared_runtime(settings,log_root,profile=None):
 def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
     """Starting recommendation, not a promise of fixed RAM/VRAM consumption."""
     # Auto mode reads this PC. Unknown GPU memory is zero, not an assumed 8 GB.
+    detected={}
     if ram_gb is None:
+        from resource_optimizer import desktop_hardware
+        detected=desktop_hardware()
         try:
             import psutil
             ram_gb=psutil.virtual_memory().total/1073741824
@@ -53,6 +56,9 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
         'cpu_threads':min(6,max(1,int(cpu_cores)//2)),
         'logical_cores':max(1,int(cpu_cores)),
         'detected_ram_gb':round(ram,2),
+        'physical_cores':int(detected.get('physical_cores') or max(1,int(cpu_cores)//2)),
+        'detected_gpus':detected.get('gpus',[]),
+        'dedicated_gpu':bool(detected.get('dedicated_gpu')) or vram>=8,
         'parallel_requests':1,
         'idle_unload_seconds':30,
         'target_model_vram_gb':4.5 if vram>=8 else 0.0,
@@ -121,7 +127,7 @@ class ManagedLlamaProcess:
         from resource_optimizer import effective_desktop
         hw={'ram_gb':profile.get('detected_ram_gb',0),'logical_cores':profile.get('logical_cores',0),
             'physical_cores':profile.get('physical_cores',max(1,int(profile.get('logical_cores',0))//2)),
-            'dedicated_gpu':int(profile.get('gpu_layers',0))>0}
+            'dedicated_gpu':bool(profile.get('dedicated_gpu')) or int(profile.get('gpu_layers',0))>0}
         return effective_desktop(desktop,hardware=hw)
 
     def command(self,endpoint,desktop=None):

@@ -54,6 +54,7 @@ class Engine:
         from market_state import BrokerSessionService
         self.broker_sessions=BrokerSessionService(self.g)
         self.preopen_plans={};self._preopen_due={};self.event_reviews={}
+        self.execution_review_expected={}
 
     def close(self):
         # Existing broker SL/TP and pending orders survive application shutdown.
@@ -129,6 +130,10 @@ class Engine:
         self._preopen_markers[symbol]=marker
         self.g.journal.data.setdefault('preopen_plans',{})[symbol]=plan
         self.g.journal.save()
+        if plan['revision']!=getattr(self,'_preopen_logged',{}).get(symbol):
+            if not hasattr(self,'_preopen_logged'):self._preopen_logged={}
+            self._preopen_logged[symbol]=plan['revision']
+            self.log.event(symbol,'ANÁLISIS | '+plan['detail'],state='ANÁLISIS',operation='closed_market_analysis')
 
     def observe_market_events(self,now):
         for event in self.planner.research_context.get('events',[]):
@@ -1334,6 +1339,13 @@ class Engine:
         view['pending_verifications']=reports(view,self.pending_checks)
         from operation_health import verification_job
         reviews=(view.get('research') or {}).get('pending_reviews') or {}
+        from execution_review import progress as review_progress
+        view['ai_execution_review']={s:review_progress(reviews.get(row['id']) or {},self.g.clock(),row['fingerprint'])
+            for s,row in self.execution_review_expected.items()}
+        from learning_status import progress as learning_progress
+        view['learning_status']=learning_progress(list(self.learner.records.values()),
+            self.planner.research_context.get('daily_learning') or {},self.g.identity,
+            self.cfg.get('learning',{}).get('daily_outcome_learning',True))
         for jid,job in list(self.pending_verification_requests.items()):
             # A finished job keeps its original decision; it cannot become a
             # waiting job again when a provider refreshes after the deadline.
@@ -1464,6 +1476,7 @@ class Engine:
             'net_rr':reward/risk if risk>0 else 0,'review_scope':'EXECUTION'}
         if ticket:proposed['ticket']=ticket
         pid=request_id(proposed);expected=fingerprint(proposed,current)
+        self.execution_review_expected[symbol]={'id':pid,'fingerprint':expected}
         review=(self.planner.research_context.get('pending_reviews') or {}).get(pid) or {}
         if valid_receipt(review,expected,self.g.clock()):
             receipt={**copy.deepcopy(review),'review_id':pid,'levels':proposed,'checked_at':self.g.clock()}
@@ -1473,7 +1486,10 @@ class Engine:
         if self.context and hasattr(self.context,'request_pending_reviews'):
             current['required_pending_reviews']=[pid]
             self.context.request_pending_reviews([proposed],current)
-        reason=review.get('error') or (review.get('data') or {}).get('reason') or 'Esperando dictamen de estos niveles, volumen, cuenta y datos'
+        from execution_review import progress as review_progress
+        state=review_progress(review,self.g.clock(),expected)
+        reason=state['reason']+' · '+state['state']+' · '+str(state['elapsed_seconds'])+' s'
+        if state['retry_seconds']:reason+=' · reintento en '+str(state['retry_seconds'])+' s'
         self.runner_views.setdefault(symbol,{})['review_state']='REVIEW_REQUIRED'
         raise Blocked('Revisión IA obligatoria: '+str(reason)[:240]+'. Sin aprobación vigente no se envía la propuesta.')
 

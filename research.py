@@ -223,9 +223,10 @@ class ContextWorker:
                 if (snapshot.get('markets') or {}).get(p['symbol'],{}).get('scheduled_closed'):continue
                 pid=identity(p);fp=fingerprint(snapshot,p);old=self.pending_reviews.get(pid) or {}
                 priority=0 if pid in (snapshot.get('required_pending_reviews') or []) else 1 if force else 2
-                if not force and now<self._pending_retry_due.get(p['symbol'],0):continue
+                retry=(getattr(self,'_execution_retry_due',{}) if priority==0 else self._pending_retry_due)
+                if not force and now<retry.get(p['symbol'],0):continue
                 if old.get('fingerprint')==fp and (old.get('state') in ('QUEUED','RUNNING') or
-                        not force and now-float(old.get('updated') or 0)<(30 if old.get('error') else 120)):
+                        not force and (now<float(old.get('retry_at',0)) if old.get('error') else now-float(old.get('updated') or 0)<120)):
                     if pid in self.pending_queue:self.pending_queue[pid]['priority']=min(priority,self.pending_queue[pid].get('priority',2))
                     continue
                 self._review_attempt+=1
@@ -259,7 +260,9 @@ class ContextWorker:
         runtime=shared_runtime(assistant,self.root)
         if runtime._paths() is None:
             yield;return
-        with runtime.session(assistant['local_endpoint'],self.cfg.get('desktop') or {},cancel_event=getattr(self._inference,'cancel',None)):yield
+        with runtime.session(assistant['local_endpoint'],self.cfg.get('desktop') or {},cancel_event=getattr(self._inference,'cancel',None)):
+            try:yield
+            finally:runtime.keep_warm(30)
 
     def _review_input(self,snapshot,sources,max_chars=6500,scenario_limit=2):
         desktop=self.cfg.get('desktop') or {};managed=(self.cfg.get('assistant') or {}).get('local_runtime_enabled')
@@ -354,17 +357,27 @@ class ContextWorker:
                 {'role':'user','content':json.dumps({'symbol':plan['symbol'],'kind':plan['kind'],'lane':plan['lane'],
                     'thesis':plan.get('reason','')[:250],'facts':evidence},ensure_ascii=False,separators=(',',':'))}]
             output_schema=schema(evidence);started=time.monotonic()
+            def mark(provider):
+                with self.lock:
+                    active=self.pending_reviews.get(request_id(plan)) or {}
+                    if active.get('fingerprint')==row['fingerprint']:
+                        active.update(phase='REVIEWING',provider=provider,model=acfg.get('local_model' if provider=='local' else 'trading_model',''))
             def local():
                 with self._local_session():
+                    mark('local')
                     endpoint=local_research_endpoint(self.cfg)
                     raw=ollama_chat(messages,model=acfg.get('local_model',''),endpoint=endpoint,
                         timeout=float(acfg.get('trade_review_timeout_seconds',150)),think=False,response_format=output_schema,
                         options={'num_predict':350,'temperature':0},cancel_event=cancel)
                     return raw
-            raw=manager.run('trade_review',local,lambda:manager.cloud.complete(messages,purpose='trade_review',
-                cancel_event=cancel,response_format=output_schema,timeout=acfg.get('trade_review_timeout_seconds',150)),cancel)
+            def cloud():
+                mark('cloud')
+                return manager.cloud.complete(messages,purpose='trade_review',cancel_event=cancel,
+                    response_format=output_schema,timeout=acfg.get('trade_review_timeout_seconds',150))
+            raw=manager.run('trade_review',local,cloud,cancel)
             data=validate(raw,evidence)
             out[request_id(plan)]={'data':data,'created':self.clock(),'review_seconds':round(time.monotonic()-started,3),
+                'reviewed_order':copy.deepcopy(plan),'reviewed_account':copy.deepcopy(snapshot.get('account') or {}),
                 'input_scope':'EXACT_EXECUTION_FACTS','input_chars':sum(len(m['content']) for m in messages),
                 'model_mode':acfg.get('provider_mode','local'),'provider':getattr(manager,'last_provider',None),'schema_version':1}
         return out
@@ -480,9 +493,16 @@ class ContextWorker:
                 symbol=request['plan']['symbol']
                 if error:
                     count=self._pending_failures.get(symbol,0)+1;self._pending_failures[symbol]=count
-                    delay=min(3600,300*2**min(count-1,4));self._pending_retry_due[symbol]=now+delay
+                    if request['plan'].get('review_scope')=='EXECUTION':
+                        delay=min(30,5*2**min(count-1,3))
+                        if not hasattr(self,'_execution_retry_due'):self._execution_retry_due={}
+                        self._execution_retry_due[symbol]=now+delay
+                    else:
+                        delay=min(3600,300*2**min(count-1,4));self._pending_retry_due[symbol]=now+delay
                     row['retry_at']=now+delay
-                else:self._pending_failures[symbol]=0;self._pending_retry_due.pop(symbol,None)
+                else:
+                    self._pending_failures[symbol]=0;self._pending_retry_due.pop(symbol,None)
+                    getattr(self,'_execution_retry_due',{}).pop(symbol,None)
         if self.pending_future is None and self.pending_queue and not PRIORITY.users and not any(name.split(':')[0] in ('local_ai','cloud','preopen_ai') for name in self.jobs):
             # Small batches bound CPU generation time. In-flight ids are never
             # displaced by a harmless source reception timestamp.

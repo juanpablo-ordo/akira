@@ -366,13 +366,15 @@ class StudioWindow(QMainWindow):
         self._saving_ui=profile=='Ahorro de energía'
         for wave in self.findChildren(SignalWave):wave.set_saving(self._saving_ui or bool(studio.get('reduce_motion')))
         if profile=='Ahorro de energía':wallpaper.update(fps=min(3,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
+        if desktop.get('low_resource_active') and wallpaper.get('type',wallpaper.get('kind')) in ('video','gif'):
+            wallpaper['enabled']=False
         self.surface.configure(wallpaper,studio.get('accent','#00ddff'),studio.get('secondary','#ff2585'),studio)
         locale=studio.get('language_ui','es')
         if self.tr.locale!=locale or self.tr.pack!=studio.get('language_pack',''):
             self.tr.change(locale,studio.get('language_pack',''));self.retranslate()
             if not self.controller.preview and locale.split('-')[0]!='es':QTimer.singleShot(600,self.translate_interface)
         self.chat_card.title.setText(self.text('CHAT CON AKIRA').replace('AKIRA',brand))
-        for avatar in self.avatars:avatar.reduce_motion=bool(studio.get('reduce_motion'))
+        for avatar in self.avatars:avatar.reduce_motion=bool(studio.get('reduce_motion')) or bool(desktop.get('low_resource_active'))
         scale=int(studio.get('font_scale',100))/100
         for metric in [*self.metrics.values(),*self.pending_metrics.values()]:metric.setMinimumHeight(round(90*scale));metric.setMaximumHeight(round(130*scale))
         self.responsive()
@@ -462,7 +464,6 @@ class StudioWindow(QMainWindow):
             self.chat_retry.setVisible(bool(data.get('error')))
             self.chat_continue.setVisible(bool(data.get('truncated')) and not data.get('error'))
             self._avatar_reaction_until=time.monotonic()+6
-            if self.controller.voice and not self.controller.voice.stop_event.is_set():self.controller.speak(data['text'])
             QTimer.singleShot(6000,lambda:self.finish_chat_reaction())
         elif kind=='settings_saved':
             self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True)
@@ -562,6 +563,9 @@ class StudioWindow(QMainWindow):
             if health.get('last_error'):summary.append('Último error IA: '+health['last_error'])
         summary.append('● MT5 conectado' if connected else '◷ Esperando conexión con MT5')
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
+        for symbol,row in view.get('ai_execution_review',{}).items():
+            summary.append(symbol+' · IA orden: '+row['state']+' · '+str(row.get('provider') or row.get('phase') or 'cola')+' · '+str(row['elapsed_seconds'])+' s. '+row['reason'])
+        if view.get('learning_status'):summary.append('Aprendizaje: '+view['learning_status']['detail'])
         self.system_text.setText('\n\n'.join(summary))
         for symbol,(price,status,chart) in (self.home_markets.items() if self.page_index==0 else []):
             info=(view.get('symbols') or {}).get(symbol) or {};price.setText(number(info.get('bid')));status.setText(market_activity(view,symbol)['text']);chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [])
@@ -968,7 +972,12 @@ class StudioWindow(QMainWindow):
     def show_adaptation(self):
         from strategy_adaptation import report_text
         summary=((self.controller.view.get('research') or {}).get('strategy_lab') or {}).get('adaptation') or {}
-        self.dialog_text('APRENDIZAJE Y FILTROS',report_text(summary))
+        learning=self.controller.view.get('learning_status') or {}
+        lines=[learning.get('detail','Esperando los cierres confirmados de la cuenta.'),
+            'El modelo de lenguaje conserva sus pesos. El entrenamiento local usa resultados MT5 y compara modelos estadísticos por familia; necesita al menos 80 campañas en cinco días, con prueba cronológica.']
+        for row in learning.get('families',[]):
+            lines.append(row['symbol']+' · '+row['family']+': '+str(row['samples'])+' campañas · entrenamiento '+str(row['train_samples'])+' · prueba '+str(row['test_samples'])+' · '+('modelo validado disponible' if row['validated_model'] else row['reason']))
+        self.dialog_text('APRENDIZAJE Y FILTROS','\n\n'.join(lines)+'\n\n'+report_text(summary))
     def export_strategies(self):
         folder=QFileDialog.getExistingDirectory(self,self.text('DESCARGAR DIRECTORIO'))
         if folder:
@@ -1080,10 +1089,12 @@ class StudioWindow(QMainWindow):
         avatar=self.avatar(layout,135);self.voice_state=label('Preparando lista de dispositivos y voces…','muted');self.voice_state.setWordWrap(True);layout.addWidget(self.voice_state)
         form=QFormLayout();self.voice_input=ChoiceBox();self.voice_output=ChoiceBox();self.voice_selector=ChoiceBox()
         form.addRow(self.text('Micrófono'),self.voice_input);form.addRow(self.text('Salida de audio'),self.voice_output);form.addRow(self.text('Voz'),self.voice_selector);layout.addLayout(form)
-        row=QHBoxLayout();row.addWidget(self.btn('BUSCAR VOCES',lambda:self.load_voices(True)));row.addWidget(self.btn('DESCARGAR VOZ',self.download_voice));row.addWidget(self.btn('DESCARGAR TODAS LAS VOCES',self.download_all_voices));row.addWidget(self.btn('CANCELAR DESCARGA',self.cancel_voice_download));layout.addLayout(row)
-        self.voice_transcript=QLineEdit();self.voice_transcript.setReadOnly(True);self.voice_transcript.setPlaceholderText('Aquí aparece lo que escucha Akira');layout.addWidget(self.voice_transcript)
-        row=QHBoxLayout()
-        for text,callback in [('INICIAR LLAMADA',self.start_call),('SILENCIAR',lambda:self.controller.voice.pause() if self.controller.voice else None),('REANUDAR',lambda:self.controller.voice.resume() if self.controller.voice else None),('INTERRUMPIR',self.controller.cancel_chat),('FINALIZAR LLAMADA',self.stop_call)]:row.addWidget(self.btn(text,callback))
+        row=FlowLayout();row.addWidget(self.btn('BUSCAR VOCES',lambda:self.load_voices(True)));row.addWidget(self.btn('DESCARGAR VOZ',self.download_voice));row.addWidget(self.btn('DESCARGAR TODAS LAS VOCES',self.download_all_voices));row.addWidget(self.btn('CANCELAR DESCARGA',self.cancel_voice_download));layout.addLayout(row)
+        layout.addWidget(self.btn('PROBAR VOZ',self.preview_voice))
+        self.voice_transcript=QLineEdit();self.voice_transcript.hide()
+        note=label('Conversación hablada. Tu micrófono no se publica ni se guarda en el chat. Pulsa Interrumpir para cortar la respuesta y volver a hablar.','muted');note.setWordWrap(True);layout.addWidget(note)
+        row=FlowLayout()
+        for text,callback in [('INICIAR LLAMADA',self.start_call),('SILENCIAR',lambda:self.controller.voice.pause() if self.controller.voice else None),('REANUDAR',lambda:self.controller.voice.resume() if self.controller.voice else None),('INTERRUMPIR',self.controller.cancel_call),('FINALIZAR LLAMADA',self.stop_call)]:row.addWidget(self.btn(text,callback))
         layout.addLayout(row)
         dialog.finished.connect(lambda _:self.stop_call());dialog.show();self.load_voices(False)
     def load_voices(self,online=False):
@@ -1133,23 +1144,42 @@ class StudioWindow(QMainWindow):
         if not voice or not voice.get('installed'):self.show_error('Selecciona o descarga una voz compatible con el idioma elegido.');return
         from voice_session import VoiceSession
         self.stop_call();options=copy.deepcopy(self.cfg['voice']);options.update(input_device=self.voice_input.currentData(),output_device=self.voice_output.currentData())
+        options.update(streaming_call=True,silence_chunks=5)
         language=self.cfg['studio'].get('language_voice_in','auto');options['language']=None if language=='auto' else language.split('-')[0]
         draft=copy.deepcopy(self.cfg);draft['voice'].update(input_device=options['input_device'],output_device=options['output_device'],voice_id=voice['id']);draft.dirty_paths.update(('voice.input_device','voice.output_device','voice.voice_id'))
         self.controller.save(draft)
-        self.controller.voice=VoiceSession(self.controller.folder,lambda data:self.controller.emit('voice',data),options,voice);self.controller.voice.start()
+        self.controller.voice=VoiceSession(self.controller.folder,lambda data:self.controller.emit('voice',data),options,voice)
+        self.controller.begin_call(self.controller.voice);self.controller.voice.start()
+    def preview_voice(self):
+        row=self.voice_selector.currentData()
+        if not row or not row.get('installed'):self.voice_state.setText('Selecciona una voz instalada para escucharla.');return
+        if self.controller.voice:self.voice_state.setText('Finaliza la llamada antes de probar otra voz.');return
+        previous=getattr(self,'_voice_preview',None)
+        if previous:previous.stop()
+        from voice_session import VoiceSession
+        options=copy.deepcopy(self.cfg['voice']);options['output_device']=self.voice_output.currentData()
+        self._voice_preview=VoiceSession(self.controller.folder,lambda data:self.controller.emit('voice',data),options,row)
+        self._voice_preview.speak('Hola, soy Akira. Así sonará mi voz durante nuestra llamada.')
     def stop_call(self):
+        self.controller.end_call()
         if self.controller.voice:self.controller.voice.stop();self.controller.voice=None
+        preview=getattr(self,'_voice_preview',None)
+        if preview:preview.stop();self._voice_preview=None
         self.director.playback(False);self.director.publish('idle',force=True)
     def voice_event(self,data):
         voice=self.controller.voice
-        if not voice or data.get('session_id')!=voice.session_id:return
+        preview=getattr(self,'_voice_preview',None)
+        if not voice or data.get('session_id')!=voice.session_id:
+            if not preview or data.get('session_id')!=preview.session_id:return
         kind=data.get('kind');text=data.get('text','')
-        if hasattr(self,'voice_state'):self.voice_state.setText(text or kind)
+        if hasattr(self,'voice_state'):self.voice_state.setText('Preparando respuesta hablada…' if kind=='final' else 'Escuchando…' if kind=='partial' else text or kind)
         if kind=='error':
             try:self.controller.reporter.event('VOZ','ERROR | '+str(text),state='ERROR',detail=str(text),severity='ERROR')
             except OSError:pass
-        if kind=='partial':self.voice_transcript.setText(text)
-        elif kind=='final':self.voice_transcript.setText(text);self.send_transcript()
+        if kind=='partial':pass
+        elif kind=='final':
+            if not self.controller.ask_call(text) and self.controller.voice:
+                self.controller.voice.cancel_message();self.voice_state.setText('La llamada está terminando la respuesta. Vuelve a hablar en un momento.')
         elif kind in ('playback_start','playback_end'):self.director.playback(kind=='playback_start')
         elif kind=='playback_level':self.director.level(data.get('level',0))
         else:
@@ -1158,13 +1188,10 @@ class StudioWindow(QMainWindow):
     def send_transcript(self):
         text=self.voice_transcript.text().strip()
         if not text:return
-        from assistant_akira import AkiraAssistant
-        if AkiraAssistant.is_trade_control_message(text) and not self.confirm('Confirmar transcripción operativa',text):
-            if self.controller.voice:self.controller.voice.cancel_message()
-            return
-        if self.controller.ask(text):self.director.busy(True);self.director.publish('thinking')
+        self.voice_transcript.clear()
+        if self.controller.ask_call(text):self.director.publish('thinking')
         elif self.controller.voice:
-            self.controller.voice.cancel_message();self.voice_state.setText('El chat está ocupado. Espera a que termine y vuelve a hablar.')
+            self.controller.voice.cancel_message();self.voice_state.setText('El canal de voz está ocupado. Espera a que termine y vuelve a hablar.')
     def download_voice(self):
         row=self.voice_selector.currentData()
         if not row:
@@ -1220,7 +1247,7 @@ class StudioWindow(QMainWindow):
             self._layout_file.setValue('geometry',self.saveGeometry())
             for key in ('home_split','pending_split','account_split','analysis_split','sources_split','terminal_split'):self._layout_file.setValue(key,getattr(self,key).saveState())
             self._layout_file.sync()
-        self.poll_timer.stop();self.animation_timer.stop();self.surface.stop();self.cancel_voice_download();self.controller.close();event.accept()
+        self.poll_timer.stop();self.animation_timer.stop();self.surface.stop();self.cancel_voice_download();self.stop_call();self.controller.close();event.accept()
 
 
 def main(preview=False):

@@ -34,12 +34,13 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
     cfg['desktop']=effective_desktop(cfg.get('desktop'))
     root=Path(root);api=None;lock=None;context=None;engine=None;bound_identity=None
     started_utc=time.time();stage='INICIANDO';publish_callback=publish
-    reconnect=False;paused=False;network_available=True;failures=0
+    reconnect=False;paused=False;network_available=True;failures=0;account_adaptation=None
     def publish(row):
         row={**row,'build':BUILD_ID,'runtime':{'application_root':str(root.resolve()),
             'python_executable':sys.executable,'process_id':os.getpid(),
             'started_utc':started_utc,'stage':stage,'preview':bool(preview)},
             'configured_execution':{k:cfg[k] for k in ('mode','symbols','risk','capital_protection','sizing','runner')}}
+        if account_adaptation:row['account_adaptation']=dict(account_adaptation)
         publish_callback(row)
     def disconnected(problem,delay=0):
         status=problem.status(delay)
@@ -130,12 +131,24 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                     disconnected(ConnectionProblem('CONNECTING','Conectando con MetaTrader 5…',
                         'El primer inicio puede tardar hasta 60 segundos. Se comprobará la cuenta seleccionada en MT5.'))
                     signature=target_signature(cfg)
-                    account=connector.connect(cfg)
+                    account=connector.connect(cfg,verify_target=not cfg.get('follow_terminal_account',True))
                     # Saves made while initialize() was waiting must apply before
                     # binding a journal or allowing the first financial cycle.
                     drain()
                     if stop.is_set():break
                     if reconnect or signature!=target_signature(cfg):continue
+                    if cfg.get('follow_terminal_account',True):
+                        actual=account_identity(account)
+                        expected=(int(cfg.get('expected_login') or 0),str(cfg.get('expected_server') or '').strip())
+                        if actual!=expected or bound_identity is not None and actual!=bound_identity:
+                            cfg.update(mode='observe',expected_login=actual[0],expected_server=actual[1])
+                            if cfg.get('operation_profile')=='DEMO_EXPERIMENT' and int(getattr(account,'trade_mode',-1))!=0:cfg['operation_profile']='AUTO'
+                            account_adaptation={'login':actual[0],'server':actual[1],'mode':'observe',
+                                'operation_profile':cfg.get('operation_profile','AUTO'),'at':time.time(),
+                                'detail':'Cuenta actual de MT5 detectada. Historial y capital separados; pulsa Activar operativa para autorizarla.'}
+                            bound_identity=actual
+                            log.event('MT5',account_adaptation['detail'],state='SISTEMA')
+                        connector.remember_observed()
                 else:account=api.account_info()
                 identity_pair=(int(account.login),str(account.server))
                 if bound_identity is None:bound_identity=identity_pair
@@ -162,6 +175,11 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                     if not preview:
                         current=api.account_info()
                         if current is not None and account_identity(current)!=bound_identity:
+                            if cfg.get('follow_terminal_account',True):
+                                cfg['mode']='observe';reconnect=True
+                                # Release the old engine, review queue and account lease
+                                # before attaching the new account's journal.
+                                break
                             raise ConnectionProblem('ACCOUNT_CHANGED','Se seleccionó otra cuenta en MT5.',
                                 'Pulsa Usar cuenta abierta en MT5 en Ajustes → Operación para conectar esa cuenta y volver a autorizarla.')
                     stage='RETIRANDO MOTOR ANTERIOR' if not preview else 'VISTA PREVIA'

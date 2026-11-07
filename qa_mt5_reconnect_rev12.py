@@ -27,7 +27,7 @@ def run_check():
             if fail[0]:return False
             return True
         api.initialize=initialize;api.shutdown=lambda:shutdowns.append(True);api.last_error=lambda:(-10005,'SYNTHETIC timeout')
-        cfg=load_config(DEFAULT);cfg['mode']='observe';cfg['expected_login']=123;cfg['assistant']['auto_install_local_ai']=False
+        cfg=load_config(DEFAULT);cfg['mode']='observe';cfg['expected_login']=123;cfg['assistant']['auto_install_local_ai']=False;cfg['follow_terminal_account']=False
         save_config(cfg,root/'akira_config.json');baseline=copy.deepcopy(cfg)
         log=Reporter(root/'logs',console=False)
         def wait_for(predicate,timeout=8):
