@@ -238,8 +238,18 @@ def render_speech(data,cache=None):
  voice=data['voice'];path=data['path'];text=clean_speech(data['text']);cache={} if cache is None else cache
  if voice['engine']=='piper':
   from piper import PiperVoice,SynthesisConfig
+  from piper.config import PiperConfig
+  import onnxruntime as ort
   key=voice['model']
-  if key not in cache:cache.clear();cache[key]=PiperVoice.load(key)
+  if key not in cache:
+   # Piper's default ONNX session creates a pool across all physical cores.
+   # Reserve the CPU for recognition, language generation and the MT5 actor.
+   options=ort.SessionOptions();options.intra_op_num_threads=1;options.inter_op_num_threads=1
+   options.execution_mode=ort.ExecutionMode.ORT_SEQUENTIAL
+   options.add_session_config_entry('session.intra_op.allow_spinning','0')
+   options.add_session_config_entry('session.inter_op.allow_spinning','0')
+   config=PiperConfig.from_dict(json.loads(Path(key+'.json').read_text(encoding='utf-8')))
+   cache.clear();cache[key]=PiperVoice(session=ort.InferenceSession(key,sess_options=options,providers=['CPUExecutionProvider']),config=config)
   model=cache[key]
   config=SynthesisConfig(speaker_id=voice.get('speaker',0),length_scale=180/max(80,min(300,int(data.get('rate',180)))),volume=max(0,min(1,float(data.get('volume',.8)))))
   with wave.open(path,'wb') as wav:model.synthesize_wav(text,wav,syn_config=config)

@@ -473,7 +473,7 @@
   "validate_install.py": "73997fe088ec88ef86fa83d5f011da41a5a8bb44b3ef90da9743ead6f475c9e3",
   "video_vision.py": "761e938e011e3276d92eedbef9e7967d0a5304f98170977424490c8e39c8f9c5",
   "voice_akira.py": "3331bf82c82d80e1b6aa735cd9bf8ecfebf818fc2db244bfcf05bea5d4748d95",
-  "voice_session.py": "eb7dc930f92539109c84e766b063676b59fb775ea5ea29e54f29cb9c4f501c24",
+  "voice_session.py": "7097bd68707d52097a9f960be90d37516006461ce3b06c9c8d31ccc165c02b48",
   "web_facts.py": "87480a74e96efff84df99949cdf568340c99681b40506fe7e830103e4e28895f",
   "windows_identity.py": "12516c28395aaacba01368b0cbea587197e71ae19aa6ecdb1cdc28dc6cda3141",
   "windows_version.txt": "30684554c37c4776b6c6acda4732a4a70bf04988cde1da19ca4e80ca72a0e937",
@@ -502,7 +502,7 @@
   "GUIA_CORRECCION_20261107.md": "4224a8070d15d1ec7855513132a5f8f41d068235840a82669c177d23d7d3329d",
   "learning_status.py": "0dde77ae461c06b39a3932d48fd008d8533737fbad7539dee00c1289767c6c29",
   "qa_spoken_rev20.py": "e89e34eb2c10e411fbcc9cf3475a9a82d59b25fb42f0cb2a62daa5f088b4da2e",
-  "startup_runtime.py": "2a9e7790f29aef7e92b794577bec1c7ac9143116bdf1fe0b0f08c30c1200e6f4",
+  "startup_runtime.py": "411b86fd777e33aaed91061a35a3f12357c5316867e273f4aaddf62ba232033c",
   "tests/test_rev20_user_requests.py": "285479d15a81601efe1517e9735390f898809d0c5668d97f5ea77b523fa06443",
   "voice_conversation.py": "79da5450bc4f759077a8c8517f075d55b723f7cb2933437af5a2e41688622b4b"
 }

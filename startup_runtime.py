@@ -20,13 +20,13 @@ class ApplicationLock:
             self.handle=self.kernel.CreateMutexW(None,False,'Local\\'+identity)
             if not self.handle:raise OSError(ctypes.get_last_error(),'No se pudo reservar la instancia de AKIRA')
             if ctypes.get_last_error()==183:
-                self.close();raise AlreadyRunning('AKIRA ya está abierto. Cierra la otra ventana antes de iniciar otra instancia.')
+                self.close();raise AlreadyRunning('AKIRA ya está abierto. Cierra este aviso para cancelar la apertura duplicada y seguir usando la ventana que está funcionando.')
         else:
             import fcntl
             self.stream=(Path(tempfile.gettempdir())/(identity+'.lock')).open('a+b')
             try:fcntl.flock(self.stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
             except OSError:
-                self.close();raise AlreadyRunning('AKIRA ya está abierto. Cierra la otra ventana antes de iniciar otra instancia.')
+                self.close();raise AlreadyRunning('AKIRA ya está abierto. Cierra este aviso para cancelar la apertura duplicada y seguir usando la ventana que está funcionando.')
         atexit.register(self.close)
 
     def close(self):
