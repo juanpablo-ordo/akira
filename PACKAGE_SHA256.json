@@ -501,8 +501,9 @@
   "tests/test_core_rev19.py": "aaabe4481ce0d3522143d29b7c690af83dea9adfa7d765b0c23a9d269eb20edb",
   "GUIA_CORRECCION_20261107.md": "4224a8070d15d1ec7855513132a5f8f41d068235840a82669c177d23d7d3329d",
   "learning_status.py": "0dde77ae461c06b39a3932d48fd008d8533737fbad7539dee00c1289767c6c29",
-  "qa_spoken_rev20.py": "e89e34eb2c10e411fbcc9cf3475a9a82d59b25fb42f0cb2a62daa5f088b4da2e",
+  "qa_spoken_rev20.py": "0b4b2a972af75c11669b73e159ac3b275e943dc7220409fa60e955aa62022547",
   "startup_runtime.py": "411b86fd777e33aaed91061a35a3f12357c5316867e273f4aaddf62ba232033c",
   "tests/test_rev20_user_requests.py": "285479d15a81601efe1517e9735390f898809d0c5668d97f5ea77b523fa06443",
-  "voice_conversation.py": "79da5450bc4f759077a8c8517f075d55b723f7cb2933437af5a2e41688622b4b"
+  "voice_conversation.py": "79da5450bc4f759077a8c8517f075d55b723f7cb2933437af5a2e41688622b4b",
+  ".github/workflows/verify-installed-voice.yml": "8805535bafe7f72176a59fcda943758232a9edc515cb4e60a5564f60c1f1fd60"
 }

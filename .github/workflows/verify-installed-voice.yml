@@ -1,0 +1,55 @@
+name: AKIRA · comprobar voz del instalador publicado
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - akira-rev20-verificacion-instalador-20261107
+permissions:
+  contents: read
+  actions: read
+jobs:
+  installed-voice:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Preparar comprobador
+        shell: pwsh
+        run: python -m pip install -r requirements.txt
+      - name: Descargar el instalador exacto ya compilado
+        uses: actions/download-artifact@v4
+        with:
+          name: AKIRA-16.5.4-Studio-Rev19-nucleo-verificable-instalador-Windows-IA-INCLUIDA
+          run-id: 42419818137
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: released_installer
+      - name: Instalar el paquete publicado y verificar su IA
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem released_installer -Recurse -Filter '*CORRECCION_20261107_IA_INCLUIDA.exe' | Select-Object -First 1
+          if ($null -eq $setup) { throw 'Falta el instalador publicado.' }
+          $target = Join-Path $env:RUNNER_TEMP 'AKIRA_VOICE_INSTALLED'
+          python -m installer.check_installed_ai --setup "$($setup.FullName)" --root "$target" --report diagnostics/INSTALLED_PACKAGE.json
+          if ($LASTEXITCODE -ne 0) { throw 'Falló la instalación del paquete publicado.' }
+      - name: Conversar con saldo y memoria mediante voz
+        shell: pwsh
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'AKIRA_VOICE_INSTALLED'
+          python qa_spoken_rev20.py --app "$target/AKIRA.exe" --exe "$target/local_ai/cpu/llama-server.exe" --model "$target/local_ai/models/gemma-4-E2B-it-Q4_K_M.gguf" --voice-root "$env:RUNNER_TEMP/AKIRA_VOICE_MODELS" --report diagnostics/INSTALLED_SPOKEN_VERIFIED.json
+          if ($LASTEXITCODE -ne 0) { throw 'La llamada instalada no usó saldo y memoria correctamente.' }
+          python -c "import json; r=json.load(open('diagnostics/INSTALLED_SPOKEN_VERIFIED.json',encoding='utf-8')); assert r['status']=='PASSED' and not r.get('error') and len(r['turns'])==2 and r['chat_messages']==0"
+          if ($LASTEXITCODE -ne 0) { throw 'El informe contiene errores o una comprobación incompleta.' }
+      - name: Publicar comprobación de llamada instalada
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AKIRA-llamada-instalada-verificada
+          path: diagnostics/
+          retention-days: 7
