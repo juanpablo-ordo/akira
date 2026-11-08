@@ -35,12 +35,13 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
         from resource_optimizer import desktop_hardware
         detected=desktop_hardware()
     if ram_gb is None:
+        # Always inspect the current process memory view. The cached hardware
+        # inventory is only a fallback: it can represent another environment.
         try:
-            ram_gb=float(detected.get('ram_gb') or 0)
-            if ram_gb<=0:
-                import psutil
-                ram_gb=psutil.virtual_memory().total/1073741824
-        except (ImportError,OSError,TypeError,ValueError):ram_gb=4
+            import psutil
+            ram_gb=psutil.virtual_memory().total/1073741824
+        except (ImportError,OSError,TypeError,ValueError,AttributeError):
+            ram_gb=float(detected.get('ram_gb') or 4)
     if cpu_cores is None:
         cpu_cores=os.cpu_count() or 2
         try:

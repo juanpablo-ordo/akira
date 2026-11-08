@@ -149,7 +149,7 @@
   "akira_expressions.py": "69ed57c5667f2ced6e2688704db87eb5f7c9502b135f2880afa4a434208df366",
   "akira_live2d.py": "604a87dafed66f818d0cc05629c21c092b8558cd50516d3fea77e8592d3ba05d",
   "akira_local_ai.py": "39162e60b0069f85c220a5972fc627ef32e5c2f013847a5a87629f178001491f",
-  "akira_model_runtime.py": "a9be42780bb481496bffefbf2a295eeafcdf5f3da5d71946cf3a117b9c2e6a28",
+  "akira_model_runtime.py": "1fb85416d3b6ea6aba3b83ce873c6a5a298c4edc7e126a1df285d683ff0a0c7d",
   "akira_openai.py": "6ea2025c5e1220f4487daa9de465ebc1e468ac9b11ef44cbfcb4b2675e2a4432",
   "akira_secrets.py": "74388396cb31c66c4a8d7f550077a2ad613b67525741489f54657dfabc62f89b",
   "akira_studio.py": "91d7a65bb42e813fdd0c461637df378b0eca805c20ce151d4e258b7f5b132a04",
@@ -506,5 +506,5 @@
   "tests/test_rev20_user_requests.py": "285479d15a81601efe1517e9735390f898809d0c5668d97f5ea77b523fa06443",
   "voice_conversation.py": "79da5450bc4f759077a8c8517f075d55b723f7cb2933437af5a2e41688622b4b",
   ".github/workflows/verify-installed-voice.yml": "8805535bafe7f72176a59fcda943758232a9edc515cb4e60a5564f60c1f1fd60",
-  "tests/test_rev21_stability.py": "8922f13fab85779bd3df2e68badcfc3d46f57e5b7ee7c409405a7d80ce41c6ac"
+  "tests/test_rev21_stability.py": "d419e2f24013db49d3942b12c199cc03b0649ddddbf323f6717e8bb94dc879e7"
 }

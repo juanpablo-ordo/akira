@@ -24,6 +24,13 @@ class NvidiaDetection(unittest.TestCase):
     def test_explicit_cpu_only_is_honored(self):
         from akira_model_runtime import hardware_profile
         self.assertEqual(hardware_profile(ram_gb=8,gpu_vram_gb=0,cpu_cores=4)['gpu_layers'],0)
+    def test_live_ram_outranks_stale_hardware_inventory(self):
+        from akira_model_runtime import hardware_profile
+        with patch('psutil.virtual_memory',return_value=SimpleNamespace(total=8*1073741824)), \
+             patch('resource_optimizer.desktop_hardware',return_value={'ram_gb':32,'gpu_vram_gb':0}):
+            profile=hardware_profile(cpu_cores=4)
+        self.assertEqual(profile['detected_ram_gb'],8)
+        self.assertEqual(profile['gpu_layers'],0)
 
 class WaveAndSettings(unittest.TestCase):
     @classmethod
