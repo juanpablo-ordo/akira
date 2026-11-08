@@ -60,7 +60,14 @@ class LlamaSetupTests(unittest.TestCase):
     def test_ci_generates_actual_installer_artifact(self):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
-        self.assertIn('AKIRA-16.5.4-Studio-Rev19-nucleo-verificable-instalador-Windows-IA-INCLUIDA',workflow)
+        # Verify the actually published Rev22 artifact, not a frozen Rev19 label.
+        # The source installer is identified independently so a stray workflow
+        # comment cannot satisfy this assertion.
+        installer=(ROOT/'installer'/'akira.iss').read_text(encoding='utf8')
+        self.assertIn('OutputBaseFilename=AKIRA_16_5_4_STUDIO_REV22_20261108_IA_INCLUIDA',installer)
+        self.assertIn('name: AKIRA-16.5.4-Correccion22-instalador-Windows-IA-INCLUIDA',workflow)
+        self.assertIn('path: dist_installer/*.exe',workflow)
+        self.assertIn('if: success()',workflow)
         self.assertIn('installer.check_installed_ai',workflow)
         self.assertIn('Incorporar llama.cpp oficial',workflow)
         import shlex

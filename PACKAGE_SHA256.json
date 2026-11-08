@@ -440,7 +440,7 @@
   "tests/test_v1632_anti_churn.py": "31a4016f70dd6bcac72cbc0adff5f976f2421dfdb4efa57f0f5902cc863b3728",
   "tests/test_v1632_first_run.py": "cd67a9b706547e76c29af9176a5fdcb02f4e76b96a2a26ee968465da8137a5c2",
   "tests/test_v1632_integrated_research_voice.py": "1366547f70a83e66c5d2aff51bc7682698144b3954e004acfa108827b4c14a06",
-  "tests/test_v1632_llama_setup.py": "7a0c09d7076549ff05146ee60854bee97631c713b6a3f50996bd3a554f34856c",
+  "tests/test_v1632_llama_setup.py": "b1aea3caaab547c3ea47186e7f4f8b3a1f4d6334e48c10e315340b8f2f1c4730",
   "tests/test_v1632_llama_smoke_contract.py": "cba10de8dd019012ec2fe5d985272d927d5858bd3d863f9be51bba2860792693",
   "tests/test_v1632_local_runtime.py": "e82b903143648f668e20491374c208b84d868601016897f272390c6b7c0c3d29",
   "tests/test_v1632_resource_and_wheel.py": "597a50cbee7970178a64e3a50a758831488e8c002d044e6e4d16fa25d39d7541",
