@@ -195,7 +195,7 @@
   "assets/vtuber/akira_pixel_sleeping.png": "d3dea3d84e5cbeba9205f3e53baca05a3bce057caa6c7a92c10b146df2f72afc",
   "assets/vtuber/akira_pixel_talking.png": "87e864e38ef96d61f3ccc04f664bc50bf63d734b84206692b6853e6e18fc9d86",
   "assets/vtuber/akira_pixel_thinking.png": "ef871cd8ca000e2ef6795558194be4a2c724846a66bd9afa5a528f01e43c589a",
-  "assistant_akira.py": "fe07914a1865e2e1a5ea17c1a5dbf29baa93a5516aac2040ff7b518871115027",
+  "assistant_akira.py": "3de1f8e86318d0b6c172d9e5305b8b42ff287c222fa1901f45d6f7501f638b93",
   "assistant_startup.py": "cc60e911437bb460cdc63c86cab405ef16cb4ccb63ca0b5113b13869924dba74",
   "auditar_versiones.py": "30d92cb9220f825c8a1122b5d45727026594d5e418527160fd715af729071328",
   "avatar_animation.py": "11b2d95e99ed4146a77d868eb26f0a0bf214980452891f8daa917f3ceca07cb3",
@@ -220,7 +220,7 @@
   "default_config.json": "bbeb92be9eda9058e3b70162a5a1451e72a97b2a9085b4e969a8889ba1207c53",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "9bdcd77da8787341c8def37d34913be7cf223285acc7dc7ddc5e8553955ab304",
+  "desktop_qt.py": "9aae5b016d46b7eb03ad740e53800b0cc00865701e1948cd26668da8230915af",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
   "engine.py": "67dfab0d74a122e8c9fbc0b581db2d3702ed7a0adb3262c373eadfd773479660",
@@ -507,5 +507,5 @@
   "voice_conversation.py": "934a5dc5d4d21f1117e0e2c1d8b058bb8e9423fa8cfbffe71fd0553c0cfc7fc0",
   ".github/workflows/verify-installed-voice.yml": "8805535bafe7f72176a59fcda943758232a9edc515cb4e60a5564f60c1f1fd60",
   "tests/test_rev21_stability.py": "7daedca2f670de723d72994b849283b3d30cdc9d162e8e046a9cfa3676cfaa69",
-  "tests/test_rev22_recovery_call.py": "24a7856d1b35e0face41f9ebac26f57876867794c529c284dff1fb1b8ed4fd87"
+  "tests/test_rev22_recovery_call.py": "62ad232fb915ab07738e6e18a6a2e1c93a982b1252f6a9e30ea388faba6a3cb2"
 }

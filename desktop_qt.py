@@ -571,8 +571,10 @@ class StudioWindow(QMainWindow):
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
         for symbol,row in view.get('ai_execution_review',{}).items():
             summary.append(symbol+' · IA orden: '+row['state']+' · '+str(row.get('provider') or row.get('phase') or 'cola')+' · '+str(row['elapsed_seconds'])+' s. '+row['reason'])
-        if view.get('learning_status'):summary.append('Aprendizaje: '+view['learning_status']['detail'])
-        self.system_text.setText('\n\n'.join(summary))
+        learning=view.get('learning_status') or {}
+        full_detail='\n\n'.join(summary+(['Aprendizaje: '+str(learning.get('detail',''))] if learning else []))
+        if learning:summary.append('Aprendizaje: '+str(learning.get('confirmed_closures',0))+' cierres · '+str(learning.get('validated_models',0))+' modelos validados.')
+        self.system_text.setText('\n'.join(summary));self.system_text.setToolTip(full_detail)
         for symbol,(price,status,chart) in (self.home_markets.items() if self.page_index==0 else []):
             info=(view.get('symbols') or {}).get(symbol) or {};price.setText(number(info.get('bid')));status.setText(market_activity(view,symbol)['text']);chart.set_data((info.get('bars_by_timeframe') or {}).get('M15') or info.get('bars') or [])
         if self.page_index==1:self.render_pending()

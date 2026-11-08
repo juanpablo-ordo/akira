@@ -69,6 +69,23 @@ class LocalRecovery(unittest.TestCase):
 
 
 class PlaybackLifecycle(unittest.TestCase):
+    def test_call_prepares_model_off_ui_thread_and_releases_lease_on_close(self):
+        from contextlib import contextmanager
+        from voice_conversation import CallConversation
+        main=threading.get_ident();prepared=threading.Event();threads=[]
+        runtime=Mock();runtime.enabled.return_value=True;runtime._paths.return_value=(Path('server.exe'),Path('model.gguf'))
+        @contextmanager
+        def session(*args,**kw):
+            threads.append(threading.get_ident());yield;prepared.set()
+        runtime.session.side_effect=session
+        call=CallConversation(NS(_managed_model=runtime),lambda:copy.deepcopy(DEFAULT),lambda:{},Mock())
+        try:
+            call.prepare();self.assertTrue(prepared.wait(1));self.assertNotIn(main,threads)
+            runtime.keep_warm.assert_called_with(60)
+        finally:
+            call.close();call.preparation.join(1)
+        self.assertFalse(call.preparation.is_alive())
+
     def test_bluetooth_native_format_preserves_duration_channels_and_signal(self):
         import numpy as np
         from voice_session import playback_format,convert_playback
@@ -113,6 +130,27 @@ class PlaybackLifecycle(unittest.TestCase):
 
 
 class VisibleEvidence(unittest.TestCase):
+    def test_read_captions_are_sent_to_model_without_second_source_tool(self):
+        from assistant_akira import AkiraAssistant
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg=copy.deepcopy(DEFAULT)
+            cfg['assistant'].update(local_runtime_enabled=True,auto_research=False,self_review=False)
+            bot=AkiraAssistant(cfg,Path(tmp))
+            source={'url':'https://www.youtube.com/watch?v=fixture','title':'Vídeo de prueba',
+                    'body':'La señal de comprobación es bosque azul.','status':'transcript','complete':True}
+            def response(messages,tools,*args,**kwargs):
+                self.assertEqual(tools,[])
+                self.assertIn('bosque azul',str(messages))
+                return 'La señal mencionada en los subtítulos es bosque azul.'
+            try:
+                with patch.object(bot._managed_model,'enabled',return_value=True), \
+                     patch('assistant_akira.read_youtube',return_value=source), \
+                     patch('assistant_akira.ollama_status',return_value={'ok':True,'models':['gemma']}), \
+                     patch('assistant_akira.ollama_agent',side_effect=response) as model:
+                    answer=bot._local_llm_reply_impl('¿Qué dice este vídeo https://www.youtube.com/watch?v=fixture?',{})
+                self.assertIn('bosque azul',answer);model.assert_called_once()
+            finally:bot._managed_model.shutdown()
+
     def test_deposit_does_not_recount_when_broker_history_window_changes(self):
         from capital_guard import status
         account=NS(balance=100,equity=100);snapshot=NS(account=account)

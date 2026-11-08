@@ -1071,7 +1071,10 @@ class AkiraAssistant:
         if (routing['repair'] or formatting) and cached_research and time.monotonic()-cached_research['at']<300:
             source_rows=list(cached_research['rows']);web_context=source_brief(source_rows)
         elif urls:
-            url=urls[0].rstrip('.,)')
+            # The punctuation of a Spanish question is not part of the URL.
+            # Passing its trailing '?' to the caption reader made an otherwise
+            # readable video look unavailable and silently triggered web fallback.
+            url=urls[0].rstrip('.,)!?;:')
             try:
                 if re.search(r'(?:youtube\.com|youtu\.be)',url) and re.search(r'\b(analiza|mira|video|vídeo|ves|ver|resume)\b',message,re.I):
                     tool_result=self._source_tool('analyze_youtube_video',{'url':url,'topic':message,'offset':0})
@@ -1254,7 +1257,10 @@ class AkiraAssistant:
             state=state if trading else {'mode':'general_chat','current_fact_requires_web':fresh,
                 'conversation_memory':snapshot.get('conversation_memory',{})},evidence=web_context,
             continuity=routing if routing.get('contextual') or routing.get('repair') else {},budget=context_budget)
-        tools=self._local_tools() if deep or file_request or (urls and explicit_research) else []
+        # A direct URL has already been read above. Offering the same tool again
+        # made the small model ignore the supplied transcript and claim that the
+        # video could not be accessed, despite the captions being in evidence.
+        tools=self._local_tools() if deep or file_request or (urls and explicit_research and not source_rows) else []
         if tools and small_context:
             if file_request:
                 allowed=({'create_word_document'} if re.search(r'\b(?:word|docx)\b',message,re.I) else
