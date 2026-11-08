@@ -53,4 +53,41 @@ class WaveAndSettings(unittest.TestCase):
         self.assertIn(144,wallpaper_fps_choices(165))
         self.assertTrue(all(1<=fps<=144 for fps in wallpaper_fps_choices(240)))
 
+class SpokenRecognitionRecovery(unittest.TestCase):
+    def test_restores_partial_speech_via_real_second_decode(self):
+        from voice_session import transcribe_with_recovery
+        from types import SimpleNamespace as Seg
+        class Model:
+            def __init__(self):self.calls=[]
+            def transcribe(self,audio,**kw):
+                self.calls.append(kw)
+                words='de mi cuenta.' if kw['beam_size']==1 else 'Dime el saldo de mi cuenta.'
+                return iter([Seg(text=words)]),None
+        model=Model()
+        self.assertEqual(transcribe_with_recovery(model,[0.0]*40800),'Dime el saldo de mi cuenta.')
+        self.assertEqual([r['beam_size'] for r in model.calls],[1,5])
+        self.assertFalse(model.calls[1]['vad_filter'])
+
+    def test_unrelated_longer_hallucination_is_rejected(self):
+        from voice_session import transcribe_with_recovery
+        from types import SimpleNamespace as Seg
+        class Model:
+            def transcribe(self,audio,**kw):
+                words='Sí.' if kw['beam_size']==1 else 'Por favor revisa mi cuenta.'
+                return iter([Seg(text=words)]),None
+        self.assertEqual(transcribe_with_recovery(Model(),[0.0]*40000),'Sí.')
+
+    def test_short_audio_only_needs_one_decode(self):
+        from voice_session import transcribe_with_recovery
+        from types import SimpleNamespace as Seg
+        class Model:
+            def __init__(self):self.calls=0
+            def transcribe(self,audio,**kw):
+                self.calls+=1
+                return iter([Seg(text='Hola')]),None
+        model=Model()
+        self.assertEqual(transcribe_with_recovery(model,[0.0]*12000),'Hola')
+        self.assertEqual(model.calls,1)
+
+
 if __name__=='__main__':unittest.main()

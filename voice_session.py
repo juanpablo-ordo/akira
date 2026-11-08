@@ -18,6 +18,21 @@ def recognition_model(root,name):
    _STT_MODEL=model;_STT_KEY=key
   return _STT_MODEL
 
+def transcribe_with_recovery(model,audio,language='es',beam_size=1,vad_filter=True):
+ """Retry suspiciously short speech with stronger decoding, preserving short replies."""
+ def decode(beam,vad):
+  segments,_=model.transcribe(audio,language=language,beam_size=beam,
+                              vad_filter=vad,condition_on_previous_text=False)
+  return ' '.join(segment.text.strip() for segment in segments).strip()[:1500]
+ first=decode(beam_size,vad_filter)
+ if len(first.split())>=4 or len(audio)<32000 or (beam_size>=5 and not vad_filter):
+  return first
+ second=decode(max(5,beam_size),False)
+ normalized=lambda text:' '.join(re.findall(r'\w+',text.casefold()))
+ if second and len(second.split())>len(first.split()) and (not first or normalized(first) in normalized(second)):
+  return second
+ return first
+
 def audio_inventory():
  import sounddevice as sd
  inputs=[];outputs=[]
@@ -410,8 +425,9 @@ class VoiceSession:
     if self.options.get('streaming_call') and not final:continue
     if not final and (len(active)<10 or now<partial_due):continue
     self.event('state',text='Transcribiendo' if final else 'Escuchando · transcripción en directo')
-    revision=self._revision;audio=np.concatenate(active[-150:]);segments,_=model.transcribe(audio,language=self.options.get('language','es'),beam_size=1,vad_filter=True,condition_on_previous_text=False)
-    text=' '.join(s.text.strip() for s in segments).strip()[:1500];partial_due=time.monotonic()+2
+    revision=self._revision;audio=np.concatenate(active[-150:])
+    text=transcribe_with_recovery(model,audio,language=self.options.get('language','es'),beam_size=1,vad_filter=True)
+    partial_due=time.monotonic()+2
     if self.stop_event.is_set():break
     if self.paused.is_set() or revision!=self._revision:active=[];silence=0;continue
     if text:self.last_text=text;self.event('partial',text=text)
