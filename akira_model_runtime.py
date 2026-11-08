@@ -7,8 +7,8 @@ only; zero network/model downloads; financial Engine never imports this module.
 from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
-import os, subprocess, sys, threading, time, weakref
-from urllib.parse import urlsplit
+import os, socket, subprocess, sys, threading, time, weakref, json
+from urllib.parse import urlsplit, urlunsplit
 from urllib.request import urlopen
 from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME
 
@@ -18,10 +18,13 @@ _SHARED_LOCK=threading.Lock()
 
 def shared_runtime(settings,log_root,profile=None):
     """Chat and research must never launch rival servers on the same port."""
-    key=(str(Path(log_root).resolve()),str((settings or {}).get('local_endpoint') or ''))
+    endpoint=str((settings or {}).get('local_endpoint') or 'http://127.0.0.1:18987/v1/chat/completions')
+    # One owned runtime per application data directory, even after changing
+    # localhost spelling or port. External Ollama is never launched or owned.
+    key=(str(Path(log_root).resolve()),'managed' if (settings or {}).get('local_runtime_enabled') else endpoint)
     with _SHARED_LOCK:
         runtime=_SHARED.get(key)
-        if runtime is None:
+        if runtime is None or runtime._closed:
             runtime=ManagedLlamaProcess(settings,profile=profile,log_root=log_root)
             _SHARED[key]=runtime
         return runtime
@@ -56,7 +59,7 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
     return {
         'model_class':'4B GGUF Q4_K_M' if ram>=16 else '2B GGUF Q4_K_M',
         'context_tokens':4096 if ram>=16 else 2048,
-        'gpu_layers':12 if vram>=8 else 0,
+        'gpu_layers':99 if vram>=12 else 12 if vram>=7.5 else 0,
         'cpu_threads':min(6,max(1,int(cpu_cores)//2)),
         'logical_cores':max(1,int(cpu_cores)),
         'detected_ram_gb':round(ram,2),
@@ -87,6 +90,56 @@ class ManagedLlamaProcess:
         self.path_resolution={}
         self._launch_command=None;self._requested_command=None
         self._warm_until=0
+        self._bound_endpoint=None;self._requested_endpoint=None;self.recovery_detail=''
+        self.owner_path=Path(log_root)/'state'/'local_model_owner.json' if log_root is not None else None
+        self.generated_at=None;self.generation_count=0
+
+    def record_generation(self):
+        with self.lock:self.generated_at=time.time();self.generation_count+=1
+
+    def endpoint_for(self,endpoint):
+        return self._bound_endpoint if self._bound_endpoint and self._port(endpoint)==self._port(self._requested_endpoint) else endpoint
+
+    @staticmethod
+    def _port_in_use(port):
+        with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as probe:
+            probe.settimeout(.15)
+            return probe.connect_ex(('127.0.0.1',port))==0
+
+    def _recover_owned_orphan(self):
+        """A saved PID alone is never permission to kill: verify identity and parent."""
+        if self.owner_path is None:return
+        try:
+            import psutil
+            row=json.loads(self.owner_path.read_text(encoding='utf-8'))
+            parent=psutil.Process(int(row['parent_pid'])) if psutil.pid_exists(int(row['parent_pid'])) else None
+            if parent is not None and abs(parent.create_time()-float(row['parent_created']))<.01:return
+            proc=psutil.Process(int(row['pid']))
+            if abs(proc.create_time()-float(row['created']))>=.01:return
+            if str(Path(proc.exe()).resolve()).casefold()!=str(Path(row['exe']).resolve()).casefold():return
+            if proc.cmdline()!=row['command']:return
+            paths=self._paths()
+            if not paths or str(paths[1]).casefold()!=str(row['model']).casefold():return
+            permitted={str(paths[0]).casefold(),str(paths[0].parent.parent/'cpu'/'llama-server.exe').casefold()}
+            if str(Path(proc.exe()).resolve()).casefold() not in permitted:return
+            proc.terminate()
+            try:proc.wait(timeout=3)
+            except psutil.TimeoutExpired:proc.kill();proc.wait(timeout=2)
+            self.recovery_detail='Se recuperó el servidor de una sesión anterior de AKIRA.'
+            self.owner_path.unlink(missing_ok=True)
+        except (OSError,ValueError,KeyError,TypeError,ImportError):return
+        except Exception:return  # Access denied leaves the unrelated process untouched.
+
+    def _record_owner(self,command):
+        if self.owner_path is None:return
+        try:
+            import psutil
+            from atomic_json import save_atomic_json
+            proc=psutil.Process(self.proc.pid);parent=psutil.Process(os.getpid())
+            save_atomic_json(self.owner_path,{'pid':proc.pid,'created':proc.create_time(),
+                'parent_pid':parent.pid,'parent_created':parent.create_time(),'exe':proc.exe(),
+                'command':proc.cmdline(),'model':command[command.index('--model')+1]},lock_attempts=5)
+        except Exception:pass
 
     def _paths(self):
         exe_value=str(self.settings.get('local_runtime_exe') or '').strip()
@@ -138,7 +191,7 @@ class ManagedLlamaProcess:
     def command(self,endpoint,desktop=None):
         paths=self._paths()
         if paths is None:raise FileNotFoundError('Faltan llama-server.exe y el modelo GGUF. Ejecuta el instalador de AKIRA completo.')
-        port=self._port(endpoint);desktop=self.desktop_policy(desktop);profile=self.profile
+        port=self._port(self.endpoint_for(endpoint));desktop=self.desktop_policy(desktop);profile=self.profile
         ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))),max(1024,int(desktop.get('memory_budget_mb',3072))*2))
         use_gpu=bool(desktop.get('model_use_gpu',True)) and not self._force_cpu
         gpu=max(0,int(profile['gpu_layers'])) if use_gpu else 0
@@ -191,17 +244,24 @@ class ManagedLlamaProcess:
     def start(self,endpoint,desktop=None):
         if not self.enabled():return False
         if self._closed:raise RuntimeError('La aplicación cerró su motor de IA; no se vuelve a iniciar desde tareas pendientes.')
-        command=self.command(endpoint,desktop)
-        port=self._port(endpoint)
         with self.lock:
             if self._closed:raise RuntimeError('La aplicación cerró su motor de IA.')
+            command=self.command(endpoint,desktop)
             if self.proc and self.proc.poll() is None:
                 self._requested_command=command
                 if self._launch_command is not None and command!=self._launch_command and self.active<=1:self._terminate_own()
                 else:self.last_use=self.clock();return True
-            # No apropiarse de otro servidor/modelo, que puede ser ajeno a Akira.
-            if self._health(port):
-                raise RuntimeError('El puerto de la IA está ocupado por un servidor externo. Akira no lo cerrará.')
+            self._recover_owned_orphan()
+            self._requested_endpoint=endpoint
+            port=self._port(endpoint)
+            if self._port_in_use(port):
+                with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as reservation:
+                    reservation.bind(('127.0.0.1',0));free_port=reservation.getsockname()[1]
+                parts=urlsplit(endpoint)
+                self._bound_endpoint=urlunsplit((parts.scheme,'127.0.0.1:'+str(free_port),parts.path,parts.query,''))
+                self.recovery_detail=f'Puerto {port} ocupado; AKIRA usa el puerto local {free_port} sin cerrar el otro servidor.'
+            else:self._bound_endpoint=endpoint
+            command=self.command(endpoint,desktop)
             # Keep the owned model below normal CPU priority so MT5 and Tk
             # retain scheduling preference when the machine is under load.
             flags=getattr(subprocess,'CREATE_NO_WINDOW',0)|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)
@@ -216,6 +276,8 @@ class ManagedLlamaProcess:
                 self.proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=stream or subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,creationflags=flags)
                 self._launch_command=list(command);self._requested_command=list(command)
+                self.generated_at=None;self.generation_count=0
+                self._record_owner(command)
                 if self._closed:
                     self._terminate_own();raise RuntimeError('La aplicación cerró mientras arrancaba el modelo')
             finally:
@@ -258,7 +320,7 @@ class ManagedLlamaProcess:
         try:
             self.start(endpoint,desktop)
             # Give the server a short bootstrap window, never block MT5.
-            port=self._port(endpoint)
+            port=self._port(self.endpoint_for(endpoint))
             preparation=float(self.settings.get('prepare_timeout_seconds',180))
             deadline=self.clock()+preparation
             while self.clock()<deadline and not self._health(port):
@@ -270,12 +332,14 @@ class ManagedLlamaProcess:
                             # never terminate servers owned by other applications.
                             self._force_cpu=True
                             self.start(endpoint,desktop)
+                            port=self._port(self.endpoint_for(endpoint))
                         else:
                             raise RuntimeError('El motor local no pudo iniciar, ni con CPU')
                 time.sleep(.4)
             if not self._health(port):raise TimeoutError(f'llama.cpp no completó el inicio en {preparation:g} s')
             from akira_local_ai import owned_context
-            with owned_context(self.effective_parameters().get('context_tokens') or int((desktop or {}).get('model_context_tokens',self.profile['context_tokens']))):yield
+            with owned_context(self.effective_parameters().get('context_tokens') or int((desktop or {}).get('model_context_tokens',self.profile['context_tokens'])),
+                               endpoint=self.endpoint_for(endpoint),requested_endpoint=endpoint,on_generation=self.record_generation):yield
         finally:
             with self.lock:
                 self.active=max(0,self.active-1)
@@ -313,4 +377,6 @@ class ManagedLlamaProcess:
             except (ValueError,IndexError):return None
         return {'owned_pid':self.proc.pid if self.proc and self.proc.poll() is None else None,
                 'context_tokens':value('--ctx-size'),'gpu_layers':value('--n-gpu-layers'),'cpu_threads':value('--threads'),
+                'endpoint':self._bound_endpoint,'recovery_detail':self.recovery_detail,'cpu_fallback':self._force_cpu,
+                'generated_at':self.generated_at,'generation_count':self.generation_count,
                 'pending_reload':bool(self._requested_command is not None and self._launch_command!=self._requested_command)}

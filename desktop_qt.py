@@ -481,7 +481,13 @@ class StudioWindow(QMainWindow):
             if dialog and dialog.isVisible():dialog.populate(data);dialog.status.setText(str(len(data))+' fotogramas importados; los estados ambiguos se pueden corregir.')
         elif kind=='network':self.director.network(data['online'] is not False)
         elif kind=='resources':
-            self.resource_line.setText(' · '.join(name+': '+number(value['ram_mb'],0)+' MB' for name,value in data.get('processes',{}).items()))
+            runtime=self.controller.assistant._managed_model.effective_parameters()
+            detail=' · '.join(name+': '+number(value['ram_mb'],0)+' MB' for name,value in data.get('processes',{}).items())
+            if runtime.get('owned_pid'):
+                detail+='\nIA en uso: '+str(runtime['context_tokens'])+' tokens · '+str(runtime['gpu_layers'])+' capas solicitadas en GPU · '+str(runtime['cpu_threads'])+' hilos CPU.'
+                if runtime.get('cpu_fallback'):detail+=' Recuperación en CPU activa.'
+            if runtime.get('recovery_detail'):detail+='\n'+runtime['recovery_detail']
+            self.resource_line.setText(detail)
         elif kind=='command_result':
             cmd=data.get('command') or {}
             if cmd.get('action')=='verify_pending' and 'require' in cmd and not data.get('ok'):self._review_overrides.pop(cmd.get('id'),None);self.pending_selected()
@@ -738,11 +744,14 @@ class StudioWindow(QMainWindow):
         for i,row in enumerate(self.controller.log_rows):
             state=str(row.get('state') or row.get('operation') or 'SISTEMA');module=str(row.get('symbol') or 'AKIRA');text=str(row.get('detail') or row.get('message') or '')
             category=category_for_event(row)
-            item=(str(row.get('event_id') or str(row.get('utc'))+module+state+text[:80]),[str(row.get('utc',''))[11:19],module,state,text],{**row,'activity_category':category})
+            stamp=when(row.get('utc'),self.cfg)
+            clock_match=re.search(r'\b\d{2}:\d{2}:\d{2}\b',stamp)
+            item=(str(row.get('event_id') or str(row.get('utc'))+module+state+text[:80]),[clock_match.group(0) if clock_match else stamp,module,state,text],{**row,'activity_category':category})
             rows.append(item)
             if not query or query in (module+state+text).casefold():terminal_rows.append(item)
         if not visible_only or self.page_index==7:self.terminal_table.update_rows(terminal_rows)
         if not visible_only or self.page_index==0:
+            for tab in self.activity_tabs:tab.setChecked(tab.property('activity_filter')==kind)
             selected=[r for r in rows if kind=='TODOS' or r[2]['activity_category']==kind][:120]
             self.activity.update_rows(selected);self.activity.setVisible(bool(selected));self.activity_empty.setVisible(not selected)
             if not selected:
@@ -754,6 +763,7 @@ class StudioWindow(QMainWindow):
     def render_notices(self):
         if not hasattr(self,'home_notices'):return
         rows=self.controller.notices.list(limit=4);self.home_notices.setText('\n\n'.join(str(r.get('title'))+'\n'+('Detalle oculto por privacidad.' if self.private else str(r.get('body'))[:160]) for r in rows) or 'Sin avisos recientes.')
+        self.home_notices.setToolTip('' if self.private else '\n\n'.join(str(r.get('title'))+'\n'+str(r.get('body')) for r in rows))
     def render_terminal(self):
         self.render_logs(visible_only=True)
         if time.monotonic()<getattr(self,'_report_due',0):return
@@ -1091,12 +1101,21 @@ class StudioWindow(QMainWindow):
         form.addRow(self.text('Micrófono'),self.voice_input);form.addRow(self.text('Salida de audio'),self.voice_output);form.addRow(self.text('Voz'),self.voice_selector);layout.addLayout(form)
         row=FlowLayout();row.addWidget(self.btn('BUSCAR VOCES',lambda:self.load_voices(True)));row.addWidget(self.btn('DESCARGAR VOZ',self.download_voice));row.addWidget(self.btn('DESCARGAR TODAS LAS VOCES',self.download_all_voices));row.addWidget(self.btn('CANCELAR DESCARGA',self.cancel_voice_download));layout.addLayout(row)
         layout.addWidget(self.btn('PROBAR VOZ',self.preview_voice))
+        self.voice_error=label('','body',INK['pink']);self.voice_error.setWordWrap(True);self.voice_error.hide();layout.addWidget(self.voice_error)
+        self.voice_level=QProgressBar();self.voice_level.setRange(0,100);self.voice_level.setValue(0);self.voice_level.setFormat('Micrófono · %p%');layout.addWidget(self.voice_level)
         self.voice_transcript=QLineEdit();self.voice_transcript.hide()
         note=label('Conversación hablada. Tu micrófono no se publica ni se guarda en el chat. Pulsa Interrumpir para cortar la respuesta y volver a hablar.','muted');note.setWordWrap(True);layout.addWidget(note)
         row=FlowLayout()
-        for text,callback in [('INICIAR LLAMADA',self.start_call),('SILENCIAR',lambda:self.controller.voice.pause() if self.controller.voice else None),('REANUDAR',lambda:self.controller.voice.resume() if self.controller.voice else None),('INTERRUMPIR',self.controller.cancel_call),('FINALIZAR LLAMADA',self.stop_call)]:row.addWidget(self.btn(text,callback))
+        self.call_buttons={}
+        for text,callback in [('INICIAR LLAMADA',self.start_call),('SILENCIAR',lambda:self.controller.voice.pause() if self.controller.voice else None),('REANUDAR',lambda:self.controller.voice.resume() if self.controller.voice else None),('INTERRUMPIR',self.controller.cancel_call),('FINALIZAR LLAMADA',self.stop_call)]:
+            widget=self.btn(text,callback);self.call_buttons[text]=widget;row.addWidget(widget)
         layout.addLayout(row)
-        dialog.finished.connect(lambda _:self.stop_call());dialog.show();self.load_voices(False)
+        dialog.finished.connect(lambda _:self.stop_call());dialog.show();self.update_call_controls();self.load_voices(False)
+    def update_call_controls(self):
+        voice=self.controller.voice;active=bool(voice and not voice.stop_event.is_set())
+        paused=bool(active and voice.paused.is_set())
+        for name,widget in getattr(self,'call_buttons',{}).items():
+            widget.setEnabled(not active if name=='INICIAR LLAMADA' else active and paused if name=='REANUDAR' else active and not paused if name=='SILENCIAR' else active)
     def load_voices(self,online=False):
         def load():
             from voice_session import audio_inventory,voice_inventory
@@ -1140,6 +1159,7 @@ class StudioWindow(QMainWindow):
         if not self.voice_selector.count():status='No se encontraron voces. Pulsa Buscar voces para consultar el catálogo en Internet.'
         self.voice_state.setText(' · '.join([p for p in problems if p]+[status]))
     def start_call(self):
+        if self.controller.voice and not self.controller.voice.stop_event.is_set():return
         voice=self.voice_selector.currentData()
         if not voice or not voice.get('installed'):self.show_error('Selecciona o descarga una voz compatible con el idioma elegido.');return
         from voice_session import VoiceSession
@@ -1150,6 +1170,7 @@ class StudioWindow(QMainWindow):
         self.controller.save(draft)
         self.controller.voice=VoiceSession(self.controller.folder,lambda data:self.controller.emit('voice',data),options,voice)
         self.controller.begin_call(self.controller.voice);self.controller.voice.start()
+        self.voice_error.clear();self.voice_error.hide();self.update_call_controls()
     def preview_voice(self):
         row=self.voice_selector.currentData()
         if not row or not row.get('installed'):self.voice_state.setText('Selecciona una voz instalada para escucharla.');return
@@ -1166,14 +1187,24 @@ class StudioWindow(QMainWindow):
         preview=getattr(self,'_voice_preview',None)
         if preview:preview.stop();self._voice_preview=None
         self.director.playback(False);self.director.publish('idle',force=True)
+        self.update_call_controls()
     def voice_event(self,data):
         voice=self.controller.voice
         preview=getattr(self,'_voice_preview',None)
         if not voice or data.get('session_id')!=voice.session_id:
             if not preview or data.get('session_id')!=preview.session_id:return
         kind=data.get('kind');text=data.get('text','')
-        if hasattr(self,'voice_state'):self.voice_state.setText('Preparando respuesta hablada…' if kind=='final' else 'Escuchando…' if kind=='partial' else text or kind)
+        self.update_call_controls()
+        if kind=='input_level':
+            if hasattr(self,'voice_level'):self.voice_level.setValue(min(100,round(float(data.get('level',0))*800)))
+            return
+        if kind=='playback_level':self.director.level(data.get('level',0));return
+        if kind in ('turn_started','playback_start') and hasattr(self,'voice_error'):self.voice_error.clear();self.voice_error.hide()
+        labels={'final':'Preparando respuesta hablada…','partial':'Escuchando…','turn_started':'Pensando la respuesta…',
+                'playback_start':'Hablando…','playback_end':'Terminando respuesta…'}
+        if hasattr(self,'voice_state'):self.voice_state.setText(labels.get(kind,text or kind))
         if kind=='error':
+            if hasattr(self,'voice_error'):self.voice_error.setText(str(text));self.voice_error.show()
             try:self.controller.reporter.event('VOZ','ERROR | '+str(text),state='ERROR',detail=str(text),severity='ERROR')
             except OSError:pass
         if kind=='partial':pass

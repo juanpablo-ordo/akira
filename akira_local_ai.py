@@ -29,11 +29,24 @@ def visible_output(callback):
     finally:_CONTEXT.visible=previous
 
 @contextmanager
-def owned_context(tokens):
+def owned_context(tokens, endpoint=None, requested_endpoint=None, on_generation=None):
     """Actual owned server context, scoped to this request's worker thread."""
     previous=getattr(_CONTEXT,'tokens',None);_CONTEXT.tokens=int(tokens)
+    previous_endpoint=getattr(_CONTEXT,'endpoint',None)
+    previous_generation=getattr(_CONTEXT,'on_generation',None);_CONTEXT.on_generation=on_generation
+    if endpoint:_CONTEXT.endpoint=(requested_endpoint or endpoint,endpoint)
     try:yield
-    finally:_CONTEXT.tokens=previous
+    finally:_CONTEXT.tokens=previous;_CONTEXT.endpoint=previous_endpoint;_CONTEXT.on_generation=previous_generation
+
+def confirm_generation(result):
+    callback=getattr(_CONTEXT,'on_generation',None)
+    message=result.get('message',{}) if isinstance(result,dict) else {'content':result}
+    if callback and (message.get('content') or message.get('tool_calls')):callback()
+    return result
+
+def owned_endpoint(endpoint):
+    mapping=getattr(_CONTEXT,'endpoint',None)
+    return mapping[1] if mapping and endpoint==mapping[0] else endpoint
 
 def owned_context_tokens():
     """Return the running owned server's context, without probing or loading it."""
@@ -257,6 +270,7 @@ def _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_
     return output
 
 def status(endpoint='http://127.0.0.1:11434/api/chat',force=False):
+    endpoint=owned_endpoint(endpoint)
     now=time.monotonic()
     with _STATUS_LOCK:
         if not force and _STATUS.get('endpoint')==endpoint and _STATUS.get('ok') is not None and now-float(_STATUS.get('when') or 0)<15:
@@ -312,8 +326,9 @@ def _clean(text):
 
 def chat(messages,model='qwen3:8b',endpoint='http://127.0.0.1:11434/api/chat',timeout=90,
          tools=None,options=None,keep_alive='90s',raw=False,think=False,cancel_event=None,response_format=None):
+    endpoint=owned_endpoint(endpoint)
     if _direct_local_engine(endpoint):
-        return _direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_event,response_format)
+        return confirm_generation(_direct_chat(messages,model,endpoint,timeout,tools,options,raw,think,cancel_event,response_format))
     payload={'model':model,'messages':messages,'stream':False,'think':bool(think),'keep_alive':keep_alive,
              'options':{'temperature':0.15,'num_ctx':8192,'num_predict':3000,'top_p':0.90,'num_thread':max(2,min(4,(os.cpu_count() or 4)//2))}}
     if options: payload['options'].update(options)

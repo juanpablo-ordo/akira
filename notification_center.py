@@ -26,7 +26,11 @@ class NotificationCenter:
         finally:db.close()
     def add(self,title,body,severity='info',category='system'):
         with self.db() as db:
-            cur=db.execute('INSERT INTO notices(at,title,body,severity,category) VALUES (?,?,?,?,?)',(self.clock(),safe_text(title),safe_text(body),severity,category))
+            now=self.clock();title=safe_text(title);body=safe_text(body)
+            db.execute('BEGIN IMMEDIATE')
+            if category=='system' and db.execute('SELECT 1 FROM notices WHERE title=? AND body=? AND severity=? AND category=? AND at>=? LIMIT 1',
+                (title,body,severity,category,now-60)).fetchone():return None
+            cur=db.execute('INSERT INTO notices(at,title,body,severity,category) VALUES (?,?,?,?,?)',(now,title,body,severity,category))
             db.execute('DELETE FROM notices WHERE id NOT IN (SELECT id FROM notices ORDER BY id DESC LIMIT 1000)')
             return cur.lastrowid
     def list(self,query='',limit=200):

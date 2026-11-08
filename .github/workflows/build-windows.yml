@@ -12,6 +12,7 @@ on:
       - akira-rev19-actividad-voz-riesgo-20261106
       - akira-rev20-voz-recursos-aprendizaje-20261107
       - akira-rev21-gpu-ondas-estabilidad-20261107
+      - akira-rev22-recuperacion-llamada-20261108
 
 permissions:
   contents: read
@@ -96,7 +97,7 @@ jobs:
       - name: Verificar mejoras GPU, ondas y selector FPS
         shell: pwsh
         run: |
-          python -m pytest -q tests/test_rev21_stability.py
+          python -m pytest -q tests/test_rev21_stability.py tests/test_rev22_recovery_call.py
           if ($LASTEXITCODE -ne 0) { throw 'Rev21 GPU/ondas no pasó; no compilar' }
 
       - name: Leer biblioteca y derivados públicos reales antes de compilar
@@ -373,7 +374,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.5.4-Studio-Rev19-nucleo-verificable-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.5.4-Correccion22-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

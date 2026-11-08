@@ -87,7 +87,8 @@ def status(gateway, snapshot, refresh=False):
         funding=sum(v for k,v in metrics['cashflows'].items() if k not in known) if saved else 0.0
         peak=max(metrics['balance_peak'], amount(saved,'peak')+funding, equity)
         drawdown=max(0.0,(peak-equity)/peak*100) if peak>0 else 100.0
-        reference=dict(peak=peak,cashflows=metrics['cashflows'])
+        # A rolling broker-history window must not make an old deposit new again.
+        reference=dict(peak=peak,cashflows={**known,**metrics['cashflows']})
         if reference!=saved:
             gateway.journal.data['capital_guard']=reference
             if not saved or now-getattr(gateway,'_capital_last_save',0)>=5 or drawdown>=cfg['max_drawdown_pct']:

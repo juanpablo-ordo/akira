@@ -194,6 +194,16 @@ def market_activity(view,symbol):
     if view.get('connected') is False:state='Sin conexión con MT5';detail='Esperando el terminal; no se envían nuevas órdenes.'
     elif market.get('scheduled_closed'):
         state='Mercado cerrado';detail=human(status.get('detail') or market.get('state') or 'Esperando la sesión de este instrumento.')
+        plan=row.get('preopen_plan') or {}
+        if plan:
+            state='Mercado cerrado · '+('plan preparado' if plan.get('state')=='PREPARED' else 'preparando reapertura')
+            detail=str(plan.get('detail') or detail)
+            week=plan.get('weekly') or {}
+            if week:detail+=' Rango observado: '+str(week.get('low','—'))+' a '+str(week.get('high','—'))+'.'
+            if plan.get('next_open'):detail+=' Próxima sesión: '+str(plan['next_open'])+'.'
+            detail+=' Al abrir se comprobarán gap, spread, estructura y aprobación IA.'
+    elif (view.get('capital_protection') or {}).get('allowed') is False:
+        state='Protección de capital';detail=str(view['capital_protection'].get('reason') or 'Revisando el presupuesto de esta cuenta.')
     checked=row.get('checked_at');now=view.get('as_of_utc') or view.get('updated')
     try:
         age=float(now)-float(checked) if checked else None

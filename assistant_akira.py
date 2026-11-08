@@ -352,12 +352,14 @@ class AkiraAssistant:
                 'pending_cycle':v.get('pending_cycle',{}),'runner':v.get('runner',{}),
                 'decision':v.get('decision',{}),
                 'allocation_checks':(v.get('allocation_checks') or [])[:8],
+                'preopen_plan':v.get('preopen_plan') or {},
             }
         research=snapshot.get('research',{}) or {}
         return {
             'as_of_utc':snapshot.get('as_of_utc'),'connected':snapshot.get('connected'),
             'error':snapshot.get('error',''),'build':snapshot.get('build'),
             'conversation_memory':snapshot.get('conversation_memory',{}),
+            'learning_status':snapshot.get('learning_status',{}),
             'capital_protection':snapshot.get('capital_protection',{}),'trade_risk_cap':snapshot.get('trade_risk_cap'),'reserved_risk':snapshot.get('reserved_risk'),
             'risk_cap':snapshot.get('risk_cap'),'execution_block':snapshot.get('execution_block',''),
             'portfolio_risk':{**(snapshot.get('portfolio_risk') or {}),
@@ -1371,7 +1373,7 @@ class AkiraAssistant:
                             if isinstance(exc,BackgroundDeferred):self._managed_model_boot_attempted=False
                             self._model_inference_verified=False
                             self._model_inference_error=type(exc).__name__+': '+str(exc)[:250]
-                    remote=ollama_status(endpoint,force=True)
+                    remote=ollama_status(self._managed_model.endpoint_for(endpoint),force=True)
                     if not remote.get('ok'):
                         if self._managed_model_boot_attempted and not self._model_inference_verified:
                             row={'ready':False,'mode':'IA LOCAL NO INICIADA','phase':'FAILED','models':[],
@@ -1381,10 +1383,11 @@ class AkiraAssistant:
                                  'detail':'IA instalada, liberada de memoria. Se cargará al conversar; REPARAR permite comprobar una respuesta ahora.',
                                  'models':[]}
                     else:
-                        ready=bool(self._model_inference_verified)
+                        stamp=getattr(self._managed_model,'generated_at',None)
+                        ready=bool(self._model_inference_verified or isinstance(stamp,(int,float)) and stamp>0)
                         row={'ready':ready,'mode':'LOCAL_PRIMARY' if ready else 'IA SIN VERIFICAR',
                              'phase':'READY' if ready else 'FAILED' if self._managed_model_boot_attempted else 'CHECKING',
-                             'detail':'Respuesta real de Qwen verificada; IA local disponible.' if ready else
+                             'detail':'Respuesta real del modelo verificada; IA local disponible.' if ready else
                                       'El motor se inició, pero NO generó una respuesta verificada: '+self._model_inference_error,
                              'models':remote.get('models') or []}
             else:

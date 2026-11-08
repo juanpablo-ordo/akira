@@ -982,8 +982,10 @@ class Engine:
                 self.status[symbol]={'state':'COTIZACIÓN NO DISPONIBLE','detail':str(e)}
                 self.runner_views[symbol]={'state':'COTIZACIÓN NO DISPONIBLE','detail':str(e)}
             except Blocked as e:
-                self.status[symbol]={'state':'ESPERANDO','detail':str(e)}
-                self.runner_views[symbol]={'state':'ESPERANDO','detail':str(e)}
+                detail=str(e)
+                state='REVISIÓN IA PENDIENTE' if detail.startswith('Revisión IA obligatoria:') else 'ENTRADA BLOQUEADA'
+                self.status[symbol]={'state':state,'detail':detail}
+                self.runner_views[symbol]={'state':state,'detail':detail}
             finally:
                 self.last_checked[symbol]=g.clock()
                 for event in self.event_reviews.values():

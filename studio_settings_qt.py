@@ -227,7 +227,7 @@ class SettingsPanel(QWidget):
         self.field(card,'assistant.local_runtime_model','Archivo GGUF local (opcional)')
         self.add_button(card,'ELEGIR MODELO GGUF',self.choose_gguf)
         note=label('El motor gratuito incluido es llama.cpp. Puedes elegir un modelo GGUF compatible más grande si dispones de RAM suficiente; no se descarga ni se activa hasta guardar. Más tamaño no garantiza mejores decisiones de trading.','muted');note.setWordWrap(True);card.body.addWidget(note)
-        self.field(card,'assistant.chat_warm_seconds','Conservar la IA entre mensajes (segundos)',limits=(0,60),help='Con 30 evita cargar otra vez el modelo si continúas conversando. Con 0 libera su memoria al terminar. No cambia el riesgo ni la frecuencia del motor.')
+        self.field(card,'assistant.chat_warm_seconds','Reserva adicional entre mensajes (segundos)',limits=(0,60),help='Mantiene el modelo disponible para seguir conversando. Con 0 no añade una reserva: sigue vigente el tiempo de Mantener modelo cargado de Apariencia → Rendimiento. No cambia el riesgo ni la frecuencia del motor.')
         for path,title in [('assistant.enabled','Asistente activado'),('assistant.allow_live_orders','Permitir solicitudes operativas explícitas del chat'),('assistant.local_runtime_enabled','Motor local incluido'),('assistant.cross_chat_memory','Usar memoria de otras conversaciones')]:
             if get(self.controller.cfg,path) is not None:self.field(card,path,title)
         note=label('Reparar comprueba archivos y una respuesta real. Si falta la IA incluida, intenta recuperarla con una descarga verificada de unos 2,5 GB. Espera el resultado antes de cerrar.','muted');note.setWordWrap(True);card.body.addWidget(note)
@@ -350,8 +350,8 @@ class SettingsPanel(QWidget):
     def persist_visual(self):
         if not hasattr(self,'autosave_timer'):return
         self.autosave_timer.stop();draft=self.draft();target=copy.deepcopy(self.controller.cfg);target['studio']=draft['studio']
-        for key in ('performance_profile','adaptive_resources','memory_budget_mb','model_context_tokens','model_keep_alive_seconds','model_use_gpu'):target['desktop'][key]=draft['desktop'][key]
-        target.dirty_paths={p for p in draft.dirty_paths if p.startswith('studio.') or p in ('desktop.performance_profile','desktop.adaptive_resources','desktop.memory_budget_mb','desktop.model_context_tokens','desktop.model_keep_alive_seconds','desktop.model_use_gpu')}
+        for key in ('performance_profile','adaptive_resources','low_resource_mode','memory_budget_mb','model_context_tokens','model_keep_alive_seconds','model_use_gpu'):target['desktop'][key]=draft['desktop'][key]
+        target.dirty_paths={p for p in draft.dirty_paths if p.startswith('studio.') or p in ('desktop.performance_profile','desktop.adaptive_resources','desktop.low_resource_mode','desktop.memory_budget_mb','desktop.model_context_tokens','desktop.model_keep_alive_seconds','desktop.model_use_gpu')}
         if target!=self.controller.cfg or target.dirty_paths:self.controller.save(target)
 
     def schedule_preview(self,*args):

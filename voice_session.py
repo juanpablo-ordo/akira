@@ -249,6 +249,33 @@ def clean_speech(text):
  text=re.sub(r'\[([^\]]+)\]\(https?://[^)]+\)',r'\1',str(text))
  return re.sub(r'https?://\S+','fuente consultada',text).replace('★','').replace('☆','')[:4000]
 
+def playback_format(sd,device,rate,channels,dtype):
+ """Negotiate the selected output, including Bluetooth devices requiring 48 kHz."""
+ info=sd.query_devices(device,'output')
+ maximum=int(info.get('max_output_channels',0))
+ if maximum<1:raise RuntimeError('La salida seleccionada no puede reproducir audio.')
+ native=int(info.get('default_samplerate') or rate)
+ candidates=[(rate,channels),(native,channels),(native,min(2,maximum)),(native,1)]
+ for chosen_rate,chosen_channels in dict.fromkeys(candidates):
+  if chosen_channels>maximum:continue
+  try:sd.check_output_settings(device=device,samplerate=chosen_rate,channels=chosen_channels,dtype=dtype)
+  except Exception:continue
+  return chosen_rate,chosen_channels
+ raise RuntimeError('La salida seleccionada no acepta audio. Comprueba el dispositivo de Windows y prueba la voz.')
+
+def convert_playback(raw,dtype,source_rate,target_rate,source_channels,target_channels):
+ import numpy as np
+ samples=np.frombuffer(raw,dtype=dtype).reshape((-1,source_channels)).astype('float64')
+ if target_channels!=source_channels:
+  samples=samples.mean(axis=1,keepdims=True)
+  if target_channels>1:samples=np.repeat(samples,target_channels,axis=1)
+ if source_rate!=target_rate and len(samples):
+  count=max(1,round(len(samples)*target_rate/source_rate))
+  positions=np.arange(count)*source_rate/target_rate
+  samples=np.stack([np.interp(positions,np.arange(len(samples)),samples[:,c]) for c in range(samples.shape[1])],axis=1)
+ limit=np.iinfo(dtype)
+ return np.clip(np.rint(samples),limit.min,limit.max).astype(dtype).tobytes()
+
 def render_speech(data,cache=None):
  voice=data['voice'];path=data['path'];text=clean_speech(data['text']);cache={} if cache is None else cache
  if voice['engine']=='piper':
@@ -339,7 +366,11 @@ class VoiceSession:
   self.last_text='';self.samples=[];self._threads=[];self._revision=0
   self.speech_chunks=queue.Queue(maxsize=32);self._response_streaming=threading.Event();self._speech_queue_thread=None;self._speech_server=None;self._speech_epoch=0
   self._speech_queue_lock=threading.Lock()
- def event(self,kind,**data):self.emit({'kind':kind,'session_id':self.session_id,**data})
+  self.last_error='';self._speech_pending=0
+ def event(self,kind,**data):
+  if kind=='error':self.last_error=str(data.get('text',''))
+  elif kind in ('turn_started','playback_start'):self.last_error=''
+  self.emit({'kind':kind,'session_id':self.session_id,**data})
  def start(self):
   if self.started:return
   self.started=True;self.event('state',text='Preparando reconocimiento. El modelo se instala una vez; todavía no grabo.')
@@ -365,35 +396,44 @@ class VoiceSession:
    except Exception:pass
   self.event('state',text='Llamada finalizada · Micrófono desactivado')
  def interrupt(self):
-  self._speech_epoch+=1;self._response_streaming.clear()
+  with self._speech_queue_lock:
+   self._speech_epoch+=1;self._response_streaming.clear();self._speech_pending=0
+   while True:
+    try:self.speech_chunks.get_nowait()
+    except queue.Empty:break
   if self._speech_server:self._speech_server.close()
-  while True:
-   try:self.speech_chunks.get_nowait()
-   except queue.Empty:break
   self.interrupt_event.set()
   if self.process and self.process.poll() is None:
    try:self.process.terminate()
    except OSError:pass
   self.awaiting.clear()
  def start_response(self):
-  self.interrupt_event.clear();self._response_streaming.set();self.awaiting.set();self.event('state',text='Pensando la respuesta…')
+  self.interrupt_event.clear();self._response_streaming.set();self.awaiting.set();self.event('turn_started');self.event('state',text='Pensando la respuesta…')
  def finish_response(self):
   self._response_streaming.clear()
-  if self.speech_chunks.empty() and not self.speaking.is_set():self.awaiting.clear();self.event('state',text='Escuchando')
+  with self._speech_queue_lock:
+   if not self._speech_pending and not self.speaking.is_set():self.awaiting.clear();self.event('state',text='Escuchando')
  def enqueue_speech(self,text):
   if self.stop_event.is_set() or self.interrupt_event.is_set():return
-  try:self.speech_chunks.put_nowait((self._speech_epoch,str(text)))
+  try:
+   with self._speech_queue_lock:
+    self.speech_chunks.put_nowait((self._speech_epoch,str(text)));self._speech_pending+=1
   except queue.Full:self.event('error',text='Respuesta de voz demasiado larga');return
   def work():
    while not self.stop_event.is_set():
     try:epoch,piece=self.speech_chunks.get(timeout=.2)
     except queue.Empty:
      continue
-    if epoch!=self._speech_epoch:continue
-    while self.speaking.is_set() and not self.stop_event.is_set() and epoch==self._speech_epoch:self.stop_event.wait(.03)
-    if epoch!=self._speech_epoch or self.stop_event.is_set():continue
-    self.speak(piece,expected_epoch=epoch)
-    while self.speaking.is_set() and not self.stop_event.is_set():self.stop_event.wait(.03)
+    try:
+     if epoch!=self._speech_epoch:continue
+     while self.speaking.is_set() and not self.stop_event.is_set() and epoch==self._speech_epoch:self.stop_event.wait(.03)
+     if epoch!=self._speech_epoch or self.stop_event.is_set():continue
+     self.speak(piece,expected_epoch=epoch)
+     while self.speaking.is_set() and not self.stop_event.is_set():self.stop_event.wait(.03)
+    finally:
+     with self._speech_queue_lock:
+      if epoch==self._speech_epoch:self._speech_pending=max(0,self._speech_pending-1)
+      if not self._speech_pending and not self._response_streaming.is_set() and not self.speaking.is_set():self.awaiting.clear()
    if not self._response_streaming.is_set() and not self.speaking.is_set():self.awaiting.clear()
   with self._speech_queue_lock:
    if self._speech_queue_thread and self._speech_queue_thread.is_alive():return
@@ -464,6 +504,7 @@ class VoiceSession:
     if overflow:self.event('state',text='Audio saturado · revisa el dispositivo')
     if self.paused.is_set() or self.awaiting.is_set() or self.speaking.is_set():continue
     chunk=data[:,0].copy()
+    self.event('input_level',level=float(np.sqrt(np.mean(chunk*chunk))))
     if rate!=16000:chunk=np.interp(np.linspace(0,len(chunk)-1,1600),np.arange(len(chunk)),chunk).astype('float32')
     try:self.audio.put_nowait(chunk)
     except queue.Full:self._revision+=1;self._drain();self.event('state',text='Recuperando audio; habla en frases más cortas')
@@ -507,20 +548,21 @@ class VoiceSession:
       width=wav.getsampwidth();rate=wav.getframerate();channels=wav.getnchannels();device=self.options.get('output_device')
       if width not in (2,4):raise RuntimeError('Formato de audio no compatible')
       dtype='int16' if width==2 else 'int32';device=None if device in (None,-1,'') else int(device)
-      with sd.RawOutputStream(samplerate=rate,channels=channels,dtype=dtype,device=device) as output:
+      output_rate,output_channels=playback_format(sd,device,rate,channels,dtype)
+      with sd.RawOutputStream(samplerate=output_rate,channels=output_channels,dtype=dtype,device=device) as output:
        self.event('playback_start')
        while not cancelled():
         raw=wav.readframes(max(1,int(rate*.1)))
         if not raw:break
         level=float(np.sqrt(np.mean((np.frombuffer(raw,dtype=dtype).astype('float64')/float(2**(width*8-1)))**2)))
         self.event('playback_level',level=level)
-        output.write(raw)
+        output.write(raw if (rate,channels)==(output_rate,output_channels) else convert_playback(raw,dtype,rate,output_rate,channels,output_channels))
    except Exception as exc:
     if not cancelled():self.event('error',text=str(exc)[:400])
    finally:
     self.event('playback_end')
     self.process=None;self.speaking.clear();self._drain()
-    if not self._response_streaming.is_set() and self.speech_chunks.empty():self.awaiting.clear()
+    if not self._response_streaming.is_set() and not self._speech_pending:self.awaiting.clear()
     if not self.stop_event.is_set():self.event('state',text=('Micrófono silenciado' if self.paused.is_set() else 'Reanudando escucha') if self.started else 'Demostración terminada · micrófono desactivado')
   self._threads=[t for t in self._threads if t.is_alive()]
   thread=threading.Thread(target=work,name='AkiraSpeech',daemon=True);self._threads.append(thread);thread.start()

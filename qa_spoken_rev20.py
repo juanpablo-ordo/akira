@@ -77,8 +77,10 @@ def run(report,voice_root,app=None,exe=None,model=None):
             assistant.chats.remember('Mi activo favorito es el oro.')
             assistant.chats=ChatStore(root)  # Recover the explicit memory from disk.
             events=[];output={'bytes':0,'first_audio_seconds':None};began=time.monotonic()
+            def output_settings(**kwargs):
+                if (kwargs['samplerate'],kwargs['channels'])!=(48000,2):raise ValueError('La salida sintética exige 48 kHz estéreo')
             class Output:
-                def __init__(self,**kwargs):pass
+                def __init__(self,**kwargs):output_settings(**kwargs)
                 def __enter__(self):return self
                 def __exit__(self,*args):pass
                 def write(self,raw):
@@ -86,7 +88,8 @@ def run(report,voice_root,app=None,exe=None,model=None):
                     if output['first_audio_seconds'] is None:output['first_audio_seconds']=round(time.monotonic()-began,3)
             voice=VoiceSession(root,events.append,{'streaming_call':True},selected)
             real_server=SpeechServer
-            with patch.dict(sys.modules,{'sounddevice':NS(RawOutputStream=Output)}),patch('voice_session.SpeechServer',side_effect=lambda:real_server(command=[str(Path(app).resolve())] if app else None)):
+            with patch.dict(sys.modules,{'sounddevice':NS(RawOutputStream=Output,check_output_settings=output_settings,
+                    query_devices=lambda *args:{'max_output_channels':2,'default_samplerate':48000})}),patch('voice_session.SpeechServer',side_effect=lambda:real_server(command=[str(Path(app).resolve())] if app else None)):
                 call=CallConversation(assistant,lambda:cfg,lambda:{'connected':True,
                     'account':{'balance':50,'equity':50,'currency':'USD'},
                     'status':{'BTCUSDm':{'state':'SYNTHETIC QA'},'XAUUSDm':{'state':'SYNTHETIC QA'}}},voice)
@@ -113,7 +116,7 @@ def run(report,voice_root,app=None,exe=None,model=None):
                     if assistant.chats.history():raise AssertionError('El micrófono se escribió en ChatStore')
                     turns.append({'recognized':question,'reply':reply,'first_audio_seconds':output['first_audio_seconds'],
                         'metrics':dict(call.metrics),'audio_bytes':output['bytes']-before})
-                result.update(audio_output=output,turns=turns,chat_messages=0,
+                result.update(audio_output=output,turns=turns,chat_messages=0,negotiated_output='48000 Hz stereo',
                     persistent_memory_recovered=True,effective_parameters=runtime.effective_parameters())
                 call.close();voice.stop()
         result['status']='PASSED'
