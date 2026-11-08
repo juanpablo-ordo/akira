@@ -306,11 +306,14 @@ class AvatarWidget(QWidget):
 
 class SignalWave(QWidget):
     def __init__(self,parent=None):
-        super().__init__(parent);self.setFixedHeight(32);self.saving=False;self.timer=QTimer(self);self.timer.setInterval(125);self.timer.timeout.connect(self.tick)
+        super().__init__(parent);self.setFixedHeight(32);self.saving=False;self.timer=QTimer(self);self.timer.setInterval(33);self.timer.setTimerType(Qt.TimerType.PreciseTimer);self.timer.timeout.connect(self.tick)
     def set_saving(self,saving):
         self.saving=bool(saving)
         if self.saving or not self.isVisible():self.timer.stop()
-        else:self.timer.start()
+        else:
+            profile=getattr(self.window(),'_visual_studio_profile','Equilibrado')
+            self.timer.setInterval(16 if profile=='Rendimiento' else 33 if profile=='Equilibrado' else 100)
+            self.timer.start()
         self.update()
     def showEvent(self,event):
         super().showEvent(event);self.set_saving(self.saving)

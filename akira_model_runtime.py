@@ -31,13 +31,16 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
     """Starting recommendation, not a promise of fixed RAM/VRAM consumption."""
     # Auto mode reads this PC. Unknown GPU memory is zero, not an assumed 8 GB.
     detected={}
-    if ram_gb is None:
+    if ram_gb is None or gpu_vram_gb is None:
         from resource_optimizer import desktop_hardware
         detected=desktop_hardware()
+    if ram_gb is None:
         try:
-            import psutil
-            ram_gb=psutil.virtual_memory().total/1073741824
-        except (ImportError,OSError):ram_gb=4
+            ram_gb=float(detected.get('ram_gb') or 0)
+            if ram_gb<=0:
+                import psutil
+                ram_gb=psutil.virtual_memory().total/1073741824
+        except (ImportError,OSError,TypeError,ValueError):ram_gb=4
     if cpu_cores is None:
         cpu_cores=os.cpu_count() or 2
         try:
@@ -46,7 +49,7 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
         else:
             try:cpu_cores=len(psutil.Process().cpu_affinity())
             except (psutil.Error,OSError,AttributeError):pass
-    vram=max(0,float(gpu_vram_gb or 0))
+    vram=max(0,float(detected.get('gpu_vram_gb') or 0) if gpu_vram_gb is None else float(gpu_vram_gb))
     ram=max(1,float(ram_gb))
     # A 4B Q4 model has headroom; large 14B/30B models saturate 8GB cards.
     return {
@@ -56,6 +59,7 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
         'cpu_threads':min(6,max(1,int(cpu_cores)//2)),
         'logical_cores':max(1,int(cpu_cores)),
         'detected_ram_gb':round(ram,2),
+        'detected_gpu_vram_gb':round(vram,2),
         'physical_cores':int(detected.get('physical_cores') or max(1,int(cpu_cores)//2)),
         'detected_gpus':detected.get('gpus',[]),
         'dedicated_gpu':bool(detected.get('dedicated_gpu')) or vram>=8,

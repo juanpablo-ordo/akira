@@ -163,8 +163,8 @@ class StudioWindow(QMainWindow):
         self.sidebar=QFrame();self.sidebar.setObjectName('sidebar');self.sidebar.setFixedWidth(205);box=QVBoxLayout(self.sidebar);box.setContentsMargins(13,14,13,13);box.setSpacing(9)
         self.brand=label('AKIRA','brand');self.brand.setAlignment(Qt.AlignmentFlag.AlignCenter);self.brand.setWordWrap(True);box.addWidget(self.brand)
         box.addWidget(self.lbl('ASISTENTE · MT5','micro'))
-        panel=self.card('','');panel.title.hide();panel.body.removeItem(panel.heading);panel.setMaximumHeight(222);panel.body.setContentsMargins(6,7,6,9);self.avatar(panel.body,154)
-        self.ai_label=label('IA · comprobando','body',INK['cyan']);self.ai_label.setAlignment(Qt.AlignmentFlag.AlignCenter);self.ai_label.setWordWrap(True);panel.body.addWidget(self.ai_label);box.addWidget(panel)
+        panel=self.card('','');panel.title.hide();panel.body.removeItem(panel.heading);panel.setFixedHeight(222);panel.body.setContentsMargins(6,7,6,9);self.avatar(panel.body,154)
+        self.ai_label=label('IA · comprobando','body',INK['cyan']);self.ai_label.setAlignment(Qt.AlignmentFlag.AlignCenter);self.ai_label.setWordWrap(True);self.ai_label.setFixedHeight(38);panel.body.addWidget(self.ai_label);box.addWidget(panel)
         self.nav=[];scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         menu=QWidget();nav_box=QVBoxLayout(menu);nav_box.setContentsMargins(0,0,0,0);nav_box.setSpacing(5);scroll.setWidget(menu)
         for index,(name,glyph) in enumerate(zip(NAV,GLYPHS)):
@@ -363,7 +363,7 @@ class StudioWindow(QMainWindow):
         QApplication.instance().setApplicationDisplayName(brand)
         from akira_version import BUILD_ID,REPAIR_ID
         self.setWindowTitle(brand+' · Studio · '+BUILD_ID.removeprefix('AKIRA_').replace('_STUDIO_',' · ').replace('_','.')+' · '+REPAIR_ID);desktop=effective_desktop(desktop or self.controller.cfg.get('desktop'));wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=.8 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
-        self._saving_ui=profile=='Ahorro de energía'
+        self._saving_ui=profile=='Ahorro de energía';self._visual_studio_profile=profile
         for wave in self.findChildren(SignalWave):wave.set_saving(self._saving_ui or bool(studio.get('reduce_motion')))
         if profile=='Ahorro de energía':wallpaper.update(fps=min(3,wallpaper.get('fps',30)),quality=min(50,wallpaper.get('quality',70)),max_cpu_percent=min(5,wallpaper.get('max_cpu_percent',10)))
         if desktop.get('low_resource_active') and wallpaper.get('type',wallpaper.get('kind')) in ('video','gif'):

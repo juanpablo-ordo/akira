@@ -10,6 +10,12 @@ from studio_widgets import Card,label,button,INK,Toggle
 from akira_studio import STATES,LOCALES,import_media,import_sprites,suggested_sequences,ordered_entries,import_language_pack
 
 
+def wallpaper_fps_choices(monitor_hz):
+    """The selected refresh rate may exceed the accepted wallpaper FPS range."""
+    hz=max(1,round(float(monitor_hz or 60)))
+    return sorted({12,24,30,60,90,120,144,min(144,hz)})
+
+
 STATE_TITLES={'idle':'En reposo','blink':'Parpadeo','listening':'Escuchando','talking':'Hablando','thinking':'Pensando','analyzing':'Analizando','happy':'Feliz','alert':'Alerta','sleeping':'Dormido','loading':'Cargando','connecting':'Conectando','waking':'Despertando','bullish':'Alcista','bearish':'Bajista','caring':'Cariñoso','surprised':'Sorprendido'}
 
 
@@ -275,7 +281,7 @@ class SettingsPanel(QWidget):
         self.media_name=label(Path(get(self.controller.cfg,'studio.wallpaper.file','')).name,'muted');card.body.addWidget(self.media_name)
         self.add_button(card,'ELEGIR IMAGEN',lambda:self.choose_media('image'));self.add_button(card,'ELEGIR VÍDEO',lambda:self.choose_media('video'));self.add_button(card,'ELEGIR GIF',lambda:self.choose_media('gif'));self.add_button(card,'AJUSTAR CON EL RATÓN',self.edit_wallpaper)
         self.field(card,'studio.wallpaper.loop','Reproducir en bucle');self.field(card,'studio.wallpaper.vsync','Adaptar al refresco del monitor',help='Limita los fotogramas al refresco de esta pantalla. La sincronización final de presentación la controla Windows.')
-        fps=sorted({12,24,30,60,90,120,144,max(1,round(self.window.screen().refreshRate() or 60))});self.field(card,'studio.wallpaper.fps','Fotogramas por segundo',[(n,str(n)+' FPS') for n in fps])
+        fps=wallpaper_fps_choices(self.window.screen().refreshRate());self.field(card,'studio.wallpaper.fps','Fotogramas por segundo',[(n,str(n)+' FPS') for n in fps])
         for key,title,low,high in [('opacity','Visibilidad del fondo',0,100),('quality','Calidad',20,100),('max_memory_mb','Memoria del fondo (MB)',32,512),('max_cpu_percent','CPU máxima del fondo (%)',1,40)]:self.field(card,'studio.wallpaper.'+key,title,limits=(low,high))
         self.fields['studio.wallpaper.max_memory_mb'][0].setToolTip('Límite del proceso decodificador en Windows. Los fotogramas de la interfaz tienen un presupuesto adicional acotado; no es un límite de memoria de toda la aplicación.')
         self.wallpaper_status=label('','muted');self.wallpaper_status.setWordWrap(True);card.body.addWidget(self.wallpaper_status)

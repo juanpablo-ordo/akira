@@ -5,7 +5,32 @@ Windows kernel guarantee. The user sees this distinction in the optimizer.
 """
 from __future__ import annotations
 import math
+from pathlib import Path
 from functools import lru_cache
+
+
+def detected_nvidia_vram_gb(runner=None):
+    """Read dedicated NVIDIA VRAM without truncated Win32 AdapterRAM."""
+    import os,re,subprocess
+    run=runner or subprocess.run
+    paths=['nvidia-smi']
+    nv=Path(os.environ.get('ProgramFiles','C:/Program Files'))/'NVIDIA Corporation'/'NVSMI'/'nvidia-smi.exe'
+    if nv.is_file():paths.append(str(nv))
+    for executable in paths:
+        try:
+            result=run([executable,'--query-gpu=memory.total','--format=csv,noheader,nounits'],
+                       capture_output=True,text=True,timeout=3,
+                       creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            if result.returncode:continue
+            values=[]
+            for line in result.stdout.splitlines():
+                match=re.fullmatch(r'\s*(\d{3,6})(?:\s+MiB)?\s*',line)
+                if match:
+                    mb=int(match.group(1))
+                    if 512<=mb<=131072:values.append(mb/1024)
+            if values:return round(max(values),2)
+        except (OSError,subprocess.TimeoutExpired,ValueError,TypeError):continue
+    return 0.0
 
 
 @lru_cache(maxsize=1)
@@ -27,6 +52,11 @@ def desktop_hardware():
                 result['dedicated_gpu']=any(any(n in str(g.get('Name','')).lower() for n in ('nvidia','geforce','quadro','radeon rx','radeon pro','intel arc')) for g in result['gpus'])
                 result['gpu_detection']='windows_cim'
             except (OSError,ValueError,subprocess.TimeoutExpired):pass
+            vram=detected_nvidia_vram_gb()
+            if vram:
+                result['gpu_vram_gb']=vram
+                result['dedicated_gpu']=True
+                result['gpu_detection']='windows_cim+nvidia_smi'
         return result
     except (ImportError,OSError):return {'ram_gb':0,'physical_cores':0,'logical_cores':0}
 
