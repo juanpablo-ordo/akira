@@ -1,6 +1,6 @@
 {
   ".gitattributes": "4c51e4f7ad01965964bcbc681943db08c7b82af8256bf63b0d45b14c9024d564",
-  ".github/workflows/build-windows.yml": "0b06fe0464df2120a932cdb4aa696b4ede77d0e6f62c856125b1cd98fab746e8",
+  ".github/workflows/build-windows.yml": "d6d7785f3fd44402bf5a5715a4de0c69a9b698e372db24851b741fc97ac5a239",
   ".gitignore": "8e9a2da7b06f023142ca46e39e97dd0c180af159cdeb1eb9811eef17e96b6282",
   "ACEPTACION_REV10.md": "20bcf59595e8af1ba1e93a24488ca26ec08e9d60036bf2e8a0ac4a6c5b245a40",
   "ACEPTACION_REV11.md": "927a90631e870382103757e266f166d5ec8920f649b8289bbfc9fdbd7870402f",
@@ -501,7 +501,7 @@
   "tests/test_core_rev19.py": "aaabe4481ce0d3522143d29b7c690af83dea9adfa7d765b0c23a9d269eb20edb",
   "GUIA_CORRECCION_20261107.md": "4224a8070d15d1ec7855513132a5f8f41d068235840a82669c177d23d7d3329d",
   "learning_status.py": "0dde77ae461c06b39a3932d48fd008d8533737fbad7539dee00c1289767c6c29",
-  "qa_spoken_rev20.py": "30b083fa70a35948b84053604ca8bd941b722ed6aa3004efaf3127cf062d0453",
+  "qa_spoken_rev20.py": "175cb4c8715a7c00bd0fe20a6608595db4ea30da0bd6c310d33a6554176d36cb",
   "startup_runtime.py": "411b86fd777e33aaed91061a35a3f12357c5316867e273f4aaddf62ba232033c",
   "tests/test_rev20_user_requests.py": "285479d15a81601efe1517e9735390f898809d0c5668d97f5ea77b523fa06443",
   "voice_conversation.py": "bc3aca17d10231d02f620066858efbfa899b084dcaacf8906ba9e91feeb9de7f",

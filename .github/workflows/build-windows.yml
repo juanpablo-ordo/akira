@@ -57,6 +57,13 @@ jobs:
           python -m installer.check_installed_ai --check-imports
           if ($LASTEXITCODE -ne 0) { throw 'El comprobador de instalación no puede importar sus validadores.' }
 
+      - name: Descargar y verificar la voz de prueba antes de compilar
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          python -c "import os; from pathlib import Path; from qa_spoken_rev20 import get_voice; print(get_voice(Path(os.environ['RUNNER_TEMP'])/'AKIRA_VOICE_CHECK')['id'])"
+          if ($LASTEXITCODE -ne 0) { throw 'La voz de prueba fijada no coincide con sus huellas SHA256.' }
+
       - name: Comprobar y aislar Tcl-Tk de Python antes de las regresiones
         shell: pwsh
         run: |

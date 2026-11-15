@@ -4,12 +4,16 @@ No microphone or broker is contacted. --app checks the actual windowed EXE's
 persistent speech worker, including the absence of stdin/stdout in that build.
 """
 import argparse,hashlib,json,os,sys,tempfile,threading,time,traceback,wave
+from http.client import IncompleteRead
 from pathlib import Path
 from types import SimpleNamespace as NS
 from unittest.mock import patch
 from urllib.request import urlopen
 
 VOICE='es_ES-davefx-medium'
+# Last upstream revision before the davefx retrain. Keep the audio fixture
+# stable so changes in Piper cannot alter the Whisper/conversation test.
+VOICE_REVISION='e7229f7d33a10e145e109b886d661984201ac3c4'
 FILES={'.onnx':'6658b03b1a6c316ee4c265a9896abc1393353c2d9e1bca7d66c2c442e222a917',
     '.onnx.json':'0e0dda87c732f6f38771ff274a6380d9252f327dca77aa2963d5fbdf9ec54842'}
 
@@ -18,8 +22,18 @@ def get_voice(root):
     for suffix,expected in FILES.items():
         path=folder/(VOICE+suffix)
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=expected:
-            with urlopen('https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium/'+VOICE+suffix,timeout=45) as response:payload=response.read(80_000_000)
-            if hashlib.sha256(payload).hexdigest()!=expected:raise ValueError('Voz de prueba sin verificar')
+            url=f'https://huggingface.co/rhasspy/piper-voices/resolve/{VOICE_REVISION}/es/es_ES/davefx/medium/{path.name}'
+            for attempt in range(3):
+                try:
+                    with urlopen(url,timeout=45) as response:
+                        payload=response.read(80_000_001)
+                    digest=hashlib.sha256(payload).hexdigest()
+                    if digest!=expected:
+                        raise ValueError(f'{path.name}: SHA256 esperado {expected}, recibido {digest} ({len(payload)} bytes)')
+                    break
+                except (OSError,IncompleteRead,ValueError):
+                    if attempt==2:raise
+                    time.sleep(2**attempt)
             path.write_bytes(payload)
     return {'engine':'piper','id':'piper:'+VOICE,'model':str(folder/(VOICE+'.onnx')),'speaker':0}
 
