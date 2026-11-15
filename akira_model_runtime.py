@@ -7,13 +7,64 @@ only; zero network/model downloads; financial Engine never imports this module.
 from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
-import os, socket, subprocess, sys, threading, time, weakref, json
+import os, re, socket, subprocess, sys, threading, time, weakref, json
 from urllib.parse import urlsplit, urlunsplit
 from urllib.request import urlopen
 from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME
 
 _SHARED=weakref.WeakValueDictionary()
 _SHARED_LOCK=threading.Lock()
+_VRAM_RESERVE_MIB=1024
+
+
+def _model_gpu(executable, run=subprocess.run):
+    """Use the bundled backend's available devices, including AMD and Intel."""
+    if executable.parent.name.lower()=='cpu':
+        return None
+    kwargs={'capture_output':True,'text':True,'encoding':'utf-8','errors':'replace',
+            'timeout':3,'creationflags':getattr(subprocess,'CREATE_NO_WINDOW',0)}
+    try:
+        probe=run([str(executable),'--list-devices'],**kwargs)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if probe.returncode:
+        return None
+    devices=[]
+    for line in (probe.stdout+'\n'+probe.stderr).splitlines():
+        match=re.fullmatch(r'\s*(Vulkan\d+):\s+(.+)\s+\((\d+) MiB, (\d+) MiB free\)\s*',line)
+        if match:
+            device,name,total,available=match.groups()
+            if any(marker in name.casefold() for marker in ('llvmpipe','swiftshader','basic render')):
+                continue
+            devices.append((device,name,int(total),int(available)))
+    if not devices:
+        return None
+
+    # Vulkan can report a per-process budget larger than the globally free
+    # memory reported by NVIDIA. Account for both when sizing the offload.
+    nvidia_free={}
+    if any('nvidia' in name.casefold() for _,name,_,_ in devices):
+        try:
+            probe=run(['nvidia-smi','--query-gpu=name,memory.free','--format=csv,noheader,nounits'],**kwargs)
+            if not probe.returncode:
+                for line in probe.stdout.splitlines():
+                    name,_,available=line.rpartition(',')
+                    if available.strip().isdigit():
+                        key=name.strip().casefold()
+                        free=int(available)
+                        nvidia_free[key]=min(nvidia_free.get(key,free),free)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    candidates=[]
+    for device,name,total,vulkan_free in devices:
+        available=min(total,vulkan_free,nvidia_free.get(name.casefold(),vulkan_free))
+        # Give the fitter at least 1 GiB beyond the reserve to place tensors
+        # and working buffers. Still report recognized cards under pressure.
+        fit_target=(vulkan_free-available+_VRAM_RESERVE_MIB
+                    if available>=_VRAM_RESERVE_MIB+1024 else None)
+        candidates.append({'device':device,'name':name,'available_mib':available,
+                           'fit_target_mib':fit_target})
+    return max(candidates,key=lambda gpu:gpu['available_mib'])
 
 
 def shared_runtime(settings,log_root,profile=None):
@@ -55,16 +106,23 @@ def hardware_profile(ram_gb=None, gpu_vram_gb=None, cpu_cores=None):
             except (psutil.Error,OSError,AttributeError):pass
     vram=max(0,float(detected.get('gpu_vram_gb') or 0) if gpu_vram_gb is None else float(gpu_vram_gb))
     ram=max(1,float(ram_gb))
-    # A 4B Q4 model has headroom; large 14B/30B models saturate 8GB cards.
+    logical=max(1,int(cpu_cores))
+    physical=int(detected.get('physical_cores') or max(1,logical//2))
+    # Affinity describes logical IDs and may expose only siblings from a
+    # smaller set of physical cores. Leave room for MT5, speech and the UI.
+    usable=min(physical,logical)
+    threads=max(1,usable-2)
+    if ram<=9:
+        threads=min(2,threads)
     return {
         'model_class':'4B GGUF Q4_K_M' if ram>=16 else '2B GGUF Q4_K_M',
         'context_tokens':4096 if ram>=16 else 2048,
         'gpu_layers':99 if vram>=12 else 12 if vram>=7.5 else 0,
-        'cpu_threads':min(6,max(1,int(cpu_cores)//2)),
-        'logical_cores':max(1,int(cpu_cores)),
+        'cpu_threads':min(8,threads),
+        'logical_cores':logical,
         'detected_ram_gb':round(ram,2),
         'detected_gpu_vram_gb':round(vram,2),
-        'physical_cores':int(detected.get('physical_cores') or max(1,int(cpu_cores)//2)),
+        'physical_cores':physical,
         'detected_gpus':detected.get('gpus',[]),
         'dedicated_gpu':bool(detected.get('dedicated_gpu')) or vram>=8,
         'parallel_requests':1,
@@ -93,6 +151,11 @@ class ManagedLlamaProcess:
         self._bound_endpoint=None;self._requested_endpoint=None;self.recovery_detail=''
         self.owner_path=Path(log_root)/'state'/'local_model_owner.json' if log_root is not None else None
         self.generated_at=None;self.generation_count=0
+        # None means no device probe has been run for this command yet.
+        self._gpu_probe=None
+        self._gpu_allowed_at_launch=False
+        self._offloaded_layers=None
+        self._log_start_offset=None
 
     def record_generation(self):
         with self.lock:self.generated_at=time.time();self.generation_count+=1
@@ -194,9 +257,16 @@ class ManagedLlamaProcess:
         port=self._port(self.endpoint_for(endpoint));desktop=self.desktop_policy(desktop);profile=self.profile
         ctx=min(8192,max(1024,int(desktop.get('model_context_tokens',profile['context_tokens']))),max(1024,int(desktop.get('memory_budget_mb',3072))*2))
         use_gpu=bool(desktop.get('model_use_gpu',True)) and not self._force_cpu
-        gpu=max(0,int(profile['gpu_layers'])) if use_gpu else 0
+        selected=self._gpu_probe if use_gpu else None
+        gpu=0
+        if selected and selected['fit_target_mib'] is None:
+            selected=None
+        if selected:
+            gpu='auto'
+        elif use_gpu and self._gpu_probe is None:
+            gpu=max(0,int(profile['gpu_layers']))
         exe=paths[0]
-        if not use_gpu:
+        if gpu==0:
             cpu=exe.parent.parent/'cpu'/'llama-server.exe'
             if cpu.is_file():exe=cpu
         if exe.parent.name.lower()=='cpu':gpu=0
@@ -204,7 +274,9 @@ class ManagedLlamaProcess:
         threads=max(1,int(profile['cpu_threads']))
         if mode=='Ahorro de energía':threads=min(1 if 0<int(profile.get('logical_cores',0))<=4 else 2,threads)
         elif mode=='Equilibrado':threads=min(4,threads)
-        batch,ubatch=(128,64) if mode=='Ahorro de energía' else (256,128)
+        if selected:
+            threads=min(4,threads)
+        batch,ubatch=(128,64) if mode=='Ahorro de energía' or threads<=2 else (256,128)
         cache_mb=0 if mode=='Ahorro de energía' else 512 if mode=='Equilibrado' else 1024
         # Load the small bundled CPU model without retaining an mmap of the
         # original weights alongside repacked buffers. Direct I/O also avoids
@@ -217,6 +289,8 @@ class ManagedLlamaProcess:
                 '--batch-size',str(batch),'--ubatch-size',str(ubatch),
                 '--load-mode',loading,'--cache-ram',str(cache_mb),
                 '--poll','0','--poll-batch','0','--parallel','1','--jinja']
+        if selected:
+            command+=['--device',selected['device'],'--fit-target',str(selected['fit_target_mib'])]
         if mode=='Ahorro de energía' and gpu==0:
             command+=['--flash-attn','on','--cache-type-k','q8_0','--cache-type-v','q8_0']
         return command
@@ -227,7 +301,9 @@ class ManagedLlamaProcess:
             self._idle_override=int(desktop.get('model_keep_alive_seconds',15))
             endpoint=self.settings.get('local_endpoint','http://127.0.0.1:18987/v1/chat/completions')
             self._requested_command=self.command(endpoint,desktop) if self._paths() else None
-            if not self.active and self.proc and self._launch_command!=self._requested_command:self._terminate_own()
+            use_gpu=bool(desktop.get('model_use_gpu',True)) and not self._force_cpu
+            changed=self._launch_command!=self._requested_command or self._gpu_allowed_at_launch!=use_gpu
+            if not self.active and self.proc and changed:self._terminate_own()
 
     def _terminate_own(self):
         proc=self.proc
@@ -246,10 +322,13 @@ class ManagedLlamaProcess:
         if self._closed:raise RuntimeError('La aplicación cerró su motor de IA; no se vuelve a iniciar desde tareas pendientes.')
         with self.lock:
             if self._closed:raise RuntimeError('La aplicación cerró su motor de IA.')
+            policy=self.desktop_policy(desktop)
+            use_gpu=bool(policy.get('model_use_gpu',True)) and not self._force_cpu
             command=self.command(endpoint,desktop)
             if self.proc and self.proc.poll() is None:
                 self._requested_command=command
-                if self._launch_command is not None and command!=self._launch_command and self.active<=1:self._terminate_own()
+                changed=command!=self._launch_command or self._gpu_allowed_at_launch!=use_gpu
+                if self._launch_command is not None and changed and self.active<=1:self._terminate_own()
                 else:self.last_use=self.clock();return True
             self._recover_owned_orphan()
             self._requested_endpoint=endpoint
@@ -261,21 +340,27 @@ class ManagedLlamaProcess:
                 self._bound_endpoint=urlunsplit((parts.scheme,'127.0.0.1:'+str(free_port),parts.path,parts.query,''))
                 self.recovery_detail=f'Puerto {port} ocupado; AKIRA usa el puerto local {free_port} sin cerrar el otro servidor.'
             else:self._bound_endpoint=endpoint
+            paths=self._paths()
+            self._gpu_probe=(_model_gpu(paths[0]) if paths and use_gpu else None) or {}
             command=self.command(endpoint,desktop)
             # Keep the owned model below normal CPU priority so MT5 and Tk
             # retain scheduling preference when the machine is under load.
             flags=getattr(subprocess,'CREATE_NO_WINDOW',0)|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)
             stream=None
             try:
+                self._offloaded_layers=None
+                self._log_start_offset=None
                 if self.log_path is not None:
                     self.log_path.parent.mkdir(parents=True,exist_ok=True)
                     if self.log_path.exists() and self.log_path.stat().st_size>4000000:
                         self.log_path.replace(self.log_path.with_suffix('.previous.log'))
                     stream=self.log_path.open('ab',buffering=0)
+                    self._log_start_offset=stream.tell()
                     stream.write(('\nINICIO IA '+time.strftime('%Y-%m-%d %H:%M:%S')+'\n').encode('utf-8'))
                 self.proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=stream or subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,creationflags=flags)
                 self._launch_command=list(command);self._requested_command=list(command)
+                self._gpu_allowed_at_launch=use_gpu
                 self.generated_at=None;self.generation_count=0
                 self._record_owner(command)
                 if self._closed:
@@ -327,7 +412,8 @@ class ManagedLlamaProcess:
                 if cancel_event is not None and cancel_event.is_set():raise RuntimeError('Análisis detenido por el usuario')
                 with self.lock:
                     if self.proc is None or self.proc.poll() is not None:
-                        if not self._force_cpu and bool((desktop or {}).get('model_use_gpu',True)):
+                        if (not self._force_cpu and self._gpu_probe
+                                and self._gpu_probe['fit_target_mib'] is not None):
                             # Retry only our own process with the CPU binary;
                             # never terminate servers owned by other applications.
                             self._force_cpu=True
@@ -337,6 +423,7 @@ class ManagedLlamaProcess:
                             raise RuntimeError('El motor local no pudo iniciar, ni con CPU')
                 time.sleep(.4)
             if not self._health(port):raise TimeoutError(f'llama.cpp no completó el inicio en {preparation:g} s')
+            self._read_offload_result()
             from akira_local_ai import owned_context
             with owned_context(self.effective_parameters().get('context_tokens') or int((desktop or {}).get('model_context_tokens',self.profile['context_tokens'])),
                                endpoint=self.endpoint_for(endpoint),requested_endpoint=endpoint,on_generation=self.record_generation):yield
@@ -370,13 +457,39 @@ class ManagedLlamaProcess:
                 except (OSError,subprocess.TimeoutExpired):pass
         threading.Thread(target=reap,name='AkiraModelReaper',daemon=True).start()
 
+    def _read_offload_result(self):
+        with self.lock:
+            if self._offloaded_layers is not None or self._log_start_offset is None:
+                return
+            try:
+                with self.log_path.open('rb') as stream:
+                    stream.seek(self._log_start_offset)
+                    startup=stream.read(262144)
+                match=re.search(rb'offloaded (\d+)/\d+ layers to GPU',startup,re.IGNORECASE)
+                if match:
+                    self._offloaded_layers=int(match.group(1))
+            except OSError:
+                pass
+
     def effective_parameters(self):
         command=self._launch_command or []
         def value(flag):
             try:return int(command[command.index(flag)+1])
             except (ValueError,IndexError):return None
+        gpu=self._gpu_probe
+        layers=value('--n-gpu-layers')
+        if not command:gpu_status=None
+        elif self._force_cpu:gpu_status='CPU tras un fallo al iniciar Vulkan.'
+        elif not self._gpu_allowed_at_launch:gpu_status='CPU según el perfil activo.'
+        elif not gpu:gpu_status='El motor no encontró una GPU Vulkan utilizable.'
+        elif gpu['fit_target_mib'] is None:gpu_status='GPU detectada con VRAM libre insuficiente.'
+        elif self._offloaded_layers is None:gpu_status='Vulkan seleccionado. Capas en GPU pendientes de confirmar.'
+        else:gpu_status=f'Capas confirmadas en GPU: {self._offloaded_layers}.'
         return {'owned_pid':self.proc.pid if self.proc and self.proc.poll() is None else None,
-                'context_tokens':value('--ctx-size'),'gpu_layers':value('--n-gpu-layers'),'cpu_threads':value('--threads'),
+                'context_tokens':value('--ctx-size'),'gpu_layers':self._offloaded_layers if layers is None else layers,
+                'cpu_threads':value('--threads'),'gpu_device':gpu['name'] if gpu else None,
+                'gpu_available_mib_at_start':gpu['available_mib'] if gpu else None,
+                'gpu_status':gpu_status,
                 'endpoint':self._bound_endpoint,'recovery_detail':self.recovery_detail,'cpu_fallback':self._force_cpu,
                 'generated_at':self.generated_at,'generation_count':self.generation_count,
                 'pending_reload':bool(self._requested_command is not None and self._launch_command!=self._requested_command)}

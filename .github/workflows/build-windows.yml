@@ -1,5 +1,5 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.5.4 Studio Rev19 · núcleo verificable · ${{ github.ref_name }}
+run-name: AKIRA 16.5.4 · Corrección 23 · ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -13,6 +13,7 @@ on:
       - akira-rev20-voz-recursos-aprendizaje-20261107
       - akira-rev21-gpu-ondas-estabilidad-20261107
       - akira-rev22-recuperacion-llamada-20261108
+      - akira-rev23-recursos-llamada-historial-20261114
 
 permissions:
   contents: read
@@ -374,7 +375,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.5.4-Correccion22-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-16.5.4-Correccion23-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

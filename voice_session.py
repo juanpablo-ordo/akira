@@ -25,6 +25,10 @@ def transcribe_with_recovery(model,audio,language='es',beam_size=1,vad_filter=Tr
                               vad_filter=vad,condition_on_previous_text=False)
   return ' '.join(segment.text.strip() for segment in segments).strip()[:1500]
  first=decode(beam_size,vad_filter)
+ if not first and vad_filter and 8000<=len(audio)<32000:
+  # Capture already gated on voice energy. Whisper's VAD can still cut an
+  # entire short utterance, a common case for questions like "¿Me oyes?".
+  return decode(beam_size,False)
  if len(first.split())>=4 or len(audio)<32000 or (beam_size>=5 and not vad_filter):
   return first
  second=decode(max(5,beam_size),False)
@@ -378,7 +382,11 @@ class VoiceSession:
  def pause(self):
   self.paused.set();self._revision+=1;self._drain();self.event('state',text='Micrófono silenciado · puedes reanudar o finalizar')
  def resume(self):
-  self._revision+=1;self.paused.clear();self.awaiting.clear();self._drain();self.event('state',text='Reanudando micrófono…')
+  self._revision+=1;self._drain();self.paused.clear()
+  if self.awaiting.is_set() or self.speaking.is_set():
+   self.event('state',text='El micrófono se reanudará al terminar la respuesta')
+  else:
+   self.event('state',text='Reanudando micrófono…')
  def cancel_message(self):
   self._revision+=1;self._drain();self.awaiting.clear();self.last_text='';self.event('partial',text='');self.event('state',text='Mensaje cancelado · Escuchando')
  def submit_message(self):
@@ -545,6 +553,7 @@ class VoiceSession:
       if self.process.returncode:raise RuntimeError('El motor de voz no pudo generar audio. Comprueba la instalación de esa voz.')
      if not path.is_file():raise RuntimeError('La voz no generó audio')
      with wave.open(str(path),'rb') as wav:
+      if not wav.getnframes():raise RuntimeError('La voz generó un archivo de audio vacío. Prueba otra voz.')
       width=wav.getsampwidth();rate=wav.getframerate();channels=wav.getnchannels();device=self.options.get('output_device')
       if width not in (2,4):raise RuntimeError('Formato de audio no compatible')
       dtype='int16' if width==2 else 'int32';device=None if device in (None,-1,'') else int(device)

@@ -3,6 +3,38 @@ from collections import Counter
 import math
 
 
+def pending_decision_trace(symbol_view, audit):
+    """Keep a compact record of the displayed proposals and rejected alternatives."""
+    rejected = {}
+    for row in audit:
+        code = row.get('reject_code')
+        if not code:
+            continue
+        direction = (str(row.get('side') or '').upper(), str(row.get('kind') or '').upper())
+        rejected.setdefault(direction, Counter())[code] += 1
+
+    scenarios = {(r.get('side'), r.get('kind')): r for r in symbol_view.get('scenario_book', [])}
+    trace = []
+    for side, label in ((-1, 'SELL'), (1, 'BUY')):
+        for kind in ('LIMIT', 'STOP'):
+            row = scenarios.get((side, kind), {})
+            ticket = row.get('ticket') if row.get('confirmed') else None
+            if ticket:
+                state = 'MT5 CONFIRMADA'
+            elif row.get('sendable'):
+                state = 'PREVALIDACIÓN TÉCNICA'
+            elif row:
+                state = row.get('scenario_state') or 'NO ENVIADA'
+            else:
+                state = 'SIN ESCENARIO VISIBLE'
+            trace.append({'direction': f'{label} {kind}', 'state': state, 'ticket': ticket,
+                'key': row.get('key'), 'entry': row.get('entry'), 'sl': row.get('sl'), 'tp': row.get('tp'),
+                'reason': str(row.get('block_reason') or '')[:260],
+                'rejection_counts': dict(rejected.get((label, kind), {}))})
+
+    return {**{k: symbol_view.get(k) for k in ('bid', 'ask', 'quote_time')}, 'scenarios': trace}
+
+
 def decision_status(symbol,plans,audit,scenarios,checks,orders,cycle,status,trade_cap,
                     runtime_block='',mode='trade',paused=False):
     rejected=Counter(str(r.get('reject_code')) for r in audit if r.get('reject_code'))

@@ -51,9 +51,6 @@ class CallConversation:
         return True
 
     def _reply(self,text,cancel):
-        from local_inference import PRIORITY
-        from akira_local_ai import chat,visible_output
-        from ai_providers import AIProviderManager
         started=time.monotonic();metrics={'first_token_seconds':None,'complete_seconds':None,'channel':'call'}
         stream=SentenceStream(self.voice.enqueue_speech)
         def visible(cumulative):
@@ -65,6 +62,10 @@ class CallConversation:
             if remembered:
                 self.assistant.chats.remember(remembered.group(1));answer='Lo recordaré.';metrics['provider']='saved_memory'
             else:
+                from local_inference import PRIORITY
+                from akira_local_ai import chat,visible_output
+                from ai_providers import AIProviderManager
+
                 cfg=copy.deepcopy(self.config());view=self.snapshot();acfg=cfg['assistant']
                 memories=[r['body'][:180] for r in self.assistant.chats.memories()][:4]
                 store=getattr(self.assistant,'memory',None)
@@ -122,6 +123,7 @@ class CallConversation:
                         stream.text='';stream.sent=0;errors.append(str(error))
                 else:raise RuntimeError(' | '.join(errors))
             if cancel.is_set() or self.closed:return
+            self.voice.event('answer',text=answer)
             stream.finish(answer)
             self.history=(self.history+[{'role':'user','content':text},{'role':'assistant','content':answer}])[-8:]
         except Exception as error:

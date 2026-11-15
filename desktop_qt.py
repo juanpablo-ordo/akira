@@ -484,8 +484,13 @@ class StudioWindow(QMainWindow):
             runtime=self.controller.assistant._managed_model.effective_parameters()
             detail=' · '.join(name+': '+number(value['ram_mb'],0)+' MB' for name,value in data.get('processes',{}).items())
             if runtime.get('owned_pid'):
-                detail+='\nIA en uso: '+str(runtime['context_tokens'])+' tokens · '+str(runtime['gpu_layers'])+' capas solicitadas en GPU · '+str(runtime['cpu_threads'])+' hilos CPU.'
-                if runtime.get('cpu_fallback'):detail+=' Recuperación en CPU activa.'
+                detail+='\nIA en uso: '+str(runtime['context_tokens'])+' tokens · '+str(runtime['cpu_threads'])+' hilos CPU.'
+                if runtime.get('gpu_device'):
+                    device=runtime['gpu_device']
+                    available=runtime.get('gpu_available_mib_at_start')
+                    if available is not None:device+=f' · {available} MiB libres al iniciar'
+                    detail+='\n'+device
+                if runtime.get('gpu_status'):detail+='\n'+runtime['gpu_status']
             if runtime.get('recovery_detail'):detail+='\n'+runtime['recovery_detail']
             self.resource_line.setText(detail)
         elif kind=='command_result':
@@ -1105,6 +1110,9 @@ class StudioWindow(QMainWindow):
         layout.addWidget(self.btn('PROBAR VOZ',self.preview_voice))
         self.voice_error=label('','body',INK['pink']);self.voice_error.setWordWrap(True);self.voice_error.hide();layout.addWidget(self.voice_error)
         self.voice_level=QProgressBar();self.voice_level.setRange(0,100);self.voice_level.setValue(0);self.voice_level.setFormat('Micrófono · %p%');layout.addWidget(self.voice_level)
+        self.call_text=QPlainTextEdit();self.call_text.setReadOnly(True)
+        self.call_text.setPlaceholderText('Aquí aparecerán lo que AKIRA entendió y su respuesta.');self.call_text.setMaximumHeight(125)
+        layout.addWidget(self.call_text)
         self.voice_transcript=QLineEdit();self.voice_transcript.hide()
         note=label('Conversación hablada. Tu micrófono no se publica ni se guarda en el chat. Pulsa Interrumpir para cortar la respuesta y volver a hablar.','muted');note.setWordWrap(True);layout.addWidget(note)
         row=FlowLayout()
@@ -1186,6 +1194,7 @@ class StudioWindow(QMainWindow):
     def stop_call(self):
         self.controller.end_call()
         if self.controller.voice:self.controller.voice.stop();self.controller.voice=None
+        if hasattr(self,'call_text'):self.call_text.clear()
         preview=getattr(self,'_voice_preview',None)
         if preview:preview.stop();self._voice_preview=None
         self.director.playback(False);self.director.publish('idle',force=True)
@@ -1201,6 +1210,9 @@ class StudioWindow(QMainWindow):
             if hasattr(self,'voice_level'):self.voice_level.setValue(min(100,round(float(data.get('level',0))*800)))
             return
         if kind=='playback_level':self.director.level(data.get('level',0));return
+        if kind=='answer':
+            if hasattr(self,'call_text'):self.call_text.appendPlainText('AKIRA · '+str(text))
+            return
         if kind in ('turn_started','playback_start') and hasattr(self,'voice_error'):self.voice_error.clear();self.voice_error.hide()
         labels={'final':'Preparando respuesta hablada…','partial':'Escuchando…','turn_started':'Pensando la respuesta…',
                 'playback_start':'Hablando…','playback_end':'Terminando respuesta…'}
@@ -1211,6 +1223,7 @@ class StudioWindow(QMainWindow):
             except OSError:pass
         if kind=='partial':pass
         elif kind=='final':
+            if hasattr(self,'call_text'):self.call_text.setPlainText('Tú · '+str(text))
             if not self.controller.ask_call(text) and self.controller.voice:
                 self.controller.voice.cancel_message();self.voice_state.setText('La llamada está terminando la respuesta. Vuelve a hablar en un momento.')
         elif kind in ('playback_start','playback_end'):self.director.playback(kind=='playback_start')

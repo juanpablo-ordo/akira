@@ -86,8 +86,10 @@ class Reporter:
         self.recent_events.append(row)
         if self.console:
             print(f"{row['utc'][11:19]} | {symbol} | {text}",flush=True)
-        # Rotación diaria; no crecer indefinidamente en un único archivo.
-        with (self.folder/f"eventos_{row['utc'][:10]}.jsonl").open("a",encoding="utf-8") as f:
+        # Las muestras del análisis tienen su propio historial para que el
+        # volumen del dashboard no las desplace del informe de decisiones.
+        family='decisiones' if row.get('operation')=='pending_decision' else 'eventos'
+        with (self.folder/f"{family}_{row['utc'][:10]}.jsonl").open("a",encoding="utf-8") as f:
             f.write(json.dumps(row,ensure_ascii=False,allow_nan=False,default=str)+"\n")
         if self.callback:
             self.callback(row)

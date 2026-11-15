@@ -1,5 +1,6 @@
 """Informe para personas y soporte. Se ejecuta fuera del actor MT5."""
 from datetime import datetime,timezone,timedelta
+from collections import Counter,defaultdict
 from pathlib import Path
 import copy,json,math,os,re,tempfile,zipfile
 from xml.etree import ElementTree as ET
@@ -86,7 +87,8 @@ def closed_trades(snapshot,cutoff):
         review='Sin MFE registrado: no se puede juzgar si cerró demasiado pronto.' if mfe is None else 'Máximo observado desde '+stamp(row.get('tracking_started_at'))+'; no demuestra qué habría pasado después.'
         if cause=='Stop Loss' and capture is not None and capture<.25 and mfe>=1.25:
             review='SL ejecutado tras devolver parte del máximo observado; revisar los cambios de protección. '+review
-        out.append({'ticket':str(key),'symbol':ins[0].get('symbol',''),'lane':lane,'entry_time':broker_seconds(ins[0]),
+        out.append({'ticket':str(key),'symbol':ins[0].get('symbol',''),'lane':lane,
+            'side':'SELL' if ins[0]['type']==1 else 'BUY','entry_time':broker_seconds(ins[0]),
             'placed_at':(times.get(str(ins[0].get('order'))) or {}).get('placed_at') or positive(row.get('requested_at')),
             'placement_source':(times.get(str(ins[0].get('order'))) or {}).get('source') or ('Akira: solicitud registrada' if positive(row.get('requested_at')) else 'Sin registro de colocación'),
             'exit_time':broker_seconds(exits[-1]),'duration_minutes':(finite(exits[-1].get('time'),0)-finite(ins[0].get('time'),0))/60,
@@ -98,10 +100,16 @@ def closed_trades(snapshot,cutoff):
 def read_recent_events(folder,hours,as_of,max_bytes=6*1024*1024):
     """Lectura acotada en el worker; nunca dentro del ciclo MT5."""
     if not hours:return [],False
+    events,truncated=_read_event_files(folder,hours,as_of,'eventos',max_bytes)
+    traces,traces_truncated=_read_event_files(folder,hours,as_of,'decisiones',min(max_bytes,2*1024*1024))
+    return sorted(events+traces,key=lambda row:row['utc']),truncated or traces_truncated
+
+
+def _read_event_files(folder,hours,as_of,prefix,max_bytes):
     end=datetime.fromtimestamp(as_of,timezone.utc);cutoff=as_of-hours*3600
     rows=[];budget=max_bytes;truncated=False
     for n in range(min(8,math.ceil(hours/24)+1)):
-        path=Path(folder)/('eventos_'+(end-timedelta(days=n)).strftime('%Y-%m-%d')+'.jsonl')
+        path=Path(folder)/(prefix+'_'+(end-timedelta(days=n)).strftime('%Y-%m-%d')+'.jsonl')
         if not path.is_file():continue
         size=path.stat().st_size;take=min(size,budget);offset=size-take;truncated|=bool(offset)
         with path.open('rb') as stream:
@@ -156,6 +164,14 @@ def build_report(snapshot,hours=24):
 
 def _build_report(snapshot,hours=24):
     snapshot=redact_snapshot(snapshot);as_of=finite(snapshot.get('as_of_utc'),finite(snapshot.get('updated'),0))
+    scope=snapshot.get('pending_decision_scope')
+    if 'operational_events' in snapshot:
+        snapshot['operational_events']=[
+            row for row in snapshot['operational_events'] or []
+            if row.get('operation')!='pending_decision' or (
+                scope and row.get('pending_decision_scope')==scope
+            )
+        ]
     cutoff=as_of-float(hours)*3600 if hours else as_of
     account=snapshot.get('account') or {};ledger=snapshot.get('portfolio_risk') or {};symbols=snapshot.get('symbols') or {}
     warnings=[]
@@ -170,7 +186,7 @@ def _build_report(snapshot,hours=24):
     if history.get('error'):warnings.append('Historial de cierres: '+str(history['error']))
     if finite(account.get('equity')) is None:warnings.append('Patrimonio no disponible: el límite de riesgo no se interpreta como saldo.')
     pendings=[];seen=set();runners=[];decisions=[];overview=[];times=pending_times(snapshot)
-    summary=[['Cuenta','Hora de la captura',stamp(as_of),__import__('locale_time').current_locale().timezone],['Cuenta','Versión',snapshot.get('build','No registrada'),'Versión del motor que produjo los datos'],
+    summary=[['Cuenta','Hora de la captura',stamp(as_of),__import__('locale_time').current_locale().timezone],['Cuenta','Versión',snapshot.get('repair_id') or snapshot.get('build','No registrada'),'Versión del motor que produjo los datos'],
         ['Cuenta','Patrimonio USD',finite(account.get('equity')),'Dato MT5; ausente no significa cero'],
         ['Riesgo','Límite conjunto USD',finite(ledger.get('cap_usd')),'Compartido entre BTC, oro y operaciones manuales'],
         ['Riesgo','Reservado USD',finite(ledger.get('reserved_usd')),'Suma de posiciones, pendientes y solicitudes sin confirmar'],
@@ -202,7 +218,6 @@ def _build_report(snapshot,hours=24):
             pendings.append(row)
             if ticket:seen.add(ticket)
     for order in snapshot.get('orders') or []:
-        if (snapshot.get('markets') or {}).get(order.get('symbol'),{}).get('scheduled_closed'):continue
         if str(order.get('ticket')) in seen:continue
         typ=int(order.get('type',2));row={**order,'side':1 if typ%2==0 else -1,'kind':'LIMIT' if typ in (2,3,6,7) else 'STOP',
             'lane':'PENDING','confirmed':True,'quality_score':None}
@@ -222,17 +237,27 @@ def _build_report(snapshot,hours=24):
             finite(position.get('volume')),finite(risk),finite(snapshot.get('trade_risk_cap')),'SL/TP vigentes en MT5.',
             ticket,stamp(meta.get('requested_at')) or 'Sin registro',stamp(opened) or 'Sin registro de apertura MT5'])
     closed=closed_trades(snapshot,cutoff) if hours else []
-    closed=[r for r in closed if not (snapshot.get('markets') or {}).get(r['symbol'],{}).get('scheduled_closed')]
     for ticket,row in (snapshot.get('position_journal') or {}).items():
         for event in row.get('management_events') or []:
             if finite(event.get('time'),0)<cutoff:continue
             decisions.append([stamp(event.get('time')),row.get('symbol') or (row.get('plan') or {}).get('symbol',''),action_name(event.get('operation',''),event),str(ticket),
                 event.get('reason',''),finite(event.get('old_sl')),finite(event.get('new_sl')),finite(event.get('rr_at_request'))])
+    trace_states=defaultdict(Counter)
+    trace_rejections=defaultdict(Counter)
+    trace_reasons=defaultdict(Counter)
     for event in snapshot.get('operational_events') or []:
         when=0
         try:when=datetime.fromisoformat(str(event.get('utc','')).replace('Z','+00:00')).timestamp()
         except (ValueError,TypeError):pass
         if when<cutoff:continue
+        if event.get('operation')=='pending_decision':
+            for row in (event.get('pending_decisions') or {}).get('scenarios',[]):
+                key=(event.get('symbol',''),row['direction'])
+                trace_states[key][row['state']]+=1
+                trace_rejections[key].update(row.get('rejection_counts',{}).keys())
+                if row.get('reason'):
+                    trace_reasons[key][row['reason']]+=1
+            continue
         decisions.append([stamp(when),event.get('symbol',''),action_name(event.get('operation',''),event),str((event.get('request') or {}).get('order') or (event.get('request') or {}).get('position') or event.get('order') or ''),
             event.get('reason') or event.get('message',''),None,finite((event.get('request') or {}).get('sl')),finite(event.get('rr_at_request'))])
     pending_rows=[]
@@ -266,23 +291,34 @@ def _build_report(snapshot,hours=24):
     summary.append(['Historial','Operaciones cerradas completas',len(closed),f'Últimas {hours} horas; solo operaciones con entrada y cierre completos en el historial disponible'])
     summary.append(['Historial','Neto de esos cierres USD',sum(r['net_usd'] for r in closed) if closed else None,'Incluye beneficio, comisión, swap y fee de cada operación reconstruida'])
     for warning in warnings:summary.append(['Revisar','Dato faltante',None,warning])
-    from quality_study import scope_metrics
+    for (symbol,direction),states in sorted(trace_states.items()):
+        counts=' · '.join(f'{state}: {count}' for state,count in states.most_common())
+        blockers=' · '.join(f'{code}: {count}' for code,count in trace_rejections[symbol,direction].most_common(3))
+        detail='Muestras de estado, no órdenes únicas. '+counts
+        if blockers:detail+=' · Muestras con rechazo: '+blockers
+        reasons=trace_reasons[symbol,direction].most_common(1)
+        if reasons:detail+=f' · Motivo frecuente ({reasons[0][1]}): {reasons[0][0]}'
+        summary.append(['Decisión',f'{symbol} {direction}',sum(states.values()),detail])
+    from quality_study import performance,scope_metrics
     metrics=scope_metrics(snapshot,cutoff)
     for symbol,lanes in metrics.items():
-        if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
         for lane,values in lanes.items():
             for key,name in [('closed','Cierres completos'),('win_rate','Proporción ganadora histórica'),('net_usd','Resultado neto USD'),('profit_factor','Factor de beneficio'),('drawdown_usd','Drawdown de cierres USD')]:
                 summary.append(['Resultados',symbol+' '+lane+' · '+name,values.get(key),'Período elegido; historial propio con costes. Sin dato cuando faltan cierres completos.'])
+        for side in ('BUY','SELL'):
+            side_metrics=performance([
+                row for row in closed if row['symbol']==symbol and row['side']==side
+                and row['lane'] in ('PENDING','RUNNER')
+            ])
+            summary.append(['Resultados',symbol+' '+side+' · Cierres propios',side_metrics['closed'],'Pendientes activadas y runners del período.'])
+            summary.append(['Resultados',symbol+' '+side+' · Neto USD',side_metrics['net_usd'],'Beneficio, comisión, swap y fee de esos cierres.'])
     study=snapshot.get('quality_study') or {}
     summary.append(['Estudio','Referencias reales para comparar',study.get('comparisons',0),'Capturas y recomendaciones vinculadas. Su importación no demuestra superioridad.'])
     for symbol,count in (study.get('cases') or {}).items():
-        if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
         summary.append(['Estudio',symbol+' · Casos capturados',count,'Una geometría inmutable por lado/tipo y vela M15; los ciclos repetidos no inflan la muestra.'])
     for symbol,count in (study.get('recorded_quotes') or {}).items():
-        if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
         summary.append(['Estudio',symbol+' · Cotizaciones observadas',count,'MT5, muestreo cada 30 s, retención 120 días; puede omitir cruces entre muestras. No ejecuciones reales.'])
     for name,row in ((study.get('quote_comparison') or {}).get('groups') or {}).items():
-        if (snapshot.get('markets') or {}).get(name.split(' / ')[0],{}).get('scheduled_closed'):continue
         stats=row['holdout'];summary.append(['Estudio',name+' · Pares fuera de muestra',stats['pairs'],row['status']])
         summary.append(['Estudio',name+' · Diferencia media neta R',stats.get('delta_r'),'Replay bid/ask; inicio común, costes R aportados. No resultado de ejecución real.'])
         summary.append(['Estudio',name+' · Intervalo 95% por día',str(stats.get('confidence_95_by_day') or 'Sin muestra suficiente'),'Incertidumbre agrupada por día; no probabilidad de ganar una próxima orden.'])
@@ -294,18 +330,13 @@ def _build_report(snapshot,hours=24):
             summary.append(['Verificación',symbol+' · '+stage['name'],stage['state'],stage['detail']])
     for cohort,trial in ((study.get('selector_comparison') or {}).get('groups') or {}).items():
         symbol=cohort.split(' / ')[0]
-        if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
         for name,value in trial['policies'].items():summary.append(['Estudio',symbol+' · '+name,value['mean_net_r'],value['status']+'; '+str(trial['holdout_decisions'])+' decisiones / '+str(trial['holdout_days'])+' días; '+trial['status']])
     for s,tf,name,value,purpose,last_bar in indicator_rows(snapshot):
         summary.append(['Indicadores',s+' '+tf+' · '+name,value,purpose+'; última vela '+stamp(last_bar)])
     for name,row in (snapshot.get('markets') or {}).items():
         if row.get('scheduled_closed'):
-            summary.append(['Mercados','Instrumento cerrado',None,'Mercado no operativo durante esta captura; la exposición previa sigue incluida en el riesgo total de cuenta.'])
-    # Risk totals always include all instruments, even when activity rows are hidden.
+            summary.append(['Mercados',name,'Cerrado en la captura','El informe conserva las operaciones históricas y la exposición registrada.'])
     closed_symbols={s for s,r in (snapshot.get('markets') or {}).items() if r.get('scheduled_closed')}
-    risk_rows=[r for r in risk_rows if r[1] not in closed_symbols]
-    close_rows=[r for r in close_rows if r[1] not in closed_symbols]
-    decisions=[r for r in decisions if r[1] not in closed_symbols]
     verifications=[r for r in (snapshot.get('pending_verifications') or {}).values() if r.get('symbol') not in closed_symbols]
     for r in verifications:
         for stage in r.get('stages') or []:
@@ -313,7 +344,6 @@ def _build_report(snapshot,hours=24):
     lab=(snapshot.get('research') or {}).get('strategy_lab') or {}
     for strategy in lab.get('strategies') or []:
         for symbol,m in strategy.get('symbols',{}).items():
-            if symbol in closed_symbols:continue
             actual=m.get('realized') or {};paper=m.get('holdout') or {}
             wr=actual.get('win_rate');percent='Sin muestra' if wr is None else f'{100*wr:.1f}% observado'
             net='Sin muestra' if actual.get('net') is None else f"{actual['net']:,.3f}"
@@ -323,7 +353,11 @@ def _build_report(snapshot,hours=24):
     for key,check in (snapshot.get('entry_quality_checks') or {}).items():
         if check.get('symbol') not in closed_symbols:
             decisions.append([stamp(check.get('time') or as_of),check.get('symbol',''),'Calidad de entrada',key,check.get('reason',''),None,None,None])
-    return {'schema':1,'build':snapshot.get('build'),'as_of_utc':as_of,'local_time':stamp(as_of),'hours':hours,
+    if len(decisions)>1000:
+        warning='La tabla de decisiones se limitó a 1000 filas en esta exportación.'
+        warnings.append(warning)
+        summary.append(['Revisar','Límite de exportación',None,warning])
+    return {'schema':1,'build':snapshot.get('build'),'repair_id':snapshot.get('repair_id'),'as_of_utc':as_of,'local_time':stamp(as_of),'hours':hours,
         'overview':overview,'warnings':warnings,'pendings':pendings,'closed':closed,'snapshot':snapshot,'verifications':verifications,
         'tables':{'Resumen':summary,'Pendientes':pending_rows,'Runners':runners,'Cierres':close_rows,'Riesgo':risk_rows,
             'Fuentes':source_rows(snapshot.get('research') or {},as_of),'Decisiones':decisions[-1000:]}}
@@ -380,10 +414,11 @@ def write_pdf(model,path):
             ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#F3F6F9')]),('LINEBELOW',(0,0),(-1,0),.6,colors.HexColor('#92ADBC')),
             ('LEFTPADDING',(0,0),(-1,-1),6),('RIGHTPADDING',(0,0),(-1,-1),6),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]))
         return t
-    story=[Paragraph('AKIRA · INFORME OPERATIVO',styles['Title']),paragraph(model['local_time']+' · Guatemala · '+str(model.get('build') or 'Versión no registrada'))]
+    version=model.get('repair_id') or model.get('build') or 'Versión no registrada'
+    story=[Paragraph('AKIRA · INFORME OPERATIVO',styles['Title']),paragraph(model['local_time']+' · Guatemala · '+str(version))]
     story.extend(paragraph(x) for x in model['overview']);story.extend(paragraph('Revisar: '+x) for x in model['warnings'])
     story.append(Paragraph('Cuenta y capacidad',styles['Heading2']))
-    story.append(table(('Dato','Valor','Lectura'),[[r[1],r[2],r[3]] for r in model['tables']['Resumen'] if r[0] in ('Cuenta','Riesgo','Velocidad','Historial')],[130,95,298]))
+    story.append(table(('Dato','Valor','Lectura'),[[r[1],r[2],r[3]] for r in model['tables']['Resumen'] if r[0] in ('Cuenta','Riesgo','Velocidad','Historial','Mercados')],[130,95,298]))
     story.append(paragraph('Estrellas = evidencia técnica. Cercanía = índice relativo. Ninguno es una probabilidad de ganancias o activación. Generar el informe solo lee datos.'))
     story.append(Paragraph('Resultados propios medidos',styles['Heading2']))
     story.append(table(('Métrica','Resultado','Definición'),[[r[1],f'{r[2]*100:.1f}%' if r[2] is not None and r[1].endswith('Proporción ganadora histórica') else r[2],r[3]] for r in model['tables']['Resumen'] if r[0]=='Resultados'],[180,70,273]))
@@ -427,14 +462,17 @@ def write_pdf(model,path):
     story.append(Paragraph('Cierres y protección',styles['Heading2']))
     if not model['closed']:story.append(paragraph('No hay cierres completos reconstruibles para el período. Esto no significa que no hubo operaciones: puede faltar historial o haber cierres parciales.'))
     for row in model['closed'][:500]:
-        story.append(Paragraph(safe(f'{row["symbol"]} · #{row["ticket"]} · {row["lane"]}'),styles['Heading3']))
+        story.append(Paragraph(safe(f'{row["symbol"]} · #{row["ticket"]} · {row.get("side","")} {row["lane"]}'),styles['Heading3']))
         story.append(paragraph(f'Entrada {stamp(row["entry_time"])}; salida {stamp(row["exit_time"])}; duración {row["duration_minutes"]:.1f} min. Neto {row["net_usd"]:.2f} USD. Motivo: {row["cause"]}.'))
         story.append(paragraph('Colocación: '+(stamp(row.get('placed_at')) or 'Sin registro')+' · '+row.get('placement_source','Sin registro de hora')+'.'))
         story.append(paragraph(row['review']))
     if len(model['closed'])>500:story.append(paragraph('PDF muestra los 500 cierres más recientes. Excel conserva todos los cierres reconstruidos.'))
     story.append(Paragraph('Decisiones y cambios',styles['Heading2']))
-    story.append(table(('Hora','Símbolo / ticket','Acción','Motivo'),[[r[0],r[1]+' / '+r[3],r[2],r[4]] for r in model['tables']['Decisiones'][-50:]],[95,110,68,250]))
-    if len(model['tables']['Decisiones'])>50:story.append(paragraph('PDF incluye los 50 cambios más recientes. Excel incluye hasta 1000 cambios.'))
+    trace_summary=[r[1:] for r in model['tables']['Resumen'] if r[0]=='Decisión']
+    if trace_summary:
+        story.append(table(('Símbolo y dirección','Muestras','Estados observados'),trace_summary,[153,67,303]))
+        story.append(Spacer(1,9))
+    story.append(table(('Hora','Símbolo / ticket','Acción','Motivo'),[[r[0],r[1]+' / '+r[3],r[2],r[4]] for r in model['tables']['Decisiones']],[95,110,68,250]))
     story.append(Paragraph('Fuentes y actualidad',styles['Heading2']))
     story.append(table(('Fuente','Fecha / vigencia','Uso y límites'),[[r[0]+' · '+r[1],r[2] or 'Sin dato',r[3]+'\n'+r[4]] for r in model['tables']['Fuentes']],[135,100,288]))
     def footer(canvas,doc):

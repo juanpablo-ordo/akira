@@ -1,6 +1,7 @@
 """Motor de pendientes y runners: analizar, dimensionar, ejecutar y confirmar."""
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict,replace
+from hashlib import sha256
 from types import SimpleNamespace
 import copy,math,time
 from execution import Blocked,MarketPaused,order_plan,BUY
@@ -9,10 +10,10 @@ from planner import PendingPlanner
 from pending_portfolio import select_portfolio,pending_priority,pending_overlap
 from learning import PendingLearner
 from position_manager import PositionManager
-from akira_version import BUILD_ID
+from akira_version import BUILD_ID, REPAIR_ID
 from evolution import FEATURE_VERSION,entry_features
 from runner import runner_plan
-from decision_status import decision_status
+from decision_status import decision_status, pending_decision_trace
 from trade_review import assess_plan
 from market_calendar import state_for
 from datetime import datetime,timezone
@@ -30,6 +31,7 @@ class Engine:
         self.dom_subscribed=set();self.dom_retry={};self.first_requests={};self.allocation_reasons={}
         self.quotes={};self._last_research_submit=0.0;self._last_history=0.0
         self.map_cache={};self.allocation_cache={};self._last_heartbeat=0.0
+        self._last_pending_decision={}
         self._last_snapshot_dump=0.0
         self.runner_views={};self.deep_initialized=False
         self.pending_cycles={}
@@ -841,11 +843,13 @@ class Engine:
             status=self.status.get(symbol,{})
             # Separar PARAMETROS (tesis) y ENVIABLES (aprobadas): no etiquetar
             # todo como "mapa 0" si ya se calcularon cuatro escenarios.
-            scenarios=view['symbols'][symbol]['scenario_book'];proposals=len(scenarios)
+            symbol_view=view['symbols'][symbol]
+            scenarios=symbol_view['scenario_book'];proposals=len(scenarios)
             enviable=sum(bool(r.get('sendable')) and not r.get('confirmed') for r in scenarios)
             detail=status.get('detail','')[:500]
-            runner=view['symbols'][symbol].get('runner',{})
-            self.log.event(symbol,f"CICLO {self.cycle} · {proposals} escenarios con parámetros · técnicas BUY {buy} / SELL {sell} · nuevas enviables {enviable} · MT5 confirmadas {live} · {status.get('state','')} · {detail} · RUNNER {runner.get('state','ESPERANDO')}: {str(runner.get('detail',''))[:240]}",state='ANÁLISIS',activity_category='ANÁLISIS',build=BUILD_ID,portfolio_risk=ledger,runner=runner)
+            runner=symbol_view.get('runner',{})
+            decision_fields=self.pending_decision_fields(symbol,symbol_view,status,runner,now)
+            self.log.event(symbol,f"CICLO {self.cycle} · {proposals} escenarios con parámetros · técnicas BUY {buy} / SELL {sell} · nuevas enviables {enviable} · MT5 confirmadas {live} · {status.get('state','')} · {detail} · RUNNER {runner.get('state','ESPERANDO')}: {str(runner.get('detail',''))[:240]}",state='ANÁLISIS',activity_category='ANÁLISIS',build=BUILD_ID,repair_id=REPAIR_ID,portfolio_risk=ledger,runner=runner,**decision_fields)
         # La función Reporter.dump existía pero nunca se llamaba: persistimos
         # el estado operativo de ambos símbolos para soporte y auditoría.
         # Reporter.status registra eventos de diagnóstico, pero el estado del
@@ -854,6 +858,28 @@ class Engine:
             self.log.status[symbol]=dict(state)
         try:self.log.dump()
         except OSError as exc:self.log.event('DIARIO','No pude guardar estado.json: '+str(exc)[:160])
+
+    def pending_decision_scope(self):
+        identity=getattr(self.g,'identity',None)
+        return sha256(f'{identity[0]}:{identity[1]}'.encode('utf-8')).hexdigest() if identity else ''
+
+    def pending_decision_fields(self,symbol,symbol_view,status,runner,now):
+        """Sample independently of the dashboard heartbeat and price tick churn."""
+        scope=self.pending_decision_scope()
+        bar=symbol_view.get('frames',{}).get('H1',{}).get('last_bar')
+        if not scope or not bar or symbol_view.get('quote_time') is None:
+            return {}
+        previous=self._last_pending_decision.get(symbol)
+        if previous and bar==previous[0] and now-previous[1]<1800:
+            return {}
+        trace=pending_decision_trace(symbol_view,self.planner.pending_candidate_audit.get(symbol,[]))
+        state=(status.get('state'),runner.get('state'),tuple(
+            (r['state'],r['ticket'],r['reason'],tuple(sorted(r['rejection_counts']))) for r in trace['scenarios']))
+        if previous and bar==previous[0] and state==previous[2]:
+            return {}
+        self._last_pending_decision[symbol]=(bar,now,state)
+        return {'operation':'pending_decision','pending_decision_scope':scope,
+                'pending_decisions':{**trace,'h1_last_bar':bar}}
 
     def research_snapshot(self):
         out={}
@@ -886,7 +912,7 @@ class Engine:
                 'confirmed_learning_outcomes':list(self.learner.records.values()),'learning_account':list(self.g.identity or ()),
                 'confirmed_strategy_outcomes':copy.deepcopy(self._confirmed_outcomes[-300:]),'paper_costs':paper_costs,
                 'selection_configuration':self.verification_configuration(),'research_sources':copy.deepcopy(self.planner.research_context.get('sources',{})),
-                'preopen_plans':copy.deepcopy(self.preopen_plans),'build':BUILD_ID}
+                'preopen_plans':copy.deepcopy(self.preopen_plans),'build':BUILD_ID,'repair_id':REPAIR_ID}
 
     @staticmethod
     def frame_summary(f):
@@ -1300,7 +1326,7 @@ class Engine:
         effective_gate=execution_gate(self.cfg['mode'],self.paused,self.g.runtime_execution_block,
                                      getattr(self.g,'network_available',True),account,risk_state=safety,
                                      broker_available=bool(getattr(snap.terminal,'connected',False)))
-        view={'build':BUILD_ID,'locale':copy.deepcopy(self.cfg.get('locale',{})),'configuration':copy.deepcopy(getattr(self,'configuration',{})),'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
+        view={'build':BUILD_ID,'repair_id':REPAIR_ID,'locale':copy.deepcopy(self.cfg.get('locale',{})),'configuration':copy.deepcopy(getattr(self,'configuration',{})),'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
                 'execution_gate':effective_gate,
                 'execution_block':entry_block,'execution_allowed':effective_gate['execution_allowed'],
                 'account':account,'orders':rows,'positions':positions,'symbols':symbols,'as_of_utc':self.g.clock(),
@@ -1579,6 +1605,7 @@ class Engine:
             'position_journal':copy.deepcopy(self.g.journal.data['positions']),
             'history_deals':[{k:getattr(d,k,None) for k in keys} for d in self.g.history],
             'history_state':{'updated':self.g.history_time,'error':self.g.history_error},
+             'pending_decision_scope':self.pending_decision_scope(),
             'operational_events':copy.deepcopy(list(getattr(self.log,'recent_events',()))) }
 
     def report_snapshot(self):
