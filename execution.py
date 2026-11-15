@@ -79,6 +79,10 @@ class Reporter:
 
     def event(self,symbol,text,**values):
         from activity_event_schema import normalize_event
+        trace_fields={}
+        if values.get('operation')=='pending_decision':
+            for key in ('operation','pending_decision_scope','pending_decisions'):
+                if key in values:trace_fields[key]=values.pop(key)
         row=normalize_event({"utc":datetime.now(timezone.utc).isoformat(),"symbol":symbol,
                              "message":text,**values})
         # Reports about protection, stale prices and AI timeouts belong in
@@ -86,13 +90,21 @@ class Reporter:
         self.recent_events.append(row)
         if self.console:
             print(f"{row['utc'][11:19]} | {symbol} | {text}",flush=True)
-        # Las muestras del análisis tienen su propio historial para que el
-        # volumen del dashboard no las desplace del informe de decisiones.
-        family='decisiones' if row.get('operation')=='pending_decision' else 'eventos'
-        with (self.folder/f"{family}_{row['utc'][:10]}.jsonl").open("a",encoding="utf-8") as f:
-            f.write(json.dumps(row,ensure_ascii=False,allow_nan=False,default=str)+"\n")
+        self._append_event('eventos',row)
+        if trace_fields:
+            # La muestra amplía el registro del ciclo y tiene su propia retención.
+            trace=normalize_event({"utc":row['utc'],"symbol":symbol,
+                "message":"Muestra de decisiones de entrada","activity_category":"ANÁLISIS",
+                "build":row.get('build'),"repair_id":row.get('repair_id'),
+                "correlation_id":row['event_id'],**trace_fields})
+            self._append_event('decisiones',trace)
+            self.recent_events.append(trace)
         if self.callback:
             self.callback(row)
+
+    def _append_event(self,family,row):
+        with (self.folder/f"{family}_{row['utc'][:10]}.jsonl").open("a",encoding="utf-8") as stream:
+            stream.write(json.dumps(row,ensure_ascii=False,allow_nan=False,default=str)+"\n")
 
     def report(self,symbol,state,detail,**values):
         row={"state":state,"detail":detail,**values}

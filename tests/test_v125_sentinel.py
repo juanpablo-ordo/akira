@@ -65,6 +65,17 @@ class SentinelV125EngineTests(PendingCase, unittest.TestCase):
         self.assertIn('enviables', body)
         self.assertIn('MT5 confirmadas', body)
         self.assertIn('SELL', body)
+        btc_cycle = next(row for row in map(json.loads, body.splitlines())
+                         if row['symbol'] == 'BTCUSDm' and row['message'].startswith('CICLO 1 '))
+        trace_rows = [json.loads(line) for path in (self.root/'logs').glob('decisiones_*.jsonl')
+                      for line in path.read_text(encoding='utf-8').splitlines()]
+        trace = next(row for row in trace_rows if row['correlation_id'] == btc_cycle['event_id'])
+        self.assertEqual(trace['operation'], 'pending_decision')
+        self.assertEqual(trace['pending_decision_scope'], engine.pending_decision_scope())
+        self.assertTrue(trace['pending_decision_scope'])
+        self.assertNotIn('pending_decisions', btc_cycle)
+        self.assertEqual({row['direction'] for row in trace['pending_decisions']['scenarios']},
+                         {'SELL LIMIT', 'SELL STOP', 'BUY LIMIT', 'BUY STOP'})
 
     def test_oco_removes_only_opposite_akira_pending_after_fill(self):
         engine = Engine(self.g, self.cfg, self.g.log)
