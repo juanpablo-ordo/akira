@@ -174,6 +174,7 @@ def _build_report(snapshot,hours=24):
         ]
     cutoff=as_of-float(hours)*3600 if hours else as_of
     account=snapshot.get('account') or {};ledger=snapshot.get('portfolio_risk') or {};symbols=snapshot.get('symbols') or {}
+    closed_symbols={s for s,r in (snapshot.get('markets') or {}).items() if r.get('scheduled_closed')}
     warnings=[]
     safety=snapshot.get('entry_safety') or {}
     if safety.get('enabled') and not safety.get('allowed',True):warnings.append(safety.get('reason','Nuevas entradas en pausa por pérdidas confirmadas.'))
@@ -194,7 +195,7 @@ def _build_report(snapshot,hours=24):
         ['Riesgo','Límite por operación USD',finite(snapshot.get('trade_risk_cap')),'Ninguna entrada nueva puede superarlo por tener presupuesto conjunto libre; las runners directas tienen además su propio tope reducido'],
         ['Velocidad','Último ciclo ms',finite(snapshot.get('cycle_ms')),'Medición del motor; no garantiza latencia futura del bróker']]
     for symbol,info in symbols.items():
-        if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
+        if symbol in closed_symbols:continue
         status=(snapshot.get('status') or {}).get(symbol) or {};runner=info.get('runner') or {};plan=runner.get('plan') or {};funding=runner.get('funding') or {}
         overview.append(f'{symbol}: {status.get("state","Sin estado")}. {status.get("detail","")} Runner: {runner.get("state","Sin diagnóstico")}. {runner.get("detail","")}')
         summary.append(['Operación',symbol,status.get('state','Sin estado'),status.get('detail','')])
@@ -218,6 +219,7 @@ def _build_report(snapshot,hours=24):
             pendings.append(row)
             if ticket:seen.add(ticket)
     for order in snapshot.get('orders') or []:
+        if order.get('symbol') in closed_symbols:continue
         if str(order.get('ticket')) in seen:continue
         typ=int(order.get('type',2));row={**order,'side':1 if typ%2==0 else -1,'kind':'LIMIT' if typ in (2,3,6,7) else 'STOP',
             'lane':'PENDING','confirmed':True,'quality_score':None}
@@ -325,7 +327,7 @@ def _build_report(snapshot,hours=24):
     summary.append(['Método','Estrellas y cercanía','Índices técnicos','No son probabilidades de ganar o activarse. No se ejecuta ninguna orden al generar este informe.'])
     from operation_verifier import verification
     for symbol in snapshot.get('symbols',{}):
-        if (snapshot.get('markets') or {}).get(symbol,{}).get('scheduled_closed'):continue
+        if symbol in closed_symbols:continue
         for stage in verification(snapshot,symbol)['stages']:
             summary.append(['Verificación',symbol+' · '+stage['name'],stage['state'],stage['detail']])
     for cohort,trial in ((study.get('selector_comparison') or {}).get('groups') or {}).items():
@@ -336,7 +338,6 @@ def _build_report(snapshot,hours=24):
     for name,row in (snapshot.get('markets') or {}).items():
         if row.get('scheduled_closed'):
             summary.append(['Mercados',name,'Cerrado en la captura','El informe conserva las operaciones históricas y la exposición registrada.'])
-    closed_symbols={s for s,r in (snapshot.get('markets') or {}).items() if r.get('scheduled_closed')}
     verifications=[r for r in (snapshot.get('pending_verifications') or {}).values() if r.get('symbol') not in closed_symbols]
     for r in verifications:
         for stage in r.get('stages') or []:

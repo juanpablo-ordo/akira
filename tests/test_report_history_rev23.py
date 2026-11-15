@@ -8,7 +8,7 @@ from operation_report import build_report, read_recent_events
 
 
 class ReportHistoryTests(unittest.TestCase):
-    def test_closed_market_keeps_orders_closures_and_decisions_in_period(self):
+    def test_closed_market_keeps_risk_closures_and_decisions_in_period(self):
         now = 1794712159
         exit_time = now - 2400
         placed = datetime.fromtimestamp(exit_time - 600, timezone.utc).isoformat()
@@ -18,6 +18,9 @@ class ReportHistoryTests(unittest.TestCase):
             'symbols': {'XAUUSDm': {}},
             'markets': {'XAUUSDm': {'scheduled_closed': True}},
             'orders': [{'symbol': 'XAUUSDm', 'ticket': 56, 'type': 3, 'entry': 2100, 'sl': 2120, 'tp': 2050}],
+            'portfolio_risk': {'reserved_usd': 2, 'rows': [
+                {'symbol': 'XAUUSDm', 'ticket': 56, 'kind': 'pending', 'reserved_usd': 2},
+            ]},
             'history_deals': [
                 {'position_id': 42, 'symbol': 'XAUUSDm', 'time': exit_time - 900,
                  'type': 1, 'entry': 0, 'price': 2100, 'volume': 0.01, 'magic': 170002},
@@ -33,7 +36,9 @@ class ReportHistoryTests(unittest.TestCase):
         self.assertEqual([(r['side'], r['net_usd']) for r in result['closed']], [('SELL', 19)])
         self.assertEqual(result['tables']['Cierres'][0][1], 'XAUUSDm')
         self.assertEqual(result['tables']['Decisiones'][0][4], 'Venció')
-        self.assertEqual(result['pendings'][0]['ticket'], 56)
+        self.assertEqual(result['pendings'], [])
+        self.assertEqual(result['snapshot']['portfolio_risk']['reserved_usd'], 2)
+        self.assertEqual(result['tables']['Riesgo'][0][:2], ['56', 'XAUUSDm'])
         self.assertEqual(build_report(snapshot, 0)['closed'], [])
 
     def test_sampled_decisions_are_read_separately_and_scoped_to_account(self):
