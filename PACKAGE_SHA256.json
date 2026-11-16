@@ -431,7 +431,7 @@
   "tests/test_studio_rev10_sources_speed.py": "d077c1eb03df30835711e74390068a0f4dc41c6ebe4cc670472c578f84d30409",
   "tests/test_studio_rev11_capital_chat_timing.py": "53f6beadfd1186545e572c7e91af978ba4d9780ce7432963c017f4e1984ad2e2",
   "tests/test_studio_rev12_mt5_reconnect.py": "5caeb6ab19355034ec19037c11b20eeace7dfc57504a76577aaf02beb5b2d327",
-  "tests/test_studio_rev13_mt5_accounts.py": "521a8b8d5f7378bb76fb02304e8fb62a37f892f1f312ba3d7e991e7c95c0d260",
+  "tests/test_studio_rev13_mt5_accounts.py": "ec8bc1293ea34efc70b39f8d965072ed1b4adb6ffc0c21191deaa8a57a7a2813",
   "tests/test_studio_rev14_risk_resources.py": "7d28ca5eb296b84b3b5689f1b089b7dad56e719741274a006c99ea63774ccb82",
   "tests/test_studio_rev15_conversation_core.py": "a45b1c1e2208346bd1ff50d2fbecbb03ce0fd8f915e8fc3f326e3919408c69a7",
   "tests/test_studio_rev16_user_requests.py": "bcb13a82e9014ea56c1a79199d133f0cf86dd2a54ba1792e4505796c94998edb",
