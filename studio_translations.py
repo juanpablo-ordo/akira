@@ -173,7 +173,8 @@ EN.update({
   "DESINSTALAR AKIRA": "UNINSTALL AKIRA",
   "ACERCA DE": "ABOUT",
   "RETIRAR PENDIENTE": "CANCEL PENDING ORDER",
-  "ENVIAR AL BRÓKER": "SEND TO BROKER"
+  "ENVIAR AL BRÓKER": "SEND TO BROKER",
+  "Selecciona y aplica las reglas desde Análisis y operación. Las variantes en prueba conservan los límites de cuenta y riesgo.": "Select and apply the rules in Analysis and Execution. Experimental strategies remain subject to account and risk limits."
 })
 
 class Translator:
