@@ -246,12 +246,12 @@ class StudioWindow(QMainWindow):
         detail.body.addWidget(self.pending_detail_tabs,1);self.pending_state=label('','muted');self.pending_state.setWordWrap(True);detail.body.addWidget(self.pending_state)
         note=label('La revisión IA es obligatoria antes de enviar o cambiar una propuesta automática. Debe corresponder a sus niveles, lote y evidencia actuales.','muted');note.setWordWrap(True);detail.body.addWidget(note)
         action=QGridLayout()
-        for i,(title,callback,glyph) in enumerate([('REVISAR SELECCIONADA',self.verify_selected,'refresh'),('VERIFICAR EN MT5',lambda:self.navigate(2),'shield'),('RETIRAR PENDIENTE',self.cancel_selected,'pending')]):action.addWidget(self.btn(title,callback,'primary' if i==1 else '',glyph),i//2,i%2)
+        for i,(title,callback,glyph) in enumerate([('REVISAR SELECCIONADA',self.verify_selected,'refresh'),('VERIFICAR EN MT5',lambda:self.navigate(3),'shield'),('RETIRAR PENDIENTE',self.cancel_selected,'pending')]):action.addWidget(self.btn(title,callback,'primary' if i==1 else '',glyph),i//2,i%2)
         detail.body.addLayout(action);right.addWidget(detail,1)
 
     def build_account(self):
         _,layout=self.page();self.account_split,(left,right)=self.split(layout,(3,2))
-        for title,attribute,columns in [('ÓRDENES PENDIENTES CONFIRMADAS EN MT5','orders',['Ticket','Símbolo','Tipo','Volumen','Entrada','SL','TP','Autor']),('POSICIONES ABIERTAS EN MT5','positions',['Ticket','Símbolo','Tipo','Volumen','Entrada','SL','TP','P/L USD','Autor']),('OPERACIONES Y AUDITORÍA','audit_table',['Hora','Símbolo','Tipo','Motivo / contexto'])]:
+        for title,attribute,columns in [('ÓRDENES PENDIENTES CONFIRMADAS EN MT5','orders',['Ticket','Símbolo','Tipo','Volumen','Entrada','SL','TP','Autor']),('POSICIONES ABIERTAS EN MT5','positions',['Ticket','Símbolo','Tipo','Volumen','Entrada','SL','TP','P/L','Autor']),('OPERACIONES Y AUDITORÍA','audit_table',['Hora','Símbolo','Tipo','Motivo / contexto'])]:
             card=self.card(title,'account');table=self.table(columns);setattr(self,attribute,table);card.body.addWidget(table,1);left.addWidget(card,1)
         budget=self.card('PRESUPUESTO Y LÍMITES','shield')
         self.budget_status=label('','muted');self.budget_status.setWordWrap(True);budget.body.addWidget(self.budget_status)
@@ -311,6 +311,14 @@ class StudioWindow(QMainWindow):
         pending=self.card('PENDIENTES: PROPUESTA, REVISIÓN Y MT5','pending')
         self.analysis_pending_table=self.table(['Símbolo','Sentido','Entrada','SL','TP','Etapa'])
         self.analysis_pending_table.setMinimumHeight(150);pending.body.addWidget(self.analysis_pending_table,1)
+        self.analysis_pending_table.itemSelectionChanged.connect(self.analysis_pending_selected)
+        self.analysis_pending_detail=label('Selecciona una propuesta para consultar su estado y motivos.','muted')
+        self.analysis_pending_detail.setWordWrap(True);pending.body.addWidget(self.analysis_pending_detail)
+        pending_actions=QHBoxLayout()
+        pending_actions.addWidget(self.btn('REVISAR SELECCIONADA',self.verify_analysis_selected,'','refresh'))
+        pending_actions.addWidget(self.btn('ENVIAR AL BRÓKER',self.send_analysis_selected,'primary','pending'))
+        pending_actions.addWidget(self.btn('RETIRAR PENDIENTE',self.cancel_analysis_selected))
+        pending.body.addLayout(pending_actions)
         right.addWidget(pending,2)
         positions_card=self.card('POSICIONES ABIERTAS EN MT5','account')
         self.analysis_positions_table=self.table(['Ticket','Símbolo','Sentido','Lote','SL','TP','P/L'])
@@ -694,7 +702,7 @@ class StudioWindow(QMainWindow):
         self.connection_footer.setText('● MT5 '+('conectado' if connected else 'esperando'))
         self.mode_button.setEnabled(connected and not self.controller.preview)
         connection=view.get('mt5_connection') or {};message=str(connection.get('message') or view.get('error') or 'Esperando conexión con MetaTrader 5.')
-        action=str(connection.get('next_action') or 'Abre MT5 con tu cuenta demo conectada. Si usas varios terminales, selecciona el correcto en Ajustes → Operación.')
+        action=str(connection.get('next_action') or 'Abre MT5 con tu cuenta demo conectada. Si hay varios terminales, deja abierto el deseado y pulsa Volver a detectar.')
         delay=connection.get('retry_seconds') or 0
         detail=message+' '+action+(f' Próximo intento en {delay} segundos.' if delay else '')
         self.mt5_banner.setVisible(not connected);self.mt5_detail.setText(detail)
@@ -794,6 +802,42 @@ class StudioWindow(QMainWindow):
         self.pending_state.setToolTip('Esenciales pendientes: '+', '.join(check.get('critical_missing') or [])+'\nIA: '+str(check.get('ai_gate') or 'opcional'))
         self.pending_timeline.setText('Tesis '+str(plan.get('key') or '')+'\n'+('Ticket MT5 '+str(plan['ticket']) if plan.get('ticket') else 'Sin ticket confirmado; es una propuesta.')+'\n'+str(plan.get('status_label','')))
 
+    def analysis_pending_selected(self):
+        if not hasattr(self,'analysis_pending_table'):return
+        plan=self.analysis_pending_table.rows.get(self.analysis_pending_table.selected_key())
+        if not plan:
+            self.analysis_pending_detail.setText('Selecciona una propuesta para consultar su estado y motivos.')
+            return
+        self.analysis_pending_detail.setText(
+            str(plan.get('status_label') or plan.get('display_state') or 'PROPUESTA')+
+            ' · '+str(plan.get('reason') or 'Sin tesis registrada')[:450])
+    def verify_analysis_selected(self):
+        key=self.analysis_pending_table.selected_key()
+        plan=self.analysis_pending_table.rows.get(key)
+        if plan:
+            self.controller.request({'action':'verify_pending','symbol':plan['symbol'],'id':key,'deep':True})
+    def send_analysis_selected(self):
+        key=self.analysis_pending_table.selected_key()
+        plan=self.analysis_pending_table.rows.get(key)
+        if not plan:return
+        if plan.get('ticket'):
+            self.information('Pendiente','Ya tiene ticket MT5. No debe enviarse de nuevo.')
+            return
+        detail=('Se comprobarán permisos, revisión IA exacta, riesgo, margen y geometría antes del envío.\n'
+                +str(plan['symbol'])+' · '+str(plan['entry']))
+        if self.confirm('Enviar propuesta',detail):
+            self.controller.request({'action':'assistant_plan','candidate_id':key,
+                                     'symbol':plan['symbol'],'side':'BUY' if plan['side']==1 else 'SELL',
+                                     'kind':plan['kind'],'entry':plan['entry'],'sl':plan['sl'],
+                                     'tp':plan['tp'],'reason':plan.get('reason') or 'Propuesta seleccionada'})
+    def cancel_analysis_selected(self):
+        plan=self.analysis_pending_table.rows.get(self.analysis_pending_table.selected_key())
+        if not plan:return
+        if not plan.get('ticket'):
+            self.information('Pendiente','La propuesta no es una orden confirmada en MT5.')
+            return
+        if self.confirm('Retirar pendiente','¿Retirar el ticket '+str(plan['ticket'])+'? Se comprobará que pertenece a AKIRA.'):
+            self.controller.request({'action':'cancel_pending','ticket':plan['ticket']})
     def render_account(self):
         v=self.controller.view
         for name in ('orders','positions'):
@@ -833,6 +877,7 @@ class StudioWindow(QMainWindow):
             (str(key),[row.get('symbol'),('BUY' if row.get('side') in (1,'BUY') else 'SELL')+' '+str(row.get('kind') or ''),
              number(row.get('entry')),number(row.get('sl')),number(row.get('tp')),str(row.get('status_label') or row.get('display_state') or 'PROPUESTA')],row)
             for key,row in self.pending_rows()][:120])
+        self.analysis_pending_selected()
         self.analysis_positions_table.update_rows([
             (str(row.get('ticket')),[row.get('ticket'),row.get('symbol'),
              'BUY' if row.get('side') in (1,'BUY') else 'SELL',number(row.get('volume'),2),
@@ -1117,7 +1162,7 @@ class StudioWindow(QMainWindow):
     def send_selected(self):
         p=self.selected_plan()
         if not p:return
-        if p.get('ticket'):self.information('Pendiente','Ya tiene ticket; se comprobará su estado en la cuenta.');self.navigate(2);return
+        if p.get('ticket'):self.information('Pendiente','Ya tiene ticket; se comprobará su estado en la cuenta.');self.navigate(3);return
         if self.confirm('Enviar propuesta','Se enviará la propuesta con sus niveles exactos después de comprobar modo, precio, riesgo y margen.\n'+p['symbol']+' · '+str(p['entry'])):
             self.controller.request({'action':'assistant_plan','candidate_id':self.pending_table.selected_key(),'symbol':p['symbol'],'side':'BUY' if p['side']==1 else 'SELL','kind':p['kind'],'entry':p['entry'],'sl':p['sl'],'tp':p['tp'],'reason':p.get('reason','Propuesta seleccionada por el usuario')})
     def cancel_selected(self):
@@ -1280,7 +1325,7 @@ class StudioWindow(QMainWindow):
     def show_strategies(self):
         from strategy_lab import definitions,strategy_text
         rows=definitions();dialog=QDialog(self);dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose);dialog.setWindowTitle(self.text('ESTRATEGIAS'));dialog.resize(1150,700);outer=QVBoxLayout(dialog)
-        tools=QHBoxLayout();tools.addWidget(self.lbl('Selecciona y aplica las reglas desde Pendientes. Las variantes en prueba conservan los límites de cuenta y riesgo.','muted'));tools.addWidget(self.btn('IR A ANÁLISIS Y OPERACIÓN',lambda:(dialog.accept(),self.navigate(3))));outer.addLayout(tools)
+        tools=QHBoxLayout();tools.addWidget(self.lbl('Selecciona y aplica las reglas desde Análisis y operación. Las variantes en prueba conservan los límites de cuenta y riesgo.','muted'));tools.addWidget(self.btn('IR A ANÁLISIS Y OPERACIÓN',lambda:(dialog.accept(),self.navigate(3))));outer.addLayout(tools)
         layout=QHBoxLayout();outer.addLayout(layout,1);table=DataTable([self.text(t) for t in ['Estrategia','Símbolo','Uso','Cierres reales','Evidencia']]);table.setColumnWidth(0,250);layout.addWidget(table,2);box=QTextBrowser();layout.addWidget(box,3)
         current=(self.controller.view.get('research') or {}).get('strategy_lab') or {};measured={r['id']:r for r in current.get('strategies') or []};display=[]
         for definition in rows:

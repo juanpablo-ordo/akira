@@ -54,6 +54,36 @@ class NativeScope(unittest.TestCase):
             finally:
                 window.close();self.app.processEvents()
 
+    def test_integrated_pending_actions_require_selection_and_confirmation(self):
+        from desktop_qt import StudioWindow
+        import tempfile
+        with tempfile.TemporaryDirectory() as folder:
+            window=StudioWindow(folder,preview=True,start_actor=False)
+            try:
+                pending={'symbol':'BTCUSDm','side':-1,'kind':'STOP','entry':100,
+                         'sl':105,'tp':90,'reason':'Test · tendencia bajista'}
+                key='test:BTC:SELL'
+                window.analysis_pending_table.update_rows([
+                    (key,['BTCUSDm','SELL STOP','100','105','90','PROPUESTA'],pending)])
+                window.analysis_pending_table.selectRow(0)
+                self.assertIn('tendencia bajista',window.analysis_pending_detail.text())
+                with patch.object(window.controller,'request') as submit,patch.object(window,'confirm',return_value=False):
+                    window.verify_analysis_selected()
+                    window.send_analysis_selected()
+                    submit.assert_called_once_with({'action':'verify_pending','symbol':'BTCUSDm','id':key,'deep':True})
+                with patch.object(window.controller,'request') as submit,patch.object(window,'confirm',return_value=True):
+                    window.send_analysis_selected()
+                    args=submit.call_args.args[0]
+                    self.assertEqual(args['action'],'assistant_plan')
+                    self.assertEqual((args['candidate_id'],args['side'],args['kind']),(key,'SELL','STOP'))
+                    self.assertEqual((args['entry'],args['sl'],args['tp']),(100,105,90))
+                pending['ticket']=98765
+                with patch.object(window.controller,'request') as submit,patch.object(window,'confirm',return_value=True):
+                    window.cancel_analysis_selected()
+                    submit.assert_called_once_with({'action':'cancel_pending','ticket':98765})
+            finally:
+                window.close();self.app.processEvents()
+
     def test_mobile_requires_private_tls_pin_and_explicit_user_confirmation(self):
         src=(ROOT/'mobile/src/com/akira/companion/CompanionClient.java').read_text('utf-8')
         android=(ROOT/'mobile/src/com/akira/companion/MainActivity.java').read_text('utf-8')

@@ -7,8 +7,8 @@ on:
       version:
         description: Versión de entrega
         type: choice
-        options: ['0.1.0', '0.2.0', '0.3.0']
-        default: '0.1.0'
+        options: ['auto', '0.1.0', '0.2.0', '0.3.0']
+        default: 'auto'
   push:
     branches:
       - akira-rev19-verifiable-core
@@ -35,7 +35,7 @@ concurrency:
 env:
   PYTHONUTF8: '1'
   PYTHONIOENCODING: utf-8
-  AKIRA_RELEASE_VERSION: ${{ inputs.version || (github.ref_name == 'akira-0.3' && '0.3.0' || '0.1.0') }}
+  AKIRA_RELEASE_VERSION: ${{ (inputs.version != 'auto' && inputs.version) || (github.ref_name == 'akira-0.3' && '0.3.0' || '0.1.0') }}
 
 jobs:
   build-windows:
