@@ -44,9 +44,15 @@ class NativeStudioTests(unittest.TestCase):
         from desktop_qt import StudioWindow
         from resource_optimizer import profile_budget
         with tempfile.TemporaryDirectory() as tmp:
+            # AKIRA 0.1 reads the 64-bit identity from MT5, not from an
+            # editable account field. A persisted identity must keep its bits.
+            saved=load_config(DEFAULT);saved['expected_login']=2**40
+            save_config(saved,Path(tmp)/'akira_config.json')
             window=StudioWindow(tmp,preview=True,start_actor=False)
             try:
-                panel=window.settings_panel;panel.fields['expected_login'][0].setText(str(2**40));panel.apply_profile('Ahorro de energía');draft=panel.draft()
+                panel=window.settings_panel
+                self.assertNotIn('expected_login',panel.fields)
+                panel.apply_profile('Ahorro de energía');draft=panel.draft()
                 self.assertEqual(draft['expected_login'],2**40)
                 for key,value in profile_budget('Ahorro de energía').items():self.assertEqual(draft['desktop'][key],value)
                 self.assertNotIn('assistant.local_runtime_idle_seconds',panel.fields)
