@@ -2,6 +2,20 @@
 import math
 
 
+def projected_margin(account, additional, minimum_pct):
+    """The new request, pending triggers and unresolved sends share one margin budget."""
+    equity, used, free = (float(getattr(account, key)) for key in ('equity', 'margin', 'margin_free'))
+    capital = (equity, used, free, additional, minimum_pct)
+    if not all(math.isfinite(amount) for amount in capital) or min(used, additional, minimum_pct)<0:
+        raise ValueError('MT5 devolvió cifras de margen inválidas')
+    projected = used + additional
+    percent = equity / projected * 100 if projected else None
+    return {'used': used, 'free': free, 'additional': additional, 'projected': projected,
+            'level_pct': percent, 'minimum_pct': minimum_pct,
+            'currency': str(getattr(account, 'currency', '') or ''),
+            'allowed': additional <= free and (percent is None or percent >= minimum_pct)}
+
+
 def portfolio_cap(rules,balance,equity,protection=None):
     capital=max(0.0,min(float(equity),float(balance)))
     cap=capital*float(rules['portfolio_capital_pct'])/100

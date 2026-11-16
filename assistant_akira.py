@@ -497,6 +497,9 @@ class AkiraAssistant:
                      q+' futures positioning derivatives sentiment '+year,
                      q+' professional trader analysis '+year]
         else:
+            topical=re.sub(r'^(?:sabes(?:\s+algo)?\s+(?:sobre|de)\s+|qu[eé]\s+pas[oó]\s+con\s+)', '',q,flags=re.I)
+            topical=re.sub(r'\bde\s+el\b','del',topical,flags=re.I)
+            if fresh and topical!=q:rows.append(topical+' noticias '+year)
             rows += [q+' official source official announcement '+year if fresh else q+' official source',
                      q+' '+year+' Reuters AP latest' if fresh else q+' independent reliable sources',
                      q+' '+year+' latest news' if fresh else q+' expert analysis']

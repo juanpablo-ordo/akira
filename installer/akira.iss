@@ -1,5 +1,8 @@
 #define AppName "AKIRA"
-#define AppVersion "16.5.4"
+#define AppVersion GetEnv("AKIRA_RELEASE_VERSION")
+#if AppVersion == ""
+  #error AKIRA_RELEASE_VERSION must match akira_version.RELEASE_VERSION.
+#endif
 #define LocalAIModelPath GetEnv("AKIRA_MODEL_PATH")
 #define LocalAIModelSHA256 "740185b21d22ceb83a11c3aa62ad5842ef32c70f6096d756bbee85a1e4ec34b8"
 #if LocalAIModelPath == ""
@@ -17,7 +20,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\dist_installer
-OutputBaseFilename=AKIRA_16_5_4_STUDIO_REV23_20261114_IA_INCLUIDA
+OutputBaseFilename=AKIRA_{#AppVersion}_Windows_x64_IA_INCLUIDA
 UninstallDisplayIcon={app}\AKIRA.exe
 SetupIconFile=..\assets\akira.ico
 WizardImageFile=..\assets\installer_left.bmp
@@ -33,7 +36,7 @@ UsePreviousAppDir=no
 CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
-VersionInfoVersion=16.5.4.0
+VersionInfoVersion={#AppVersion}.0
 VersionInfoDescription=AKIRA - Instalador de Windows
 
 [Languages]

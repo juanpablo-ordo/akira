@@ -1,3 +1,4 @@
+from akira_version import DATA_SCHEMA
 import copy,unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -13,7 +14,7 @@ class AlwaysOnV122Tests(PendingCase,unittest.TestCase):
     def setUp(self):
         super().setUp();self.cfg=load_config(copy.deepcopy(DEFAULT));self.e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(self.e.close);self.e.warmup()
     def test_defaults_keep_safe_map_alive_and_manage_stale_orders(self):
-        self.assertEqual(self.cfg['schema_version'],1600)
+        self.assertEqual(self.cfg['schema_version'],DATA_SCHEMA)
         self.assertTrue(self.cfg['execution']['always_keep_pending_map'])
         self.assertTrue(self.cfg['execution']['pending_budget_fit_entry'])
         self.assertTrue(self.cfg['strategy']['pending_dynamic_structural_fallback'])

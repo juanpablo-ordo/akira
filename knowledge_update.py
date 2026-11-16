@@ -10,6 +10,7 @@ class KnowledgeUpdater:
         self.stop=threading.Event();self.wake=threading.Event();self.authorized=False;self.thread=None;self.next_due=0;self.announced=False
         self.status={'state':'LISTO','updated':None,'sources':[]};self.lock=threading.RLock()
         self.batch_timeout_seconds=45
+        self.retries={}
     def read(self):
         with self.lock:return copy.deepcopy(self.status)
     def start(self, initial_delay_seconds=0):
@@ -35,6 +36,9 @@ class KnowledgeUpdater:
         for name,url,desc in CATALOG:
             old=store.get(url)
             if old and now-float(old['fetched'])<interval:rows.append({'name':name,'url':url,'state':'EN CACHÉ','fetched':old['fetched']})
+            elif self.retries.get(url,(0,0))[1]>now:
+                rows.append({'name':name,'url':url,'state':'REINTENTO PROGRAMADO','fetched':old.get('fetched') if old else None,
+                             'retry_utc':self.retries[url][1]})
             else:jobs.append((name,url))
         with self.lock:self.status={'state':'ACTUALIZANDO','updated':self.status['updated'],'sources':rows}
         pool=ThreadPoolExecutor(max_workers=3,thread_name_prefix='AkiraKnowledgeSource');received=set()
@@ -42,7 +46,11 @@ class KnowledgeUpdater:
             from network_tls import connection_message
             state,detail=connection_message(exc)
             old=store.get(url)
-            return {'name':name,'url':url,'state':state,'detail':detail,
+            attempts=self.retries.get(url,(0,0))[0]+1
+            backoff=3600 if state=='CONEXIÓN SEGURA PENDIENTE' else 300*2**min(attempts-1,6)
+            retry=now+min(interval,backoff)
+            self.retries[url]=(attempts,retry)
+            return {'name':name,'url':url,'state':state,'detail':detail,'retry_utc':retry,
                 'fetched':old.get('fetched') if old else None,'cached_content':bool(old),
                 'error':type(exc).__name__+': '+str(exc)[:220]}
         try:
@@ -53,6 +61,7 @@ class KnowledgeUpdater:
                     name,url=pending[future];received.add(future)
                     try:
                         result=future.result();row={'name':name,'url':url,'state':'INDEXADA','fetched':result['fetched'],'characters':result['characters']}
+                        self.retries.pop(url,None)
                     except Exception as exc:row=failed(name,url,exc)
                     rows.append(row)
                     with self.lock:self.status['sources']=copy.deepcopy(rows)
@@ -61,12 +70,16 @@ class KnowledgeUpdater:
                 if future not in received:
                     future.cancel();rows.append(failed(name,url,TimeoutError('Tiempo de espera de biblioteca agotado')))
         finally:pool.shutdown(wait=False,cancel_futures=True)
-        failures=[r for r in rows if r.get('error')]
-        if failures:self.next_due=min(self.next_due,now+3600)
+        failures=[r for r in rows if r.get('error') or r.get('state')=='REINTENTO PROGRAMADO']
+        retries=[retry for _,retry in self.retries.values() if retry>now]
+        if retries:self.next_due=min(self.next_due,min(retries))
         state='ACTUALIZACIÓN CANCELADA' if self.stop.is_set() else 'ACTUALIZACIÓN PARCIAL' if failures else 'ACTUALIZADO'
-        with self.lock:self.status={'state':state,'updated':now,'sources':rows,'next_update':self.next_due}
+        with self.lock:
+            successful=[r['fetched'] for r in rows if r.get('state') in ('INDEXADA','EN CACHÉ')]
+            self.status={'state':state,'updated':now,'sources':rows,'next_update':self.next_due,
+                         'last_success':max(successful) if successful else self.status.get('last_success')}
         detail=('Biblioteca: '+str(sum(r['state'] in ('INDEXADA','EN CACHÉ') for r in rows))+'/'+str(len(CATALOG))+' referencias vigentes. '+
-            ('Quedaron '+str(len(failures))+' fuentes pendientes. Las ya guardadas siguen disponibles con su fecha; se volverá a consultar en una hora. ' if failures else '')+
+            ('Quedaron '+str(len(failures))+' fuentes pendientes. Las ya guardadas siguen disponibles con su fecha; cada fuente tiene su propio reintento. ' if failures else '')+
             'La biblioteca ayuda a conversar y estudiar; no bloquea las operaciones de BTC u oro.')
         self.emit({'stage':state,'detail':detail,'status':self.read()})
         if options.get('automatic_cache',True):

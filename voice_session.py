@@ -21,9 +21,12 @@ def recognition_model(root,name):
 def transcribe_with_recovery(model,audio,language='es',beam_size=1,vad_filter=True):
  """Retry suspiciously short speech with stronger decoding, preserving short replies."""
  def decode(beam,vad):
-  segments,_=model.transcribe(audio,language=language,beam_size=beam,
-                              vad_filter=vad,condition_on_previous_text=False)
-  return ' '.join(segment.text.strip() for segment in segments).strip()[:1500]
+  segments,info=model.transcribe(audio,language=language,beam_size=beam,
+                                 vad_filter=vad,condition_on_previous_text=False)
+  if language is None and (getattr(info,'language_probability',0) or 0)<.60:
+   return ''
+  return ' '.join(segment.text.strip() for segment in segments
+                  if getattr(segment,'no_speech_prob',0)<.80).strip()[:1500]
  first=decode(beam_size,vad_filter)
  if not first and vad_filter and 8000<=len(audio)<32000:
   # Capture already gated on voice energy. Whisper's VAD can still cut an
@@ -37,14 +40,48 @@ def transcribe_with_recovery(model,audio,language='es',beam_size=1,vad_filter=Tr
   return second
  return first
 
-def audio_inventory():
- import sounddevice as sd
- inputs=[];outputs=[]
- for i,d in enumerate(sd.query_devices()):
-  item={'id':i,'name':str(d['name'])}
-  if d.get('max_input_channels',0)>0:inputs.append(item)
-  if d.get('max_output_channels',0)>0:outputs.append(item)
- return {'inputs':inputs,'outputs':outputs}
+def audio_inventory(sd=None):
+ if sd is None:
+  import sounddevice as sd
+ apis=list(sd.query_hostapis())
+ routes={'inputs':[],'outputs':[]}
+ for index,device in enumerate(sd.query_devices()):
+  api=apis[device['hostapi']]['name']
+  for kind in ('input','output'):
+   channels=int(device.get(f'max_{kind}_channels',0))
+   if not channels:continue
+   name=str(device['name'])
+   identity=json.dumps([kind,api,name,channels],ensure_ascii=False)
+   key='portaudio:'+hashlib.sha256(identity.encode()).hexdigest()[:24]
+   routes[kind+'s'].append({'id':index,'key':key,'name':f'{name} · {api}',
+                            'api':api})
+ for items in routes.values():
+  for item in items:
+   item['ambiguous']=sum(other['key']==item['key'] for other in items)>1
+  items.sort(key=lambda item:('wasapi' not in item['api'].casefold(),item['name'].casefold()))
+ return routes
+
+def audio_endpoint(sd,stored,kind):
+ """Resolve persisted metadata on each open. Old numeric settings remain readable."""
+ if stored in (None,-1,''):
+  # WASAPI follows the Windows default endpoint, independently of legacy MME.
+  try:
+   api=next(row for row in sd.query_hostapis() if 'wasapi' in row['name'].casefold())
+   default_index=int(api['default_'+kind+'_device'])
+   if default_index>=0:return default_index
+  except (AttributeError,KeyError,StopIteration,TypeError,ValueError):
+   pass
+  return None
+ if isinstance(stored,int) and not isinstance(stored,bool):return stored
+ candidates=[row for row in audio_inventory(sd)[kind+'s'] if row['key']==stored]
+ if len(candidates)!=1:
+  raise RuntimeError('El dispositivo seleccionado no está disponible o tiene un nombre duplicado. Elige otro dispositivo.')
+ return candidates[0]['id']
+
+def audio_device_name(sd,device,kind):
+ try:info=sd.query_devices(device,kind)
+ except (AttributeError,ValueError):info={}
+ return str(info.get('name') or ('Predeterminado de Windows' if device is None else device))
 
 def voice_matches_language(row,language):
  """Keep Windows voices selectable even when SAPI reports numeric locales."""
@@ -371,6 +408,21 @@ class VoiceSession:
   self.speech_chunks=queue.Queue(maxsize=32);self._response_streaming=threading.Event();self._speech_queue_thread=None;self._speech_server=None;self._speech_epoch=0
   self._speech_queue_lock=threading.Lock()
   self.last_error='';self._speech_pending=0
+  self._input_changed=threading.Event()
+ def configure_audio(self,*,input_device,output_device,language,rate,volume,voice=None):
+  previous_input=self.options.get('input_device')
+  previous_language=self.options.get('language','es')
+  previous_output=self.options.get('output_device')
+  self.options.update(input_device=input_device,output_device=output_device,
+                      language=language,rate=rate,volume=volume)
+  if voice is not None:self.voice=dict(voice)
+  if previous_input!=input_device or language!=previous_language:
+   self._revision+=1
+   self._drain()
+  if previous_input!=input_device:self._input_changed.set()
+  if previous_output!=output_device and self.speaking.is_set():
+   self.interrupt()
+   self.event('state',text='Salida cambiada. Vuelve a hablar para escuchar la respuesta en el nuevo dispositivo.')
  def event(self,kind,**data):
   if kind=='error':self.last_error=str(data.get('text',''))
   elif kind in ('turn_started','playback_start'):self.last_error=''
@@ -398,6 +450,7 @@ class VoiceSession:
   self.samples=[]
  def stop(self):
   self.stop_event.set();self.interrupt();self._drain()
+  self._input_changed.set();self.last_text=''
   if self._speech_server:self._speech_server.close()
   if self.stream:
    try:self.stream.abort()
@@ -447,18 +500,15 @@ class VoiceSession:
    if self._speech_queue_thread and self._speech_queue_thread.is_alive():return
    self._speech_queue_thread=threading.Thread(target=work,name='AkiraSpokenSentences',daemon=True);self._speech_queue_thread.start()
  def _run(self):
+  started=time.monotonic()
   try:
    import numpy as np,sounddevice as sd
-   device=self.options.get('input_device');device=None if device in (None,-1,'') else int(device)
-   inventory=audio_inventory()
-   if device is not None and device not in [d['id'] for d in inventory['inputs']]:raise RuntimeError('El micrófono seleccionado se desconectó')
-   if not inventory['inputs']:raise RuntimeError('No hay micrófonos disponibles. Revisa los permisos de Windows para AKIRA.')
    model_name=str(self.options.get('model','tiny'))
    if model_name not in ('tiny','base','small'):model_name='tiny'
    self.event('state',text='Preparando reconocimiento. La primera vez puede necesitar Internet para descargar el modelo.')
    model=recognition_model(self.root,model_name)
    if self.stop_event.is_set():return
-   reader=threading.Thread(target=self._capture,args=(sd,device),name='AkiraMicrophone',daemon=True);self._threads.append(reader);reader.start()
+   reader=threading.Thread(target=self._capture,args=(sd,),name='AkiraMicrophone',daemon=True);self._threads.append(reader);reader.start()
    active=[];silence=0;partial_due=0;epoch=self._revision
    while not self.stop_event.is_set():
     try:chunk=self.audio.get(timeout=.25)
@@ -483,16 +533,32 @@ class VoiceSession:
      active=[];silence=0
      if text:
       self.awaiting.set();self.event('final',text=text);self.event('state',text='Procesando tu mensaje')
-     else:self.event('state',text='No reconocí palabras · Escuchando')
+     else:self.event('state',text='No entendí con suficiente claridad. Repite la frase.',stage='recognition')
   except Exception as exc:
-   if not self.stop_event.is_set():self.event('error',text='Voz: '+str(exc)[:400]);self.stop_event.set()
+   if not self.stop_event.is_set():
+    self.event('error',text='Reconocimiento: '+str(exc)[:350],stage='recognition',
+               duration_seconds=round(time.monotonic()-started,2))
+    self.stop_event.set()
   finally:
    self.started=False
    if self.stream:
     try:self.stream.close()
     except Exception:pass
    self.stream=None
- def _capture(self,sd,device):
+ def _capture(self,sd,default_device=None):
+  while not self.stop_event.is_set():
+   self._input_changed.clear()
+   selected=self.options.get('input_device')
+   started=time.monotonic()
+   try:
+    device=audio_endpoint(sd,selected,'input') if default_device is None else default_device
+    self._capture_route(sd,device,selected)
+   except Exception as exc:
+    if not self.stop_event.is_set() and not self._input_changed.is_set():
+     self.event('error',text='Micrófono: '+str(exc)[:240]+' · Elige otro micrófono en Voz y llamada.',
+                stage='capture',duration_seconds=round(time.monotonic()-started,2))
+     while not self.stop_event.is_set() and not self._input_changed.wait(.20):pass
+ def _capture_route(self,sd,device,selected):
   stream=None
   try:
    import numpy as np
@@ -500,14 +566,20 @@ class VoiceSession:
    try:sd.check_input_settings(device=device,channels=1,dtype='float32',samplerate=rate)
    except Exception:rate=int(sd.query_devices(device,'input')['default_samplerate'])
    count=max(1,int(rate*.1));stream=sd.InputStream(device=device,samplerate=rate,channels=1,dtype='float32',blocksize=count)
-   self.stream=stream;running=False
-   while not self.stop_event.is_set():
+   self.stream=stream;running=False;check_default=0.0
+   while not self.stop_event.is_set() and not self._input_changed.is_set():
     muted=self.paused.is_set() or self.awaiting.is_set() or self.speaking.is_set()
     if muted:
      if running:stream.stop();running=False
      self.stop_event.wait(.05);continue
     if not running:
-     stream.start();running=True;self.event('state',text='Micrófono activo · Escuchando')
+     stream.start();running=True
+     self.event('audio_route',direction='input',selected=selected,
+                effective=audio_device_name(sd,device,'input'),rate=rate,channels=1)
+     self.event('state',text='Micrófono activo · Escuchando')
+    if selected in (None,-1,'') and time.monotonic()>=check_default:
+     check_default=time.monotonic()+1
+     if audio_endpoint(sd,selected,'input')!=device:return
     data,overflow=stream.read(count)
     if overflow:self.event('state',text='Audio saturado · revisa el dispositivo')
     if self.paused.is_set() or self.awaiting.is_set() or self.speaking.is_set():continue
@@ -516,8 +588,6 @@ class VoiceSession:
     if rate!=16000:chunk=np.interp(np.linspace(0,len(chunk)-1,1600),np.arange(len(chunk)),chunk).astype('float32')
     try:self.audio.put_nowait(chunk)
     except queue.Full:self._revision+=1;self._drain();self.event('state',text='Recuperando audio; habla en frases más cortas')
-  except Exception as exc:
-   if not self.stop_event.is_set():self.event('error',text='Micrófono: '+str(exc)[:300]);self.stop_event.set()
   finally:
    if stream:
     try:stream.close()
@@ -531,6 +601,7 @@ class VoiceSession:
   def cancelled():return self.stop_event.is_set() or self.interrupt_event.is_set() or speech_epoch!=self._speech_epoch
   self.speaking.set()
   def work():
+   started=time.monotonic();stage='synthesis';playing=False
    try:
     self.event('state',text='Preparando voz')
     import numpy as np,sounddevice as sd
@@ -554,22 +625,31 @@ class VoiceSession:
      if not path.is_file():raise RuntimeError('La voz no generó audio')
      with wave.open(str(path),'rb') as wav:
       if not wav.getnframes():raise RuntimeError('La voz generó un archivo de audio vacío. Prueba otra voz.')
-      width=wav.getsampwidth();rate=wav.getframerate();channels=wav.getnchannels();device=self.options.get('output_device')
+      stage='playback'
+      width=wav.getsampwidth();rate=wav.getframerate();channels=wav.getnchannels();selected=self.options.get('output_device')
       if width not in (2,4):raise RuntimeError('Formato de audio no compatible')
-      dtype='int16' if width==2 else 'int32';device=None if device in (None,-1,'') else int(device)
+      dtype='int16' if width==2 else 'int32';device=audio_endpoint(sd,selected,'output')
       output_rate,output_channels=playback_format(sd,device,rate,channels,dtype)
       with sd.RawOutputStream(samplerate=output_rate,channels=output_channels,dtype=dtype,device=device) as output:
-       self.event('playback_start')
+       self.event('audio_route',direction='output',selected=selected,
+                  effective=audio_device_name(sd,device,'output'),rate=output_rate,channels=output_channels)
        while not cancelled():
         raw=wav.readframes(max(1,int(rate*.1)))
         if not raw:break
+        output.write(raw if (rate,channels)==(output_rate,output_channels) else convert_playback(raw,dtype,rate,output_rate,channels,output_channels))
+        if not playing:
+         playing=True
+         self.event('playback_start')
         level=float(np.sqrt(np.mean((np.frombuffer(raw,dtype=dtype).astype('float64')/float(2**(width*8-1)))**2)))
         self.event('playback_level',level=level)
-        output.write(raw if (rate,channels)==(output_rate,output_channels) else convert_playback(raw,dtype,rate,output_rate,channels,output_channels))
+       if cancelled() and hasattr(output,'abort'):output.abort()
    except Exception as exc:
-    if not cancelled():self.event('error',text=str(exc)[:400])
+    if not cancelled():
+     detail=str(exc)[:300]
+     if stage=='playback':detail+=' · Elige otra salida en Voz y llamada.'
+     self.event('error',text=detail,stage=stage,duration_seconds=round(time.monotonic()-started,2))
    finally:
-    self.event('playback_end')
+    if playing:self.event('playback_end',duration_seconds=round(time.monotonic()-started,2))
     self.process=None;self.speaking.clear();self._drain()
     if not self._response_streaming.is_set() and not self._speech_pending:self.awaiting.clear()
     if not self.stop_event.is_set():self.event('state',text=('Micrófono silenciado' if self.paused.is_set() else 'Reanudando escucha') if self.started else 'Demostración terminada · micrófono desactivado')

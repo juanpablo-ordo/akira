@@ -315,7 +315,7 @@
     "automatic_cache": true,
     "cache_days": 14
   },
-  "schema_version": 1600,
+  "schema_version": 1610,
   "poll_seconds": 0.2,
   "pending_policy": {
     "enabled": true,
@@ -443,6 +443,7 @@
     "visibility_preference_saved": true,
     "performance_profile": "Equilibrado",
     "adaptive_resources": true,
+    "resource_policy": "legacy",
     "memory_budget_mb": 4096,
     "model_context_tokens": 4096,
     "model_keep_alive_seconds": 15,
@@ -523,7 +524,7 @@
     "brand_name": "AKIRA",
     "language_ui": "es",
     "language_chat": "auto",
-    "language_voice_in": "auto",
+    "language_voice_in": "es",
     "language_voice_out": "es",
     "translate_input": false,
     "translate_output": false,
@@ -563,7 +564,8 @@
   },
   "strategy_choice": {
     "selected": "AKIRA_ADAPTATIVA",
-    "version": 1
+    "version": 1,
+    "applied_at": null
   },
   "capital_protection": {
     "enabled": true,

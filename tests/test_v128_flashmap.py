@@ -1,3 +1,4 @@
+from akira_version import DATA_SCHEMA
 import unittest
 from engine import Engine
 from strategy import build_snap_analyst_pendings
@@ -6,7 +7,7 @@ from tests.fixtures import PendingCase
 
 class FlashMapV128Tests(PendingCase, unittest.TestCase):
     def test_flashmap_defaults_prioritize_fast_parameters_without_forcing_risk(self):
-        self.assertEqual(self.cfg['schema_version'],1600)
+        self.assertEqual(self.cfg['schema_version'],DATA_SCHEMA)
         self.assertGreaterEqual(float(self.cfg['execution']['rapid_parameter_map_refresh_seconds']),.15)
         self.assertFalse(self.cfg['execution']['suspend_new_map_while_position_open'])
         self.assertTrue(self.cfg['execution']['instant_four_quadrant_book'])

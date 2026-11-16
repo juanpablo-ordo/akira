@@ -39,7 +39,8 @@ def _collect_searches(jobs,timeout,direct_fast=False):
     return rows,errors
 
 _CURRENT_PATTERNS = (
-    r"\bactual(?:es|mente)?\b", r"\bhoy\b", r"\bahora\b", r"\búltim[oa]s?\b", r"\bultimo?s?\b",
+    r"\bactual(?:es|mente)?\b", r"\bhoy\b", r"\bahora\b", r"\b[uú]ltim[oa]s?\b",
+    r"\bpol[eé]mic[ao]s?\b", r"\bqu[eé]\s+pas[oó]\b",
     r"\bpresidente\b", r"\bprimer ministro\b", r"\bministro\b", r"\bceo\b", r"\bgobernador\b",
     r"\bquién es\b", r"\bquien es\b", r"\bprecio\b", r"\bcotiza\b", r"\bnoticias?\b",
     r"\belecciones?\b", r"\b202[5-9]\b", r"\besta semana\b", r"\beste mes\b",

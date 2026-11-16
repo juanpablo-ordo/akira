@@ -46,7 +46,7 @@ def rich_text(value):
     def link(title,url):
         if not safe_url(url):return title
         links.append('<a style="color:#00ddff" href="'+html.escape(url,quote=True)+'">'+html.escape(title)+'</a>');return '\x00'+str(len(links)-1)+'\x00'
-    text=re.sub(r'\[([^\]\n]+)\]\((https?://[^\s)]+)\)',lambda m:link(m[1],m[2]),str(value or ''))
+    text=re.sub(r'\[([^\]\n]+)\]\((https?://[^\s)]+)\)',lambda m:link(m[1],m[2]),'Sin dato' if value is None else str(value))
     text=re.sub(r'https?://[^\s<>\x00]+',lambda m:link(source_name(m[0].rstrip('.,;')),m[0].rstrip('.,;')),text)
     text=html.escape(human(readable_math(text))).replace('\n','<br>');text=re.sub(r'\*\*([^*]+)\*\*',r'<b>\1</b>',text)
     for i,item in enumerate(links):text=text.replace('\x00'+str(i)+'\x00',item)
@@ -231,10 +231,10 @@ def plan_summary(plan,frames=None):
     return text
 
 def report_html(report):
-    from operation_report import HEADERS
-    result=['<h2>Informe de actividad</h2>']
+    from operation_report import report_headers
+    result=['<h2>Informe de actividad</h2><p>'+rich_text(report.get('local_time'))+' · '+rich_text(report.get('zone'))+'</p>']
     for title,rows in (report.get('tables') or {}).items():
-        result.append('<h3>'+html.escape(title)+'</h3><table cellspacing="7"><tr>'+''.join('<th>'+rich_text(x)+'</th>' for x in HEADERS.get(title,[]))+'</tr>')
+        result.append('<h3>'+html.escape(title)+'</h3><table cellspacing="7"><tr>'+''.join('<th>'+rich_text(x)+'</th>' for x in report_headers(title,report))+'</tr>')
         for row in rows[:120]:result.append('<tr>'+''.join('<td>'+rich_text(x)+'</td>' for x in row)+'</tr>')
         result.append('</table>' if rows else '</table><p>No hay registros en este período.</p>')
     return ''.join(result)

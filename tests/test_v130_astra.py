@@ -1,3 +1,4 @@
+from akira_version import DATA_SCHEMA
 import json
 import unittest
 from pathlib import Path
@@ -17,7 +18,7 @@ class V130AstraTests(unittest.TestCase):
 
     def test_build_schema_and_fast_human_defaults(self):
         self.assertEqual(BUILD_ID,'AKIRA_16_5_4_STUDIO_REV19')
-        self.assertEqual(self.cfg['schema_version'],1600)
+        self.assertEqual(self.cfg['schema_version'],DATA_SCHEMA)
         self.assertTrue(self.cfg['desktop']['friendly_ui'])
         self.assertTrue(self.cfg['desktop']['chat_research_animation'])
         self.assertTrue(self.cfg['desktop']['chat_elapsed_timer'])

@@ -16,7 +16,8 @@ from tests.fixtures import PendingCase
 
 class SentinelV125EngineTests(PendingCase, unittest.TestCase):
     def test_schema_build_and_safe_risk_override_defaults(self):
-        self.assertEqual(self.cfg['schema_version'], 1600)
+        from akira_version import DATA_SCHEMA
+        self.assertEqual(self.cfg['schema_version'],DATA_SCHEMA)
         self.assertEqual(BUILD_ID, 'AKIRA_16_5_4_STUDIO_REV19')
         self.assertTrue(self.cfg['execution']['always_show_dual_scenarios'])
         self.assertFalse(self.cfg['risk']['min_lot_structural_override_enabled'])

@@ -45,7 +45,8 @@ class AccountSwitchTests(unittest.TestCase):
         with patch('mt5_connection.running_terminals',return_value=[str(self.api.program),str(other)]):
             with self.assertRaises(ConnectionProblem) as error:MT5Connection(self.api,self.root).connect(self.cfg,verify_target=False,prefer_open=True)
         self.assertEqual(error.exception.code,'MULTIPLE_TERMINALS');self.assertFalse(self.api.calls)
-    def test_explicit_terminal_is_respected_even_when_another_one_is_running(self):
+    def test_legacy_fixed_terminal_is_respected_when_following_is_disabled(self):
+        self.cfg['follow_terminal_account']=False
         self.cfg['terminal_path']=str(self.api.program)
         with patch('mt5_connection.running_terminals',return_value=['other.exe']):MT5Connection(self.api,self.root).connect(self.cfg)
         self.assertEqual(self.api.calls[-1][0],(str(self.api.program),))

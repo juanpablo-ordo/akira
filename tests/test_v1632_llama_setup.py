@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from akira_model_runtime import ManagedLlamaProcess,hardware_profile
 from akira_local_ai import _direct_local_engine
-from akira_version import REPAIR_ID, VERSION
+from akira_version import RELEASE_VERSION
 from bundled_model import MODEL_SHA
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -63,12 +63,9 @@ class LlamaSetupTests(unittest.TestCase):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
         installer=(ROOT/'installer'/'akira.iss').read_text(encoding='utf8')
-        revision=re.match(r'Revisión (\d+) · (\d{2})-(\d{2})-(\d{4}) · ',REPAIR_ID)
-        self.assertIsNotNone(revision, 'La revisión visible debe identificar el instalador y su fecha')
-        number,day,month,year=revision.groups()
-        version_token=VERSION.replace('.', '_')
-        output=f'OutputBaseFilename=AKIRA_{version_token}_STUDIO_REV{number}_{year}{month}{day}_IA_INCLUIDA'
-        artifact=f'name: AKIRA-{VERSION}-Correccion{number}-instalador-Windows-IA-INCLUIDA'
+        self.assertRegex(RELEASE_VERSION,r'^0\.[1-3]\.0$')
+        output='OutputBaseFilename=AKIRA_{#AppVersion}_Windows_x64_IA_INCLUIDA'
+        artifact='name: AKIRA-${{ env.AKIRA_RELEASE_VERSION }}-instalador-Windows-IA-INCLUIDA'
         self.assertIn(output, installer.splitlines())
         self.assertIn(artifact, [line.strip() for line in workflow.splitlines()])
         self.assertIn('path: dist_installer/*.exe',workflow)

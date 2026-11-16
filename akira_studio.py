@@ -41,7 +41,7 @@ UI_LABELS={
  'ar':('التداول','الأوامر','الحساب','التحليل','المصادر','الدردشة','الإعدادات','الطرفية')
 }
 DEFAULT={
- 'brand_name':'AKIRA','language_ui':'es','language_chat':'auto','language_voice_in':'auto','language_voice_out':'es',
+    'brand_name':'AKIRA','language_ui':'es','language_chat':'auto','language_voice_in':'es','language_voice_out':'es',
  'translate_input':False,'translate_output':False,'language_pack':'',
  'theme':'AKIRA Original','accent':'#00ddff','secondary':'#ff2585','font':'Rajdhani','font_scale':100,'font_bold':False,'theme_profiles':{},'theme_profile_name':'',
  'glow':65,'panel_texture':'Neon grid','reduce_motion':False,'background_color':'',

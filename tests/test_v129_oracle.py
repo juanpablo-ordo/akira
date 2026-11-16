@@ -1,3 +1,4 @@
+from akira_version import DATA_SCHEMA
 import copy,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -12,7 +13,7 @@ from tests.fixtures import PendingCase
 class OracleV129Tests(unittest.TestCase):
     def test_defaults_enable_dual_stage_trace_and_notifications(self):
         cfg=load_config(copy.deepcopy(DEFAULT))
-        self.assertEqual(cfg['schema_version'],1600)
+        self.assertEqual(cfg['schema_version'],DATA_SCHEMA)
         self.assertLessEqual(float(cfg['research']['local_ai_summary_seconds']),60.0)
         self.assertTrue(cfg['research']['local_ai_double_check'])
         self.assertTrue(cfg['assistant']['show_research_trace'])

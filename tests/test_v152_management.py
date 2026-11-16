@@ -1,4 +1,5 @@
 """Estabilidad de pendientes y espacio de protección del runner normal."""
+from akira_version import DATA_SCHEMA
 import copy,unittest
 from dataclasses import replace
 from unittest.mock import patch
@@ -78,7 +79,7 @@ class ManagementTests(PendingCase,unittest.TestCase):
         old['management'].pop('runner_structure_only',None)
         new=load_config(old)
         self.assertEqual(new['risk'],old['risk']);self.assertEqual(new['mode'],'observe')
-        self.assertTrue(new['management']['runner_structure_only']);self.assertEqual(new['schema_version'],1600)
+        self.assertTrue(new['management']['runner_structure_only']);self.assertEqual(new['schema_version'],DATA_SCHEMA)
     def test_operational_log_records_actual_broker_retcode_ticket_and_reason(self):
         p=self.plan();self.g.send_immediate_plan(p)
         event=list(self.g.log.recent_events)[-1]

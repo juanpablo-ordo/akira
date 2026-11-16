@@ -7,6 +7,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from functools import lru_cache
+import time
 
 
 def detected_nvidia_vram_gb(runner=None):
@@ -61,9 +62,45 @@ def desktop_hardware():
     except (ImportError,OSError):return {'ram_gb':0,'physical_cores':0,'logical_cores':0}
 
 
+class ResourceGovernor:
+    """Stabilize measured changes before reducing or restoring visual/AI work."""
+    def __init__(self,settle=12):
+        self.settle=settle
+        self.pending=None
+        self.since=0
+        self.reason=''
+
+    def observe(self,usage,now=None):
+        now=time.monotonic() if now is None else now
+        battery=usage.get('plugged_in')
+        ram=usage.get('available_ram_gb')
+        cpu=usage.get('system_cpu_pct')
+        temperature=usage.get('temperature_c')
+        reason=('Memoria disponible baja' if ram is not None and ram<1.5 else
+                'Temperatura alta' if temperature is not None and temperature>=85 else
+                'Carga sostenida de CPU' if cpu is not None and cpu>=85 else
+                'Equipo en batería' if battery is False else '')
+        if reason!=self.pending:
+            self.pending, self.since=reason,now
+        if now-self.since>=self.settle:self.reason=reason
+        return self.reason
+
+
+RELEASE_GOVERNOR=ResourceGovernor()
+
+
 def effective_desktop(desktop,hardware=None):
     result=dict(desktop or {});hw=desktop_hardware() if hardware is None else hardware
     result.pop('low_resource_active',None)
+    if result.get('resource_policy')=='automatic':
+        small=0<float(hw.get('ram_gb',0))<=9
+        limited=small or bool(RELEASE_GOVERNOR.reason)
+        graphics=bool(hw.get('dedicated_gpu'))
+        chosen='Ahorro de energía' if limited else 'Rendimiento' if graphics else 'Equilibrado'
+        result.update(profile_budget(chosen),performance_profile=chosen,low_resource_active=limited,
+                      resource_reason=RELEASE_GOVERNOR.reason or ('Equipo de hasta 9 GB' if small else
+                                       'Acelerador detectado' if graphics else 'Recursos disponibles'))
+        return result
     mode=result.get('low_resource_mode','auto')
     light=mode=='ultra' or (mode!='off' and 0<float(hw.get('ram_gb',0))<=9 and not hw.get('dedicated_gpu',False))
     active=mode=='ultra' or result.get('adaptive_resources',True) and light

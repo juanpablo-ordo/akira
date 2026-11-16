@@ -76,27 +76,32 @@ class Reporter:
         self.status={}
         self.callback,self.console=callback,console
         self.recent_events=deque(maxlen=300)
+        self.account_context={}
+        self.account_ref=None
+        self.account_origin=None
 
     def event(self,symbol,text,**values):
         from activity_event_schema import normalize_event
+        from privacy_guard import redacted_record
         trace_fields={}
         if values.get('operation')=='pending_decision':
             for key in ('operation','pending_decision_scope','pending_decisions'):
                 if key in values:trace_fields[key]=values.pop(key)
-        row=normalize_event({"utc":datetime.now(timezone.utc).isoformat(),"symbol":symbol,
-                             "message":text,**values})
+        row=normalize_event(redacted_record({"utc":datetime.now(timezone.utc).isoformat(),"symbol":symbol,
+                             "message":text,"account_ref":self.account_ref,"origin":self.account_origin,**values},self.account_context))
         # Reports about protection, stale prices and AI timeouts belong in
         # ActivityFeed too, not just rows containing an MT5 operation.
         self.recent_events.append(row)
         if self.console:
-            print(f"{row['utc'][11:19]} | {symbol} | {text}",flush=True)
+            print(f"{row['utc'][11:19]} | {symbol} | {row['message']}",flush=True)
         self._append_event('eventos',row)
         if trace_fields:
             # La muestra amplía el registro del ciclo y tiene su propia retención.
-            trace=normalize_event({"utc":row['utc'],"symbol":symbol,
+            trace=normalize_event(redacted_record({"utc":row['utc'],"symbol":symbol,
                 "message":"Muestra de decisiones de entrada","activity_category":"ANÁLISIS",
                 "build":row.get('build'),"repair_id":row.get('repair_id'),
-                "correlation_id":row['event_id'],**trace_fields})
+                "account_ref":self.account_ref,"origin":self.account_origin,
+                "correlation_id":row['event_id'],**trace_fields},self.account_context))
             self._append_event('decisiones',trace)
             self.recent_events.append(trace)
         if self.callback:
@@ -117,9 +122,10 @@ class Reporter:
             self.event(symbol,f"{state} | {detail}",**{**values,'state':state,'detail':detail})
 
     def dump(self):
+        from privacy_guard import redacted_record
         target=self.folder/"estado.json"
         temp=target.with_suffix(".tmp")
-        temp.write_text(json.dumps(self.status,ensure_ascii=False,indent=2,default=str),encoding="utf-8")
+        temp.write_text(json.dumps(redacted_record(self.status,self.account_context),ensure_ascii=False,indent=2),encoding="utf-8")
         os.replace(temp,target)
 
 @dataclass
@@ -156,10 +162,13 @@ class Gateway:
     def __init__(self,api,cfg,journal,reporter,clock=time.time):
         self.api,self.cfg,self.journal,self.log,self.clock=api,cfg,journal,reporter,clock
         self.identity=None;self.cooldowns={};self.history=[];self.history_time=0.0
+        self.history_since=None
         self.history_error='historial sin cargar';self.last_order_send_ms={};self.history_revision=0
         self.pending_rejections=[];self.last_rejection={}
         self.runtime_execution_block=''
         self.account_currency=''
+        self.broker_checks={}
+        self.margin_projection={}
         from position_events import ClosureMonitor
         self.closure_monitor=ClosureMonitor(self)
 
@@ -204,6 +213,10 @@ class Gateway:
         p,o=self.api.positions_get(),self.api.orders_get()
         if a is None or t is None or p is None or o is None:raise Blocked('MT5: estado incompleto')
         ident=(int(a.login),str(a.server))
+        if getattr(self,'requires_execution_lease',False):
+            current=self.api.account_info()
+            if current is None or (int(current.login),str(current.server))!=ident:
+                raise Blocked('La cuenta cambió durante la lectura de posiciones y pendientes')
         if self.identity is None:self.identity=ident
         if self.identity!=ident:raise Blocked('Cambió la cuenta MT5. En Ajustes → Operación pulsa Usar cuenta abierta en MT5 y vuelve a autorizarla.')
         saved=self.journal.data.get('account_identity')
@@ -306,6 +319,7 @@ class Gateway:
         rows=self.api.history_deals_get(datetime.fromtimestamp(start,timezone.utc),datetime.fromtimestamp(now+1,timezone.utc))
         if rows is None:
             self.history_error='Historial MT5 no disponible; aprendizaje conserva último dato';return self.history
+        if self.history_since is None:self.history_since=start
         by_id={int(d.ticket):d for d in self.history}
         by_id.update({int(d.ticket):d for d in rows})
         self.history=list(by_id.values());self.history_time=now;self.history_error='';self.history_revision+=1
@@ -515,8 +529,12 @@ class Gateway:
         margin=self.valuation_call(evaluation,'order_calc_margin',BUY if side==1 else SELL,plan.symbol,volume,plan.entry)
         if margin is None or not math.isfinite(float(margin)) or margin<0:raise Blocked('Margen no calculable')
         future=self.reserved_pending_margin(snap,ignore_orders,evaluation)+float(margin)
-        projected=float(snap.account.margin)+future
-        if future>float(snap.account.margin_free) or (projected>0 and float(snap.account.equity)/projected*100<self.cfg['risk']['minimum_margin_level_pct']):raise Blocked('Margen proyectado insuficiente incluyendo todas las pendientes')
+        from risk_limits import projected_margin
+        try:projection=projected_margin(snap.account,future,float(self.cfg['risk']['minimum_margin_level_pct']))
+        except (TypeError,ValueError) as exc:raise Blocked(str(exc)) from exc
+        self.margin_projection[plan.symbol]=projection
+        if not projection['allowed']:
+            raise Blocked(f"Margen proyectado insuficiente incluyendo todas las pendientes. Margen adicional {projection['additional']:.2f} {projection['currency']}; libre {projection['free']:.2f}.")
         return plan,q,risk,reward,float(margin)
 
     def pending_time_fields(self,info,ttl=0):
@@ -530,6 +548,10 @@ class Gateway:
 
     def check(self,request,plan=None):
         r=self.api.order_check(request)
+        key=str(request.get('symbol',''))
+        self.broker_checks[key]={'checked_utc':self.clock(),'retcode':int(r.retcode) if r is not None else None,
+            'comment':str(getattr(r,'comment','Sin respuesta'))[:240],
+            'request':{field:request[field] for field in ('action','price','sl','tp','type','order','volume') if field in request}}
         if r is None:raise Blocked('order_check sin respuesta; no se envió la solicitud')
         code=int(r.retcode)
         if code!=0:
@@ -742,11 +764,16 @@ class Gateway:
         if operation=='modify_order' and self.pending_parameters_unchanged(found,request):
             return None
         self.check(request,plan)
+        if getattr(self,'requires_execution_lease',False):
+            account=self.api.account_info()
+            if account is None or (int(account.login),str(account.server))!=self.identity:
+                raise Blocked('La cuenta cambió después de la comprobación MT5. Se descartó la solicitud.')
         if operation in ('protect','close'):
             position_meta=self.journal.data['positions'].get(str(request.get('position',0)),{})
             meta['rr_at_request']=position_meta.get('last_rr')
         intent={'operation':operation,'request':dict(request),'created':self.clock(),'retcode':None,
-                'plan':plan.to_dict() if plan else None,'build':BUILD_ID,**meta}
+                'plan':plan.to_dict() if plan else None,'build':BUILD_ID,
+                'broker_check':self.broker_checks.get(symbol),**meta}
         self.journal.data['intents'][symbol]=intent
         if plan is not None and plan.lane=='RUNNER':
             self.journal.data.setdefault('runner_entries',{})[plan.key]=self.clock()

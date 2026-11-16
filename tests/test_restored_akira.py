@@ -1,3 +1,4 @@
+from akira_version import DATA_SCHEMA
 import copy,json,queue,tempfile,threading,time,unittest,zipfile
 from dataclasses import replace
 from pathlib import Path
@@ -240,7 +241,7 @@ class FullMigrationTests(unittest.TestCase):
         restored=find_restore_root(self.current);self.assertEqual(restored,self.backup)
         cfg=migrate(self.raw,self.old);self.assertEqual(cfg['assistant']['local_model'],'qwen3:14b');self.assertEqual(cfg['desktop']['width'],1700)
         self.assertEqual((cfg['mode'],cfg['expected_login'],cfg['risk']['max_trade_money'],cfg['risk']['portfolio_money_cap']),('observe',123456789,1.8,7))
-        self.assertEqual(cfg['schema_version'],1600);self.assertLessEqual(cfg['poll_seconds'],.25)
+        self.assertEqual(cfg['schema_version'],DATA_SCHEMA);self.assertLessEqual(cfg['poll_seconds'],.25)
     def test_current_full_ai_preferences_take_priority_over_old_backup(self):
         self.raw['assistant']=copy.deepcopy(DEFAULT['assistant']);self.raw['assistant']['local_model']='qwen3:4b'
         cfg=migrate(self.raw,self.old);self.assertEqual(cfg['assistant']['local_model'],'qwen3:4b')

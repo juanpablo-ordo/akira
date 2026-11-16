@@ -1,7 +1,7 @@
 """Build and self-check a windowed AKIRA.exe before activating its shortcut."""
 from pathlib import Path
-import argparse,hashlib,json,os,subprocess,sys
-from akira_version import BUILD_ID
+import argparse,hashlib,json,os,re,shutil,subprocess,sys
+from akira_version import BUILD_ID, RELEASE_VERSION
 from frozen_ui_contract import UI_MODULES,require_render_check
 from native_studio_check import require_studio_check
 
@@ -28,11 +28,16 @@ def build_command(source,destination,work):
  source=Path(source).resolve();destination=Path(destination).resolve();work=Path(work).resolve()
  command=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--onedir','--windowed','--name','AKIRA',
   '--distpath',str(destination),'--workpath',str(work/'objects'),'--specpath',str(work),
-  '--icon',str(source/'assets'/'akira.ico'),'--version-file',str(source/'windows_version.txt')]
+  '--icon',str(source/'assets'/'akira.ico'),'--version-file',str(work/'windows_version.txt' if (work/'windows_version.txt').is_file() else source/'windows_version.txt')]
  for filename in ('default_config.json','akira_config.json','selector_validation.json'):
   command+=['--add-data',str(source/filename)+os.pathsep+'.']
  command+=['--add-data',str(source/'assets')+os.pathsep+'assets']
  command+=['--add-data',str(source/'third_party')+os.pathsep+'licenses']
+ for filename in ('release_build.json','release_trust.json'):
+  if (work/filename).is_file():command+=['--add-data',str(work/filename)+os.pathsep+'.']
+ if os.environ.get('AKIRA_HELLO_HELPER'):
+  helper=Path(os.environ['AKIRA_HELLO_HELPER']).resolve(strict=True)
+  command+=['--add-binary',str(helper)+os.pathsep+'.']
  for package in ('certifi','truststore','MetaTrader5','ctranslate2','faster_whisper','sounddevice','pyttsx3','piper','reportlab','PIL','imageio_ffmpeg','yt_dlp','yt_dlp_ejs','docx','tzdata','tzlocal','pypdf','onnxruntime','tokenizers'):
   command+=['--collect-all',package]
  for package in ('pyttsx3.drivers.sapi5','tests.fake_mt5','numpy','onnxruntime','av','win32com.propsys.propsys','win32com.propsys.pscon','win32com.shell.shell','pythoncom','win32crypt'):
@@ -42,11 +47,31 @@ def build_command(source,destination,work):
  command.append(str(source/'Akira.py'))
  return command
 
+def prepare_release_build(root,work,commit=None):
+ if not commit:
+  commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+ if not re.fullmatch('[0-9a-f]{40}',commit):
+  raise ValueError('La compilación necesita el commit de origen completo.')
+ (work/'release_build.json').write_text(json.dumps({'commit':commit,'version':RELEASE_VERSION}),encoding='utf-8')
+ version_file=(root/'windows_version.txt').read_text(encoding='utf-8')
+ windows_parts=tuple(map(int,RELEASE_VERSION.split('.')))+(0,)
+ version_file=version_file.replace('(16,5,4,0)',str(windows_parts)).replace('16.5.4.0',RELEASE_VERSION+'.0')
+ (work/'windows_version.txt').write_text(version_file,encoding='utf-8')
+ trust=os.environ.get('AKIRA_RELEASE_TRUST_CONFIG')
+ if trust:
+  from release_updates import ReleaseTrust
+  ReleaseTrust.load(trust)
+  shutil.copy2(trust,work/'release_trust.json')
+ else:
+  (work/'release_trust.json').unlink(missing_ok=True)
+
 def main():
- parser=argparse.ArgumentParser();parser.add_argument('--source',type=Path,required=True);parser.add_argument('--diagnostic',type=Path,required=True);args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument('--source',type=Path,required=True);parser.add_argument('--diagnostic',type=Path,required=True)
+ parser.add_argument('--source-commit',default=os.environ.get('GITHUB_SHA'));args=parser.parse_args()
  if os.name!='nt':raise SystemExit('La aplicación de Windows se construye y verifica en Windows.')
  root=args.source.resolve();diag=args.diagnostic.resolve();diag.mkdir(parents=True,exist_ok=True)
  dist=root/'native';work=diag/'native_build';work.mkdir(parents=True,exist_ok=True)
+ prepare_release_build(root,work,args.source_commit)
  command=build_command(root,dist,work)
  with (diag/'NATIVE_BUILD.log').open('w',encoding='utf-8') as log:
   result=subprocess.run(command,cwd=root,stdout=log,stderr=subprocess.STDOUT,timeout=1200)

@@ -950,9 +950,9 @@ class Engine:
         from trade_quality_gate import owned_outcomes
         self._confirmed_outcomes=owned_outcomes(g)
         # FIRST service owned positions using broker facts, before any research,
-        # model call, event scan or admission of new risk. Manual PAUSE retains
-        # its existing meaning; risk cooldowns never stop this supervisor.
-        if not self.paused and not g.runtime_execution_block:self.positions.step(snap)
+        # model call, event scan or admission of new risk. A pause gates entries,
+        # while authorized protective actions and reconciliation continue.
+        if not g.runtime_execution_block:self.positions.step(snap)
         snap=self.enforce_capital_protection(snap)
         snap=self.review_loss_pendings(snap)
         # Research can be slow or unavailable; it is never a stop-management dependency.
@@ -1174,7 +1174,25 @@ class Engine:
                           'risk_utilization':float(sizing['risk_utilization']),'configured_max_lot':float(sizing['max_lot']),
                           'automatic_override_of_minimum_lot_risk':bool(self.cfg['risk']['min_lot_structural_override_enabled'])}
             return {'ok':True,'detail':f'Riesgo aplicado: máximo {cap:.2f} USD por operación y presupuesto conjunto libre {ledger["available_usd"]:.2f} USD. Escalado de pendientes: {"activo" if sizing_state["pending_scale_enabled"] else "desactivado"}. Se evalúan BTC y oro por separado según SL, margen y mínimo MT5; no se fuerza un símbolo si no cabe.', 'trade_risk_cap':cap,'portfolio_risk':ledger,'adaptive_sizing':sizing_state}
-        if action=='pause':self.paused=bool(cmd.get('paused',True));return {'ok':True}
+        if action=='pause':
+            if getattr(g,'update_hold',False):return {'ok':False,'error':'Hay una actualización en preparación.'}
+            self.paused=bool(cmd.get('paused',True))
+            return {'ok':True}
+        if action=='prepare_update':
+            self.paused=True
+            snapshot=g.snapshot()
+            g.reconcile(snapshot)
+            snapshot=g.snapshot()
+            positions=sum(g.owned(position) for position in snapshot.positions)
+            orders=sum(g.owned_order(order) for order in snapshot.orders)
+            unsettled=len(g.journal.data['intents'])
+            if positions or orders or unsettled:
+                return {'ok':False,'error':f'Entradas pausadas. Siguen supervisadas {positions} posiciones, {orders} pendientes y {unsettled} solicitudes por conciliar.'}
+            g.update_hold=True
+            return {'ok':True,'positions':positions,'orders':orders,'unsettled':unsettled}
+        if action=='cancel_update':
+            g.update_hold=False
+            return {'ok':True}
         if action=='refresh':
             selected=cmd.get('sources')
             if selected is not None and (not isinstance(selected,list) or any(x!='local_ai' for x in selected)):
@@ -1210,6 +1228,8 @@ class Engine:
                 if not ready:raise Blocked(reason)
                 q=g.quote(symbol);self.quotes[symbol]=q
                 if action=='assistant_plan':
+                    if getattr(g,'require_neural_review',False) and not cmd.get('candidate_id'):
+                        raise Blocked('Selecciona una candidata vigente de la estrategia aplicada.')
                     side={'BUY':1,'SELL':-1}.get(str(cmd.get('side')).upper(),0)
                     f=self.planner.caches[symbol].frames['M1']
                     plan=Plan(symbol,'CHAT:'+str(cmd.get('request_id',g.clock())),side,'PENDING',str(cmd.get('kind')).upper(),
@@ -1219,6 +1239,9 @@ class Engine:
                         from pending_verification import identity
                         original=next((p for p in self.candidates.get(symbol,[]) if identity(p.to_dict())==cmd['candidate_id']),None)
                         if original is None:raise Blocked('La candidata ya no está vigente. Actualiza la ficha antes de enviarla.')
+                        from strategy_choice import allows,selected
+                        if not allows(original,self.cfg) or (original.selector_id and original.selector_id!=selected(self.cfg)):
+                            raise Blocked('La estrategia cambió después de preparar la candidata.')
                         if any(float(getattr(original,key))!=float(cmd[key]) for key in ('entry','sl','tp')) or original.side!=side or original.kind!=str(cmd.get('kind')).upper():
                             raise Blocked('Los niveles o la dirección cambiaron. No se envió una propuesta distinta de la seleccionada.')
                         plan=original
@@ -1285,11 +1308,14 @@ class Engine:
                 book.append({**p.to_dict(),'ticket':int(o.ticket),'confirmed':True,'state':'MT5 CONFIRMADA'})
             book.extend({**p.to_dict(),'confirmed':False,'state':'CANDIDATA'} for p in self.candidates.get(s,[])[:8])
             bars_by_timeframe={name:[b.to_dict() for b in f.bars[-80:]] for name,f in c.frames.items()}
+            transition=self.g.journal.data['intents'].get(s) or {}
             symbols[s]={'bid':q.bid if q else None,'ask':q.ask if q else None,'spread':q.spread if q else None,
                         'quote_time':q.time if q else None,
                         'checked_at':self.last_checked.get(s),'last_analysis_at':self.last_scan.get(s),
                         'frames':frames,'bars':[b.to_dict() for b in c.frames['M1'].bars[-60:]] if 'M1' in c.frames else [],
                         'bars_by_timeframe':bars_by_timeframe,
+                        'transition_request':{k:v for k,v in (transition.get('request') or {}).items()
+                                              if k in ('price','sl','tp','order','volume')},
                         'pending_book':book,'pending_performance':self.learner.metrics(s),'live':self.planner.tapes[s].last_metrics,
                         'broker_book':self.planner.broker_book.get(s,{}),
                         'scenario_book':self.directional_scenarios(s,snap,evaluation=evaluation,ledger=ledger),
@@ -1326,12 +1352,16 @@ class Engine:
         effective_gate=execution_gate(self.cfg['mode'],self.paused,self.g.runtime_execution_block,
                                      getattr(self.g,'network_available',True),account,risk_state=safety,
                                      broker_available=bool(getattr(snap.terminal,'connected',False)))
-        view={'build':BUILD_ID,'repair_id':REPAIR_ID,'locale':copy.deepcopy(self.cfg.get('locale',{})),'configuration':copy.deepcopy(getattr(self,'configuration',{})),'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
+        from strategy_choice import selected,SELECTOR_VERSION
+        applied_strategy={'name':selected(self.cfg),'version':SELECTOR_VERSION,
+                          'applied_at':self.cfg.get('strategy_choice',{}).get('applied_at')}
+        view={'build':BUILD_ID,'repair_id':REPAIR_ID,'locale':copy.deepcopy(self.cfg.get('locale',{})),'configuration':copy.deepcopy(getattr(self,'configuration',{})),'strategy_applied':applied_strategy,'connected':True,'mode':self.cfg['mode'],'paused':self.paused,'network_available':getattr(self.g,'network_available',True),
                 'execution_gate':effective_gate,
                 'execution_block':entry_block,'execution_allowed':effective_gate['execution_allowed'],
                 'account':account,'orders':rows,'positions':positions,'symbols':symbols,'as_of_utc':self.g.clock(),
                 'status':self.status,'candidates':{s:[p.to_dict() for p in ps[:16]] for s,ps in self.candidates.items()},
                 'audit':self.planner.pending_candidate_audit,'research':self.planner.research_context,
+                'margin_projection':copy.deepcopy(self.g.margin_projection),'broker_checks':copy.deepcopy(self.g.broker_checks),
                 'analysis':{s:self.analysis_evidence(s) for s in self.planner.caches},
                 'indicator_audit':__import__('technical_indicator_extensions').indicator_provenance(),
                 'learning':{s:self.learner.metrics(s) for s in self.planner.caches},
@@ -1480,13 +1510,9 @@ class Engine:
         return snap
 
     def pending_review_guard(self,plan,snap,volume,ticket=0):
-        """Exact-order neural review, unless the user explicitly chooses technical-only.
-
-        The technical alternative still passes every deterministic Gateway risk,
-        structural quality, pricing and MT5 check. It never impersonates an AI approval.
-        """
+        """Check the exact order. Archived replays may still compare the old policy."""
         policy=self.cfg['execution'].get('review_policy','required')
-        if policy=='technical':
+        if policy=='technical' and not getattr(self.g,'require_neural_review',False):
             return {'review_policy':'technical','neural_review':False,
                     'verdict':'TECHNICAL_ONLY','checked_at':self.g.clock(),
                     'reason':'Evaluación técnica determinista configurada; sin dictamen de IA',
@@ -1604,7 +1630,9 @@ class Engine:
             'runner_entries':copy.deepcopy(self.g.journal.data.get('runner_entries',{})),
             'position_journal':copy.deepcopy(self.g.journal.data['positions']),
             'history_deals':[{k:getattr(d,k,None) for k in keys} for d in self.g.history],
-            'history_state':{'updated':self.g.history_time,'error':self.g.history_error},
+            'history_state':{'updated':self.g.history_time,'since':self.g.history_since,'error':self.g.history_error},
+            'account_ref':getattr(self.log,'account_ref',None),
+            'account_origin':getattr(self.log,'account_origin',None),
              'pending_decision_scope':self.pending_decision_scope(),
             'operational_events':copy.deepcopy(list(getattr(self.log,'recent_events',()))) }
 

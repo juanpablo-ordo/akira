@@ -76,14 +76,15 @@ class MT5Connection:
     def connect(self, cfg, verify_target=True, prefer_open=False):
         requested, login, server = target_signature(cfg)
         self.observed={}
-        path = terminal_executable(requested)
-        opened=running_terminals() if not requested else []
+        use_saved_path=requested and (prefer_open or not cfg.get('follow_terminal_account',True))
+        opened=running_terminals() if not use_saved_path else []
+        path='' if opened else terminal_executable(requested)
         if len(opened)==1:path=opened[0]
         elif len(opened)>1:
-            remembered=self.saved.get('terminal_path','')
+            remembered=self.saved.get('terminal_path','') or requested
             if not prefer_open and remembered in opened:path=remembered
             else:raise ConnectionProblem('MULTIPLE_TERMINALS','Hay varios programas MetaTrader 5 abiertos.',
-                'En Ajustes → Operación, selecciona el terminal64.exe de la cuenta que quieres usar y vuelve a pulsar Usar cuenta abierta en MT5.')
+                'Deja abierto solo el MetaTrader 5 que quieres utilizar y pulsa Volver a detectar.')
         if not requested and not path and self.saved.get('terminal_path'):
             try:
                 path = terminal_executable(self.saved['terminal_path'])

@@ -20,3 +20,40 @@ def indicator_chart(raw,tf='M15'):
       'detail':'Calculado con las funciones del motor y las velas cerradas publicadas. La curva usa una ventana limitada; el valor exacto que decidió el motor se muestra aparte.'}
 
 def finite_series(rows):return [x for x in rows if x is not None and math.isfinite(x)]
+
+
+def price_overlays(rows, frame_values):
+    """Price curves use the published closed bars. The final markers use actor values."""
+    closes=[float(bar['close']) for bar in rows if bar.get('closed',True)]
+    if len(closes)<21:return {}
+    curves={}
+    for period in (9,21,50,200):
+        if len(closes)<period:continue
+        value=frame_values.get('ema'+str(period))
+        if not isinstance(value,(int,float)) or not math.isfinite(value):continue
+        curve=list(ema_series(closes,period))
+        curve[-1]=float(value)
+        curves['EMA '+str(period)]=curve
+    return curves
+
+
+def order_levels(info, orders, symbol):
+    levels={}
+    for row in orders:
+        if row.get('symbol')!=symbol:continue
+        ticket=row.get('ticket')
+        for field,label in (('entry','Entrada'),('sl','SL'),('tp','TP')):
+            value=row.get(field,row.get('price_open') if field=='entry' else None)
+            if isinstance(value,(int,float)) and math.isfinite(value) and value>0:
+                levels[f'MT5 #{ticket} · {label}']=value
+    requests=info.get('transition_request') or {}
+    for field,label in (('price','Entrada'),('sl','SL'),('tp','TP')):
+        value=requests.get(field)
+        if isinstance(value,(int,float)) and math.isfinite(value) and value>0:
+            levels[f'Solicitud sin confirmar · {label}']=value
+    for row in (info.get('scenario_book') or ()):
+        if row.get('ticket') or len(levels)>=28:continue
+        entry=row.get('entry');direction='Compra' if row.get('side') in (1,'BUY') else 'Venta'
+        if isinstance(entry,(int,float)) and math.isfinite(entry) and entry>0:
+            levels[f"Propuesta {direction} {row.get('kind','')} · {entry:g}"]=entry
+    return levels

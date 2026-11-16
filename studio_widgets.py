@@ -199,21 +199,22 @@ class ActivityFeed(DataTable):
 
 class CandleChart(QWidget):
     def __init__(self,parent=None):
-        super().__init__(parent);self.bars=[];self.levels={};self._signature=None;self._valid_bars=[]
+        super().__init__(parent);self.bars=[];self.levels={};self.series={};self._signature=None;self._valid_bars=[]
         self._chart_cache=None;self._cache_geometry=None;self._raster_count=0
         self._resize_plot=QTimer(self);self._resize_plot.setSingleShot(True);self._resize_plot.setInterval(120);self._resize_plot.timeout.connect(self.finish_resize)
         self.setMinimumHeight(95);self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
-    def set_data(self,bars,levels=None):
+    def set_data(self,bars,levels=None,series=None):
         bars=list(bars or [])[-95:];valid=[]
         for row in bars:
             try:
                 values=tuple(float(row.get(key,0)) for key in ('open','high','low','close'))
                 if all(math.isfinite(v) for v in values) and values[1]>=values[2]:valid.append(values)
             except (AttributeError,ValueError,TypeError):continue
-        levels=dict(levels or {});signature=(tuple(valid),tuple(sorted(levels.items())))
+        levels=dict(levels or {});series={name:tuple(values) for name,values in (series or {}).items()}
+        signature=(tuple(valid),tuple(sorted(levels.items())),tuple(series.items()))
         self.bars=bars
         if signature!=self._signature:
-            self._valid_bars=valid;self.levels=levels;self._signature=signature;self._chart_cache=None;self.update()
+            self._valid_bars=valid;self.levels=levels;self.series=series;self._signature=signature;self._chart_cache=None;self.update()
     def resizeEvent(self,event):
         super().resizeEvent(event)
         if hasattr(self,'_resize_plot') and self._chart_cache is not None:self._resize_plot.start()
@@ -242,16 +243,27 @@ class CandleChart(QWidget):
         p.setFont(QFont('Rajdhani',10));p.setPen(QColor(INK['muted']))
         for index in range(5):
             value=low+span*index/4;p.drawText(QRectF(rect.right()+6,y(value)-8,58,18),f'{value:,.2f}')
+        for n,values in enumerate(self.series.values()):
+            p.setPen(QPen(QColor(('#82d4ff','#ffc548','#76c4a6','#cd8bfe')[n%4]),1))
+            previous=None
+            for index,value in enumerate(values[-len(valid):]):
+                if value is None or not low<=value<=low+span:
+                    previous=None
+                    continue
+                point=QPointF(rect.left()+(index+.5)*step,y(value))
+                if previous is not None:p.drawLine(previous,point)
+                previous=point
         for name,value in self.levels.items():
             if isinstance(value,(int,float)) and low<=value<=low+span:
-                color=INK['pink'] if name=='SL' else INK['green'] if name=='TP' else INK['cyan'];p.setPen(QPen(QColor(color),1,Qt.PenStyle.DashLine))
+                style=Qt.PenStyle.SolidLine if name.startswith('MT5 #') else Qt.PenStyle.DashLine if name.startswith('Solicitud') else Qt.PenStyle.DotLine
+                color=INK['pink'] if name.endswith('SL') else INK['green'] if name.endswith('TP') else INK['cyan'];p.setPen(QPen(QColor(color),1,style))
                 p.drawLine(QPointF(rect.left(),y(value)),QPointF(rect.right(),y(value)))
 
 class AvatarWidget(QWidget):
     def __init__(self,director,asset_root,reduce_motion=False,parent=None):
         super().__init__(parent);self.director=director;self.asset_root=Path(asset_root);self.reduce_motion=reduce_motion
-        self.cache=OrderedDict();self.offset=QPointF();self.setMouseTracking(True);self.setMinimumSize(140,100)
-        self._previous=None;self._current=None;self._fade_value=1.;self._fade=QVariantAnimation(self);self._fade.setStartValue(0.);self._fade.setEndValue(1.);self._fade.setDuration(140);self._fade.valueChanged.connect(self.fade_changed)
+        self.cache=OrderedDict();self.setMinimumSize(140,100)
+        self._current=None
         self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
         from avatar_animation import MotionSprites
         self.states=MotionSprites(self.asset_root);self._stable_dimensions=None
@@ -262,20 +274,11 @@ class AvatarWidget(QWidget):
     def finish_resize(self):
         self._stable_dimensions=None;self.update()
     def winfo_ismapped(self):return self.isVisible()
-    def fade_changed(self,value):self._fade_value=float(value);self.update()
     def _receive(self,name,entry,animate=False):
-        # A crossfade superimposes two differently shaped faces. Swap cleanly;
-        # blink and speaking use their own short sequences instead.
-        self._fade.stop();self._previous=None
-        self.name=name;self.selected=entry;self._fade_value=1.
-        if self._previous is not None:self._fade.start()
+        self.name=name;self.selected=entry
         self.update()
     def _draw(self):self.update()
     def _loading_ring(self):self.update()
-    def mouseMoveEvent(self,event):
-        if not self.reduce_motion:
-            self.offset=QPointF(max(-4,min(4,(event.position().x()-self.width()/2)/18)),max(-3,min(3,(event.position().y()-self.height()/2)/20)));self.update()
-    def leaveEvent(self,event):self.offset=QPointF();self.update()
     def paintEvent(self,event):
         if not hasattr(self,'selected'):return
         available=(max(1,self.width()-10),max(1,self.height()-10))
@@ -297,10 +300,8 @@ class AvatarWidget(QWidget):
             self.cache[key]=QPixmap.fromImage(qimage)
             while len(self.cache)>12:self.cache.popitem(last=False)
         self._current=self.cache[key];p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        if self._previous is not None and self._fade.state()==QVariantAnimation.State.Running:
-            p.setOpacity(1-self._fade_value);p.drawPixmap(QPointF(5,5)+self.offset,self._previous);p.setOpacity(self._fade_value)
         ratio=min(available[0]/self._current.width(),available[1]/self._current.height());width=self._current.width()*ratio;height=self._current.height()*ratio
-        target=QRectF((self.width()-width)/2+self.offset.x(),(self.height()-height)/2+self.offset.y(),width,height)
+        target=QRectF((self.width()-width)/2,(self.height()-height)/2,width,height)
         p.drawPixmap(target,self._current,QRectF(self._current.rect()));p.setOpacity(1)
 
 

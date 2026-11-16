@@ -1,3 +1,4 @@
+from akira_version import DATA_SCHEMA
 import unittest
 from unittest.mock import patch
 from engine import Engine
@@ -7,7 +8,7 @@ from tests.fixtures import PendingCase
 
 class SnapMapV127Tests(PendingCase, unittest.TestCase):
     def test_snapmap_defaults_are_fast_and_multi_lane(self):
-        self.assertEqual(self.cfg['schema_version'],1600)
+        self.assertEqual(self.cfg['schema_version'],DATA_SCHEMA)
         self.assertTrue(self.cfg['execution']['presence_all_alternatives'])
         self.assertTrue(self.cfg['execution']['rapid_parameter_map'])
         self.assertTrue(self.cfg['pending']['one_order_per_direction'])

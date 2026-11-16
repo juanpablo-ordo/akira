@@ -1,8 +1,14 @@
 name: AKIRA Windows - verificar y compilar
-run-name: AKIRA 16.5.4 · Corrección 23 · ${{ github.ref_name }}
+run-name: AKIRA · ${{ github.ref_name }} · ${{ github.sha }}
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Versión de entrega
+        type: choice
+        options: ['0.1.0', '0.2.0', '0.3.0']
+        default: '0.1.0'
   push:
     branches:
       - akira-rev19-verifiable-core
@@ -14,6 +20,7 @@ on:
       - akira-rev21-gpu-ondas-estabilidad-20261107
       - akira-rev22-recuperacion-llamada-20261108
       - akira-rev23-recursos-llamada-historial-20261114
+      - akira-pdf-development
 
 permissions:
   contents: read
@@ -27,6 +34,7 @@ concurrency:
 env:
   PYTHONUTF8: '1'
   PYTHONIOENCODING: utf-8
+  AKIRA_RELEASE_VERSION: ${{ inputs.version || '0.1.0' }}
 
 jobs:
   build-windows:
@@ -46,8 +54,21 @@ jobs:
       - name: Instalar dependencias
         shell: pwsh
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt pytest
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
+          python -m pip install --dry-run --ignore-installed --report diagnostics/windows-dependencies.json -r requirements.txt pytest openpyxl
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo resolver el entorno de compilación.' }
+          python tools/release_files.py lock diagnostics/windows-dependencies.json diagnostics/requirements-windows-x64.lock
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo comprobar la lista de dependencias.' }
+          python -m pip install --require-hashes -r diagnostics/requirements-windows-x64.lock
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudieron instalar las dependencias verificadas.' }
+
+      - name: Compilar el diálogo autenticado de Windows Hello
+        shell: cmd
+        run: |
+          for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cl /nologo /std:c++17 /EHsc /LD /Fo:diagnostics\windows_hello.obj /Fe:diagnostics\akira_windows_hello.dll tools\windows_hello.cpp windowsapp.lib user32.lib
+          if errorlevel 1 exit /b 1
 
       - name: Comprobar importaciones del cliente y del instalador antes de compilar
         shell: pwsh
@@ -191,6 +212,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
           python -u -c "import subprocess,sys; sys.exit(subprocess.run([sys.executable,'-u','Akira.py','--self-check','diagnostics/SOURCE_SELF_CHECK.json','--app-root','.'],timeout=90).returncode)"
           if ($LASTEXITCODE -ne 0) { throw 'El autocontrol gráfico de origen falló. Revisa SOURCE_SELF_CHECK.json antes de compilar.' }
+          $env:AKIRA_HELLO_HELPER = (Resolve-Path 'diagnostics/akira_windows_hello.dll').Path
           python build_windows.py --source . --diagnostic diagnostics
           if ($LASTEXITCODE -ne 0) { throw 'No pasó el ejecutable nuevo; no publicar' }
           $visual = Start-Process -FilePath './native/AKIRA/AKIRA.exe' -ArgumentList @('--sprite-ai-check', 'diagnostics/SPRITE_AI_FROZEN.json') -Wait -PassThru
@@ -338,11 +360,11 @@ jobs:
           python -m installer.check_installed_ai --setup "$($setup.FullName)" --root "$target" --report diagnostics/INSTALLED_LOCAL_AI.json
           if ($LASTEXITCODE -ne 0) { throw 'La instalación real o la IA instalada no pasaron la prueba; no se publica' }
 
-      - name: Obtener fuente Rev18 verificada para comprobar la actualización
+      - name: Obtener fuente Rev23 verificada para comprobar la actualización
         uses: actions/checkout@v4
         with:
-          ref: de98b491fdb67ca0e207b0bca379e77da5f1df51
-          path: baseline_rev18
+          ref: d6049d8b73beaa37e766ac221ecf38ca4a29f7e3
+          path: baseline_rev23
           persist-credentials: false
 
       - name: Reconstruir el instalador anterior desde su fuente verificada
@@ -350,49 +372,49 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $clean = Join-Path $env:RUNNER_TEMP 'AKIRA_INSTALACION_VERIFICADA'
-          if (Test-Path $clean) { Remove-Item -LiteralPath $clean -Recurse -Force }
-          New-Item -ItemType Directory -Force -Path baseline_rev18/assets/sprite_vision | Out-Null
-          Copy-Item 'assets/sprite_vision/*' baseline_rev18/assets/sprite_vision -Recurse -Force
-          New-Item -ItemType Directory -Force -Path baseline_rev18/third_party/packages | Out-Null
-          Copy-Item 'third_party/packages/*' baseline_rev18/third_party/packages -Recurse -Force
-          python baseline_rev18/build_windows.py --source baseline_rev18 --diagnostic diagnostics/baseline_rev18
-          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir la aplicación Rev18 de referencia.' }
-          New-Item -ItemType Directory -Force -Path baseline_rev18/native/AKIRA/local_ai | Out-Null
-          Copy-Item 'native/AKIRA/local_ai/*' baseline_rev18/native/AKIRA/local_ai -Recurse -Force
-          New-Item -ItemType Directory -Force -Path baseline_rev18/native/AKIRA/bin | Out-Null
-          Copy-Item 'native/AKIRA/bin/*' baseline_rev18/native/AKIRA/bin -Recurse -Force
-          $env:AKIRA_MODEL_PATH = Join-Path $env:RUNNER_TEMP 'Qwen3-4B-Q4_K_M.gguf'
-          Push-Location baseline_rev18
-          try {
-            python -c "import os; from installer.smoke_local_ai import get_model; get_model(os.environ['AKIRA_MODEL_PATH'])"
-            if ($LASTEXITCODE -ne 0) { throw 'No se verificó el modelo original Rev18.' }
-          } finally { Pop-Location }
+          if (Test-Path -LiteralPath $clean) {
+            $resolved = (Resolve-Path -LiteralPath $clean).Path
+            if ($resolved -ne (Join-Path (Resolve-Path -LiteralPath $env:RUNNER_TEMP).Path 'AKIRA_INSTALACION_VERIFICADA')) { throw 'Ubicación de prueba inesperada.' }
+            Remove-Item -LiteralPath $resolved -Recurse -Force
+          }
+          New-Item -ItemType Directory -Force -Path baseline_rev23/assets/sprite_vision | Out-Null
+          Copy-Item 'assets/sprite_vision/*' baseline_rev23/assets/sprite_vision -Recurse -Force
+          New-Item -ItemType Directory -Force -Path baseline_rev23/third_party/packages | Out-Null
+          Copy-Item 'third_party/packages/*' baseline_rev23/third_party/packages -Recurse -Force
+          python baseline_rev23/build_windows.py --source baseline_rev23 --diagnostic diagnostics/baseline_rev23
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir la aplicación Rev23 de referencia.' }
+          New-Item -ItemType Directory -Force -Path baseline_rev23/native/AKIRA/local_ai | Out-Null
+          Copy-Item 'native/AKIRA/local_ai/*' baseline_rev23/native/AKIRA/local_ai -Recurse -Force
+          New-Item -ItemType Directory -Force -Path baseline_rev23/native/AKIRA/bin | Out-Null
+          Copy-Item 'native/AKIRA/bin/*' baseline_rev23/native/AKIRA/bin -Recurse -Force
+          $env:AKIRA_MODEL_PATH = Join-Path $env:RUNNER_TEMP 'gemma-4-E2B-it-Q4_K_M.gguf'
           $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
-          if ($iscc) { & $iscc.Source 'baseline_rev18/installer/akira.iss' }
-          else { & (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe') 'baseline_rev18/installer/akira.iss' }
-          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir el instalador Rev18 de referencia.' }
+          if ($iscc) { & $iscc.Source 'baseline_rev23/installer/akira.iss' }
+          else { & (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe') 'baseline_rev23/installer/akira.iss' }
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo reconstruir el instalador Rev23 de referencia.' }
 
-      - name: Actualizar Rev18 conservando riesgo, chats, fondos y accesos
+      - name: Actualizar Rev23 conservando riesgo, chats, fondos y accesos
         shell: pwsh
         timeout-minutes: 20
         run: |
           $setup = Get-ChildItem 'dist_installer' -Filter '*_IA_INCLUIDA.exe' | Select-Object -First 1
-          $previous = Get-ChildItem 'baseline_rev18/dist_installer' -Filter '*_IA_INCLUIDA.exe' | Select-Object -First 1
+          $previous = Get-ChildItem 'baseline_rev23/dist_installer' -Filter '*_IA_INCLUIDA.exe' | Select-Object -First 1
           $target = Join-Path $env:RUNNER_TEMP 'AKIRA_UPGRADE_VERIFICADA'
-          python -m installer.check_upgrade --previous-setup "$($previous.FullName)" --setup "$($setup.FullName)" --previous-source baseline_rev18 --remove-previous-setup --root "$target" --report diagnostics/UPGRADE_REV16.json
+          python -m installer.check_upgrade --previous-setup "$($previous.FullName)" --setup "$($setup.FullName)" --previous-source baseline_rev23 --remove-previous-setup --root "$target" --report diagnostics/UPGRADE_REV16.json
           if ($LASTEXITCODE -ne 0) { throw 'La actualización real perdió datos o mantuvo un acceso a la versión anterior.' }
 
-      - name: Resumir comprobaciones reales y verificar integridad de Rev18
+      - name: Registrar huella del instalador probado y revisión exacta
         shell: pwsh
         run: |
-          python -m installer.summarize_revision --diagnostics diagnostics
+          $setup = Get-ChildItem 'dist_installer' -Filter '*_IA_INCLUIDA.exe' | Select-Object -First 1
+          python -m installer.summarize_revision --diagnostics diagnostics --installer "$($setup.FullName)"
           if ($LASTEXITCODE -ne 0) { throw 'La evidencia está incompleta; no publicar el instalador.' }
 
       - name: Publicar instalador de AKIRA con IA incluida y verificada
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AKIRA-16.5.4-Correccion23-instalador-Windows-IA-INCLUIDA
+          name: AKIRA-${{ env.AKIRA_RELEASE_VERSION }}-instalador-Windows-IA-INCLUIDA
           compression-level: 0
           path: dist_installer/*.exe
           retention-days: 7

@@ -35,12 +35,17 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
     root=Path(root);api=None;lock=None;context=None;engine=None;bound_identity=None
     started_utc=time.time();stage='INICIANDO';publish_callback=publish
     reconnect=False;paused=False;network_available=True;failures=0;account_adaptation=None
+    stored_identity=(int(cfg.get('expected_login') or 0),str(cfg.get('expected_server') or '').strip())
+    authorized_identity=stored_identity if cfg['mode']=='trade' and all(stored_identity) and not preview else None
+    if not preview and authorized_identity is None:cfg['mode']='observe'
     def publish(row):
         row={**row,'build':BUILD_ID,'runtime':{'application_root':str(root.resolve()),
             'python_executable':sys.executable,'process_id':os.getpid(),
             'started_utc':started_utc,'stage':stage,'preview':bool(preview)},
             'configured_execution':{k:cfg[k] for k in ('mode','symbols','risk','capital_protection','sizing','runner')}}
         if account_adaptation:row['account_adaptation']=dict(account_adaptation)
+        if getattr(log,'account_ref',None):row['account_ref']=log.account_ref
+        if getattr(log,'account_origin',None):row['account_origin']=log.account_origin
         publish_callback(row)
     def disconnected(problem,delay=0):
         status=problem.status(delay)
@@ -49,7 +54,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             'execution_gate':{'code':'MT5_DISCONNECTED','execution_allowed':False,
                 'reason':status['message'],'next_action':status['next_action']}})
     def handle(cmd):
-        nonlocal reconnect,network_available,bound_identity
+        nonlocal reconnect,network_available,bound_identity,authorized_identity
         action=cmd.get('action')
         if action=='reconnect_mt5':
             reconnect=True
@@ -58,6 +63,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             if preview:return {'ok':False,'error':'La vista previa no accede a cuentas reales.'}
             reconnect=True
             cfg['mode']='observe'
+            authorized_identity=None
             release()
             disconnected(ConnectionProblem('INSPECTING','Comprobando la cuenta abierta en MT5…',
                 'La cuenta se guardará en Solo análisis. Después podrás autorizar sus operaciones.'))
@@ -69,10 +75,12 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             from settings_effects import validate_form
             saved=validate_form(cmd['config'])
             saved['desktop']=effective_desktop(saved.get('desktop'))
-            if before!=target_signature(saved) and saved['mode']=='trade':
+            if saved['mode']=='trade':
                 current=api.account_info() if not preview else None
-                if current is None or account_identity(current)!=bound_identity or not confirmation_matches(cmd.get('authorized_identity'),current):
-                    saved['mode']='observe'
+                intended=(int(saved.get('expected_login') or 0),str(saved.get('expected_server') or '').strip())
+                if (current is None or intended!=bound_identity or account_identity(current)!=intended or
+                        (intended!=authorized_identity and not confirmation_matches(cmd.get('authorized_identity'),current))):
+                    return {'ok':False,'error':'La cuenta detectada en MT5 cambió o requiere confirmación antes de operar.'}
             cmd={**cmd,'config':saved}
         if engine is not None:
             result=engine.handle_command(cmd)
@@ -84,6 +92,8 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
             result={'ok':True}
         else:return {'ok':False,'error':'MT5 aún no está conectado. Las solicitudes de órdenes no se conservan para enviarlas después.'}
         if result.get('ok') and action=='network_state':network_available=cmd['online']
+        if result.get('ok') and action=='apply_settings':
+            authorized_identity=bound_identity if cfg['mode']=='trade' else None
         if result.get('ok') and before!=target_signature(cfg):
             reconnect=True
             # An explicit target change in observe mode starts a fresh journal
@@ -142,6 +152,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                         expected=(int(cfg.get('expected_login') or 0),str(cfg.get('expected_server') or '').strip())
                         if actual!=expected or bound_identity is not None and actual!=bound_identity:
                             cfg.update(mode='observe',expected_login=actual[0],expected_server=actual[1])
+                            authorized_identity=None
                             if cfg.get('operation_profile')=='DEMO_EXPERIMENT' and int(getattr(account,'trade_mode',-1))!=0:cfg['operation_profile']='AUTO'
                             account_adaptation={'login':actual[0],'server':actual[1],'mode':'observe',
                                 'operation_profile':cfg.get('operation_profile','AUTO'),'at':time.time(),
@@ -150,15 +161,19 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                             log.event('MT5',account_adaptation['detail'],state='SISTEMA')
                         connector.remember_observed()
                 else:account=api.account_info()
-                identity_pair=(int(account.login),str(account.server))
+                identity_pair=account_identity(account)
                 if bound_identity is None:bound_identity=identity_pair
                 if identity_pair!=bound_identity:
                     raise ConnectionProblem('ACCOUNT_CHANGED','La cuenta cambió mientras Akira estaba abierto.',
                         'En Ajustes → Operación pulsa Usar cuenta abierta en MT5. Se guardará en Solo análisis y podrás autorizarla sin reiniciar Akira.')
                 identity=hashlib.sha256(f'{account.server}:{account.login}'.encode()).hexdigest()[:16]
+                log.account_context={'login':account.login,'server':account.server,'company':getattr(account,'company','')}
+                log.account_ref=identity
+                log.account_origin='simulation' if preview else 'mt5_demo' if getattr(account,'trade_mode',None)==0 else 'mt5'
                 journal=Journal(root/'state'/('preview.json' if preview else 'cuenta_'+identity+'.json'),read_only=preview)
                 g=Gateway(api,cfg,journal,log,clock)
                 g.requires_execution_lease=not preview;g.execution_lease_active=False;g.network_available=network_available
+                g.require_neural_review=not preview
                 for symbol,on in cfg['symbols'].items():
                     if on and not api.symbol_select(symbol,True):
                         raise ConnectionProblem('SYMBOL','MT5 no tiene disponible el símbolo '+symbol+'.',
@@ -177,6 +192,7 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                         if current is not None and account_identity(current)!=bound_identity:
                             if cfg.get('follow_terminal_account',True):
                                 cfg['mode']='observe';reconnect=True
+                                authorized_identity=None
                                 # Release the old engine, review queue and account lease
                                 # before attaching the new account's journal.
                                 break
@@ -205,7 +221,10 @@ def run_session(cfg,root,log,stop,commands,publish,preview=False):
                         if not preview:
                             view['mt5_connection']={'code':'CONNECTED','message':'MT5 conectado y cuenta comprobada.',
                                 'account_type':'demo' if int(getattr(account,'trade_mode',-1))==0 else 'real' if int(getattr(account,'trade_mode',-1))==2 else 'otra',
-                                'terminal_path':connector.saved.get('terminal_path',''),'next_action':''}
+                                'terminal_path':connector.saved.get('terminal_path',''),
+                                'trading_permissions':bool(getattr(current,'trade_allowed',False) and getattr(current,'trade_expert',False)
+                                    and getattr(terminal,'trade_allowed',False) and not getattr(terminal,'tradeapi_disabled',False)),
+                                'currency':str(getattr(current,'currency','')),'next_action':''}
                         publish(view);failures=0
                     except Blocked as exc:
                         log.report('MT5','ESPERANDO',str(exc))

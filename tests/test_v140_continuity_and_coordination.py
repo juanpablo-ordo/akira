@@ -1,4 +1,5 @@
 """Reproducir reclamos del chat y coordinación del actor, sin red ni MT5 real."""
+from akira_version import DATA_SCHEMA
 import copy
 from concurrent.futures import Future
 from contextlib import ExitStack
@@ -315,7 +316,7 @@ class Coordination140Tests(PendingCase,unittest.TestCase):
         raw['risk']['max_trade_money']=2.17;raw['assistant']['friendly_followup_question']=True
         cfg=load_config(raw)
         self.assertEqual(cfg['mode'],'observe');self.assertEqual(cfg['risk']['max_trade_money'],2.17)
-        self.assertFalse(cfg['assistant']['friendly_followup_question']);self.assertEqual(cfg['schema_version'],1600)
+        self.assertFalse(cfg['assistant']['friendly_followup_question']);self.assertEqual(cfg['schema_version'],DATA_SCHEMA)
         self.cfg['mode']='observe';bot=self.bot();bot.reply('reanuda el bot',{},use_cloud=False)
         self.e.step();self.assertFalse(self.api.sent);self.assertEqual(self.cfg['mode'],'observe')
 

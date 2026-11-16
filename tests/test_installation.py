@@ -1,3 +1,4 @@
+from akira_version import DATA_SCHEMA
 import ast,copy,json,tempfile,unittest
 from pathlib import Path
 from settings import DEFAULT,load_config,save_config
@@ -9,7 +10,7 @@ from execution import Blocked
 ROOT=Path(__file__).resolve().parents[1]
 
 class InstallationTests(unittest.TestCase):
-    def test_payload_validates_offline(self):self.assertEqual(validate(ROOT)['schema_version'],1600)
+    def test_payload_validates_offline(self):self.assertEqual(validate(ROOT)['schema_version'],DATA_SCHEMA)
     def test_installer_scripts_match_the_actual_manifest(self):
         self.assertEqual({p.name for p in ROOT.glob('*.bat')},{'VALIDAR_AKIRA.bat','DIAGNOSTICO_AKIRA.bat'})
     def test_old_strategy_keys_are_removed_in_migration(self):

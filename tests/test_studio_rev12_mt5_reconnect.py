@@ -147,7 +147,8 @@ class SessionReconnectTests(unittest.TestCase):
         self.assertTrue(wait_for(lambda:any(r.get('connected') for r in self.rows)),self.rows)
         self.assertEqual(len(self.engines),1);self.assertEqual(len(self.api.calls),2);self.assertEqual(self.api.calls[-1][0],(str(self.api.program),))
     def test_disconnect_and_reconnect_preserve_manual_pause_and_release_the_old_lock(self):
-        self.cfg['mode']='trade';self.start();self.assertTrue(wait_for(lambda:bool(self.engines)))
+        self.cfg.update(mode='trade',expected_server='TEST')
+        self.start();self.assertTrue(wait_for(lambda:bool(self.engines)))
         self.commands.put({'action':'pause','paused':True});self.assertTrue(wait_for(lambda:self.engines[0].paused))
         self.commands.put({'action':'reconnect_mt5'});self.assertTrue(wait_for(lambda:len(self.engines)==2))
         self.assertTrue(self.engines[0].closed);self.assertTrue(self.engines[1].paused);self.assertTrue(self.locks[0].close.called)

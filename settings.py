@@ -5,6 +5,7 @@ import math
 import sys
 from pathlib import Path
 from bundled_model import MODEL_NAME,MODEL_PATH,LEGACY_MODEL_NAME,LEGACY_MODEL_PATH
+from akira_version import DATA_SCHEMA
 
 DEFAULT=json.loads((Path(__file__).parent/'default_config.json').read_text(encoding='utf-8'))
 
@@ -104,7 +105,7 @@ def load_config(path):
         # The new instruction explicitly enables continuous public context.
         for k in ('enabled','youtube','investing','coinglass','coinglass_public_fallback','local_model','local_ai_summary'):
             cfg['research'][k]=True
-    cfg['schema_version']=1600
+    cfg['schema_version']=DATA_SCHEMA
     if type(cfg['desktop'].get('adaptive_resources',True)) is not bool:raise ValueError('El ajuste automático de recursos debe estar activado o desactivado')
     if cfg['desktop'].get('low_resource_mode','auto') not in ('auto','ultra','off'):raise ValueError('Perfil para equipos limitados inválido')
     if type(cfg.get('follow_terminal_account',True)) is not bool:raise ValueError('La adaptación de cuenta debe estar activada o desactivada')
@@ -427,14 +428,16 @@ def load_config(path):
     if int(cfg['expected_login'])!=cfg['expected_login']:raise ValueError('expected_login debe ser entero')
     if not isinstance(cfg['expected_server'],str) or len(cfg['expected_server'])>200:raise ValueError('Servidor de MT5 inválido')
     cfg['expected_server']=cfg['expected_server'].strip()
-    for k in ('max_trade_money','max_trade_pct','minimum_margin_level_pct'):
-        if cfg['risk'][k]<=0:raise ValueError('risk.'+k+' debe ser positivo')
+    for k in ('max_trade_money','max_trade_pct','minimum_margin_level_pct','portfolio_capital_pct'):
+        if isinstance(cfg['risk'][k],bool) or not isinstance(cfg['risk'][k],(int,float)) or cfg['risk'][k]<0:
+            raise ValueError('risk.'+k+' debe ser un número finito no negativo')
     if cfg['risk'].get('min_lot_structural_override_enabled',False):
         if not 0 < float(cfg['risk'].get('min_lot_structural_override_max_pct',0)) <= 40:
             raise ValueError('El override de lote mínimo debe estar entre 0 y 40%')
         if float(cfg['risk'].get('min_lot_structural_override_money_cap',0))<=0:
             raise ValueError('El cap USD del override de lote mínimo debe ser positivo')
-    if not 0<cfg['risk']['portfolio_capital_pct']<=100:raise ValueError('portfolio_capital_pct debe estar entre 0 y 100')
+    if any(cfg['risk'][k]>100 for k in ('portfolio_capital_pct','max_trade_pct','daily_loss_pct')):
+        raise ValueError('Los porcentajes de capital deben estar entre 0 y 100')
     for k in ('max_own_map_orders','max_same_side_orders','replace_min_ticks'):
         v=cfg['pending'][k]
         if v<1 or int(v)!=v:raise ValueError('pending.'+k+' debe ser entero positivo')
@@ -448,6 +451,20 @@ def load_config(path):
     from akira_studio import validate_studio,safe_studio
     cfg['studio']=validate_studio(safe_studio(cfg))
     return cfg
+
+
+def desktop_release_config(cfg):
+    """Migrate the live desktop policies while keeping old fixtures and readable journals."""
+    result=copy.deepcopy(cfg)
+    result['execution']['review_policy']='required'
+    result['follow_terminal_account']=True
+    result['assistant'].update(provider_mode='local',provider_primary='local',
+                               conversation_style='natural')
+    result['research'].update(derivatives_provider='public',cloud=False)
+    result['desktop'].update(resource_policy='automatic',adaptive_resources=True,low_resource_mode='auto')
+    if result['mode']=='trade' and not (result['expected_login'] and result['expected_server']):
+        result['mode']='observe'
+    return result
 
 
 def save_config(cfg,path):

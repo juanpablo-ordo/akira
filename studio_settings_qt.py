@@ -42,7 +42,7 @@ class SettingsPanel(QWidget):
         super().__init__();self.window=window;self.controller=window.controller;self.tr=window.tr;self.fields={};self.initial={};self.touched=set();self.keys={};self.extra={};self.avatar=copy.deepcopy(self.controller.cfg['studio']['avatar']);self.avatar_initial=copy.deepcopy(self.avatar);self.avatar_touched=False
         layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(10)
         self.tabs=QTabWidget();layout.addWidget(self.tabs,1)
-        self.categories=[]
+        self.categories=[];self.revealed_keys=set()
         for name in ('OPERACIÓN','RIESGO','IA Y VOZ','FUENTES Y CONEXIONES','APARIENCIA','APLICACIÓN'):
             scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setFrameShape(QScrollArea.Shape.NoFrame)
             body=QWidget();box=QVBoxLayout(body);box.setContentsMargins(8,10,8,10);box.setSpacing(14);scroll.setWidget(body)
@@ -60,8 +60,9 @@ class SettingsPanel(QWidget):
     def card(self,index,title,glyph='settings'):
         card=Card(self.tr.text(title),glyph);self.tr.bind(card.title,title);self.categories[index][1].addWidget(card);return card
     def text(self,source):return self.tr.text(source)
-    def field(self,card,path,title,options=None,limits=None,help='',editable=False):
+    def field(self,card,path,title,options=None,limits=None,help='',editable=False,hidden=False):
         row=QHBoxLayout();caption=label('');self.tr.bind(caption,title);caption.setWordWrap(True);row.addWidget(caption,1)
+        self.field_captions=getattr(self,'field_captions',{});self.field_captions[path]=caption
         value=get(self.controller.cfg,path)
         if path in ('studio.accent','studio.secondary','studio.background_color'):
             widget=ColorButton(str(value or ''));read=widget.value
@@ -98,7 +99,11 @@ class SettingsPanel(QWidget):
         widget.setMinimumWidth(160);widget.setMaximumWidth(420);widget.setSizePolicy(widget.sizePolicy().horizontalPolicy(),widget.sizePolicy().verticalPolicy())
         if help:
             note=label(help,'muted');note.setWordWrap(True);card.body.addWidget(note)
+            if hidden:note.hide()
         row.addWidget(widget,1);card.body.addLayout(row);self.fields[path]=(widget,read);self.initial[path]=copy.deepcopy(read())
+        if hidden:
+            caption.hide()
+            widget.hide()
         signal=widget.valueChanged if isinstance(widget,ColorButton) else widget.currentTextChanged if isinstance(widget,QComboBox) else widget.toggled if isinstance(widget,QCheckBox) else widget.textChanged if isinstance(widget,QLineEdit) else widget.valueChanged
         signal.connect(lambda *args,p=path:self.touched.add(p))
         if path.startswith('studio.') or path.startswith('desktop.model_') or path in ('desktop.performance_profile','desktop.memory_budget_mb','desktop.adaptive_resources','desktop.low_resource_mode'):
@@ -108,32 +113,15 @@ class SettingsPanel(QWidget):
         widget=button('',callback,kind,glyph);self.tr.bind(widget,title);card.body.addWidget(widget);return widget
     def operation(self):
         card=self.card(0,'OPERACIÓN','bolt')
-        self.field(card,'mode','Modo de operación',(('observe','Solo análisis'),('trade','Operativa automática')),help='Solo análisis estudia sin enviar órdenes. Operativa automática envía, edita y retira propuestas válidas tras autorizar la cuenta y respetar los límites de riesgo.')
         self.field(card,'operation_profile','Perfil de cuenta',(('AUTO','Detectar desde MT5'),('DEMO_EXPERIMENT','DEMO · Experimentación controlada'),('REAL_CAPITAL','REAL · Gestión de capital'),('HISTORICAL','Simulación histórica · sin envíos')),help='Demo permite experimentar con las reglas opcionales. MT5 debe identificar la cuenta como demo. Los precios, el volumen, el margen y la aceptación del bróker siempre se comprueban.')
-        self.field(card,'follow_terminal_account','Adaptarse a la cuenta abierta en MT5',help='Al detectar otra cuenta, conecta su historial y recalcula con su capital. Queda en Solo análisis hasta que autorices esa cuenta; conserva tus límites personales.')
-        self.field(card,'terminal_path','Ruta de MetaTrader 5',help='Es el programa terminal64.exe del MetaTrader que quieres conectar. Puedes seleccionarlo con el botón de abajo. Déjalo vacío para detección automática; Akira recordará el último terminal comprobado.')
-        self.add_button(card,'SELECCIONAR METATRADER 5',self.choose_terminal)
-        self.use_mt5_button=self.add_button(card,'USAR CUENTA ABIERTA EN MT5',self.use_open_account,'primary','bolt')
-        self.field(card,'expected_login','Número de cuenta',limits=(0,2147483647),help='Para cambiar de cuenta: inicia sesión en MT5 y pulsa Usar cuenta abierta en MT5. Akira copiará el número, el servidor y el programa correcto sin pedirte la contraseña. Después pulsa Activar operativa para autorizar esa cuenta.')
-        self.field(card,'expected_server','Servidor del bróker',help='Debe ser el mismo servidor que aparece en MT5, por ejemplo el servidor Demo de tu bróker. Usar cuenta abierta en MT5 lo completa automáticamente. Los datos de acceso y la contraseña se guardan en MT5.')
-        self.mt5_status=label('Esperando conexión con MT5. Guarda los cambios de cuenta o ruta antes de reconectar.','muted');self.mt5_status.setWordWrap(True);card.body.addWidget(self.mt5_status)
-        self.add_button(card,'RECONECTAR MT5',self.controller.reconnect_mt5,'','bolt')
-        self.field(card,'execution.pending_only','Entradas únicamente mediante pendientes',help='Desmarcado permite runners directos confirmados. Las posiciones activadas desde pendientes pueden gestionarse como runners.')
-        self.field(card,'execution.review_policy','Revisión previa a nuevas órdenes',(('required','IA obligatoria · sin respuesta no se entra'),('technical','Motor técnico · sin dictamen neuronal')),help='La IA obligatoria rechaza nuevas entradas si no confirma exactamente sus niveles y volumen. El modo técnico conserva todas las reglas deterministas, el presupuesto y las comprobaciones MT5. Nunca bloquea por sí mismo la supervisión de posiciones abiertas.')
-        self.field(card,'runner.enabled','Gestionar runners normales')
+        self.mt5_status=label('Esperando la cuenta abierta en MetaTrader 5.','muted');self.mt5_status.setWordWrap(True);card.body.addWidget(self.mt5_status)
+        self.use_mt5_button=self.add_button(card,'VOLVER A DETECTAR',self.controller.reconnect_mt5,'','bolt')
+        self.field(card,'execution.pending_only','Permitir entradas directas',((True,'Desactivadas · solo nuevas pendientes'),(False,'Activadas · permite entradas directas')),
+                   help='La selección se aplica a nuevas entradas a mercado. La gestión de posiciones propias abiertas conserva sus protecciones.')
+        note=label('Cada nueva exposición requiere dictamen neuronal vigente, validación de riesgo y comprobación en MetaTrader 5.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.field(card,'lot','Lote base',limits=(.001,100))
         self.field(card,'symbols.BTCUSDm','Bitcoin · BTCUSDm');self.field(card,'symbols.XAUUSDm','Oro · XAUUSDm')
-        self.add_button(card,'ACTIVAR OPERATIVA',self.window.activate_execution,'primary','shield')
-        note=label('Selecciona y aplica la estrategia en Pendientes. El motor actúa automáticamente con los límites y la cuenta autorizados.','muted');note.setWordWrap(True);card.body.addWidget(note)
-
-    def choose_terminal(self):
-        path,_=QFileDialog.getOpenFileName(self,'Seleccionar MetaTrader 5','','Programas de Windows (*.exe)')
-        if path:self.fields['terminal_path'][0].setText(path)
-    def use_open_account(self):
-        accepted=self.controller.use_open_mt5_account(self.fields['terminal_path'][1]().strip())
-        if accepted:
-            self.use_mt5_button.setEnabled(False)
-            self.mt5_status.setText('Comprobando la cuenta abierta en MT5… La operativa quedará en Solo análisis mientras se guarda.')
+        note=label('Cambia de cuenta en MT5. Cuando Akira detecte la nueva cuenta, autorízala desde Análisis y operación.','muted');note.setWordWrap(True);card.body.addWidget(note)
     def risk(self):
         before=set(self.fields)
         card=self.card(1,'TUS LÍMITES EN ESTA CUENTA','shield')
@@ -192,6 +180,10 @@ class SettingsPanel(QWidget):
                 'management':dict(self.controller.cfg['management'])}
         for path in self.risk_paths:put(config,path,self.fields[path][1]())
         data=risk_dashboard(self.controller.view,config,self.window.private)
+        currency=data['limits'].get('currency') if data['ready'] else None
+        for path in self.risk_paths:
+            if path.startswith('risk.') and 'money' in path:
+                self.fields[path][0].setSuffix(' '+currency if currency else '')
         text='Vista previa de lo que estás editando\n'+data['configured']
         text+='\n\nEl motor recalcula el lote admisible con estos límites y conserva la protección estructural. El margen disponible y el lote mínimo del bróker también deben permitir la orden.'
         from management_safety import protection_config_warning
@@ -203,8 +195,19 @@ class SettingsPanel(QWidget):
         self.risk_preview.setText(text)
     def ai_voice(self):
         card=self.card(2,'PAÍS Y HORA LOCAL','chat')
-        self.field(card,'locale.country','País (código ISO)',help='GT = Guatemala. La zona IANA determina el reloj; cambiar país no modifica velas ni precios.')
-        self.field(card,'locale.region','Departamento o región')
+        from geo_preferences import catalog,continent_for
+        saved=get(self.controller.cfg,'locale.country','GT')
+        self.continent=ChoiceBox()
+        for code,row in catalog()['continents'].items():self.continent.addItem(self.text(row['name']),code)
+        self.continent.addItem(self.text('Otras regiones'),'other')
+        self.continent.setCurrentIndex(self.continent.findData(continent_for(saved)))
+        row=QHBoxLayout();row.addWidget(self.tr.bind(label(''),'Continente'),1);row.addWidget(self.continent,1);card.body.addLayout(row)
+        self.geo_country=self.field(card,'locale.country','País',())
+        self.geo_region=self.field(card,'locale.region','División administrativa',())
+        self.load_countries(saved,get(self.controller.cfg,'locale.region',''))
+        for path in ('locale.country','locale.region'):self.initial[path]=self.fields[path][1]()
+        self.continent.currentIndexChanged.connect(lambda _:self.load_countries())
+        self.geo_country.currentIndexChanged.connect(lambda _:self.load_divisions())
         self.field(card,'locale.city','Ciudad')
         self.field(card,'locale.timezone','Zona horaria IANA',help='Ejemplos: America/Guatemala, America/Mexico_City, America/New_York, Europe/Madrid. Se aplica al chat, informes y vencimientos.')
         self.field(card,'locale.automatic','Detectar zona del sistema cuando esté disponible')
@@ -216,14 +219,9 @@ class SettingsPanel(QWidget):
         self.translation_status=label('','muted');self.translation_status.setWordWrap(True);card.body.addWidget(self.translation_status)
         note=label('Importa traducciones en un archivo .json con locale y translations. Ejemplo: {"locale":"es","translations":{"TRADING":"TRADING"}}. Las voces disponibles dependen del idioma.','muted');note.setWordWrap(True);card.body.addWidget(note);self.add_button(card,'IMPORTAR PAQUETE',self.choose_language)
         card=self.card(2,'IA LOCAL Y CONVERSACIÓN','chat')
-        self.field(card,'assistant.provider_mode','Proveedor de IA',[('local','IA local instalada'),('cloud','API compatible externa'),('auto','Automático · principal y respaldo')])
-        self.field(card,'assistant.provider_primary','Proveedor principal en automático',[('local','Local'),('cloud','Externo')])
-        self.field(card,'assistant.cloud_endpoint','Endpoint de la API compatible',help='URL HTTPS que termine en /v1/chat/completions. La clave se guarda en Fuentes y conexiones. Seleccionar un nombre no comprueba disponibilidad.')
-        for key,title in [('general_model','Modelo para conversar'),('research_model','Modelo para investigación'),('trading_model','Modelo para revisar órdenes')]:self.field(card,'assistant.'+key,title)
         self.field(card,'assistant.preload','Precargar y comprobar el modelo local al iniciar')
         for key,title in [('prepare','Preparación local'),('conversation','Generación conversacional'),('sources','Consulta de herramientas'),('deep_research','Investigación profunda'),('trade_review','Revisión de operaciones')]:self.field(card,'assistant.'+key+'_timeout_seconds',title+' (segundos)',limits=(1,900))
         self.add_button(card,'COMPROBAR PROVEEDOR SELECCIONADO',self.controller.check_ai_provider)
-        self.field(card,'assistant.conversation_style','Estilo de conversación',[('natural','Natural'),('mentor','Guía y mentor'),('detailed','Explicaciones detalladas')])
         self.field(card,'assistant.local_runtime_model','Archivo GGUF local (opcional)')
         self.add_button(card,'ELEGIR MODELO GGUF',self.choose_gguf)
         note=label('El motor gratuito incluido es llama.cpp. Puedes elegir un modelo GGUF compatible más grande si dispones de RAM suficiente; no se descarga ni se activa hasta guardar. Más tamaño no garantiza mejores decisiones de trading.','muted');note.setWordWrap(True);card.body.addWidget(note)
@@ -232,8 +230,36 @@ class SettingsPanel(QWidget):
             if get(self.controller.cfg,path) is not None:self.field(card,path,title)
         note=label('Reparar comprueba archivos y una respuesta real. Si falta la IA incluida, intenta recuperarla con una descarga verificada de unos 2,5 GB. Espera el resultado antes de cerrar.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.add_button(card,'REPARAR ASISTENTE',self.controller.repair_ai);self.add_button(card,'MOTIVO Y REGISTRO',self.window.show_model_log)
-        card=self.card(2,'PREFERENCIAS DE VOZ','sources');self.field(card,'voice.model','Modelo de reconocimiento',('tiny','base','small'));self.field(card,'voice.rate','Velocidad de voz',limits=(80,300));self.field(card,'voice.volume','Volumen de voz',limits=(0,1))
+        card=self.card(2,'PREFERENCIAS DE VOZ','sources');self.field(card,'voice.model','Modelo de reconocimiento',('tiny','base','small'))
         note=label('El teléfono junto al envío del chat inicia la llamada y permite seleccionar micrófono, salida y voz.','muted');note.setWordWrap(True);card.body.addWidget(note)
+
+    def load_countries(self,selected=None,region=None):
+        from geo_preferences import countries
+        country=self.geo_country
+        country.blockSignals(True)
+        country.clear()
+        for code,name in countries(self.continent.currentData(),self.tr.locale.split('-')[0]):country.addItem(name,code)
+        if selected and country.findData(selected)<0:country.addItem(selected,selected)
+        country.setCurrentIndex(max(0,country.findData(selected)))
+        country.blockSignals(False)
+        if selected is None:self.touched.update(('locale.country','locale.region'))
+        self.load_divisions(region,mark=selected is None)
+
+    def load_divisions(self,selected=None,mark=True):
+        from geo_preferences import division_label,divisions,subdivision_code
+        country=self.geo_country.currentData() or ''
+        region=self.geo_region
+        region.blockSignals(True)
+        region.clear()
+        region.addItem(self.text('Sin especificar'),'')
+        for code,name in divisions(country):region.addItem(name,code)
+        if selected:
+            code=subdivision_code(country,selected)
+            if region.findData(code)<0:region.addItem(selected,code)
+            region.setCurrentIndex(region.findData(code))
+        region.blockSignals(False)
+        self.field_captions['locale.region'].setText(self.text(division_label(country)))
+        if mark:self.touched.add('locale.region')
 
     def choose_gguf(self):
         path,_=QFileDialog.getOpenFileName(self,'Seleccionar modelo local','','Modelo GGUF (*.gguf)')
@@ -252,21 +278,48 @@ class SettingsPanel(QWidget):
         health=credential_health()
         if not health['readable']:
             warning=label(health['detail'],'body',INK['amber']);warning.setWordWrap(True);card.body.addWidget(warning)
-        for key,title in [('COINGLASS_API_KEY','Clave CoinGlass (opcional)'),('OPENAI_API_KEY','Clave OpenAI (opcional)'),('CUSTOM_AI_API_KEY','Clave del proveedor IA compatible (opcional)')]:
+        for key,title in [('YOUTUBE_API_KEY','Clave YouTube (opcional)')]:
             row=QHBoxLayout();caption=label(title);self.tr.bind(caption,title);row.addWidget(caption,1)
-            entry=QLineEdit(str(saved.get(key) or ''));entry.setEchoMode(QLineEdit.EchoMode.Password);entry.setPlaceholderText('Guardada' if saved.get(key) else 'Sin configurar');row.addWidget(entry,1);eye=button('Mostrar',lambda _=False,w=entry:w.setEchoMode(QLineEdit.EchoMode.Normal if w.echoMode()==QLineEdit.EchoMode.Password else QLineEdit.EchoMode.Password),glyph='eye');row.addWidget(eye);card.body.addLayout(row);self.keys[key]=entry
+            entry=QLineEdit();entry.setEchoMode(QLineEdit.EchoMode.Password)
+            entry.setPlaceholderText('Guardada' if saved.get(key) else 'Sin configurar')
+            row.addWidget(entry,1)
+            row.addWidget(button('Mostrar',lambda _=False,name=key:self.reveal_key(name),glyph='eye'))
+            card.body.addLayout(row);self.keys[key]=entry
         note=label('Guardar incluye estas claves. Un campo vacío conserva la clave anterior. Guardar no certifica acceso al proveedor.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
-        self.add_button(card,'GUARDAR API',lambda:self.controller.save_keys({k:w.text() for k,w in self.keys.items()}),'primary')
+        self.add_button(card,'GUARDAR API',self.save_keys,'primary')
         note=label('Una clave nueva reemplaza la anterior del mismo proveedor. YouTube no forma parte del análisis automático ni autoriza operaciones.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.add_button(card,'COMPROBAR FUENTES',self.window.check_sources)
-        self.add_button(card,'ELIMINAR UNA CLAVE GUARDADA',self.window.delete_key)
+        self.add_button(card,'ELIMINAR CLAVES GUARDADAS',self.window.delete_key)
+        self.add_button(card,'RESTABLECER PIN CON WINDOWS',self.window.reset_privacy_pin)
         card=self.card(3,'INVESTIGACIÓN Y CONOCIMIENTO','sources')
-        self.field(card,'research.derivatives_provider','Datos de derivados BTC',(('public','Públicos sin plan (recomendado)'),('coinglass','CoinGlass opcional con mi plan')),
-            help='Públicos consulta OKX, Bybit o Binance sin clave. La cobertura se muestra en Fuentes; no incluye un mapa agregado de liquidaciones. El oro usa sus propios datos MT5 y macro.')
         for path,title in [('research.enabled','Investigación de mercado'),('research.coinglass_public_fallback','Derivados públicos BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
         self.field(card,'knowledge.mode','Actualización de conocimiento',(('automatic','Automática'),('request','Solo al solicitarla')))
         self.field(card,'knowledge.interval_hours','Intervalo de biblioteca (horas)',limits=(1,168))
         self.add_button(card,'ACTUALIZAR CONOCIMIENTO',self.window.refresh_knowledge)
+    def reveal_key(self,name):
+        if name in self.revealed_keys:
+            self.hide_revealed_keys()
+            return
+        if not self.window.authorize_sensitive('Revelar clave guardada'):return
+        from akira_secrets import load_secrets
+        value=load_secrets().get(name)
+        if not value:return
+        self.hide_revealed_keys()
+        entry=self.keys[name];entry.setReadOnly(True);entry.setEchoMode(QLineEdit.EchoMode.Normal)
+        entry.setText(value);self.revealed_keys.add(name)
+        self.window.privacy_timer.start(25_000)
+    def hide_revealed_keys(self):
+        for name in self.revealed_keys:
+            entry=self.keys[name]
+            entry.clear();entry.setReadOnly(False);entry.setEchoMode(QLineEdit.EchoMode.Password)
+        self.revealed_keys.clear()
+    def pending_keys(self):
+        return {key:entry.text() for key,entry in self.keys.items() if key not in self.revealed_keys and entry.text().strip()}
+    def save_keys(self):
+        values=self.pending_keys()
+        if values and self.window.authorize_sensitive('Guardar o reemplazar clave'):
+            self.controller.save_keys(values)
+            for key in values:self.keys[key].clear()
     def appearance(self):
         card=self.card(4,'DISEÑO E IDENTIDAD','settings')
         self.field(card,'studio.brand_name','Nombre del programa')
@@ -285,18 +338,16 @@ class SettingsPanel(QWidget):
         for key,title,low,high in [('opacity','Visibilidad del fondo',0,100),('quality','Calidad',20,100),('max_memory_mb','Memoria del fondo (MB)',32,512),('max_cpu_percent','CPU máxima del fondo (%)',1,40)]:self.field(card,'studio.wallpaper.'+key,title,limits=(low,high))
         self.fields['studio.wallpaper.max_memory_mb'][0].setToolTip('Límite del proceso decodificador en Windows. Los fotogramas de la interfaz tienen un presupuesto adicional acotado; no es un límite de memoria de toda la aplicación.')
         self.wallpaper_status=label('','muted');self.wallpaper_status.setWordWrap(True);card.body.addWidget(self.wallpaper_status)
-        card=self.card(4,'AVATAR PERSONALIZADO','chat')
+        card=self.card(4,'AVATAR ORIGINAL','chat')
         self.avatar_info=label('','muted');card.body.addWidget(self.avatar_info);self.update_avatar_info()
-        self.add_button(card,'EDITAR ESTADOS Y SECUENCIAS',self.edit_avatar)
-        self.add_button(card,'USAR AKIRA ORIGINAL',self.original_avatar)
         self.field(card,'studio.reduce_motion','Reducir movimiento')
         card=self.card(4,'RENDIMIENTO','bolt')
-        self.field(card,'desktop.adaptive_resources','Ajustar automáticamente equipos de pocos recursos',help='Detecta RAM, CPU y gráficos antes de abrir. En equipos de hasta 8 GB con gráficos integrados reduce IA auxiliar, contexto y efectos sin ralentizar la gestión MT5.')
-        self.field(card,'desktop.low_resource_mode','Perfil para equipos limitados',(('auto','Automático según componentes'),('ultra','Ultraligero'),('off','Preferencias manuales')))
+        self.field(card,'desktop.adaptive_resources','Ajustar automáticamente equipos de pocos recursos',hidden=True)
+        self.field(card,'desktop.low_resource_mode','Perfil para equipos limitados',(('auto','Automático según componentes'),('ultra','Ultraligero'),('off','Preferencias manuales')),hidden=True)
         self.effective_profile=label('','muted');self.effective_profile.setWordWrap(True);card.body.addWidget(self.effective_profile)
-        profile=self.field(card,'desktop.performance_profile','Perfil de recursos',('Rendimiento','Equilibrado','Ahorro de energía'))
-        for path,title,low,high in [('desktop.memory_budget_mb','Presupuesto del modelo (MB)',512,16384),('desktop.model_context_tokens','Contexto (tokens)',1024,16384),('desktop.model_keep_alive_seconds','Mantener modelo cargado (s)',0,600)]:self.field(card,path,title,limits=(low,high))
-        self.field(card,'desktop.model_use_gpu','Usar GPU para el modelo')
+        profile=self.field(card,'desktop.performance_profile','Perfil de recursos',('Rendimiento','Equilibrado','Ahorro de energía'),hidden=True)
+        for path,title,low,high in [('desktop.memory_budget_mb','Presupuesto del modelo (MB)',512,16384),('desktop.model_context_tokens','Contexto (tokens)',1024,16384),('desktop.model_keep_alive_seconds','Mantener modelo cargado (s)',0,600)]:self.field(card,path,title,limits=(low,high),hidden=True)
+        self.field(card,'desktop.model_use_gpu','Usar GPU para el modelo',hidden=True)
         profile.currentTextChanged.connect(self.apply_profile)
         note=label('La IA evalúa Bitcoin y oro por separado. Las revisiones automáticas se espacian diez minutos en ahorro y tres en equilibrio. El resumen general también descansa al terminar. Las revisiones que exijas tienen prioridad. Cotizaciones, órdenes y riesgo mantienen su frecuencia. Los presupuestos del modelo son orientativos.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
     def apply_profile(self,name):
@@ -313,6 +364,17 @@ class SettingsPanel(QWidget):
         self.add_button(card,'GESTIONAR CACHÉ',self.window.manage_cache)
         self.add_button(card,'DESINSTALAR AKIRA',self.window.uninstall_app)
         self.add_button(card,'ACERCA DE',self.window.about)
+        updates=self.card(5,'ACTUALIZACIONES','refresh')
+        self.update_status=label('Comprobar el canal estable de AKIRA.','muted')
+        self.update_status.setWordWrap(True)
+        updates.body.addWidget(self.update_status)
+        self.add_button(updates,'Buscar actualización',lambda:self.controller.check_updates(explicit=True))
+        self.download_update_button=self.add_button(updates,'Descargar actualización',self.controller.fetch_update)
+        self.download_update_button.setEnabled(False)
+        self.add_button(updates,'Pausar descarga',lambda:self.controller.update_cancel.set())
+        self.install_update_button=self.add_button(updates,'Instalar actualización',self.window.confirm_update_install)
+        self.install_update_button.setEnabled(False)
+        if not self.controller.preview:self.window.build_mobile_controls(self.card(5,'AKIRA MÓVIL','chat'))
         card=self.card(5,'CÓMO TRABAJA EL MOTOR','shield');note=label('Akira comprueba cotizaciones, estructura, órdenes, margen y riesgo antes de cada cambio. Las fuentes aportan contexto cuando están disponibles. Ahorro reduce efectos e IA auxiliar; no retrasa protecciones ni obliga a abrir operaciones.','muted');note.setWordWrap(True);card.body.addWidget(note)
     def draft(self):
         result=copy.deepcopy(self.controller.cfg)
@@ -450,9 +512,21 @@ class SettingsPanel(QWidget):
         dialog=SpriteEditor(self.window,self.avatar)
         if dialog.exec()==QDialog.DialogCode.Accepted:self.avatar=dialog.result_avatar();self.avatar_touched=True;self.update_avatar_info();self.window.set_avatar(self.avatar);self.schedule_preview()
     def original_avatar(self):self.avatar['active']=False;self.avatar_touched=True;self.update_avatar_info();self.window.set_avatar(self.avatar);self.schedule_preview()
-    def update_avatar_info(self):self.avatar_info.setText(('Personalizado' if self.avatar.get('active') else 'Akira original')+' · '+str(len(self.avatar.get('entries',[])))+' sprites propios')
+    def update_avatar_info(self):
+        self.avatar_info.setText(self.tr.text('Avatar original · recursos importados conservados'))
     def retranslate(self):
         for i,(source,_) in enumerate(self.categories):self.tabs.setTabText(i,self.tr.text(source))
+        from geo_preferences import catalog
+        continent=self.continent.currentData()
+        country=self.geo_country.currentData()
+        region=self.geo_region.currentData()
+        self.continent.blockSignals(True)
+        for index in range(self.continent.count()):
+            code=self.continent.itemData(index)
+            self.continent.setItemText(index,self.text(catalog()['continents'].get(code,{}).get('name','Otras regiones')))
+        self.continent.setCurrentIndex(self.continent.findData(continent))
+        self.continent.blockSignals(False)
+        self.load_countries(country,region)
         self.translation_status.setText('Selecciona un idioma en cada lista. Las voces se eligen y descargan desde el teléfono del chat.')
 
 

@@ -24,7 +24,8 @@ def verify_manifest(root):
     return len(manifest)
 
 
-def summarize(root, folder):
+def summarize(root, folder, installer=None):
+    from akira_version import RELEASE_VERSION
     count=verify_manifest(root)
     xml=ET.parse(folder/'REGRESSION_TESTS.xml').getroot()
     cases=xml.findall('.//testcase')
@@ -41,6 +42,7 @@ def summarize(root, folder):
         reports[name]={'status':data['status'],'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw)}
     result={'status':'PASSED','build':BUILD_ID,'source_commit':os.environ.get('GITHUB_SHA'),
         'workflow_run_id':os.environ.get('GITHUB_RUN_ID'),'manifest_entries_verified':count,
+        'release_version':RELEASE_VERSION,
         'regressions':{'xml_testcases':len(cases),'failures':0,'errors':0,'skipped':0},
         'real_conversation_and_load':json.loads((folder/'REAL_CHAT_LOW_RESOURCE_REV11.json').read_text(encoding='utf-8')),
         'frozen_without_text_inference':json.loads((folder/'LOW_RESOURCE_FROZEN_REV10.json').read_text(encoding='utf-8')),
@@ -104,6 +106,10 @@ def summarize(root, folder):
     twenty=json.loads((folder/'REAL_CHAT_REV19.json').read_text(encoding='utf-8'))
     if twenty.get('status')!='PASSED' or len(twenty.get('scenarios',[]))!=20:raise RuntimeError('Veinte conversaciones no verificadas')
     result['twenty_consecutive_turns']=twenty
+    if installer is not None:
+        from release_updates import sha256_file
+        result.update(installer_sha256=sha256_file(installer),installer_bytes=installer.stat().st_size,
+                      installer_file=installer.name)
     (folder/'VERIFICATION_REV19.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print('AKIRA_REV19_VERIFICATION_JSON='+json.dumps(result,ensure_ascii=False,separators=(',',':')),flush=True)
     return result
@@ -114,7 +120,8 @@ if __name__=='__main__':
     parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1])
     parser.add_argument('--diagnostics',type=Path,default=Path('diagnostics'))
     parser.add_argument('--manifest-only',action='store_true')
+    parser.add_argument('--installer',type=Path)
     args=parser.parse_args()
     if args.manifest_only:print('SHA256 verified files:',verify_manifest(args.root))
-    else:summarize(args.root,args.diagnostics)
+    else:summarize(args.root,args.diagnostics,args.installer)
 

@@ -30,7 +30,7 @@ def fingerprint(plan,snapshot):
     # change every tick. Gateway recomputes affordability before EVERY send.
     # A language-model round trip cannot be keyed to those moving observations.
     stable_facts={k:v for k,v in facts(plan,snapshot).items() if not k.startswith(('order.','account.'))}
-    payload={'order':{k:plan.get(k) for k in ('symbol','side','lane','kind','entry','sl','tp','volume')},
+    payload={'order':{k:plan.get(k) for k in ('symbol','side','lane','kind','entry','sl','tp','volume','ticket','strategy_id','strategy_version')},
         'account':{k:(snapshot.get('account') or {}).get(k) for k in ('login','server','currency','trade_mode')},
         'facts':stable_facts,'configuration':snapshot.get('selection_configuration',{})}
     # Bind the evidence actually delivered to this exact-order reviewer.

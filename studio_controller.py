@@ -8,7 +8,7 @@ from assistant_akira import AkiraAssistant
 from command_bridge import CommandBridge
 from execution import Reporter
 from runtime import run_session
-from settings import load_config,save_config,DEFAULT
+from settings import load_config,save_config,desktop_release_config,DEFAULT
 from settings_effects import validate_form,changes
 from notification_center import NotificationCenter,safe_text
 from mt5_connection import target_signature,account_identity,confirmation_matches
@@ -23,7 +23,9 @@ class StudioController:
     def __init__(self,folder,preview=False,start_actor=True):
         self.folder=Path(folder);self.folder.mkdir(parents=True,exist_ok=True)
         config_path=self.folder/'akira_config.json'
-        self.cfg=ConfigSnapshot(load_config(config_path if config_path.exists() else DEFAULT));self.preview=bool(preview)
+        saved=load_config(config_path if config_path.exists() else DEFAULT)
+        self.preview=bool(preview)
+        self.cfg=ConfigSnapshot(desktop_release_config(saved) if start_actor and not preview else saved)
         if not config_path.exists():save_config(self.cfg,config_path)
         self.commands=queue.Queue(maxsize=128);self.bridge=CommandBridge(self.commands)
         self.events=queue.Queue(maxsize=512);self.stop=threading.Event();self.view={};self._latest=None;self._snapshot_lock=threading.Lock();self.last_snapshot_at=0
@@ -32,6 +34,7 @@ class StudioController:
         self.notices=NotificationCenter(self.folder);self.network=None;self.online=None;self.last_evidence=-100
         self.voice=None;self.call_conversation=None;self.voice_rows=[];self.resources={};self._usage_due=0;self._usage_loading=False
         self._closure_seen=set();self._pending_signature=None
+        self.update_cancel=threading.Event();self.update_offer=None;self.update_artifact=None
         self.reporter=Reporter(self.folder/'logs',callback=lambda row:self.emit('log',row),console=False)
         self.assistant=AkiraAssistant(self.cfg,self.folder,trade_callback=self.bridge.request,
             progress_callback=lambda row:self.emit('chat_progress',row),auto_prepare=False)
@@ -51,6 +54,7 @@ class StudioController:
             self.network=ConnectivityMonitor(lambda row:self.emit('network',row),check=lambda:time.monotonic()-self.last_evidence<5 or internet_available());self.network.start()
             from knowledge_update import KnowledgeUpdater
             self.knowledge=KnowledgeUpdater(self.cfg,self.folder,lambda row:self.emit('knowledge',row));self.knowledge.start(initial_delay_seconds=45)
+            self.check_updates()
 
     def _start_actor(self):
         if self.closed or (self.actor and self.actor.is_alive()):return
@@ -295,6 +299,7 @@ class StudioController:
 
     def save(self,draft,keys=None,confirmed_account=None):
         validated=validate_form(draft)
+        if self._services_started and not self.preview:validated=desktop_release_config(validated)
         with self._settings_lock:
             before=copy.deepcopy(getattr(draft,'baseline',self.cfg));self._save_serial+=1;serial=self._save_serial
         account_changed=target_signature(before)!=target_signature(validated)
@@ -322,6 +327,7 @@ class StudioController:
                 previous=copy.deepcopy(self.cfg);merged=copy.deepcopy(previous)
                 for path,value in updates.items():put(merged,path,value)
                 merged=validate_form(merged)
+                if self._services_started and not self.preview:merged=desktop_release_config(merged)
                 if merged['mode']=='trade' and (previous['mode']!='trade' or target_signature(previous)!=target_signature(merged)):
                     account=self.view.get('account') or {};login,server=account_identity(account)
                     if self.preview or not self.bridge.connected or not confirmation_matches(confirmed_account,account) or merged['expected_login']!=login or merged['expected_server']!=server:
@@ -409,24 +415,104 @@ class StudioController:
                         try:
                             meter=psutil.Process(proc.pid);own[name]={'pid':proc.pid,'ram_mb':round(meter.memory_info().rss/1048576,1)}
                         except psutil.Error:pass
-                self.resources={'processes':own,'system_ram_percent':psutil.virtual_memory().percent}
+                memory=psutil.virtual_memory()
+                try:battery=psutil.sensors_battery() if hasattr(psutil,'sensors_battery') else None
+                except (OSError,RuntimeError):battery=None
+                try:sensors=psutil.sensors_temperatures() if hasattr(psutil,'sensors_temperatures') else {}
+                except (OSError,RuntimeError):sensors={}
+                temperature=max((r.current for name,rows in sensors.items() if name in ('coretemp','k10temp')
+                                 for r in rows),default=None)
+                usage={'akira_cpu_pct':own['app']['cpu_percent'],'akira_mb':own['app']['ram_mb'],
+                       'system_cpu_pct':psutil.cpu_percent(interval=None),'available_ram_gb':memory.available/1024**3,
+                       'plugged_in':battery.power_plugged if battery else None,
+                       'temperature_c':temperature,'system_gpu_pct':None}
+                from resource_optimizer import RELEASE_GOVERNOR
+                RELEASE_GOVERNOR.observe(usage)
+                self.resources={'processes':own,'usage':usage,'system_ram_percent':memory.percent}
                 return self.resources
             finally:self._usage_loading=False
         self.job('resources',sample,'resources')
 
-    def export_report(self,path,format='pdf',hours=24):
+    def capture_report(self,hours=24,report_filter=None,hide_amounts=False):
+        from operation_report import build_report,read_recent_events
+        from report_filter import ReportFilter
+        if self.bridge.connected:
+            result=self.bridge.request({'action':'export_report_snapshot'})
+            if not result.get('ok'):raise RuntimeError('No se obtuvo la instantánea completa del informe.')
+            view=result['snapshot']
+        else:view=copy.deepcopy(self.view)
+        view['system_performance']=copy.deepcopy(self.resources.get('usage') or self.resources)
+        first_audio=(self.call_conversation.metrics if self.call_conversation else {}).get('first_audio_seconds')
+        if first_audio is not None:view['system_performance']['voice_first_audio_ms']=first_audio*1000
+        as_of=float(view.get('as_of_utc') or view.get('updated') or time.time())
+        view['as_of_utc']=as_of
+        if isinstance(report_filter,dict):
+            report_filter=ReportFilter(as_of-hours*3600,as_of+.001,**report_filter)
+        end=min(as_of,report_filter.end_utc) if report_filter else as_of
+        span=max(0,(end-report_filter.start_utc)/3600) if report_filter else hours
+        events,truncated=read_recent_events(self.folder/'logs',span,end)
+        view['operational_events']=list({r.get('event_id') or (r.get('utc'),r.get('symbol'),r.get('operation')):r
+            for r in [*(view.get('operational_events') or []),*events]}.values())
+        view['event_log_truncated']=truncated
+        return build_report(view,hours=hours,report_filter=report_filter,hide_amounts=hide_amounts)
+
+    def export_report(self,path,format='pdf',hours=24,model=None,report_filter=None,hide_amounts=False):
         def export():
-            from operation_report import build_report,export_report,read_recent_events
-            if self.bridge.connected:
-                result=self.bridge.request({'action':'export_report_snapshot'})
-                if not result.get('ok'):raise RuntimeError('No se obtuvo la instantánea completa del informe.')
-                view=result['snapshot']
-            else:view=copy.deepcopy(self.view)
-            events,truncated=read_recent_events(self.folder/'logs',hours,time.time())
-            view['operational_events']=list({(r.get('utc'),r.get('symbol'),r.get('operation')):r for r in [*(view.get('operational_events') or []),*events]}.values());view['event_log_truncated']=truncated
-            model=build_report(view,hours=hours);export_report(model,Path(path),format=format)
+            from operation_report import export_report
+            report=model if model is not None else self.capture_report(hours,report_filter,hide_amounts)
+            export_report(report,Path(path),format=format)
             return {'path':str(path),'format':format}
         return self.job('export_report',export,'exported')
+
+    def check_updates(self,explicit=False):
+        def check():
+            from release_updates import ReleaseTrust, UpdateError, check_channel
+            try:
+                trust=ReleaseTrust.load()
+                release=check_channel(trust)
+            except (UpdateError, OSError) as error:
+                return {'available':False,'detail':str(error),'explicit':explicit}
+            self.update_offer=(release,trust)
+            return {'available':True,'version':release.version,'size':release.metadata['size'],
+                    'notes':str(release.metadata.get('notes',''))[:2000],'explicit':explicit}
+        return self.job('check_updates',check,'update_checked')
+
+    def fetch_update(self):
+        if not self.update_offer:return False
+        def download():
+            from release_updates import download_installer
+            release,trust=self.update_offer
+            self.update_cancel.clear()
+            last_progress=[0.0]
+            def progress(done,size):
+                now=time.monotonic()
+                if done==size or now-last_progress[0]>=.25:
+                    last_progress[0]=now
+                    self.emit('update_progress',{'done':done,'size':size})
+            artifact=download_installer(self.folder/'state'/'updates',release,trust,
+                lambda:self.update_cancel.is_set() or self.closed,progress)
+            self.update_artifact=(artifact,release)
+            return {'version':release.version}
+        return self.job('download_update',download,'update_downloaded')
+
+    def install_update(self):
+        if not self.update_artifact or self.preview:return False
+        def install():
+            from update_transaction import stage_install
+            from release_updates import UpdateError
+            artifact,release=self.update_artifact
+            if self.bridge.connected:
+                gate=self.bridge.request({'action':'prepare_update'})
+                if not gate.get('ok'):raise UpdateError(gate.get('error','No se obtuvo un estado seguro para actualizar.'))
+            elif self.cfg.get('expected_login'):
+                raise UpdateError('Reconecta MT5 para conciliar las órdenes antes de actualizar.')
+            try:
+                stage_install(self.folder,artifact,release)
+            except Exception:
+                if self.bridge.connected:self.bridge.request({'action':'cancel_update'})
+                raise
+            return {'version':release.version}
+        return self.job('install_update',install,'update_exit')
 
     def export_diagnostic(self,path):
         def export():
@@ -455,7 +541,7 @@ class StudioController:
         return self.job('export_diagnostic',export,'exported')
 
     def close(self):
-        self.closed=True;self.stop.set();self.cancel_chat()
+        self.closed=True;self.stop.set();self.update_cancel.set();self.cancel_chat()
         self.end_call()
         if self.voice:self.voice.stop()
         if self.network:self.network.close()
