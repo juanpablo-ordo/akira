@@ -167,6 +167,9 @@ class SettingsPanel(QWidget):
 
     def risk_draft(self):
         result=copy.deepcopy(self.controller.cfg);result.dirty_paths=set()
+        # Save only the financial controls; unrelated unsaved appearance, voice
+        # and desktop settings must never be applied by this button.
+        result.transaction_scope='risk'
         for path in self.risk_paths:
             value=self.fields[path][1]()
             if path in self.touched or value!=self.initial.get(path):
