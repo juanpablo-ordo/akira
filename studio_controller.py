@@ -29,6 +29,7 @@ class StudioController:
         if not config_path.exists():save_config(self.cfg,config_path)
         self.commands=queue.Queue(maxsize=128);self.bridge=CommandBridge(self.commands)
         self.events=queue.Queue(maxsize=512);self.stop=threading.Event();self.view={};self._latest=None;self._snapshot_lock=threading.Lock();self.last_snapshot_at=0
+        self._last_report_view=None
         self._settings_lock=threading.RLock();self._save_serial=0;self.log_rows=deque(maxlen=300);self._jobs=set();self._jobs_lock=threading.Lock()
         self.settings_io=ThreadPoolExecutor(max_workers=1,thread_name_prefix='AkiraPreference');self.io=ThreadPoolExecutor(max_workers=3,thread_name_prefix='AkiraStudioIO');self.chat_busy=False;self.closed=False
         self.notices=NotificationCenter(self.folder);self.network=None;self.online=None;self.last_evidence=-100
@@ -123,6 +124,7 @@ class StudioController:
         results=[]
         if view is not None:
             self.view=view;self.last_snapshot_at=time.monotonic();self.bridge.connected=bool(view.get('connected'));self.bridge.starting=False
+            if view.get('connected') and view.get('account_ref'):self._last_report_view=view
             adoption=view.get('account_adaptation') or {}
             if adoption and adoption.get('at')!=getattr(self,'_account_adaptation_seen',None):
                 self._account_adaptation_seen=adoption['at']
@@ -433,6 +435,15 @@ class StudioController:
             finally:self._usage_loading=False
         self.job('resources',sample,'resources')
 
+    def report_view(self):
+        last=self._last_report_view
+        if self.view.get('connected') or last is None:return self.view
+        remembered=account_identity(last.get('account') or {})
+        selected=(int(self.cfg.get('expected_login') or 0),str(self.cfg.get('expected_server') or '').strip())
+        if not all(remembered) or remembered!=selected:
+            return self.view
+        return {**last,'connected':False,'report_capture_note':'Se usa la última captura de esta cuenta antes de desconectar MT5.'}
+
     def capture_report(self,hours=24,report_filter=None,hide_amounts=False):
         from operation_report import build_report,read_recent_events
         from report_filter import ReportFilter
@@ -440,7 +451,7 @@ class StudioController:
             result=self.bridge.request({'action':'export_report_snapshot'})
             if not result.get('ok'):raise RuntimeError('No se obtuvo la instantánea completa del informe.')
             view=result['snapshot']
-        else:view=copy.deepcopy(self.view)
+        else:view=copy.deepcopy(self.report_view())
         view['system_performance']=copy.deepcopy(self.resources.get('usage') or self.resources)
         first_audio=(self.call_conversation.metrics if self.call_conversation else {}).get('first_audio_seconds')
         if first_audio is not None:view['system_performance']['voice_first_audio_ms']=first_audio*1000

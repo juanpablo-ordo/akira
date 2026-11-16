@@ -231,6 +231,8 @@ class SettingsPanel(QWidget):
         note=label('Reparar comprueba archivos y una respuesta real. Si falta la IA incluida, intenta recuperarla con una descarga verificada de unos 2,5 GB. Espera el resultado antes de cerrar.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.add_button(card,'REPARAR ASISTENTE',self.controller.repair_ai);self.add_button(card,'MOTIVO Y REGISTRO',self.window.show_model_log)
         card=self.card(2,'PREFERENCIAS DE VOZ','sources');self.field(card,'voice.model','Modelo de reconocimiento',('tiny','base','small'))
+        self.field(card,'voice.rate','Velocidad de voz',limits=(80,300))
+        self.field(card,'voice.volume','Volumen de voz',limits=(0,1))
         note=label('El teléfono junto al envío del chat inicia la llamada y permite seleccionar micrófono, salida y voz.','muted');note.setWordWrap(True);card.body.addWidget(note)
 
     def load_countries(self,selected=None,region=None):

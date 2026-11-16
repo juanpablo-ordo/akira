@@ -17,7 +17,7 @@ Rama de desarrollo basada en `d6049d8b73beaa37e766ac221ecf38ca4a29f7e3` (Rev23).
 
 ## Compilación
 
-El workflow de Windows parte de Python 3.11 x64, resuelve y guarda el conjunto de dependencias con SHA-256, instala ese conjunto, corre regresiones y construye el ejecutable y el instalador con modelo incluido. `diagnostics/requirements-windows-x64.lock` conserva el entorno exacto de la compilación. Las revisiones, huellas y licencias del modelo y los binarios vienen de los verificadores bajo `installer/` y `third_party/`. El mismo instalador que pasa la instalación y la actualización sintéticas obtiene una huella y tamaño en `VERIFICATION_REV19.json`.
+El workflow de Windows parte de Python 3.11 x64, instala `requirements-windows-x64.lock` con SHA-256, corre regresiones y construye el ejecutable y el instalador con modelo incluido. Para actualizar la lista con intención, genera el reporte de resolución con `python -m pip install --dry-run --ignore-installed --report dependencias.json -r requirements.txt pytest openpyxl` y conviértelo con `python tools/release_files.py lock dependencias.json requirements-windows-x64.lock`. Las revisiones, huellas y licencias del modelo y los binarios vienen de los verificadores bajo `installer/` y `third_party/`. El instalador que pasa la instalación y la actualización sintéticas obtiene una huella y tamaño en `VERIFICATION_REV19.json`.
 
 La interfaz Qt recibe capturas del coordinador MT5. El modelo corre como proceso llama.cpp y la voz usa trabajadores separados. La interfaz de informe lee una captura y sus registros; nunca envía órdenes. Las pruebas y el código fuente excluyen datos privados de clientes.
 

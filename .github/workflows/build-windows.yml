@@ -56,13 +56,11 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path diagnostics | Out-Null
-          python -m pip install --dry-run --ignore-installed --report diagnostics/windows-dependencies.json -r requirements.txt pytest openpyxl
-          if ($LASTEXITCODE -ne 0) { throw 'No se pudo resolver el entorno de compilación.' }
-          python tools/release_files.py lock diagnostics/windows-dependencies.json diagnostics/requirements-windows-x64.lock
-          if ($LASTEXITCODE -ne 0) { throw 'No se pudo comprobar la lista de dependencias.' }
-          Get-Content diagnostics/requirements-windows-x64.lock
+          Copy-Item -LiteralPath requirements-windows-x64.lock -Destination diagnostics/requirements-windows-x64.lock
           python -m pip install --require-hashes -r diagnostics/requirements-windows-x64.lock
           if ($LASTEXITCODE -ne 0) { throw 'No se pudieron instalar las dependencias verificadas.' }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { throw 'El entorno bloqueado contiene dependencias incompatibles.' }
 
       - name: Compilar el diálogo autenticado de Windows Hello
         shell: cmd

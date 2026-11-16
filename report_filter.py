@@ -30,6 +30,8 @@ class ReportFilter:
         side=row.get('side')
         side='BUY' if side==1 else 'SELL' if side==-1 else str(side or '').split(' ',1)[0]
         fields={'symbol':row.get('symbol'),'strategy':row.get('strategy_id') or row.get('strategy') or row.get('lane'),
-                'side':side,'operation':row.get('operation'),'state':row.get('state')}
+                'side':side,'operation':row.get('operation')}
+        if self.state and self.state.casefold() not in {str(row.get(key)).casefold() for key in ('state','confirmation')}:
+            return False
         return all(not getattr(self,key) or str(value).casefold()==getattr(self,key).casefold()
                    for key,value in fields.items())

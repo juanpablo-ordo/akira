@@ -14,7 +14,7 @@ def selected(cfg):return (cfg.get('strategy_choice') or {}).get('selected',ADAPT
 @lru_cache(maxsize=1)
 def variants():
     from strategy_lab import definitions
-    return {d['id']:d for d in definitions() if d.get('spec')}
+    return {d['id']:d for d in definitions() if d.get('spec') and not d.get('research_only')}
 
 def known(choice):return choice in (ADAPTIVE,*FAMILIES) or choice in variants()
 

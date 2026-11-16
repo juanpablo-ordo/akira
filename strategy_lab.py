@@ -52,7 +52,7 @@ def definitions():
     'origin':'Hipótesis registrada para comparación fuera de muestra','mode':'EXPERIMENTO',
     'rules':'H1 y M15 bajistas. Cierre bajo soporte M15 tras retest. SELL STOP debajo del mínimo confirmado con SL sobre el retest y objetivo histórico. R:R mínimo 1.8.',
     'spec':{'template':'BEAR_CONTINUATION','buffer_atr':.25,'min_rr':1.8,'expiry_seconds':7200,'horizon_seconds':86400},
-    'base_family':'PENDIENTE_RUPTURA','version':1,'auto_live_activation':False})
+    'base_family':'PENDIENTE_RUPTURA','version':1,'auto_live_activation':False,'research_only':True})
  return out
 
 def propose(definition,symbol,info,now):

@@ -313,15 +313,28 @@ class StudioWindow(QMainWindow):
         report=self.card('GENERACIÓN DE INFORMES','report');row=QHBoxLayout();self.report_format=ChoiceBox();self.report_format.addItems(['PDF','Excel']);self.report_period=ChoiceBox()
         for hours,name in ((24,'Últimas 24 horas'),(168,'Últimos 7 días'),(720,'Últimos 30 días'),(0,'Fechas personalizadas')):self.report_period.addItem(self.text(name),hours)
         row.addWidget(self.report_format);row.addWidget(self.report_period);report.body.addLayout(row)
-        filters=QFormLayout();self.report_start=QDateEdit(QDate.currentDate().addDays(-1));self.report_end=QDateEdit(QDate.currentDate())
+        from locale_time import LocaleTimeSettings
+        today=LocaleTimeSettings.from_config(self.cfg).now().date()
+        local_day=QDate(today.year,today.month,today.day)
+        filters=QFormLayout();self.report_start=QDateEdit(local_day.addDays(-1));self.report_end=QDateEdit(local_day)
         for widget in (self.report_start,self.report_end):
             widget.setCalendarPopup(True);widget.setEnabled(False)
         filters.addRow(self.text('Desde'),self.report_start);filters.addRow(self.text('Hasta'),self.report_end)
         self.report_fields={}
-        for key,title,hint in (('symbol','Símbolo','BTCUSDm / XAUUSDm'),('strategy','Estrategia','Familia de estrategia'),
-                              ('side','Dirección','BUY / SELL'),('operation','Tipo de evento','open / close / protect'),
-                              ('state','Estado','CONFIRMED_MT5')):
-            field=QLineEdit();field.setPlaceholderText(hint);filters.addRow(self.text(title),field);self.report_fields[key]=field
+        from strategy_lab import definitions as strategy_options
+        report_options={
+            'symbol':('Símbolo',[(s,s) for s in self.cfg['symbols']]),
+            'strategy':('Estrategia',[(row['id'],row['name']) for row in strategy_options()]),
+            'side':('Dirección',[('BUY','Compra'),('SELL','Venta')]),
+            'operation':('Tipo de evento',[('open','Colocación'),('close','Cierre'),('protect','Protección'),
+                                         ('cancel','Retiro'),('modify_order','Modificación'),('pending_decision','Decisión de entrada')]),
+            'state':('Estado',[('PROPOSED','Propuesta'),('CONFIRMED_MT5','Confirmada por MT5'),
+                               ('PENDING_MT5_RECONCILIATION','Solicitud sin confirmar'),('NO ENVIADA','No enviada')]),
+        }
+        for key,(title,options) in report_options.items():
+            field=ChoiceBox();field.addItem(self.text('Todos'),'')
+            for code,text in options:field.addItem(self.text(text),code)
+            filters.addRow(self.text(title),field);self.report_fields[key]=field
         report.body.addLayout(filters);self.report_period.currentIndexChanged.connect(self.report_period_changed)
         report.body.addWidget(self.btn('Actualizar vista previa',self.capture_report_preview))
         report.body.addWidget(self.btn('DESCARGAR INFORME',self.export_report,'primary','report'))
@@ -334,12 +347,13 @@ class StudioWindow(QMainWindow):
         self.report_start.setEnabled(custom);self.report_end.setEnabled(custom)
     def report_request(self):
         from report_filter import ReportFilter
-        fields={name:widget.text().strip() for name,widget in self.report_fields.items()}
+        fields={name:widget.currentData() for name,widget in self.report_fields.items()}
         hours=self.report_period.currentData()
         if hours==0:
             start=self.report_start.date().toString('yyyy-MM-dd')
             end=self.report_end.date().toString('yyyy-MM-dd')
-            chosen=ReportFilter.dates(start,end,self.cfg['locale']['timezone'],**fields)
+            from locale_time import LocaleTimeSettings
+            chosen=ReportFilter.dates(start,end,LocaleTimeSettings.from_config(self.cfg).timezone,**fields)
         else:chosen=fields if any(fields.values()) else None
         return hours,chosen,self.private
     def capture_report_preview(self):
@@ -494,7 +508,7 @@ class StudioWindow(QMainWindow):
     def handle_event(self,event):
         kind,data=event['kind'],event['data']
         if kind=='snapshot':
-            if self._report_model is not None and (self._report_model['snapshot'].get('account_ref')!=data.get('account_ref')):
+            if self._report_model is not None and self._report_model['snapshot'].get('account_ref')!=self.controller.report_view().get('account_ref'):
                 self.clear_report_preview()
             required=data.get('required_pending_reviews') or []
             for key,value in list(self._review_overrides.items()):
@@ -590,7 +604,7 @@ class StudioWindow(QMainWindow):
         elif kind=='report_preview':
             try:current=self.report_request()
             except ValueError:current=None
-            if data['request']==current and data['model']['snapshot'].get('account_ref')==self.controller.view.get('account_ref'):
+            if data['request']==current and data['model']['snapshot'].get('account_ref')==self.controller.report_view().get('account_ref'):
                 self._report_key=current;self._report_model=data['model']
                 set_document(self.report_preview,data['text'])
         elif kind=='translation':
