@@ -145,6 +145,10 @@ class QtFieldTests(unittest.TestCase):
         # Data can update promptly while decorative animation stays asleep.
         self.assertTrue(self.window._saving_ui);self.assertEqual(self.window.cfg['poll_seconds'],before)
         for wave in self.window.findChildren(SignalWave):self.assertTrue(wave.saving);self.assertFalse(wave.timer.isActive())
-        self.window.director.loading=False;self.window.director._next_blink=time.monotonic()+3;self.window.animate();self.assertGreaterEqual(self.window.animation_timer.interval(),400)
+        self.window.director.loading=False;self.window.director.playing=False
+        self.window.director.blink_frame=2  # stale blink must not force 50 ms
+        self.window.director._next_blink=time.monotonic()+3;self.window.animate()
+        self.assertIsNone(self.window.director.blink_frame)
+        self.assertGreaterEqual(self.window.animation_timer.interval(),400)
     def test_minimized_window_keeps_latest_snapshot_without_rendering_hidden_pages(self):
         self.window.showMinimized();self.app.processEvents();self.window._snapshot_pending={'connected':True};render=Mock();self.window.render=render;self.window.poll();render.assert_not_called();self.assertIsNotNone(self.window._snapshot_pending)

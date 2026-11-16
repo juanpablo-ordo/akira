@@ -506,6 +506,13 @@ class StudioWindow(QMainWindow):
         if self.isMinimized() or not self.isVisible():
             self.animation_timer.setInterval(750);return
         self.director.refresh()
+        # Saving mode is a power policy, not a cosmetics-only animation rate.
+        # A pending blink from another state must not keep refreshing at 20 FPS
+        # when AKIRA is idle; keep speech/loading states responsive.
+        if self._saving_ui and not (self.director.loading or self.director.playing):
+            self.director.blink_frame=None
+            self.animation_timer.setInterval(500)
+            return
         active=self.director.loading or self.director.playing or self.director.blink_frame is not None
         self.animation_timer.setInterval(50 if self.director.blink_frame is not None else (250 if self._saving_ui else 125) if active else max(50,min(500,int((self.director._next_blink-time.monotonic())*1000))))
         if self.director.loading:
