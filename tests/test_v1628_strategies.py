@@ -173,13 +173,19 @@ class LabTests(unittest.TestCase):
   self.snap=lab_snapshot(self.now);self.lab=StrategyLab(self.root,{},lambda:self.now);self.addCleanup(self.lab.close)
  def tick(self):self.lab.submit(self.snap);self.lab.tick();return self.lab.read()
  def test_generated_hypotheses_are_finite_immutable_and_not_live_code(self):
-  rows=[d for d in definitions() if d.get('spec')];self.assertEqual(len(rows),12);self.assertEqual(len({r['id'] for r in rows}),12)
+  rows=[d for d in definitions() if d.get('spec')]
+  # Twelve generated neighbors plus the separately registered BTC bearish
+  # continuation hypothesis; none may enter live execution automatically.
+  self.assertEqual(len(rows),13)
+  self.assertEqual(len({r['id'] for r in rows}),13)
+  bearish=next(r for r in rows if r['id']=='LAB_BTC_BEAR_CONTINUATION_V1')
+  self.assertTrue(bearish['research_only'])
   self.assertTrue(all(r['auto_live_activation'] is False for r in rows))
  def test_detection_retains_exact_levels_and_research_only_scope(self):
   p=propose(next(d for d in definitions() if d.get('spec')),'BTCUSDm',self.snap['symbols']['BTCUSDm'],self.now)
   self.assertIsNotNone(p);self.assertLess(p['sl'],p['entry']);self.assertGreater(p['tp'],p['entry']);self.assertTrue(p['research_only'])
  def test_generation_creates_real_case_charts_from_supplied_closed_bars(self):
-  r=self.tick();self.assertEqual(r['generated_hypotheses'],12);self.assertEqual(len(r['strategies']),19);self.assertEqual(r['strategies'][0]['id'],'AKIRA_ADAPTATIVA')
+  r=self.tick();self.assertEqual(r['generated_hypotheses'],12);self.assertEqual(len(r['strategies']),len(definitions()));self.assertEqual(r['strategies'][0]['id'],'AKIRA_ADAPTATIVA')
   with self.lab.db() as db:self.assertGreater(db.execute('SELECT COUNT(*) FROM cases').fetchone()[0],0)
   from PIL import Image
   path=next((self.root/'state/strategy_images').glob('*.png'))
@@ -277,7 +283,7 @@ class DirectoryUITests(unittest.TestCase):
  def test_directory_has_ordered_btc_and_gold_rows_without_a_fake_percentage(self):
   self.app.view={'symbols':{'BTCUSDm':{},'XAUUSDm':{}},'research':{}}
   with patch.object(self.app,'service_dialog',return_value=Widget()),patch.object(Widget,'winfo_exists',return_value=True,create=True),patch('strategy_directory.tk.PanedWindow',Widget),patch('strategy_directory.ttk.Treeview',Widget):self.app.open_strategy_directory()
-  self.assertEqual(len(self.app.strategy_tree.items),38);self.assertIn('Sin muestra',self.app.strategy_details.text)
+  self.assertEqual(len(self.app.strategy_tree.items),2*len(definitions()));self.assertIn('Sin muestra',self.app.strategy_details.text)
  def test_strategy_export_result_never_releases_an_active_conversation(self):
   self.app.chat_busy=True;self.app.strategy_export_button=Widget()
   self.app.replies.put({'strategy_export_result':{'ok':True,'path':'example.html'}});self.app.poll()
