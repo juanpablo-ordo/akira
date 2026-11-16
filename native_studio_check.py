@@ -59,7 +59,17 @@ def run_studio_check(screenshot_dir=None):
             a=window.surface.grab().toImage();style['theme']='Nebulosa';style['wallpaper']['enabled']=False;window.apply_visual(style);settle(app);b=window.surface.grab().toImage()
             checks['live_theme']=a.pixel(2,2)!=b.pixel(2,2) and '#100d25' in window.styleSheet()
             style['language_ui']='en';window.apply_visual(style);checks['language_switch']=window.nav[6].text()=='SETTINGS';style['language_ui']='es';window.apply_visual(style)
-            tick=[];QTimer.singleShot(10,lambda:tick.append(time.monotonic()));settle(app,.1);checks['event_loop']=bool(tick)
+            # A parent-owned timer verifies the actual Windows/Qt event loop.
+            # Fixed 100 ms sleeps can be shorter than one busy CI scheduling slot.
+            tick=[]
+            probe=QTimer(window);probe.setSingleShot(True)
+            probe.timeout.connect(lambda:tick.append(time.monotonic()))
+            probe.start(10)
+            deadline=time.monotonic()+1.0
+            while not tick and time.monotonic()<deadline:
+                app.processEvents()
+                time.sleep(.003)
+            checks['event_loop']=bool(tick);probe.stop()
             checks['no_broker_requests']=len(api.sent)==before and window.controller.actor is None
             from qa_mt5_reconnect_rev12 import run_check
             reconnect=run_check();checks['mt5_reconnect']=reconnect['status']=='PASSED'
