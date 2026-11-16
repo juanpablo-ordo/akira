@@ -116,7 +116,15 @@ class QtFieldTests(unittest.TestCase):
     def tearDown(self):
         self.window.close();self.app.processEvents();self.tmp.cleanup()
     def test_changing_expression_clears_old_face_instead_of_overlaying_it(self):
-        avatar=self.window.avatars[0];avatar.grab();self.window.director.publish('happy','Objetivo confirmado',force=True);self.app.processEvents();avatar.grab();self.assertIsNone(avatar._previous)
+        avatar=self.window.avatars[0]
+        before=avatar.grab().toImage();old_id=avatar.selected.id
+        self.window.director.publish('happy','Objetivo confirmado',force=True)
+        self.app.processEvents()
+        after=avatar.grab().toImage()
+        self.assertEqual(avatar.name,'happy')
+        self.assertNotEqual(old_id,avatar.selected.id)
+        self.assertNotEqual(before,after)
+        self.assertFalse(hasattr(avatar,'_previous'))
     def test_blink_changes_visible_pixels_without_changing_expression(self):
         avatar=self.window.avatars[0];self.window.director.publish('idle',force=True);self.app.processEvents();first=avatar.grab().toImage();selected=avatar.selected.id
         self.window.director.blink_frame=2;avatar.update();self.app.processEvents();second=avatar.grab().toImage();self.assertNotEqual(first,second);self.assertEqual(selected,avatar.selected.id)
