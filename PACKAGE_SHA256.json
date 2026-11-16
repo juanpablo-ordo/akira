@@ -288,7 +288,7 @@
   "mobile/src/com/akira/companion/MainActivity.java": "efa1a7b8b0682a53163d9df39cc85c2f9348391703f6fb8264c0fc00edf132c8",
   "mobile_companion.py": "8756dfdadb8bf3c7acf93c8107d0c30f911638f17b8c6d5ebdb4c72bb7be7622",
   "mt5_connection.py": "19de2371f50b5ea98487fb0f4d9186563ab021c610c3e738c04f2a204a0e0442",
-  "native_studio_check.py": "50bbf283ebb5305feeb5c795ef4d14921f9844631edba57ec283cc4ad580e0c9",
+  "native_studio_check.py": "250db4ef3442dcc8839059d9588b2ef083fbf53514a85f4be7db8b7ce67acbe4",
   "native_ui_check.py": "a76583ca74ae25d09ef8f78c06ddd0b96a5eb3139c065f3747c20dc5a6bb2f63",
   "network_tls.py": "ebff0ca62130009750ab6975dd7f3d1fd7ab5a5886ae2cc03334ff1564112f30",
   "notification_center.py": "4b382ef5fb44c1a5d52fd3103c88ab3f089ab0fce2a867f95b9517baf50a80fa",
