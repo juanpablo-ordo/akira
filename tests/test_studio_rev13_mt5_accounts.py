@@ -127,29 +127,37 @@ class AccountSwitchWindowTests(unittest.TestCase):
     def setUpClass(cls):
         from PySide6.QtWidgets import QApplication
         cls.app=QApplication.instance() or QApplication([])
-    def test_account_adoption_updates_connection_fields_without_losing_other_edits(self):
+    def test_account_adoption_keeps_unsaved_edits_and_hides_manual_connection_fields(self):
         from desktop_qt import StudioWindow
         with tempfile.TemporaryDirectory() as tmp:
             window=StudioWindow(tmp,preview=False,start_actor=False)
             try:
-                panel=window.settings_panel;panel.fields['expected_server'][0].setText('TYPED-OLD')
+                panel=window.settings_panel
+                # Rev23 -> AKIRA 0.1: identity is supplied by the MT5 actor.
+                # No editable login, server or executable path exists in settings.
+                for name in ('expected_server','expected_login','terminal_path'):
+                    self.assertNotIn(name,panel.fields)
                 panel.fields['risk.max_trade_money'][0].setValue(2.73)
-                saved=copy.deepcopy(window.controller.cfg);saved.update(mode='observe',expected_login=456,expected_server='OTHER-DEMO',terminal_path='other.exe')
+                saved=copy.deepcopy(window.controller.cfg)
+                saved.update(mode='observe',expected_login=456,expected_server='OTHER-DEMO',terminal_path='other.exe')
                 panel.saved({'config':saved,'submitted':saved,'adopted_mt5_account':True})
-                self.assertEqual(panel.fields['expected_server'][1](),'OTHER-DEMO');self.assertEqual(panel.fields['expected_login'][1](),456)
                 self.assertEqual(panel.fields['risk.max_trade_money'][1](),2.73)
                 self.assertTrue(panel.use_mt5_button.isEnabled())
             finally:window.close();self.app.processEvents()
-    def test_the_use_open_account_button_passes_the_chosen_terminal(self):
+
+    def test_redetect_button_reconnects_without_a_manually_chosen_terminal(self):
         from desktop_qt import StudioWindow
+        from studio_controller import StudioController
         with tempfile.TemporaryDirectory() as tmp:
-            window=StudioWindow(tmp,preview=False,start_actor=False)
-            try:
-                panel=window.settings_panel;panel.fields['terminal_path'][0].setText('chosen.exe')
-                with patch.object(window.controller,'use_open_mt5_account',return_value=True) as detect:
-                    panel.use_open_account();detect.assert_called_once_with('chosen.exe')
-                self.assertFalse(panel.use_mt5_button.isEnabled());self.assertIn('Comprobando',panel.mt5_status.text())
-            finally:window.close();self.app.processEvents()
+            with patch.object(StudioController,'reconnect_mt5',return_value=True) as reconnect:
+                window=StudioWindow(tmp,preview=False,start_actor=False)
+                try:
+                    panel=window.settings_panel
+                    self.assertNotIn('terminal_path',panel.fields)
+                    reconnect.reset_mock()
+                    panel.use_mt5_button.click()
+                    reconnect.assert_called_once_with()
+                finally:window.close();self.app.processEvents()
 
 
 class InspectionShutdownTests(unittest.TestCase):
