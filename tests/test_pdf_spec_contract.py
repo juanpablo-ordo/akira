@@ -70,11 +70,11 @@ class TranslationCoverage(unittest.TestCase):
         import re
         from studio_translations import EN
         patterns=(
-            r"self\\.card\\('([^']+)'",
-            r"self\\.btn\\('([^']+)'",
-            r"self\\.lbl\\('([^']+)'",
-            r"self\\.field\\(card,'[^']+','([^']+)'",
-            r"self\\.add_button\\(card,'([^']+)'",
+            r"self\.card\('([^']+)'",
+            r"self\.btn\('([^']+)'",
+            r"self\.lbl\('([^']+)'",
+            r"self\.field\(card,'[^']+','([^']+)'",
+            r"self\.add_button\(card,'([^']+)'",
         )
         unknown=set()
         for source in ('desktop_qt.py','studio_settings_qt.py'):
