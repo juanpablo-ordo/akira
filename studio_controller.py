@@ -316,6 +316,12 @@ class StudioController:
             validated['expected_login']=int(login)
             validated['expected_server']=server
         paths=list(dict.fromkeys([row['path'] for row in changes(before,validated)]+list(getattr(draft,'dirty_paths',()))))
+        if getattr(draft,'transaction_scope',None)=='risk':
+            # Financial settings save is isolated from visual settings, chat,
+            # account identity and any stale baseline normalization. In particular,
+            # emitting a desktop/studio path here would rebuild the avatar.
+            prefixes=('risk.','runner.','capital_protection.','management.')
+            paths=[path for path in paths if path.startswith(prefixes)]
         def at(data,path):
             for key in path.split('.'):data=data[key]
             return copy.deepcopy(data)
