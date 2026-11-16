@@ -327,7 +327,9 @@ class SettingsPanel(QWidget):
             for key in values:self.keys[key].clear()
     def appearance(self):
         card=self.card(4,'DISEÑO E IDENTIDAD','settings')
-        self.field(card,'studio.brand_name','Nombre del programa')
+        # Preserve legacy preference on disk, but display AKIRA + release
+        # version consistently across the app, installer and update channel.
+        self.field(card,'studio.brand_name','Nombre del programa',hidden=True)
         theme=self.field(card,'studio.theme','Tema',('AKIRA Original','Nebulosa','Océano','Carbono','Aurora','Violeta','Cobre','Noche polar',*self.controller.cfg['studio'].get('theme_profiles',{})));theme.currentTextChanged.connect(self.load_theme)
         for path,title in [('studio.accent','Color principal'),('studio.secondary','Color secundario'),('studio.background_color','Color de fondo')]:self.field(card,path,title)
         self.font_button=button('Tipografía: '+get(self.controller.cfg,'studio.font','Rajdhani'),self.edit_font);card.body.addWidget(self.font_button);self.field(card,'studio.glow','Brillo',limits=(0,100));self.add_button(card,'GUARDAR TEMA PERSONALIZADO',self.save_theme)

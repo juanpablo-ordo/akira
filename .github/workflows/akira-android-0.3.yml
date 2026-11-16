@@ -1,0 +1,67 @@
+name: AKIRA 0.3 Android - APK de pruebas
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - akira-0.3
+    paths:
+      - 'mobile/**'
+      - 'mobile_companion.py'
+      - '.github/workflows/akira-android-0.3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  android-qa:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Preparar SDK oficial Android 36
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if (!$env:ANDROID_HOME) { throw 'Falta ANDROID_HOME en el runner Windows.' }
+          $manager=Join-Path $env:ANDROID_HOME 'cmdline-tools/latest/bin/sdkmanager.bat'
+          if (!(Test-Path $manager)) {
+            $manager=Get-ChildItem -Path (Join-Path $env:ANDROID_HOME 'cmdline-tools') -Recurse -Filter sdkmanager.bat | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (!$manager -or !(Test-Path $manager)) { throw 'No existe sdkmanager.bat.' }
+          & $manager 'platforms;android-36' 'build-tools;36.0.0'
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo preparar el SDK Android.' }
+      - name: Firmar sólo para pruebas con clave efímera
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $key=Join-Path $env:RUNNER_TEMP 'AKIRA_0.3_TEST_ONLY.p12'
+          $password=[guid]::NewGuid().ToString('N')
+          & (Join-Path $env:JAVA_HOME 'bin/keytool.exe') -genkeypair -noprompt -alias akira-test -keyalg RSA -keysize 3072 -validity 30 -keystore $key -storetype PKCS12 -storepass $password -keypass $password -dname 'CN=AKIRA Test Build, O=AKIRA QA, C=GT'
+          if ($LASTEXITCODE -ne 0) { throw 'No se generó la firma de prueba.' }
+          "AKIRA_ANDROID_KEYSTORE_PASSWORD=$password" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AKIRA_TEST_KEYSTORE=$key" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Compilar y verificar APK Android
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./mobile/build.ps1 -Sdk $env:ANDROID_HOME -JavaHome $env:JAVA_HOME -Output 'mobile-output' -Keystore $env:AKIRA_TEST_KEYSTORE
+          if ($LASTEXITCODE -ne 0) { throw 'Falló la compilación de AKIRA Móvil.' }
+          $apk='mobile-output/AKIRA_0.3.0_Android.apk'
+          if (!(Test-Path $apk)) { throw 'No se produjo APK firmado de pruebas.' }
+          $tools=Join-Path $env:ANDROID_HOME 'build-tools/36.0.0'
+          & (Join-Path $tools 'apksigner.bat') verify --verbose $apk
+          if ($LASTEXITCODE -ne 0) { throw 'APK no verificable.' }
+          $info=& (Join-Path $tools 'aapt.exe') dump badging $apk
+          if ($LASTEXITCODE -ne 0 -or !(($info -join "`n") -match 'package: name=')) { throw 'Manifiesto de Android inválido.' }
+          Get-FileHash -Algorithm SHA256 -LiteralPath $apk | Format-List
+      - name: Conservar APK firmado de prueba
+        uses: actions/upload-artifact@v4
+        with:
+          name: AKIRA-0.3.0-Android-PRUEBAS-NO-PUBLICACION
+          path: mobile-output/AKIRA_0.3.0_Android.apk
+          if-no-files-found: error
+          retention-days: 7

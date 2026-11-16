@@ -35,7 +35,13 @@ $unsigned = Join-Path $outputDir 'AKIRA_0.3.0_Android_unsigned.apk'
 if ($LASTEXITCODE -ne 0) { throw 'No se pudo alinear el APK.' }
 if ($Keystore) {
     $signed = Join-Path $outputDir 'AKIRA_0.3.0_Android.apk'
-    & (Join-Path $tools 'apksigner.bat') sign --ks (Resolve-Path -LiteralPath $Keystore).Path --out $signed $unsigned
+    $signArgs = @('sign', '--ks', (Resolve-Path -LiteralPath $Keystore).Path)
+    if ($env:AKIRA_ANDROID_KEYSTORE_PASSWORD) {
+        $signArgs += @('--ks-pass', 'env:AKIRA_ANDROID_KEYSTORE_PASSWORD',
+                       '--key-pass', 'env:AKIRA_ANDROID_KEYSTORE_PASSWORD')
+    }
+    $signArgs += @('--out', $signed, $unsigned)
+    & (Join-Path $tools 'apksigner.bat') @signArgs
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo firmar el APK.' }
     & (Join-Path $tools 'apksigner.bat') verify --print-certs $signed
     if ($LASTEXITCODE -ne 0) { throw 'La firma de Android no pasó la comprobación.' }

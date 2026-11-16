@@ -1,6 +1,6 @@
 {
   ".gitattributes": "4c51e4f7ad01965964bcbc681943db08c7b82af8256bf63b0d45b14c9024d564",
-  ".github/workflows/build-windows.yml": "1922700cd1e360fc178510a01d24584e7ad6313b4bd2428f45a165949a53bd6d",
+  ".github/workflows/build-windows.yml": "c395cfb10dc8b959ae4b0a88bd7315bc795372d07f73d02ec4d79824fe4564d7",
   ".github/workflows/verify-installed-voice.yml": "8805535bafe7f72176a59fcda943758232a9edc515cb4e60a5564f60c1f1fd60",
   ".gitignore": "8e9a2da7b06f023142ca46e39e97dd0c180af159cdeb1eb9811eef17e96b6282",
   "ACEPTACION_REV10.md": "20bcf59595e8af1ba1e93a24488ca26ec08e9d60036bf2e8a0ac4a6c5b245a40",
@@ -231,7 +231,7 @@
   "default_config.json": "9f446573eaa47a2210a1d2b3e285174ba204c68921bcecf0bdb58d43787da93d",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "3cac6e558604939312d61e7e5b417ed5f366adb8d066019d177d4c2701692232",
+  "desktop_qt.py": "092e30aeee7616e5cdb62effef9f45bae48db73fd4712b171165264fe8f5f31f",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
   "docs/AKIRA_PLAN.md": "881f7e7e00494b5762c2c1a7a31a535380dc8e08dda9c517dafb099781658f45",
@@ -283,7 +283,7 @@
   "mentor_context.py": "dc94b196aac82a1100f6bafb46fc0beb74bff31562810f413891fbfb7f4b2bbd",
   "migrate_v11_settings.py": "4f4c35664867af05195252daf88c880976a41a5d6d61f5399cea2a6f635fed25",
   "mobile/AndroidManifest.xml": "a26160f113c1b7df648e84c1b708643a126d10210f03d855808e95c83ddaa8a9",
-  "mobile/build.ps1": "fa22169d4e7b23ce1a2a221c6523c60e342243dddd96fbd1efd35a38a7493eb6",
+  "mobile/build.ps1": "a4907ef0cb4a778fc4ea5062dbbfe526ed62d0edcb797d77314a4dbf30b59625",
   "mobile/src/com/akira/companion/CompanionClient.java": "bf4cef58753dd55cce6f57c6946f81aaa17e8c9eb1b1c42ee41fe0bbd7806f2a",
   "mobile/src/com/akira/companion/MainActivity.java": "efa1a7b8b0682a53163d9df39cc85c2f9348391703f6fb8264c0fc00edf132c8",
   "mobile_companion.py": "8756dfdadb8bf3c7acf93c8107d0c30f911638f17b8c6d5ebdb4c72bb7be7622",
@@ -365,7 +365,7 @@
   "studio_editors.py": "7e901c6b688d7cae4089d1cdde6c1558143a3dc9db9828d4b7c58cb054aba3e2",
   "studio_interaction.py": "73e4f96cc78b470c8052c0472ad5e523c2ed32b04966d8be31dbd75c2ddcf478",
   "studio_presenter.py": "cf64361fb4cdfbdd3812615af2bde48d33c937b3954f3d67ed233d4381e0fbfa",
-  "studio_settings_qt.py": "8e1b520fff22c72b6cd3e1f9d57650822291a9c2d7235089d1df42f030098d65",
+  "studio_settings_qt.py": "f9c04f7a1508535ce9f75500b33acee1c812f6871a169f5fd2a5c580bca1af5e",
   "studio_theme.py": "a2656c3306c23d4f26414a520bfeef0c2bfb7fc8ccbf19fe5d7d695baa135d27",
   "studio_translations.py": "441eb6f2bc17d2e132f7c4986362797eac8025d50ed123f4d3fe6ba81b2e4590",
   "studio_widgets.py": "d3f707dbaa3319d12068c50676fb9e6c0c731dd4589519a5bac3cdc7aabfe52e",
@@ -529,5 +529,8 @@
   "web_facts.py": "b4e182d9687c25cc34d52fd56568f78aeeb6781e118336b27b6fd7b7fce913ae",
   "windows_identity.py": "12516c28395aaacba01368b0cbea587197e71ae19aa6ecdb1cdc28dc6cda3141",
   "windows_version.txt": "30684554c37c4776b6c6acda4732a4a70bf04988cde1da19ca4e80ca72a0e937",
-  "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8"
+  "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8",
+  "tests/test_pdf_spec_contract.py": "4fec18afb45a3f0176eaa584ac02dabf17d99bdb91ae34d0ec917ead65341d78",
+  "docs/AKIRA_20_PAGINAS_CONTROL.md": "1aa3f6366f366935979c658a26f1663ce72680936de21245c1ed5a434b2b699e",
+  ".github/workflows/akira-android-0.3.yml": "e717eeffe60dd6c8c2b3a39d21c2a0567a8c6a32a050610a7c6a06610e088076"
 }

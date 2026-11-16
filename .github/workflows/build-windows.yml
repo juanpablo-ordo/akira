@@ -21,6 +21,7 @@ on:
       - akira-rev22-recuperacion-llamada-20261108
       - akira-rev23-recursos-llamada-historial-20261114
       - akira-0.1
+      - akira-0.3
 
 permissions:
   contents: read
@@ -34,7 +35,7 @@ concurrency:
 env:
   PYTHONUTF8: '1'
   PYTHONIOENCODING: utf-8
-  AKIRA_RELEASE_VERSION: ${{ inputs.version || '0.1.0' }}
+  AKIRA_RELEASE_VERSION: ${{ inputs.version || (github.ref_name == 'akira-0.3' && '0.3.0' || '0.1.0') }}
 
 jobs:
   build-windows:

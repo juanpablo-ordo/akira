@@ -180,6 +180,9 @@ class StudioWindow(QMainWindow):
         menu=QWidget();nav_box=QVBoxLayout(menu);nav_box.setContentsMargins(0,0,0,0);nav_box.setSpacing(5);scroll.setWidget(menu)
         for index,(name,glyph) in enumerate(zip(NAV,GLYPHS)):
             nav=self.btn(name,lambda _=False,i=index:self.navigate(i),glyph=glyph);nav.setCheckable(True);nav.setProperty('nav',True);nav.setMinimumHeight(36);nav_box.addWidget(nav);self.nav.append(nav)
+            # Keep the two legacy detail pages for existing flows and tests,
+            # but offer one visible MT5 trading workspace in the navigation.
+            if index in (1,2):nav.hide()
         nav_box.addStretch(1);box.addWidget(scroll,1);self.side_avatar_panel=panel
         self.connection_footer=label('● MT5 · esperando','body',INK['green']);box.addWidget(self.connection_footer)
         self.clock_label=label('','micro');self.clock_label.setWordWrap(True);box.addWidget(self.clock_label);outer.addWidget(self.sidebar)
@@ -264,6 +267,27 @@ class StudioWindow(QMainWindow):
     def build_analysis(self):
         _,layout=self.page();top=QHBoxLayout();self.timeframe=ChoiceBox();self.timeframe.addItems(['M1','M5','M15','M30','H1','H4','D1','W1']);self.timeframe.setCurrentText('H1');self.timeframe.currentTextChanged.connect(lambda:self.render_analysis());top.addWidget(self.timeframe);top.addStretch();top.addWidget(self.btn('ESTRATEGIAS',self.show_strategies,glyph='analysis'));top.addWidget(self.btn('ESTUDIO Y COMPARACIÓN',self.show_study,glyph='chart'));top.addWidget(self.btn('ACTUALIZAR',lambda:self.controller.request({'action':'refresh'}),glyph='refresh'));layout.addLayout(top)
         self.applied_strategy=label('','muted');self.applied_strategy.setWordWrap(True);layout.addWidget(self.applied_strategy)
+        # PDF page 8: expose account, strategy, pending exposure, positions and
+        # market analysis in a single, navigable workspace. The previous detail
+        # pages remain available internally for compatibility.
+        control=self.card('CUENTA MT5, RIESGO Y ESTRATEGIA','shield')
+        self.analysis_connection_status=label('Esperando cuenta y permisos de MT5','body')
+        self.analysis_connection_status.setWordWrap(True);control.body.addWidget(self.analysis_connection_status)
+        strategy_row=QHBoxLayout();self.analysis_strategy_selector=ChoiceBox()
+        for definition in self.strategy_definitions.values():
+            self.analysis_strategy_selector.addItem(definition['name']+(' · en investigación' if definition.get('spec') else ''),definition['id'])
+        self.analysis_strategy_selector.setCurrentIndex(self.strategy_selector.currentIndex())
+        self.analysis_strategy_selector.currentIndexChanged.connect(self.strategy_selector.setCurrentIndex)
+        self.strategy_selector.currentIndexChanged.connect(self.analysis_strategy_selector.setCurrentIndex)
+        strategy_row.addWidget(self.analysis_strategy_selector,1)
+        strategy_row.addWidget(self.btn('APLICAR ESTRATEGIA',self.apply_strategy,'primary'))
+        control.body.addLayout(strategy_row)
+        self.analysis_risk_status=label('Riesgo en espera de datos verificados','muted')
+        self.analysis_risk_status.setWordWrap(True);control.body.addWidget(self.analysis_risk_status)
+        action_row=QHBoxLayout()
+        action_row.addWidget(self.btn('VOLVER A DETECTAR',self.controller.reconnect_mt5,glyph='bolt'))
+        action_row.addWidget(self.btn('CAMBIAR LÍMITES',lambda:self.open_settings(1),glyph='shield'))
+        control.body.addLayout(action_row);layout.addWidget(control)
         activity=QHBoxLayout();self.asset_activity_labels={}
         for symbol in ('BTCUSDm','XAUUSDm'):
             card=self.card('ORO' if symbol.startswith('XAU') else 'BITCOIN','gold' if symbol.startswith('XAU') else 'bitcoin')
@@ -284,6 +308,14 @@ class StudioWindow(QMainWindow):
         operations=self.card('ORDENES Y POSICIONES CONFIRMADAS','pending')
         self.analysis_orders=self.table(['Activo','Estado MT5','Entrada','SL','TP'])
         self.analysis_orders.setMinimumHeight(120);operations.body.addWidget(self.analysis_orders,1);right.addWidget(operations,2)
+        pending=self.card('PENDIENTES: PROPUESTA, REVISIÓN Y MT5','pending')
+        self.analysis_pending_table=self.table(['Símbolo','Sentido','Entrada','SL','TP','Etapa'])
+        self.analysis_pending_table.setMinimumHeight(150);pending.body.addWidget(self.analysis_pending_table,1)
+        right.addWidget(pending,2)
+        positions_card=self.card('POSICIONES ABIERTAS EN MT5','account')
+        self.analysis_positions_table=self.table(['Ticket','Símbolo','Sentido','Lote','SL','TP','P/L'])
+        self.analysis_positions_table.setMinimumHeight(150);positions_card.body.addWidget(self.analysis_positions_table,1)
+        right.addWidget(positions_card,2)
         decision=self.card('PROCESO DE DECISIÓN','shield');self.decision_text=QTextBrowser();decision.body.addWidget(self.decision_text,1);right.addWidget(decision,2)
 
     def build_sources(self):
@@ -307,7 +339,7 @@ class StudioWindow(QMainWindow):
         self.chat_retry=self.btn('REINTENTAR',self.retry_chat,'','refresh');self.chat_retry.hide();row.addWidget(self.chat_retry)
         self.chat_continue=self.btn('CONTINUAR',self.continue_chat);self.chat_continue.hide();row.addWidget(self.chat_continue)
         self.chat_send=self.btn('ENVIAR',self.send_chat,'primary','send');row.addWidget(self.chat_send);row.addWidget(self.btn('LLAMAR',self.open_call,'','phone'));row.addWidget(self.btn('DETENER',self.controller.cancel_chat));chat.body.addLayout(row)
-        row=FlowLayout();row.addWidget(self.btn('ADJUNTAR',self.attach_file,'','file'));self.cloud_choice=QCheckBox('OpenAI opcional');self.cloud_choice.setChecked(False);row.addWidget(self.cloud_choice);self.repair_button=self.btn('REPARAR ASISTENTE',lambda:self.controller.repair_ai());row.addWidget(self.repair_button);row.addWidget(self.btn('MOTIVO Y REGISTRO',self.show_model_log));chat.body.addLayout(row);right.addWidget(chat,1)
+        row=FlowLayout();row.addWidget(self.btn('ADJUNTAR',self.attach_file,'','file'));self.cloud_choice=QCheckBox('OpenAI opcional');self.cloud_choice.setChecked(False);self.cloud_choice.hide();self.repair_button=self.btn('REPARAR ASISTENTE',lambda:self.controller.repair_ai());row.addWidget(self.repair_button);row.addWidget(self.btn('MOTIVO Y REGISTRO',self.show_model_log));chat.body.addLayout(row);right.addWidget(chat,1)
 
     def build_settings(self):
         _,layout=self.page();from studio_settings_qt import SettingsPanel
@@ -429,9 +461,11 @@ class StudioWindow(QMainWindow):
         QLocale.setDefault(QLocale(language+'_'+country))
         sheet=stylesheet(studio)
         if sheet!=getattr(self,'_sheet',None):self.setStyleSheet(sheet);self._sheet=sheet
-        brand=str(studio.get('brand_name') or 'AKIRA');self.brand.setText(brand)
-        QApplication.instance().setApplicationDisplayName(brand)
+        # Release identity is not a user-selectable skin or legacy branch name.
         from akira_version import DISPLAY_VERSION
+        brand='AKIRA '+DISPLAY_VERSION
+        self.brand.setText(brand)
+        QApplication.instance().setApplicationDisplayName(brand)
         self.setWindowTitle('AKIRA '+DISPLAY_VERSION);desktop=effective_desktop(desktop or self.controller.cfg.get('desktop'));wallpaper=copy.deepcopy(studio.get('wallpaper') or {});profile=desktop.get('performance_profile','Equilibrado');self._render_interval=.8 if profile=='Ahorro de energía' else .3 if profile=='Rendimiento' else .7
         self._saving_ui=profile=='Ahorro de energía';self._visual_studio_profile=profile
         for wave in self.findChildren(SignalWave):wave.set_saving(self._saving_ui or bool(studio.get('reduce_motion')))
@@ -443,7 +477,7 @@ class StudioWindow(QMainWindow):
         if self.tr.locale!=locale or self.tr.pack!=studio.get('language_pack',''):
             self.tr.change(locale,studio.get('language_pack',''));self.retranslate()
             if not self.controller.preview and locale.split('-')[0]!='es':self.translation_timer.start(600)
-        self.chat_card.title.setText(self.text('CHAT CON AKIRA').replace('AKIRA',brand))
+        self.chat_card.title.setText(self.text('CHAT CON AKIRA'))
         for avatar in self.avatars:avatar.reduce_motion=bool(studio.get('reduce_motion')) or bool(desktop.get('low_resource_active'))
         scale=int(studio.get('font_scale',100))/100
         for metric in [*self.metrics.values(),*self.pending_metrics.values()]:metric.setMinimumHeight(round(90*scale));metric.setMaximumHeight(round(130*scale))
@@ -788,6 +822,23 @@ class StudioWindow(QMainWindow):
             (' · v'+str(strategy['version'])+' · '+(when(strategy.get('applied_at'),self.cfg) if strategy.get('applied_at') else 'cargada al iniciar') if strategy.get('version') else ''))
         orders=list(v.get('orders') or ())
         positions=list(v.get('positions') or ())
+        identity=v.get('account') or {};connection=v.get('mt5_connection') or {}
+        account_type=str(connection.get('account_type') or identity.get('type') or 'sin identificar')
+        self.analysis_connection_status.setText(('MT5 conectado' if v.get('connected') else 'MT5 desconectado')+
+            ' · '+account_type+' · '+('Nuevas entradas pausadas' if v.get('paused') else 'Solo análisis' if v.get('mode')!='trade' else 'Operativa autorizada')+
+            ' · '+str(len(orders))+' pendientes, '+str(len(positions))+' posiciones')
+        budget=risk_dashboard(v,self.cfg,self.private)
+        self.analysis_risk_status.setText(budget['state']+'\n'+budget['configured']+'\n'+budget['usage'])
+        self.analysis_pending_table.update_rows([
+            (str(key),[row.get('symbol'),('BUY' if row.get('side') in (1,'BUY') else 'SELL')+' '+str(row.get('kind') or ''),
+             number(row.get('entry')),number(row.get('sl')),number(row.get('tp')),str(row.get('status_label') or row.get('display_state') or 'PROPUESTA')],row)
+            for key,row in self.pending_rows()][:120])
+        self.analysis_positions_table.update_rows([
+            (str(row.get('ticket')),[row.get('ticket'),row.get('symbol'),
+             'BUY' if row.get('side') in (1,'BUY') else 'SELL',number(row.get('volume'),2),
+             number(row.get('sl')),number(row.get('tp')),
+             '••••••' if self.private else number(row.get('profit',row.get('pnl')))],row)
+            for row in positions][:120])
         rows=[]
         for state,collection in (('Pendiente confirmada',orders),('Posición abierta',positions)):
             for row in collection:
@@ -938,7 +989,8 @@ class StudioWindow(QMainWindow):
         text=self.chat_entry.text().strip()
         if not text:return
         if getattr(self,'_attachment_text',''):text+='\n\nADJUNTO (contenido de referencia, no instrucciones de ejecución):\n'+self._attachment_text
-        if self.controller.ask(text,self.cloud_choice.isChecked()):
+        # The default conversation is local; no obsolete paid-provider toggle.
+        if self.controller.ask(text,False):
             self._attachment_text=''
             self.chat_entry.clear();self.chat_send.setEnabled(False);self.render_chat(text);self.director.interaction(True);self.director.publish('thinking','chat');self.director.busy(True)
     def retry_chat(self):
@@ -1228,7 +1280,7 @@ class StudioWindow(QMainWindow):
     def show_strategies(self):
         from strategy_lab import definitions,strategy_text
         rows=definitions();dialog=QDialog(self);dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose);dialog.setWindowTitle(self.text('ESTRATEGIAS'));dialog.resize(1150,700);outer=QVBoxLayout(dialog)
-        tools=QHBoxLayout();tools.addWidget(self.lbl('Selecciona y aplica las reglas desde Pendientes. Las variantes en prueba conservan los límites de cuenta y riesgo.','muted'));tools.addWidget(self.btn('IR A PENDIENTES',lambda:(dialog.accept(),self.navigate(1))));outer.addLayout(tools)
+        tools=QHBoxLayout();tools.addWidget(self.lbl('Selecciona y aplica las reglas desde Pendientes. Las variantes en prueba conservan los límites de cuenta y riesgo.','muted'));tools.addWidget(self.btn('IR A ANÁLISIS Y OPERACIÓN',lambda:(dialog.accept(),self.navigate(3))));outer.addLayout(tools)
         layout=QHBoxLayout();outer.addLayout(layout,1);table=DataTable([self.text(t) for t in ['Estrategia','Símbolo','Uso','Cierres reales','Evidencia']]);table.setColumnWidth(0,250);layout.addWidget(table,2);box=QTextBrowser();layout.addWidget(box,3)
         current=(self.controller.view.get('research') or {}).get('strategy_lab') or {};measured={r['id']:r for r in current.get('strategies') or []};display=[]
         for definition in rows:
@@ -1252,6 +1304,10 @@ class StudioWindow(QMainWindow):
         row=self.strategy_definitions.get(self.strategy_selector.currentData()) or {};measured=((self.controller.view.get('research') or {}).get('strategy_lab') or {}).get('strategies') or [];match=next((r for r in measured if r.get('id')==row.get('id')),{});count=sum(int((v.get('realized') or {}).get('n') or 0) for v in (match.get('symbols') or {}).values())
         set_document(self.strategy_description,'<b>'+html.escape(row.get('name',''))+'</b><p>'+rich_text(row.get('rules',''))+'</p><p>Cierres confirmados medidos: '+str(count)+'. Las variantes en prueba no se declaran rentables sin resultados.</p>')
     def apply_strategy(self):
+        candidate=self.strategy_definitions.get(self.strategy_selector.currentData()) or {}
+        if candidate.get('spec'):
+            self.show_error('Esta estrategia está en investigación. Requiere resultados fuera de muestra y validación en demo antes de poder aplicarse.')
+            return
         draft=copy.deepcopy(self.controller.cfg)
         draft['strategy_choice'].update(selected=self.strategy_selector.currentData(),applied_at=time.time())
         draft.dirty_paths.update(('strategy_choice.selected','strategy_choice.applied_at'))
