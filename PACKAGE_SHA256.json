@@ -367,7 +367,7 @@
   "studio_presenter.py": "cf64361fb4cdfbdd3812615af2bde48d33c937b3954f3d67ed233d4381e0fbfa",
   "studio_settings_qt.py": "f9c04f7a1508535ce9f75500b33acee1c812f6871a169f5fd2a5c580bca1af5e",
   "studio_theme.py": "a2656c3306c23d4f26414a520bfeef0c2bfb7fc8ccbf19fe5d7d695baa135d27",
-  "studio_translations.py": "441eb6f2bc17d2e132f7c4986362797eac8025d50ed123f4d3fe6ba81b2e4590",
+  "studio_translations.py": "91d2a70cc3dd0e8888ba5316e882f953507cc0fa7729a527693d8d509b938f21",
   "studio_widgets.py": "d3f707dbaa3319d12068c50676fb9e6c0c731dd4589519a5bac3cdc7aabfe52e",
   "tape.py": "943750f4e121bc32013bbc9bc0dcf96ddec5c3ab9061848de8e589b348ae1de1",
   "technical_indicator_extensions.py": "ef676280fcb3a2bde179832c32f8b3306387f7eefaa9b6267cf093d23e8b9f29",
@@ -530,7 +530,7 @@
   "windows_identity.py": "12516c28395aaacba01368b0cbea587197e71ae19aa6ecdb1cdc28dc6cda3141",
   "windows_version.txt": "30684554c37c4776b6c6acda4732a4a70bf04988cde1da19ca4e80ca72a0e937",
   "youtube_support.py": "9f39cd9a5739bfe3574ed872391be72acee2706d4b59cd7a8aff685a5d8d48e8",
-  "tests/test_pdf_spec_contract.py": "4fec18afb45a3f0176eaa584ac02dabf17d99bdb91ae34d0ec917ead65341d78",
+  "tests/test_pdf_spec_contract.py": "b3be4e6d7a79a2d3ad6e05710708d178467b47c8942cc9de34b32871e8f24e15",
   "docs/AKIRA_20_PAGINAS_CONTROL.md": "1aa3f6366f366935979c658a26f1663ce72680936de21245c1ed5a434b2b699e",
   ".github/workflows/akira-android-0.3.yml": "e717eeffe60dd6c8c2b3a39d21c2a0567a8c6a32a050610a7c6a06610e088076"
 }

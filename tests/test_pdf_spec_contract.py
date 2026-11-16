@@ -65,5 +65,23 @@ class NativeScope(unittest.TestCase):
         self.assertIn("self.emit('mobile_action'",server)
         self.assertIn('android:allowBackup="false"',manifest)
 
+class TranslationCoverage(unittest.TestCase):
+    def test_visible_static_primary_controls_have_bundled_english(self):
+        import re
+        from studio_translations import EN
+        patterns=(
+            r"self\\.card\\('([^']+)'",
+            r"self\\.btn\\('([^']+)'",
+            r"self\\.lbl\\('([^']+)'",
+            r"self\\.field\\(card,'[^']+','([^']+)'",
+            r"self\\.add_button\\(card,'([^']+)'",
+        )
+        unknown=set()
+        for source in ('desktop_qt.py','studio_settings_qt.py'):
+            body=(ROOT/source).read_text(encoding='utf-8')
+            for pattern in patterns:
+                unknown.update(key for key in re.findall(pattern,body) if key and key not in EN)
+        self.assertEqual(unknown,set(),f'English is missing for: {sorted(unknown)}')
+
 if __name__=='__main__':
     unittest.main()
