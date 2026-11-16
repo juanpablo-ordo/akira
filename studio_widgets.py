@@ -303,7 +303,13 @@ class AvatarWidget(QWidget):
             qimage=QImage(image.tobytes(),image.width,image.height,image.width*4,QImage.Format.Format_RGBA8888).copy()
             self.cache[key]=QPixmap.fromImage(qimage)
             while len(self.cache)>12:self.cache.popitem(last=False)
-        self._current=self.cache[key];p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self._current=self.cache[key];p=QPainter(self)
+        # Clear the complete frame in source mode: an old expression must not
+        # remain beneath the new transparent sprite during a state change.
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        p.fillRect(self.rect(),Qt.GlobalColor.transparent)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         ratio=min(available[0]/self._current.width(),available[1]/self._current.height());width=self._current.width()*ratio;height=self._current.height()*ratio
         target=QRectF((self.width()-width)/2,(self.height()-height)/2,width,height)
         p.drawPixmap(target,self._current,QRectF(self._current.rect()));p.setOpacity(1)
