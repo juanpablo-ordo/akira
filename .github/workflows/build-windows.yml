@@ -410,6 +410,24 @@ jobs:
           python -m installer.summarize_revision --diagnostics diagnostics --installer "$($setup.FullName)"
           if ($LASTEXITCODE -ne 0) { throw 'La evidencia está incompleta; no publicar el instalador.' }
 
+      - name: Empaquetar código fuente verificado del mismo commit
+        if: success()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = "dist_source/AKIRA_${{ env.AKIRA_RELEASE_VERSION }}_CODIGO_FUENTE_${{ github.sha }}.zip"
+          python tools/source_archive.py --output $archive --report diagnostics/SOURCE_PACKAGE.json --expected-commit "$env:GITHUB_SHA" --expected-version "$env:AKIRA_RELEASE_VERSION"
+          if ($LASTEXITCODE -ne 0) { throw 'El archivo de código no corresponde al instalador comprobado.' }
+          if (!(Test-Path -LiteralPath $archive)) { throw 'Falta el ZIP independiente de código fuente.' }
+
+      - name: Publicar código fuente reconstruible de AKIRA
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AKIRA-${{ env.AKIRA_RELEASE_VERSION }}-codigo-fuente-verificado
+          path: dist_source/*.zip
+          retention-days: 7
+
       - name: Publicar instalador de AKIRA con IA incluida y verificada
         if: success()
         uses: actions/upload-artifact@v4

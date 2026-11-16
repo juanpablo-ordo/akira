@@ -23,7 +23,7 @@ la página 19, firma de publicación y pruebas en equipos físicos.
 | 15 | PIN, Windows Hello, DPAPI y exportaciones ocultas | `privacy_guard.py`, `akira_secrets.py` | Pruebas de bloqueo; falta sesión Windows inscrita y pantalla compartida |
 | 16 | Informes con instantánea única, filtros y datos fieles PDF/XLSX | `operation_report.py`, `report_filter.py` | Pruebas sintéticas; falta comparar los 12 cierres originales del 14/11 |
 | 17 | 0.1→0.2→0.3, canal firmado, Authenticode y rollback | `release_updates.py`, `update_transaction.py` | Código de validación; falta identidad de firma y publicación estable |
-| 18 | Windows EXE+instalador, ZIP fuente, SHA, pruebas de instalación | `build_windows.py`, `installer/`, GitHub Actions | CI disponible; publicar sólo desde un commit firmado y probado |
+| 18 | Windows EXE+instalador, ZIP fuente, SHA, pruebas de instalación | `build_windows.py`, `installer/`, `tools/source_archive.py`, GitHub Actions | ZIP de fuentes y instalador se empaquetan por separado desde el mismo commit después de la comprobación; falta publicación firmada permanente |
 | 19 | Aceptación integral física, demo, rendimiento, voz, móvil y privacidad | `tests/`, `qa_*.py` | **NO APROBADO** hasta pruebas con hardware y evidencias reales |
 | 20 | Preguntas abiertas: runners, Android, canal y firma | `docs/AKIRA_PLAN.md` | Android elegido; firma y dominios del canal requieren titular |
 
