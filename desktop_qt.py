@@ -102,6 +102,13 @@ class StudioWindow(QMainWindow):
         self.sensitive_field=None;self._revealed_identity=None
         self.mobile=None
         self.privacy_timer=QTimer(self);self.privacy_timer.setSingleShot(True);self.privacy_timer.timeout.connect(self.hide_sensitive)
+        # Owned, single-shot callbacks cannot outlive this native Qt window.
+        self.chat_reaction_timer=QTimer(self);self.chat_reaction_timer.setSingleShot(True)
+        self.chat_reaction_timer.timeout.connect(self.finish_chat_reaction)
+        self.translation_timer=QTimer(self);self.translation_timer.setSingleShot(True)
+        self.translation_timer.timeout.connect(self.translate_interface)
+        self.mobile_refresh_timer=QTimer(self);self.mobile_refresh_timer.setSingleShot(True)
+        self.mobile_refresh_timer.timeout.connect(self.refresh_mobile_devices)
         QApplication.instance().applicationStateChanged.connect(self.privacy_activation)
         QApplication.instance().installEventFilter(self)
         self._review_overrides={};self._stream_text="";self._logs_dirty=False;self._logs_at=0;self._render_interval=.4;self._timers=[];self._ai_due=0;self._render_at=0;self._snapshot_pending=None;self._model_status={};self._translating=False
@@ -435,7 +442,7 @@ class StudioWindow(QMainWindow):
         locale=studio.get('language_ui','es')
         if self.tr.locale!=locale or self.tr.pack!=studio.get('language_pack',''):
             self.tr.change(locale,studio.get('language_pack',''));self.retranslate()
-            if not self.controller.preview and locale.split('-')[0]!='es':QTimer.singleShot(600,self.translate_interface)
+            if not self.controller.preview and locale.split('-')[0]!='es':self.translation_timer.start(600)
         self.chat_card.title.setText(self.text('CHAT CON AKIRA').replace('AKIRA',brand))
         for avatar in self.avatars:avatar.reduce_motion=bool(studio.get('reduce_motion')) or bool(desktop.get('low_resource_active'))
         scale=int(studio.get('font_scale',100))/100
@@ -554,7 +561,7 @@ class StudioWindow(QMainWindow):
             self.chat_retry.setVisible(bool(data.get('error')))
             self.chat_continue.setVisible(bool(data.get('truncated')) and not data.get('error'))
             self._avatar_reaction_until=time.monotonic()+6
-            QTimer.singleShot(6000,lambda:self.finish_chat_reaction())
+            self.chat_reaction_timer.start(6000)
         elif kind=='settings_saved':
             self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True)
             self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado · revisión '+str((data['result'].get('configuration') or {}).get('revision','—'))+'.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.')
@@ -1174,7 +1181,7 @@ class StudioWindow(QMainWindow):
                     scope.add(action)
         else:scope.clear()
         self.mobile.approve(data['id'],scope)
-        QTimer.singleShot(1000,self.refresh_mobile_devices)
+        self.mobile_refresh_timer.start(1000)
 
     def refresh_mobile_devices(self):
         if not self.mobile:return
@@ -1210,7 +1217,7 @@ class StudioWindow(QMainWindow):
             try:old.deleteLater()
             except RuntimeError:pass
         toast=QFrame(self.surface);toast.setObjectName('card');box=QVBoxLayout(toast);heading=label(data['title'],'cardTitle');heading.setWordWrap(True);box.addWidget(heading)
-        text='Detalle oculto por privacidad. Hay un nuevo aviso disponible.' if self.private else data['body'];body=label(text);body.setWordWrap(True);box.addWidget(body);toast.setFixedWidth(min(430,max(280,self.width()-50)));toast.adjustSize();toast.move(self.surface.width()-toast.width()-20,55);toast.show();toast.raise_();self._toast=toast;QTimer.singleShot(6000,toast.deleteLater)
+        text='Detalle oculto por privacidad. Hay un nuevo aviso disponible.' if self.private else data['body'];body=label(text);body.setWordWrap(True);box.addWidget(body);toast.setFixedWidth(min(430,max(280,self.width()-50)));toast.adjustSize();toast.move(self.surface.width()-toast.width()-20,55);toast.show();toast.raise_();self._toast=toast;timer=QTimer(toast);timer.setSingleShot(True);timer.timeout.connect(toast.deleteLater);timer.start(6000)
     def show_model_log(self):
         from notification_center import safe_text
         path=self.controller.assistant._managed_model.log_path
@@ -1640,6 +1647,7 @@ class StudioWindow(QMainWindow):
             self._layout_file.setValue('geometry',self.saveGeometry())
             for key in ('home_split','pending_split','account_split','analysis_split','sources_split','terminal_split'):self._layout_file.setValue(key,getattr(self,key).saveState())
             self._layout_file.sync()
+        self.chat_reaction_timer.stop();self.translation_timer.stop();self.mobile_refresh_timer.stop()
         self.poll_timer.stop();self.animation_timer.stop();self.surface.stop();self.cancel_voice_download();self.stop_call();self.controller.close();event.accept()
 
 
