@@ -20,7 +20,7 @@ on:
       - akira-rev21-gpu-ondas-estabilidad-20261107
       - akira-rev22-recuperacion-llamada-20261108
       - akira-rev23-recursos-llamada-historial-20261114
-      - akira-pdf-development
+      - akira-0.1
 
 permissions:
   contents: read
