@@ -100,7 +100,7 @@ class ReportTests(PendingCase,unittest.TestCase):
         self.snapshot['history_state']={'error':'No disponible'}
         self.snapshot['account']['equity']=None
         model=build_report(self.snapshot)
-        self.assertNotIn('secret',json.dumps(model));self.assertEqual(model['snapshot']['account']['login'],'***123')
+        self.assertNotIn('secret',json.dumps(model));self.assertNotIn('login',model['snapshot']['account'])
         self.assertTrue(any('Historial' in w for w in model['warnings']))
         self.assertIsNone(next(r[2] for r in model['tables']['Resumen'] if r[1]=='Patrimonio USD'))
     def test_empty_history_and_current_only_are_not_fake_losses(self):
@@ -131,7 +131,7 @@ class ReportTests(PendingCase,unittest.TestCase):
         self.assertTrue(content.startswith(b'%PDF-'));self.assertIn(b'/Type /Page',content)
         self.assertGreater(len(content),4000)
         data=json.loads(Path(out['diagnostic_path']).read_text())
-        self.assertEqual(data['snapshot']['account']['login'],'***123')
+        self.assertNotIn('login',data['snapshot']['account'])
     def test_failed_export_keeps_previous_file_and_removes_temp(self):
         path=self.root/'Informe.pdf';path.write_bytes(b'previous')
         with patch('operation_report.write_pdf',side_effect=RuntimeError('fallo concreto')):

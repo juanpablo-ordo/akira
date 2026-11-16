@@ -20,7 +20,7 @@ def detected_nvidia_vram_gb(runner=None):
     for executable in paths:
         try:
             result=run([executable,'--query-gpu=memory.total','--format=csv,noheader,nounits'],
-                       capture_output=True,text=True,timeout=3,
+                       capture_output=True,text=True,errors='replace',timeout=3,
                        creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             if result.returncode:continue
             values=[]
@@ -47,7 +47,7 @@ def desktop_hardware():
             try:
                 probe=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',
                     'Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM | ConvertTo-Json -Compress'],
-                    capture_output=True,text=True,timeout=3,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+                    capture_output=True,text=True,errors='replace',timeout=3,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
                 data=json.loads(probe.stdout) if probe.returncode==0 else []
                 result['gpus']=[g for g in (data if isinstance(data,list) else [data]) if isinstance(g,dict)]
                 result['dedicated_gpu']=any(any(n in str(g.get('Name','')).lower() for n in ('nvidia','geforce','quadro','radeon rx','radeon pro','intel arc')) for g in result['gpus'])

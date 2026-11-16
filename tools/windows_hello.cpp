@@ -18,7 +18,7 @@ extern "C" __declspec(dllexport) int WINAPI AkiraVerifyIdentity(HWND owner) noex
         Verification operation{nullptr};
         auto prompt = winrt::hstring(L"Restablecer el PIN de privacidad de AKIRA");
         winrt::check_hresult(verifier->RequestVerificationForWindowAsync(
-            owner, winrt::get_abi(prompt), winrt::guid_of<Verification>(), winrt::put_abi(operation)));
+            owner, static_cast<HSTRING>(winrt::get_abi(prompt)), winrt::guid_of<Verification>(), winrt::put_abi(operation)));
         return operation.get() == UserConsentVerificationResult::Verified ? 1 : 0;
     } catch (...) {
         return 0;

@@ -16,6 +16,7 @@ class MarketCache:
     def __init__(self,api,symbol,reporter,cfg):
         self.api,self.symbol,self.log,self.cfg=api,symbol,reporter,cfg
         self.frames={}
+        self.forming={}
         self.due={name:0.0 for name in self.PERIODS}
         self.setups=[]
         self.rejections=Counter()
@@ -25,6 +26,21 @@ class MarketCache:
         self.analysis_name=None
         self.analysis_signature=()
         self.recovery=CandleGapRecovery()
+
+    def open_rates(self,name,tf,count,now):
+        from market_state import PERIOD_SECONDS
+        from datetime import datetime,timezone
+        period=PERIOD_SECONDS[name]
+        live=self.api.copy_rates_range(self.symbol,tf,datetime.fromtimestamp(now-period*(count+2),timezone.utc),
+                                       datetime.fromtimestamp(now,timezone.utc)) if hasattr(self.api,'copy_rates_range') else None
+        if live is not None and len(live):
+            bar=self.bars([live[-1]])[0]
+            if bar.time<=now<bar.time+period:
+                self.forming[name]=bar
+                if len(live)>count:return live[-count-1:-1]
+                return self.closed_rates(tf,count)
+        self.forming.pop(name,None)
+        return self.closed_rates(tf,count)
 
     def poll_analysis(self):
         future=self.analysis_future
@@ -77,8 +93,9 @@ class MarketCache:
         name=min(due,key=lambda k:self.due[k])
         tf,interval=self.PERIODS[name]
         self.due[name]=now+(max(60,interval) if closed_session else interval)
+        if closed_session:self.forming.clear()
         def read(count):
-            if not closed_session:return self.closed_rates(tf,count)
+            if not closed_session:return self.open_rates(name,tf,count,now)
             # Closed markets must not request index zero: some brokers keep an
             # unfinished bar there even while their session is paused.
             # Index one is the most recent broker-confirmed closed bar.

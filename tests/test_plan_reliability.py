@@ -65,6 +65,31 @@ class AccountAndRisk(unittest.TestCase):
         self.assertTrue(projected_margin(account,20,200)['allowed'])
 
 
+class LiveChartAndReplay(unittest.TestCase):
+    def test_forming_bar_does_not_enter_closed_frame(self):
+        from market_cache import MarketCache
+        bar=lambda when,price:{'time':when,'open':price,'close':price,'high':price,'low':price,'tick_volume':1}
+        api=SimpleNamespace(copy_rates_range=lambda *_:[bar(120,101),bar(180,200)])
+        cache=MarketCache(api,'BTCUSDm',None,{})
+        closed=cache.open_rates('M1',1,1,190)
+        self.assertEqual([row['close'] for row in closed],[101])
+        self.assertEqual(cache.forming['M1'].close,200)
+
+    def test_bearish_sell_stop_records_adverse_fill_and_costs_only_in_replay(self):
+        from strategy_lab import advance_case,definitions
+        baseline=next(row for row in definitions() if row['id']=='LAB_BTC_BEAR_CONTINUATION_V1')
+        self.assertFalse(baseline['auto_live_activation'])
+        position={'state':'WAITING','plan':{'side':-1,'kind':'STOP','entry':100,'sl':105,'tp':90},
+                  'created':20,'expiry_seconds':120,'horizon_seconds':300}
+        position=advance_case(position,102,103,30,.05)
+        self.assertEqual(position['state'],'WAITING')
+        position=advance_case(position,99,100,35,.05)
+        self.assertEqual(position['entry_price'],99)
+        finished=advance_case(position,89,90,40,.05)
+        self.assertEqual(finished['state'],'TP')
+        self.assertAlmostEqual(finished['net_r'],1.75)
+
+
 class SignedUpdate(unittest.TestCase):
     def setUp(self):
         self.key=Ed25519PrivateKey.generate()

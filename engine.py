@@ -1308,12 +1308,21 @@ class Engine:
                 book.append({**p.to_dict(),'ticket':int(o.ticket),'confirmed':True,'state':'MT5 CONFIRMADA'})
             book.extend({**p.to_dict(),'confirmed':False,'state':'CANDIDATA'} for p in self.candidates.get(s,[])[:8])
             bars_by_timeframe={name:[b.to_dict() for b in f.bars[-80:]] for name,f in c.frames.items()}
+            from market_state import MarketDataFreshnessValidator,PERIOD_SECONDS
+            chart_time=self.g.clock()
+            forming={name:{**b.to_dict(),'closed':False,'source':'MT5'}
+                     for name,b in getattr(c,'forming',{}).items()
+                     if b.time<=chart_time<b.time+PERIOD_SECONDS[name] and name in c.frames
+                     and b.time>c.frames[name].bars[-1].time}
+            freshness={name:MarketDataFreshnessValidator.inspect(s,name,f,chart_time,self.cfg)
+                       for name,f in c.frames.items()}
             transition=self.g.journal.data['intents'].get(s) or {}
             symbols[s]={'bid':q.bid if q else None,'ask':q.ask if q else None,'spread':q.spread if q else None,
                         'quote_time':q.time if q else None,
                         'checked_at':self.last_checked.get(s),'last_analysis_at':self.last_scan.get(s),
                         'frames':frames,'bars':[b.to_dict() for b in c.frames['M1'].bars[-60:]] if 'M1' in c.frames else [],
                         'bars_by_timeframe':bars_by_timeframe,
+                        'forming_by_timeframe':forming,'freshness':freshness,
                         'transition_request':{k:v for k,v in (transition.get('request') or {}).items()
                                               if k in ('price','sl','tp','order','volume')},
                         'pending_book':book,'pending_performance':self.learner.metrics(s),'live':self.planner.tapes[s].last_metrics,

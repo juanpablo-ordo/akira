@@ -69,7 +69,7 @@ _ACCOUNT_FIELD={'login','server','company','expected_login','expected_server','a
                 'account_number','broker_server','terminal_path','python_executable','application_root',
                 'account_identity','authorized_identity'}
 _AMOUNT_FIELD=re.compile(r'(^|_)(balance|equity|profit|commission|swap|margin|pnl|patrimonio|net|usd|money)(_|$)',re.I)
-_PATH=re.compile(r"""(?i)[a-z]:[\\/](?:[^"<>\r\n;,]|\s(?![·|])){1,240}""")
+_PATH=re.compile(r"""(?i)(?<![\w:/])[a-z]:[\\/][^"<>\r\n;,·|]{1,240}""")
 _URL=re.compile(r'https?://[^\s<>\]\)]+',re.I)
 _TOKEN=re.compile(r'(?i)\b(?:bearer\s+|sk-(?:proj-)?|cg-api-key\s*[:=]\s*)[a-z0-9_.-]{8,}')
 

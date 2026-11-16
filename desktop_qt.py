@@ -781,14 +781,19 @@ class StudioWindow(QMainWindow):
             bars=(info.get('bars_by_timeframe') or {}).get(tf) or []
             last=bars[-1]['time'] if bars else None
             freshness=(info.get('freshness') or {}).get(tf,{})
-            stale=freshness.get('fresh') is False or not v.get('connected')
+            stale=freshness.get('ready') is False or not v.get('connected')
             overlays=price_overlays(bars,values) if bars and not stale else {}
+            forming=(info.get('forming_by_timeframe') or {}).get(tf)
+            if forming and not stale:
+                bars=[*bars,forming]
+                overlays={name:[*series,None] for name,series in overlays.items()}
             levels=order_levels(info,orders,symbol)
             chart.set_data(bars,levels,overlays)
             chart.setToolTip('\n'.join(f'{name}  {number(value)}' for name,value in levels.items()))
             legend.setText((f'MT5 · {tf} · última vela cerrada {when(last,self.cfg)}' if last else f'{tf} · sin velas disponibles')+
                 (f' · {self.cfg["locale"]["timezone"]}' if last else '')+
                 (' · datos vencidos' if last and stale else '')+
+                (' · vela en formación' if forming and not stale else '')+
                 (' · '+', '.join(overlays) if overlays else '')+
                 ('\nMT5 línea continua · solicitud discontinua · propuesta punteada' if levels else ''))
         bands=[]

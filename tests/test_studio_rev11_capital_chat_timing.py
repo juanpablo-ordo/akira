@@ -430,6 +430,7 @@ class LowResourcePolicyTests(unittest.TestCase):
 
     def test_default_profile_detects_ram_and_available_cpu_instead_of_assuming_a_gaming_pc(self):
         with patch('psutil.virtual_memory',return_value=NS(total=8*1073741824)), \
+             patch('resource_optimizer.desktop_hardware',return_value={'ram_gb':8,'physical_cores':2}), \
              patch('psutil.Process') as process:
             process.return_value.cpu_affinity.return_value=[0,1]
             profile=hardware_profile()

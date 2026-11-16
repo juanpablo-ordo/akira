@@ -48,6 +48,11 @@ def definitions():
     'origin':'Hipótesis generada por AKIRA a partir de reglas estructurales acotadas','mode':'EXPERIMENTO',
     'rules':indicators+f'; invalidación tras extremo observado con colchón {buffer:g} ATR; objetivo en pivote H1/M15 y R:R mínimo {min_rr:g}. La pendiente experimental caduca a las 2 horas; observación máxima de 24 horas.',
     'spec':spec,'base_family':base,'version':1,'auto_live_activation':False})
+ out.append({'id':'LAB_BTC_BEAR_CONTINUATION_V1','name':'BTC · Continuación bajista',
+    'origin':'Hipótesis registrada para comparación fuera de muestra','mode':'EXPERIMENTO',
+    'rules':'H1 y M15 bajistas. Cierre bajo soporte M15 tras retest. SELL STOP debajo del mínimo confirmado con SL sobre el retest y objetivo histórico. R:R mínimo 1.8.',
+    'spec':{'template':'BEAR_CONTINUATION','buffer_atr':.25,'min_rr':1.8,'expiry_seconds':7200,'horizon_seconds':86400},
+    'base_family':'PENDIENTE_RUPTURA','version':1,'auto_live_activation':False})
  return out
 
 def propose(definition,symbol,info,now):
@@ -57,10 +62,18 @@ def propose(definition,symbol,info,now):
  last=bars[-1];atr=num(f['atr']);spread=num(info.get('spread'));bar=num(last['time'])
  if not 0<=now-(bar+900)<=960:return None
  b=spec['buffer_atr'];prior=bars[-21:-1];lo=min(num(x['low']) for x in prior);hi=max(num(x['high']) for x in prior)
- for side in (1,-1):
+ bearish=spec['template']=='BEAR_CONTINUATION'
+ if bearish and not symbol.upper().startswith('BTC'):return None
+ for side in ((-1,) if bearish else (1,-1)):
   close=num(last['close']);high=num(last['high']);low=num(last['low']);body=side*(close-num(last['open']))
   trend=side*num(h.get('trend'));key=spec['template'];entry=0;anchor=0
-  if key=='EMA_PULLBACK':
+  kind='LIMIT'
+  if bearish:
+   support=min(num(row['low']) for row in bars[-12:-3])
+   retest=max(num(row['high']) for row in bars[-3:])
+   if trend<.18 or num(f.get('trend'))>-.12 or close>=support-atr*.05 or retest<support-atr*.2:continue
+   kind='STOP';entry=low-max(spread,atr*.05);anchor=retest
+  elif key=='EMA_PULLBACK':
    base=num(f.get('ema21'))
    if trend<=.18 or side*num(f.get('trend'))<=.12 or not 35<=num(f.get('rsi'),50)<=70:continue
    entry=base;anchor=min(num(x['low']) for x in bars[-8:]) if side==1 else max(num(x['high']) for x in bars[-8:])
@@ -81,7 +94,8 @@ def propose(definition,symbol,info,now):
   sl=anchor-side*max(atr*b,spread*2);risk=side*(entry-sl)
   if risk<atr*.35 or risk>atr*3 or risk<spread*3:continue
   ref=num(info.get('ask' if side==1 else 'bid'))
-  if ref<=0 or side*(ref-entry)<max(spread,atr*.05):continue
+  distance=side*(ref-entry)*(1 if kind=='LIMIT' else -1)
+  if ref<=0 or distance<max(spread,atr*.05):continue
   # Only observed past pivots/levels; no projection to manufacture R:R.
   periods={'M15':900,'H1':3600,'H4':14400}
   levels=[num(x['high' if side==1 else 'low']) for tf in ('M15','H1','H4') for x in ((info.get('bars') or {}).get(tf) or (info.get('bars_by_timeframe') or {}).get(tf) or [])[-64:]
@@ -90,7 +104,7 @@ def propose(definition,symbol,info,now):
   if not ahead:continue
   tp=min(ahead,key=lambda p:side*(p-entry))-side*atr*.03
   if side*(tp-entry)/risk<spec['min_rr']:continue
-  return {'symbol':symbol,'key':definition['id']+':'+str(side)+':'+str(int(bar)),'side':side,'kind':'LIMIT','lane':'PENDING',
+  return {'symbol':symbol,'key':definition['id']+':'+str(side)+':'+str(int(bar)),'side':side,'kind':kind,'lane':'PENDING',
    'entry':entry,'sl':sl,'tp':tp,'atr':atr,'horizon_atr':atr,'bar_time':bar,'signal_timeframe':'M15','target_observed':True,
    'reason':definition['rules'],'research_only':True}
  return None
@@ -105,14 +119,18 @@ def advance_case(case,bid,ask,stamp,fee_r=0):
  row['last_quote']=stamp
  if row['state']=='WAITING':
   if stamp>=row['created']+row['expiry_seconds']:row.update(state='EXPIRED',net_r=None,exit_at=stamp);return row
-  touched=ask<=p['entry'] if side==1 else bid>=p['entry']
+  stop_order=p.get('kind')=='STOP'
+  if stop_order:touched=ask>=p['entry'] if side==1 else bid<=p['entry']
+  else:touched=ask<=p['entry'] if side==1 else bid>=p['entry']
   if not touched:return row
-  row.update(state='OPEN',entry_at=stamp)
- exit_price=bid if side==1 else ask;r=side*(exit_price-p['entry'])/risk
+  fill=(ask if side==1 else bid) if stop_order else p['entry']
+  row.update(state='OPEN',entry_at=stamp,entry_price=fill)
+ entry=row.get('entry_price',p['entry']);exit_price=bid if side==1 else ask
+ r=side*(exit_price-entry)/risk
  row['mfe_r']=max(num(row.get('mfe_r')),r);row['mae_r']=max(num(row.get('mae_r')),-r)
  sl_hit=side*(exit_price-p['sl'])<=0;tp_hit=side*(exit_price-p['tp'])>=0
  if sl_hit:row.update(state='SL',exit_at=stamp,net_r=min(-1,r)-fee_r)
- elif tp_hit:row.update(state='TP',exit_at=stamp,net_r=side*(p['tp']-p['entry'])/risk-fee_r)
+ elif tp_hit:row.update(state='TP',exit_at=stamp,net_r=side*(p['tp']-entry)/risk-fee_r)
  elif stamp>=row['entry_at']+row['horizon_seconds']:row.update(state='TIMEOUT',exit_at=stamp,net_r=r-fee_r)
  if row['state'] in ('SL','TP','TIMEOUT'):row.update(exit_bid=bid,exit_ask=ask)
  return row
@@ -243,12 +261,14 @@ class StrategyLab:
       'last_quote':quote_stamp,'net_r':None,'estimated_fee_r':fee_r or 0,'costs_available':fee_r is not None,
       'source':'MT5_QUOTES_SAMPLED','configuration':snap.get('selection_configuration'),
       'evidence':{'frames':info.get('frames'),'sources':snap.get('research_sources',{})}}
+     trend=num((info.get('frames') or {}).get('H1',{}).get('trend'))
+     row['regime']='BAJISTA' if trend<-.18 else 'ALCISTA' if trend>.18 else 'LATERAL'
      db.execute('INSERT INTO cases VALUES(?,?,?,?,?)',(case_id,definition['id'],symbol,now,json.dumps(row)));cases[case_id]=row;generation+=1
      bars=(info.get('bars') or {}).get('M15') or (info.get('bars_by_timeframe') or {}).get('M15') or []
      examples[definition['id']+'/'+symbol]={'bars':bars[-64:],'plan':p,'created':now,'indicators':{tf:{k:v for k,v in (info.get('frames',{}).get(tf) or {}).items() if k in ('atr','rsi','adx','ema21','macd','volume_ratio','trend')} for tf in ('M15','H1')}}
    for c in cases.values():
     if c.get('archived') or c.get('state') not in ('SL','TP','TIMEOUT','GAP','EXPIRED') or not 0<c['created']<=num(c.get('exit_at'))<=now:continue
-    detail={k:c.get(k) for k in ('plan','estimated_fee_r','costs_available','entry_at','exit_bid','exit_ask','mfe_r','mae_r','source')}
+    detail={k:c.get(k) for k in ('plan','estimated_fee_r','costs_available','entry_at','entry_price','exit_bid','exit_ask','mfe_r','mae_r','source','regime')}
     db.execute('INSERT OR IGNORE INTO results VALUES(?,?,?,?,?,?,?,?,?)',(c['id'],c['cohort'],c['strategy_id'],c['symbol'],c['created'],c['exit_at'],c['state'],c.get('net_r') if c.get('costs_available') else None,json.dumps(detail)))
     c['archived']=True;db.execute('UPDATE cases SET body=? WHERE id=?',(json.dumps(c),c['id']))
    db.execute('DELETE FROM cases WHERE id NOT IN (SELECT id FROM cases ORDER BY created DESC LIMIT ?)',(MAX_CASES,))
@@ -262,8 +282,8 @@ class StrategyLab:
      actual=[r for r in outcomes if r.get('symbol')==symbol and
       ((r.get('selector_id') or (r.get('plan') or {}).get('selector_id'))==row['id'] if row['id']=='AKIRA_ADAPTATIVA' or row['id'].startswith('LAB_') else r.get('strategy_id')==row['id'])]
      paper=sorted([c for c in cases.values() if c.get('cohort')==cohort and c['symbol']==symbol and c['strategy_id']==row['id']],key=lambda c:c['created'])
-     history=[{'created':c[0],'exit_at':c[1],'state':c[2],'net_r':c[3]} for c in db.execute(
-      'SELECT created,exit_at,state,net_r FROM results WHERE cohort=? AND strategy_id=? AND symbol=? AND exit_at<=? ORDER BY created',(cohort,row['id'],symbol,now))]
+     history=[{'created':c[0],'exit_at':c[1],'state':c[2],'net_r':c[3],'regime':json.loads(c[4]).get('regime')} for c in db.execute(
+      'SELECT created,exit_at,state,net_r,body FROM results WHERE cohort=? AND strategy_id=? AND symbol=? AND exit_at<=? ORDER BY created',(cohort,row['id'],symbol,now))]
      resolved=[c for c in history if c['state'] in ('SL','TP','TIMEOUT') and c['net_r'] is not None]
      eid=cohort+'/'+row['id']+'/'+symbol
      old=db.execute('SELECT selected_at,body FROM evaluations WHERE id=?',(eid,)).fetchone()
@@ -276,6 +296,8 @@ class StrategyLab:
      test=measured(holdout,'net_r');days=len({int(c['created']//86400) for c in holdout})
      comparable=test['n']>=50 and days>=20 and test['expectancy']>0 and bool(old and json.loads(old[1]).get('expectancy',0)>0)
      per[symbol]={'cohort':cohort,'realized':measured(actual),'paper':measured(resolved,'net_r'),'holdout':test,'holdout_days':days,
+      'holdout_by_regime':{regime:measured([c for c in holdout if c.get('regime')==regime],'net_r')
+                           for regime in ('BAJISTA','LATERAL','ALCISTA')},
       'selection_locked_at':old[0] if old else None,'state':'EVIDENCIA PROSPECTIVA DISPONIBLE' if comparable else 'EN ESTUDIO',
       'active_cases':sum(c['state'] in ('WAITING','OPEN') for c in paper),'invalid_gaps':sum(c['state']=='GAP' for c in history),
       'scope':'Realizado: cierres propios completos, costes reales. Paper: R normalizados en cotizaciones muestreadas, comisiones estimadas; no ganancias de cuenta ni probabilidad individual.'}

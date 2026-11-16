@@ -208,7 +208,8 @@ class CandleChart(QWidget):
         for row in bars:
             try:
                 values=tuple(float(row.get(key,0)) for key in ('open','high','low','close'))
-                if all(math.isfinite(v) for v in values) and values[1]>=values[2]:valid.append(values)
+                if all(math.isfinite(v) for v in values) and values[1]>=values[2]:
+                    valid.append((*values,row.get('closed',True)))
             except (AttributeError,ValueError,TypeError):continue
         levels=dict(levels or {});series={name:tuple(values) for name,values in (series or {}).items()}
         signature=(tuple(valid),tuple(sorted(levels.items())),tuple(series.items()))
@@ -237,8 +238,11 @@ class CandleChart(QWidget):
         if not valid:p.setPen(QColor(INK['muted']));p.drawText(rect,Qt.AlignmentFlag.AlignCenter,'—');return
         low=min(b[2] for b in valid);high=max(b[1] for b in valid);span=max(1e-8,high-low);low-=span*.08;span*=1.16
         y=lambda value:rect.bottom()-(value-low)/span*rect.height();step=rect.width()/max(1,len(valid))
-        for index,(op,hi,lo,cl) in enumerate(valid):
+        for index,(op,hi,lo,cl,closed) in enumerate(valid):
             x=rect.left()+(index+.5)*step;color=QColor(INK['green'] if cl>=op else INK['pink']);p.setPen(QPen(color,1));p.setBrush(color)
+            if not closed:
+                p.setPen(QPen(QColor('#ffc548'),1,Qt.PenStyle.DashLine))
+                p.setBrush(Qt.BrushStyle.NoBrush)
             p.drawLine(QPointF(x,y(lo)),QPointF(x,y(hi)));p.drawRect(QRectF(x-step*.29,min(y(op),y(cl)),max(1,step*.58),max(1,abs(y(op)-y(cl)))))
         p.setFont(QFont('Rajdhani',10));p.setPen(QColor(INK['muted']))
         for index in range(5):
