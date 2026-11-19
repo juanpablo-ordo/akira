@@ -5,7 +5,7 @@ import copy,hashlib,json,math,sqlite3,threading,time
 from trade_quality_gate import family,num
 from strategy_research import ResearchLedger
 
-REFERENCE_URL='https://www.youtube.com/watch?v=p579vzivHoc'
+REFERENCE_URL='https://www.youtube.com/watch?v=e2v18afjSa8'
 MAX_CASES=5000
 MAX_RESULTS=300000
 FAMILIES={
@@ -221,7 +221,7 @@ class StrategyLab:
   from urllib.parse import urlsplit,parse_qs
   import re
   parts=urlsplit(str(row.get('url','')));vid=parse_qs(parts.query).get('v',[''])[0] if parts.hostname!='youtu.be' else parts.path.strip('/')
-  if parts.hostname not in ('youtube.com','www.youtube.com','m.youtube.com','youtu.be') or vid!='p579vzivHoc' or row.get('status') not in ('transcript','analyzed') or not row.get('complete') or len(str(row.get('body') or ''))<1000:
+  if parts.hostname not in ('youtube.com','www.youtube.com','m.youtube.com','youtu.be') or vid!='e2v18afjSa8' or row.get('status') not in ('transcript','analyzed') or not row.get('complete') or len(str(row.get('body') or ''))<1000:
    raise ValueError('No hay una transcripción completa del video compartido; no se afirma haber aprendido su estrategia')
   text=row['body'];data={'url':REFERENCE_URL,'state':'TRANSCRIPCIÓN RECUPERADA · REGLAS SIN VALIDAR',
    'title':row.get('title'),'author':row.get('author'),'fetched':row.get('fetched'),'caption_type':row.get('caption_type'),

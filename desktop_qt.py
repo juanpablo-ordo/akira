@@ -512,6 +512,9 @@ class StudioWindow(QMainWindow):
         self.director.refresh()
         if any(getattr(avatar,'neural_visual',False) for avatar in self.avatars):
             saving=self._saving_ui or bool(getattr(self,'_visual_studio',{}).get('reduce_motion'))
+            if saving:
+                # No decorative eyelid animation survives a low-power policy.
+                self.director.blink_frame=None
             self.animation_timer.setInterval(500 if saving else 32 if self._visual_studio_profile=='Rendimiento' else 40)
             for avatar in self.avatars:
                 if avatar.isVisible() and getattr(avatar,'neural_visual',False):avatar.update()

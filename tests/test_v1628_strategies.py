@@ -264,13 +264,13 @@ class LabTests(unittest.TestCase):
   self.assertEqual(m['paper']['n'],0);self.assertEqual(m['invalid_gaps'],1)
   with self.lab.db() as db:self.assertEqual(db.execute('SELECT COUNT(*) FROM results').fetchone()[0],2)
  def test_a_complete_caption_is_recovered_without_claiming_validated_video_rules(self):
-  data=self.lab.set_reference({'url':'https://www.youtube.com/watch?v=p579vzivHoc','status':'transcript','complete':True,
+  data=self.lab.set_reference({'url':'https://www.youtube.com/watch?v=e2v18afjSa8','status':'transcript','complete':True,
    'body':('EMA RSI gestión de riesgo temporalidad stop. '*40),'caption_type':'automatic_captions','title':'Referencia de prueba'})
   self.assertIn('REGLAS SIN VALIDAR',data['state']);self.assertIn('ema',data['detected_terms'])
   self.assertEqual(self.tick()['reference']['state'],data['state'])
  def test_partial_or_wrong_site_cannot_claim_video_learning(self):
-  for row in ({'url':'https://www.youtube.com/watch?v=p579vzivHoc','complete':False,'status':'transcript','body':'EMA '*1000},
-      {'url':'https://fake.example/watch?v=p579vzivHoc','complete':True,'status':'transcript','body':'EMA '*1000}):
+  for row in ({'url':'https://www.youtube.com/watch?v=e2v18afjSa8','complete':False,'status':'transcript','body':'EMA '*1000},
+      {'url':'https://fake.example/watch?v=e2v18afjSa8','complete':True,'status':'transcript','body':'EMA '*1000}):
    with self.assertRaises(ValueError):self.lab.set_reference(row)
 
 class DirectoryUITests(unittest.TestCase):

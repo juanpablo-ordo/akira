@@ -306,6 +306,12 @@ class AvatarWidget(QWidget):
         power=1.0 if speaking or getattr(self.director,'loading',False) or state in ('thinking','analyzing','listening') else .6
         if not online:power=.3
         phase=0.0 if self.reduce_motion else time.monotonic()*3.0
+        # Blink is no longer a cat sprite. A short neural-network pulse keeps
+        # the old visible expression-change contract measurable by screenshot.
+        blink_active=getattr(self.director,'blink_frame',None) is not None
+        if blink_active:
+            base=QColor(INK['amber'])
+            power=.35
         coords=((.28,.20),(.43,.14),(.59,.15),(.74,.24),(.19,.35),(.36,.32),
                 (.52,.33),(.67,.34),(.82,.41),(.16,.52),(.31,.49),(.46,.50),
                 (.64,.51),(.81,.59),(.25,.68),(.39,.68),(.55,.69),(.70,.71),

@@ -110,7 +110,10 @@ class ActualQtWorkflowTests(unittest.TestCase):
         session=Mock()
         with patch('voice_session.VoiceSession',return_value=session) as factory, \
              patch.object(w.controller,'save'):
-            next(b for b in w.call_dialog.findChildren(QPushButton) if b.text()=='INICIAR LLAMADA').click()
+            # Icon-only buttons retain a stable accessible name and invoke
+            # the identical workflow after voice installation.
+            next(b for b in w.call_dialog.findChildren(QPushButton)
+                 if b.accessibleName()=='INICIAR LLAMADA').click()
         factory.assert_called_once();session.start.assert_called_once()
         self.assertEqual(factory.call_args.args[3]['id'],row['id'])
         w.controller.voice=None
