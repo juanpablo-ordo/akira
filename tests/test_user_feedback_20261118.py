@@ -71,6 +71,8 @@ class UserFeedbackQt(unittest.TestCase):
                 self.assertAlmostEqual(opts['volume'],.57)
                 self.assertEqual(w.call_buttons['INICIAR LLAMADA'].accessibleName(),'INICIAR LLAMADA')
                 self.assertEqual(w.call_buttons['INICIAR LLAMADA'].text(),'')
+                w.retranslate()
+                self.assertEqual(w.call_buttons['INICIAR LLAMADA'].text(),'')
             finally:
                 w.controller.voice=None
                 w.close();self.app.processEvents()

@@ -231,7 +231,7 @@
   "default_config.json": "6212548ba83659d06dc5b8ad5648882ffed300c990d2fde0cf69f66ea5a40ada",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "b815286364e26232e4619b4c35be50547177d4e5956ad5fbd1eb5bfd24405bd5",
+  "desktop_qt.py": "89117ea94af78c7d0be4cc4d7d6f29bcccda2da64b33168fa20b236f91cb4d00",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
   "docs/AKIRA_PLAN.md": "881f7e7e00494b5762c2c1a7a31a535380dc8e08dda9c517dafb099781658f45",
@@ -537,5 +537,5 @@
   "tests/test_retired_sources_qa.py": "56de51946c8817f455e787b029b122f80539861c0f998156f02b7263e5e23f9a",
   "tests/test_live_voice_controls.py": "8db32aba6f025579cd59b6f6506cfd142443e1716a6f4dde9fed5130a5a89da6",
   "docs/AKIRA_REVISION_VIDEO_2026_11_18.md": "3c89a41c693f0ff18ec5c9d1dde138f28cb4dbf22302fda80a54f066184dd5ec",
-  "tests/test_user_feedback_20261118.py": "864bca4f3744d77a019954fdbc35e243c5d25cec8bb139d4bafa665d7b10cb70"
+  "tests/test_user_feedback_20261118.py": "9a954efccb7d9cf7caff7ca358084519a9dc2a7981e5e44f9c2e037b1f26221a"
 }

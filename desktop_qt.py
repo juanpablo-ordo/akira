@@ -504,6 +504,8 @@ class StudioWindow(QMainWindow):
         if hasattr(self,'settings_panel'):self.settings_panel.refresh_resources_preview(desktop)
     def retranslate(self):
         self.page_title.setText(self.text(NAV[self.page_index]));self.page_description.setText(self.text(DETAILS[self.page_index]))
+        for name,widget in getattr(self,'call_buttons',{}).items():
+            widget.setText('');widget.setAccessibleName(self.text(name));widget.setToolTip(self.text(name))
         for table in self.tables:table.setHorizontalHeaderLabels([self.text(t) for t in table.columns])
         self.settings_panel.retranslate()
         for key,title in [('balance','BALANCE'),('equity','PATRIMONIO'),('floating','FLOTANTE'),('daily_net','P/L DEL DÍA'),('reserved_risk','RIESGO POR ORDEN'),('cycle_ms','CICLO')]:self.metrics[key].name_label.setText(self.text(title))
@@ -1602,8 +1604,8 @@ class StudioWindow(QMainWindow):
         call_icons={'INICIAR LLAMADA':'phone','SILENCIAR':'mic-off',
                     'REANUDAR':'mic','INTERRUMPIR':'pause','FINALIZAR LLAMADA':'stop'}
         for text,callback in [('INICIAR LLAMADA',self.start_call),('SILENCIAR',lambda:self.controller.voice.pause() if self.controller.voice else None),('REANUDAR',lambda:self.controller.voice.resume() if self.controller.voice else None),('INTERRUMPIR',self.controller.cancel_call),('FINALIZAR LLAMADA',self.stop_call)]:
-            widget=self.btn(text,callback,glyph=call_icons[text])
-            widget.setText('');widget.setAccessibleName(text);widget.setToolTip(text)
+            widget=button('',callback,glyph=call_icons[text])
+            widget.setAccessibleName(self.text(text));widget.setToolTip(self.text(text))
             widget.setFixedWidth(46);widget.setIconSize(QSize(23,23))
             self.call_buttons[text]=widget;row.addWidget(widget)
         layout.addLayout(row)
