@@ -297,7 +297,7 @@ class SettingsPanel(QWidget):
         self.add_button(card,'ELIMINAR CLAVES GUARDADAS',self.window.delete_key)
         self.add_button(card,'RESTABLECER PIN CON WINDOWS',self.window.reset_privacy_pin)
         card=self.card(3,'INVESTIGACIÓN Y CONOCIMIENTO','sources')
-        for path,title in [('research.enabled','Investigación de mercado'),('research.coinglass_public_fallback','Derivados públicos BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
+        for path,title in [('research.enabled','Investigación de mercado'),('research.coinglass_public_fallback','Derivados públicos de BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
         self.field(card,'knowledge.mode','Actualización de conocimiento',(('automatic','Automática'),('request','Solo al solicitarla')))
         self.field(card,'knowledge.interval_hours','Intervalo de biblioteca (horas)',limits=(1,168))
         self.add_button(card,'ACTUALIZAR CONOCIMIENTO',self.window.refresh_knowledge)

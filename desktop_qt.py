@@ -300,7 +300,7 @@ class StudioWindow(QMainWindow):
         self.analysis_split,(left,right)=self.split(layout,(3,2));self.analysis_widgets={}
         for symbol in ('BTCUSDm','XAUUSDm'):
             card=self.card(symbol,'analysis');price=label('—','title');card.heading.addWidget(price)
-            stats=self.table(['Indicador','Valor','Contexto']);stats.setMaximumHeight(175);card.body.addWidget(stats)
+            stats=self.table(['Indicador','Valor','Contexto']);stats.setMinimumHeight(250);stats.setMaximumHeight(430);card.body.addWidget(stats)
             chart=CandleChart();card.body.addWidget(chart,1)
             legend=label('','muted');legend.setWordWrap(True);card.body.addWidget(legend)
             left.addWidget(card,1);self.analysis_widgets[symbol]=(price,stats,chart,legend)
@@ -920,7 +920,16 @@ class StudioWindow(QMainWindow):
         for symbol,(price,table,chart,legend) in self.analysis_widgets.items():
             info=(v.get('symbols') or {}).get(symbol) or {};frames=info.get('frames') or {};values=frames.get(tf) or {};price.setText(number(info.get('bid')))
             keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo','sma20','wma20','hma20','ichimoku_tenkan','ichimoku_kijun','ichimoku_span_a_current','ichimoku_span_b_current','parabolic_sar','supertrend','supertrend_direction','zigzag_last_confirmed','donchian_high20','donchian_low20','keltner_upper','keltner_lower','chandelier_buy_stop','chandelier_sell_stop','cmf20','accumulation_distribution','demarker14','pivot_pp_previous','fvg_last_three','volume_profile_poc_estimated'];rows=[]
-            for key in keys:rows.append((key,[INDICATORS.get(key,key.upper()),number(values.get(key)),tf],{}))
+            # Data-driven table: show every available indicator in the
+            # engine's actual timeframe snapshot, not a three-row viewport.
+            available=[k for k,v in values.items() if isinstance(v,(int,float)) and not isinstance(v,bool) and v is not None]
+            ordered=list(dict.fromkeys([*keys,*sorted(available)]))
+            for key in ordered:
+                value=values.get(key)
+                if value is None:continue
+                if not isinstance(value,(int,float)):continue
+                rows.append((key,[INDICATORS.get(key,key.replace('_',' ').upper()),number(value),tf],{}))
+            self.analysis_widgets[symbol][3].setToolTip(str(len(rows))+' indicadores numéricos disponibles del motor en '+tf)
             table.update_rows(rows)
             bars=(info.get('bars_by_timeframe') or {}).get(tf) or []
             last=bars[-1]['time'] if bars else None
@@ -965,9 +974,14 @@ class StudioWindow(QMainWindow):
         for symbol,state in (v.get('status') or {}).items():
             plan=((v.get('symbols') or {}).get(symbol) or {}).get('preopen_plan')
             regime=(((v.get('symbols') or {}).get(symbol) or {}).get('adaptive_regime') or {})
-            candidates=', '.join(regime.get('candidates') or [])
-            regime_text='\nAkira Adaptativa: '+str(regime.get('regime') or 'Sin datos')+(('\nHipótesis: '+candidates) if candidates else '')+'\nEstado: descripción, no validación de rentabilidad'
-            sections.append(symbol+'\n'+str(state.get('detail') or '')+regime_text+('\n\n'+preopen_text(plan) if plan else ''))
+            candidates=', '.join(str(item).replace('_',' ').lower() for item in (regime.get('candidates') or []))
+            readable=(str(state.get('detail') or 'Esperando lectura del mercado.')
+                      .replace('RUNNER_CONTINUATION','Continuación con runner')
+                      .replace('runner_continuation','continuación con gestión de posición')
+                      .replace('PREOPEN_AI','preparación de apertura')
+                      .replace('_',' '))
+            regime_text='\nContexto de mercado: '+str(regime.get('regime') or 'Sin datos').replace('_',' ').lower()+(('\nEscenarios vigilados: '+candidates) if candidates else '')+'\nEstos escenarios no garantizan beneficios.'
+            sections.append(symbol+' · Motivo de la decisión\n'+readable[:1500]+regime_text+('\n\n'+preopen_text(plan) if plan else ''))
         for event in v.get('event_reviews',[])[-5:]:
             decisions='; '.join(s+': '+str(r.get('detail') or r.get('state') or '') for s,r in event.get('symbols_reviewed',{}).items())
             sections.append('Evento: '+event['title']+'\n'+decisions)
@@ -979,7 +993,7 @@ class StudioWindow(QMainWindow):
         v=self.controller.view;sources=dict((v.get('research') or {}).get('sources') or {});rows=[];analysis=[];query=self.source_search.text().casefold()
         sources['mt5']={'fresh':bool(v.get('connected')),'enabled':True,'detail':'Cotizaciones y especificaciones recibidas del terminal.' if v.get('connected') else 'No hay conexión con el terminal.','age_seconds':0 if v.get('connected') else None}
         for name,row in sorted(sources.items(),key=lambda pair:pair[0]):
-            if row.get('display_hidden'):continue
+            if row.get('display_hidden') or name.startswith('coinglass'):continue
             title,state,detail=source_presentation(name,row);age=number(row.get('age_seconds'),1)+' s' if row.get('age_seconds') is not None else '—'
             data={**row,'title':title,'presentation_state':state,'presentation_detail':detail}
             from studio_presenter import next_query
@@ -1461,9 +1475,9 @@ class StudioWindow(QMainWindow):
 
     def check_sources(self):
         def check():
-            from providers import coinglass_auth_probe,youtube_search
+            from providers import youtube_search
             result={}
-            for name,fn in [('CoinGlass',lambda:coinglass_auth_probe(force=True)),('YouTube',lambda:{'search_results':len(youtube_search('Bitcoin technical analysis',cache_seconds=0)),'transcription_verified':False})]:
+            for name,fn in [('YouTube',lambda:{'search_results':len(youtube_search('Bitcoin technical analysis',cache_seconds=0)),'transcription_verified':False})]:
                 try:result[name]=fn()
                 except Exception as error:result[name]={'error':str(error)}
             return result

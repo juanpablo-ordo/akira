@@ -734,8 +734,9 @@ class ContextWorker:
         if name=='local_ai':return bool(r.get('local_model',True) and r.get('local_ai_summary',True))
         if name=='model':return bool(r.get('local_model',True))
         if name=='cloud':return bool(r.get('cloud',False) and self.cfg.get('assistant',{}).get('cloud',False) and self.cfg.get('assistant',{}).get('cloud_optional',True))
-        if name.startswith('coinglass_heatmap:'):return bool(r.get('coinglass',False))
-        if name.startswith('coinglass:') and r.get('derivatives_provider','public')!='coinglass':return False
+        # CoinGlass is retired for all new research tasks. Older rows remain
+        # in the audit history but cannot influence a fresh decision.
+        if name.startswith('coinglass'):return False
         flags={'news':'investing','youtube':'youtube','macro':'global_news','global_news':'global_news','venue':'global_markets','coinglass':'coinglass','derivatives':'coinglass_public_fallback','technical':'technical_search'}
         return bool(r.get(flags.get(name.split(':')[0],''),True))
 
@@ -765,13 +766,6 @@ class ContextWorker:
                 tq=('Bitcoin BTC technical analysis support resistance today' if s.startswith('BTC')
                     else 'gold XAUUSD technical analysis support resistance today')
                 jobs['technical:'+s]=(r.get('technical_search_seconds',45),lambda query=tq:market_search(query,limit=10))
-            if s.startswith('BTC') and self.source_enabled('coinglass_heatmap:'+s):
-                from coinglass_heatmap import fetch_heatmap
-                jobs['coinglass_heatmap:'+s]=(max(300,float(r['coinglass_refresh_seconds'])),fetch_heatmap)
-            if self.source_enabled('coinglass:'+s):
-                # Gold derivatives are only accepted when the provider supports them.
-                asset='BTC' if s.startswith('BTC') else 'XAU'
-                jobs['coinglass:'+s]=(r['coinglass_refresh_seconds'],lambda a=asset:coinglass_bundle(a))
             if s.startswith('BTC') and r.get('coinglass_public_fallback',True):
                 interval=max(30,float(r.get('public_derivatives_seconds',60)))
                 if (self.cfg.get('desktop') or {}).get('performance_profile')=='Ahorro de energía':interval=max(120,interval)

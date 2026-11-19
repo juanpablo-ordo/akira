@@ -41,6 +41,7 @@ def source_presentation(name,row):
     if prefix=='local_ai' and suffix:title='AKIRA · '+('Oro' if suffix.startswith('XAU') else 'Bitcoin' if suffix.startswith('BTC') else suffix)
     if prefix=='global_news':title=suffix+' · noticias'
     if prefix=='technical_review':title='Resumen técnico · '+suffix
+    if prefix=='preopen_ai':title='Preparación de la próxima apertura · '+suffix
     error=public_status(row.get('error') or '');detail=public_status(row.get('detail') or '')
     code=str(row.get('state') or (row.get('data') or {}).get('state') or '').upper()
     if row.get('enabled') is not False and row.get('fallback_sources'):
