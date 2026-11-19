@@ -96,13 +96,24 @@ class ProvidersAndBudgets(unittest.TestCase):
  def test_source_statuses_remain_distinct(self):
   from urllib.error import HTTPError
   for status,kind in [(401,'AUTH_ERROR'),(403,'ACCESS_DENIED'),(429,'QUOTA_EXCEEDED'),(500,'HTTP_ERROR')]:self.assertEqual(classify_failure(HTTPError('https://x',status,'bad',{},None))['kind'],kind)
- def test_automatic_youtube_is_disabled_even_with_old_opt_in(self):
+ def test_automatic_youtube_requires_two_explicit_permissions(self):
   import tempfile
   from research import ContextWorker
   self.cfg['research']['youtube']=True
+  self.cfg.setdefault('extensions',{}).setdefault('youtube',{})['enabled']=True
   with tempfile.TemporaryDirectory() as root:
    w=ContextWorker(self.cfg,root)
-   try:self.assertFalse(w.source_enabled('youtube'));self.assertFalse(w.source_enabled('strategy_reference'))
+   try:
+    # A real user's explicit source permission enables educational research.
+    self.assertTrue(w.source_enabled('youtube'))
+    self.assertTrue(w.source_enabled('strategy_reference'))
+    self.cfg['extensions']['youtube']['enabled']=False
+    self.assertFalse(w.source_enabled('youtube'))
+    self.assertFalse(w.source_enabled('strategy_reference'))
+    self.cfg['extensions']['youtube']['enabled']=True
+    self.cfg['research']['youtube']=False
+    self.assertFalse(w.source_enabled('youtube'))
+    self.assertFalse(w.source_enabled('strategy_reference'))
    finally:w.close()
 class RiskTimeRunner(unittest.TestCase):
  def test_risk_display_and_engine_arithmetic_agree(self):

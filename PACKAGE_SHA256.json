@@ -379,7 +379,7 @@
   "tests/test_akira_logo_avatar_assets.py": "b949ec94ed587c62b39ce40cf47b76d6012ae977119363f5d2837ae4a69e4e32",
   "tests/test_akira_studio.py": "06bd1905bfef760bc0a8336b0f133c276f0fd43ca5f559b305f15e3bdc0927b4",
   "tests/test_chat_sources_rev18.py": "3c95c0da757b181fc012489841dcb1ebb2268fd001902e07cd2cab4e5e5b4d01",
-  "tests/test_core_rev19.py": "aaabe4481ce0d3522143d29b7c690af83dea9adfa7d765b0c23a9d269eb20edb",
+  "tests/test_core_rev19.py": "42fcc17247f50c71a5f62022cbaffe76f573353d40710f538400f25095b59b90",
   "tests/test_desktop_flow.py": "d90fd5710f6380e7f6856407efa19e1f0b719d2f24fe6b1f59881c0901fc3f7a",
   "tests/test_engine.py": "17aa6c71eb3f261a4597393d8cab1c487063e667925a8378596ededb220dfc49",
   "tests/test_entry_safety_rev18.py": "b6c5e68112c7820040391201a49b7792416f304e1ce6126ee6309850a9a750c2",
