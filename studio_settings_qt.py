@@ -312,7 +312,7 @@ class SettingsPanel(QWidget):
         self.hide_revealed_keys()
         entry=self.keys[name];entry.setReadOnly(True);entry.setEchoMode(QLineEdit.EchoMode.Normal)
         entry.setText(value);self.revealed_keys.add(name)
-        self.window.privacy_timer.start(25_000)
+        # Credential reveal stays open until the user locks the session.
     def hide_revealed_keys(self):
         for name in self.revealed_keys:
             entry=self.keys[name]

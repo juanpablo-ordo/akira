@@ -99,9 +99,9 @@ class StudioWindow(QMainWindow):
         self.tr=Translator(folder,self.cfg['studio']['language_ui'],self.cfg['studio'].get('language_pack',''));self.page_index=0;self.private=bool(self.cfg['desktop'].get('privacy',True))
         from privacy_guard import PrivacyPin
         self.privacy_pin=PrivacyPin(self.controller.folder/'state'/'privacy_pin.json')
-        self.sensitive_field=None;self._revealed_identity=None
+        self.sensitive_field=None;self._revealed_identity=None;self._privacy_unlocked=False
         self.mobile=None
-        self.privacy_timer=QTimer(self);self.privacy_timer.setSingleShot(True);self.privacy_timer.timeout.connect(self.hide_sensitive)
+        self.privacy_timer=QTimer(self);self.privacy_timer.setSingleShot(True)  # No automatic PIN timeout
         # Owned, single-shot callbacks cannot outlive this native Qt window.
         self.chat_reaction_timer=QTimer(self);self.chat_reaction_timer.setSingleShot(True)
         self.chat_reaction_timer.timeout.connect(self.finish_chat_reaction)
@@ -733,7 +733,12 @@ class StudioWindow(QMainWindow):
         account_label={'login':str(a.get('login') or 'Sin cuenta'),
                        'server':str(a.get('server') or 'Sin servidor'),
                        'amounts':'Libre '+number(a.get('margin_free'))+' '+currency}
-        self.account_badge.setText(account_label.get(self.sensitive_field,'Cuenta privada'))
+        if self._privacy_unlocked:
+            self.account_badge.setText('Cuenta '+account_label['login']+' · '+account_label['server'])
+            self.account_badge.setToolTip('Desbloqueado: pulsa para bloquear manualmente')
+        else:
+            self.account_badge.setText('Cuenta privada')
+            self.account_badge.setToolTip('Desbloquea toda la información con tu PIN')
         for key,metric in self.metrics.items():
             value=a.get(key) if key in a else view.get(key)
             metric.value.setText(('••••••' if self.private else number(value)+' '+currency) if key!='cycle_ms' else number(value,0)+' ms')
@@ -1128,21 +1133,17 @@ class StudioWindow(QMainWindow):
             except Exception as error:self.show_error(str(error))
     def pause(self):self.controller.request({'action':'pause','paused':not self.controller.view.get('paused',False)})
     def toggle_privacy(self):
-        if self.sensitive_field:
+        if self._privacy_unlocked:
             self.hide_sensitive()
-            return
-        choices={'Número de cuenta':'login','Servidor del bróker':'server','Importes':'amounts'}
-        name,ok=QInputDialog.getItem(self,'Privacidad','Dato que quieres consultar',list(choices),0,False)
-        if not ok or not self.authorize_sensitive(name):return
-        account=self.controller.view.get('account') or {}
-        self.sensitive_field=choices[name];self._revealed_identity=(account.get('login'),account.get('server'))
-        if self.sensitive_field=='amounts':self.private=False
-        self.privacy_timer.start(25_000)
-        self.render(self.controller.view)
+        elif self.authorize_sensitive('Desbloquear información de la cuenta'):
+            self.render(self.controller.view)
     def privacy_activation(self,state):
-        if state!=Qt.ApplicationState.ApplicationActive:self.hide_sensitive()
+        # Losing focus or switching tabs never changes the authenticated session.
+        pass
     def hide_sensitive(self,redraw=True):
-        changed=self.sensitive_field is not None
+        changed=self._privacy_unlocked or self.sensitive_field is not None
+        self._privacy_unlocked=False
+        self.privacy_timer.stop()
         self.sensitive_field=None;self._revealed_identity=None
         self.private=bool(self.cfg['desktop'].get('privacy',True))
         if hasattr(self,'settings_panel'):self.settings_panel.hide_revealed_keys()
@@ -1160,14 +1161,23 @@ class StudioWindow(QMainWindow):
         except (OSError,ValueError,PermissionError) as error:self.show_error(str(error));return False
         return True
     def authorize_sensitive(self,field):
-        if not self.privacy_pin.configured():return self.enroll_privacy_pin()
-        pin,ok=QInputDialog.getText(self,'Privacidad',field+' · Ingresa tu PIN',QLineEdit.EchoMode.Password)
-        if not ok:return False
-        try:
-            if self.privacy_pin.verify(pin):return True
-            self.show_error('El PIN no coincide.')
-        except (OSError,ValueError,PermissionError) as error:self.show_error(str(error))
-        return False
+        if self._privacy_unlocked:return True
+        if not self.privacy_pin.configured():
+            accepted=self.enroll_privacy_pin()
+        else:
+            pin,ok=QInputDialog.getText(self,'Privacidad',field+' · Ingresa tu PIN',QLineEdit.EchoMode.Password)
+            if not ok:return False
+            try:
+                accepted=bool(self.privacy_pin.verify(pin))
+                if not accepted:self.show_error('El PIN no coincide.')
+            except (OSError,ValueError,PermissionError) as error:self.show_error(str(error));return False
+        if not accepted:return False
+        self._privacy_unlocked=True
+        account=self.controller.view.get('account') or {}
+        self._revealed_identity=(account.get('login'),account.get('server'))
+        self.sensitive_field='all'
+        self.private=False
+        return True
     def reset_privacy_pin(self):
         if not self.privacy_pin.configured():self.enroll_privacy_pin();return
         from privacy_guard import windows_identity_verified
@@ -1225,8 +1235,7 @@ class StudioWindow(QMainWindow):
                 x=min(max(area.left(),center.x()-width//2),area.right()-width+1)
                 y=min(max(area.top(),center.y()-height//2),area.bottom()-height+1)
                 obj.move(x,y)
-        if obj is self and event.type()==QEvent.Type.WindowStateChange and self.isMinimized():
-            self.hide_sensitive()
+        # Only manual lock or a different MT5 account hides this PIN session.
         return super().eventFilter(obj,event)
     def export_diagnostic(self):
         path,_=QFileDialog.getSaveFileName(self,self.text('DESCARGAR DIAGNÓSTICO'),'AKIRA_diagnostico.json','JSON (*.json)')
