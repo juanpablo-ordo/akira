@@ -20,6 +20,11 @@ class UserFeedbackQt(unittest.TestCase):
                 self.assertFalse(hasattr(w,'home_notices'))
                 self.assertTrue(w.system_connectivity.text())
                 self.assertTrue(w.resource_connectivity.text())
+                self.assertEqual(w.mt5_retry.text(),'')
+                self.assertEqual(w.analysis_refresh.text(),'')
+                self.assertIn('MT5',w.analysis_refresh.accessibleName())
+                self.assertEqual(w.settings_panel.use_mt5_button.text(),'')
+                self.assertIn('MT5',w.settings_panel.use_mt5_button.accessibleName())
                 from studio_widgets import SignalWave
                 for wave in w.findChildren(SignalWave):
                     self.assertLessEqual(wave.timer.interval(),33)

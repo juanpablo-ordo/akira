@@ -129,7 +129,10 @@ class StudioWindow(QMainWindow):
         self.mode_button=self.btn('ACTIVAR OPERATIVA',self.activate_execution,'','shield');self.mode_row.addWidget(self.mode_button);main_box.addLayout(self.mode_row)
         self.mt5_banner=QWidget();connection_row=QHBoxLayout(self.mt5_banner);connection_row.setContentsMargins(0,0,0,0)
         self.mt5_detail=label('','muted');self.mt5_detail.setWordWrap(True);connection_row.addWidget(self.mt5_detail,1)
-        self.mt5_retry=self.btn('RECONECTAR MT5',self.controller.reconnect_mt5,glyph='bolt');connection_row.addWidget(self.mt5_retry);main_box.addWidget(self.mt5_banner)
+        self.mt5_retry=button('',self.controller.reconnect_mt5,glyph='refresh')
+        self.mt5_retry.setFixedWidth(45);self.mt5_retry.setToolTip('Detectar de nuevo el terminal MT5')
+        self.mt5_retry.setAccessibleName('Detectar de nuevo el terminal MT5')
+        connection_row.addWidget(self.mt5_retry);main_box.addWidget(self.mt5_banner)
         self.book=QStackedWidget();main_box.addWidget(self.book,1)
         self.tables=[];self.pages=[];self.build_home();self.build_pending();self.build_account();self.build_analysis();self.build_sources();self.build_chat();self.build_settings();self.build_terminal()
         self.wheel_guard=WheelGuard(self);self.wheel_guard.watch(self)
@@ -289,7 +292,11 @@ class StudioWindow(QMainWindow):
         self.analysis_risk_status=label('Riesgo en espera de datos verificados','muted')
         self.analysis_risk_status.setWordWrap(True);control.body.addWidget(self.analysis_risk_status)
         action_row=QHBoxLayout()
-        action_row.addWidget(self.btn('VOLVER A DETECTAR',self.controller.reconnect_mt5,glyph='bolt'))
+        self.analysis_refresh=button('',self.controller.reconnect_mt5,glyph='refresh')
+        self.analysis_refresh.setFixedWidth(45)
+        self.analysis_refresh.setToolTip('Volver a detectar la cuenta de MT5')
+        self.analysis_refresh.setAccessibleName('Volver a detectar la cuenta de MT5')
+        action_row.addWidget(self.analysis_refresh)
         action_row.addWidget(self.btn('CAMBIAR LÍMITES',lambda:self.open_settings(1),glyph='shield'))
         control.body.addLayout(action_row);layout.addWidget(control)
         activity=QHBoxLayout();self.asset_activity_labels={}
@@ -690,9 +697,9 @@ class StudioWindow(QMainWindow):
             self.chat_progress.setText('');self.settings_panel.message.setText('IA reparada y comprobada.' if data.get('ready') else human(data.get('detail')))
             if data.get('ready'):
                 self.director.publish('happy','IA reparada',force=True);self._avatar_reaction_until=time.monotonic()+6;dialog,box=self.dialog_text('¡La IA se ha reparado!','Akira generó una respuesta real y ya está lista para conversar.',620)
-                from PySide6.QtGui import QImage,QPixmap
-                from avatar_animation import MotionSprites
-                im=MotionSprites(self.asset_root).image(14,110,110);photo=QImage(im.tobytes(),im.width,im.height,im.width*4,QImage.Format.Format_RGBA8888).copy();sticker=QLabel();sticker.setPixmap(QPixmap.fromImage(photo));sticker.setAlignment(Qt.AlignmentFlag.AlignCenter);dialog.layout().insertWidget(1,sticker)
+                sticker=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False),dialog)
+                sticker.neural_visual=True;sticker.setFixedSize(110,110)
+                dialog.layout().insertWidget(1,sticker)
             else:self.information('Reparación pendiente',human(data.get('detail') or data.get('error') or 'No se confirmó la reparación. Revisa la conexión y vuelve a intentarlo.'))
         elif kind=='knowledge':self.controller.notify('Biblioteca de conversación',str(data.get('detail') or data.get('stage') or 'Estado actualizado'))
         elif kind=='attachment':
@@ -757,10 +764,13 @@ class StudioWindow(QMainWindow):
             if health.get('last_error'):summary.append('Último error IA: '+health['last_error'])
         summary.append('● MT5 conectado' if connected else '◷ Esperando conexión con MT5')
         summary.extend(symbol+' · '+human(state.get('state') or 'Esperando datos') for symbol,state in (view.get('status') or {}).items())
-        for symbol,row in view.get('ai_execution_review',{}).items():
-            summary.append(symbol+' · IA orden: '+row['state']+' · '+str(row.get('provider') or row.get('phase') or 'cola')+' · '+str(row['elapsed_seconds'])+' s. '+row['reason'])
+        # Full exact AI order states remain in the order/evidence workspace.
+        # Do not put QUEUED/CHANGED_EVIDENCE or provider internals in the
+        # small system-state card, where they look like unexplained errors.
+        ai_details=[symbol+' · '+human(row.get('reason') or row.get('state') or 'Revisión en curso')
+                    for symbol,row in (view.get('ai_execution_review') or {}).items()]
         learning=view.get('learning_status') or {}
-        full_detail='\n\n'.join(summary+(['Aprendizaje: '+str(learning.get('detail',''))] if learning else []))
+        full_detail='\n\n'.join(summary+ai_details+(['Aprendizaje: '+str(learning.get('detail',''))] if learning else []))
         if learning:summary.append('Aprendizaje: '+str(learning.get('confirmed_closures',0))+' cierres · '+str(learning.get('validated_models',0))+' modelos validados.')
         self.system_text.setText('\n'.join(summary));self.system_text.setToolTip(full_detail)
         for symbol,(price,status,chart) in (self.home_markets.items() if self.page_index==0 else []):
@@ -925,10 +935,15 @@ class StudioWindow(QMainWindow):
             keys=['ema9','ema21','ema50','ema200','rsi','macd','adx','atr','stochastic','williams','cci','mfi','roc','obv_slope','volume_ratio','vwap','bos','sweep','fib382','fib50','fib618','range_hi','range_lo','sma20','wma20','hma20','ichimoku_tenkan','ichimoku_kijun','ichimoku_span_a_current','ichimoku_span_b_current','parabolic_sar','supertrend','supertrend_direction','zigzag_last_confirmed','donchian_high20','donchian_low20','keltner_upper','keltner_lower','chandelier_buy_stop','chandelier_sell_stop','cmf20','accumulation_distribution','demarker14','pivot_pp_previous','fvg_last_three','volume_profile_poc_estimated'];rows=[]
             # Data-driven table: show every available indicator in the
             # engine's actual timeframe snapshot, not a three-row viewport.
-            available=[k for k,v in values.items() if isinstance(v,(int,float)) and not isinstance(v,bool) and v is not None]
+            extra=values.get('extra') or {}
+            if not isinstance(extra,dict):extra={}
+            observed={**extra,**values}
+            available=[k for k,value in observed.items()
+                       if isinstance(value,(int,float)) and not isinstance(value,bool)
+                       and value is not None and k not in ('timestamp','time','last_bar','quote_time')]
             ordered=list(dict.fromkeys([*keys,*sorted(available)]))
             for key in ordered:
-                value=values.get(key)
+                value=observed.get(key)
                 if value is None:continue
                 if not isinstance(value,(int,float)):continue
                 rows.append((key,[INDICATORS.get(key,key.replace('_',' ').upper()),number(value),tf],{}))
@@ -996,7 +1011,7 @@ class StudioWindow(QMainWindow):
         v=self.controller.view;sources=dict((v.get('research') or {}).get('sources') or {});rows=[];analysis=[];query=self.source_search.text().casefold()
         sources['mt5']={'fresh':bool(v.get('connected')),'enabled':True,'detail':'Cotizaciones y especificaciones recibidas del terminal.' if v.get('connected') else 'No hay conexión con el terminal.','age_seconds':0 if v.get('connected') else None}
         for name,row in sorted(sources.items(),key=lambda pair:pair[0]):
-            if row.get('display_hidden') or name.startswith('coinglass'):continue
+            if row.get('display_hidden') or name.startswith(('coinglass','preopen_ai:')):continue
             title,state,detail=source_presentation(name,row);age=number(row.get('age_seconds'),1)+' s' if row.get('age_seconds') is not None else '—'
             data={**row,'title':title,'presentation_state':state,'presentation_detail':detail}
             from studio_presenter import next_query

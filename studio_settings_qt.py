@@ -115,7 +115,12 @@ class SettingsPanel(QWidget):
         card=self.card(0,'OPERACIÓN','bolt')
         self.field(card,'operation_profile','Perfil de cuenta',(('AUTO','Detectar desde MT5'),('DEMO_EXPERIMENT','DEMO · Experimentación controlada'),('REAL_CAPITAL','REAL · Gestión de capital'),('HISTORICAL','Simulación histórica · sin envíos')),help='Demo permite experimentar con las reglas opcionales. MT5 debe identificar la cuenta como demo. Los precios, el volumen, el margen y la aceptación del bróker siempre se comprueban.')
         self.mt5_status=label('Esperando la cuenta abierta en MetaTrader 5.','muted');self.mt5_status.setWordWrap(True);card.body.addWidget(self.mt5_status)
-        self.use_mt5_button=self.add_button(card,'VOLVER A DETECTAR',self.controller.reconnect_mt5,'','bolt')
+        from studio_widgets import icon
+        self.use_mt5_button=button('',self.controller.reconnect_mt5,glyph='refresh')
+        self.use_mt5_button.setFixedWidth(45)
+        self.use_mt5_button.setToolTip('Volver a detectar la cuenta MT5')
+        self.use_mt5_button.setAccessibleName('Volver a detectar la cuenta MT5')
+        card.body.addWidget(self.use_mt5_button)
         self.field(card,'execution.pending_only','Permitir entradas directas',((True,'Desactivadas · solo nuevas pendientes'),(False,'Activadas · permite entradas directas')),
                    help='La selección se aplica a nuevas entradas a mercado. La gestión de posiciones propias abiertas conserva sus protecciones.')
         note=label('Cada nueva exposición requiere dictamen neuronal vigente, validación de riesgo y comprobación en MetaTrader 5.','muted');note.setWordWrap(True);card.body.addWidget(note)
