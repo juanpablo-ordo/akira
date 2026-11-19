@@ -267,7 +267,7 @@
   "research": {
     "enabled": true,
     "refresh_minutes": 2.0,
-    "youtube": true,
+    "youtube": false,
     "investing": true,
     "coinglass": false,
     "cloud": false,
@@ -594,7 +594,7 @@
   },
   "extensions": {
     "youtube": {
-      "enabled": true
+      "enabled": false
     }
   },
   "follow_terminal_account": true
