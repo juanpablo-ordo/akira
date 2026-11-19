@@ -1560,7 +1560,7 @@ class StudioWindow(QMainWindow):
         self.voice_language.setCurrentIndex(max(0,self.voice_language.findData(configured)))
         form.addRow(self.text('Idioma de reconocimiento'),self.voice_language)
         self.voice_rate=QDoubleSpinBox();self.voice_rate.setDecimals(0);self.voice_rate.setRange(80,300)
-        self.voice_rate.setValue(self.cfg['voice'].get('rate',180))
+        self.voice_rate.setSuffix(' palabras/min');self.voice_rate.setValue(self.cfg['voice'].get('rate',145))
         self.voice_volume=QDoubleSpinBox();self.voice_volume.setDecimals(0);self.voice_volume.setRange(0,100)
         self.voice_volume.setSuffix(' %');self.voice_volume.setValue(100*self.cfg['voice'].get('volume',.8))
         form.addRow(self.text('Velocidad de voz'),self.voice_rate);form.addRow(self.text('Volumen de voz'),self.voice_volume)
@@ -1568,7 +1568,7 @@ class StudioWindow(QMainWindow):
         self._effective_audio={}
         for selector in (self.voice_input,self.voice_output,self.voice_selector,self.voice_language):
             selector.currentIndexChanged.connect(self.apply_call_audio)
-        for editor in (self.voice_rate,self.voice_volume):editor.editingFinished.connect(self.apply_call_audio)
+        for editor in (self.voice_rate,self.voice_volume):editor.valueChanged.connect(self.apply_call_audio)
         layout.addWidget(self.btn('Guardar voz y llamada',self.save_call_audio))
         row=FlowLayout();row.addWidget(self.btn('BUSCAR VOCES',lambda:self.load_voices(True)));row.addWidget(self.btn('DESCARGAR VOZ',self.download_voice));row.addWidget(self.btn('DESCARGAR TODAS LAS VOCES',self.download_all_voices));row.addWidget(self.btn('CANCELAR DESCARGA',self.cancel_voice_download));layout.addLayout(row)
         layout.addWidget(self.btn('PROBAR VOZ',self.preview_voice))
@@ -1581,8 +1581,13 @@ class StudioWindow(QMainWindow):
         note=label('Conversación hablada. Tu micrófono no se publica ni se guarda en el chat. Pulsa Interrumpir para cortar la respuesta y volver a hablar.','muted');note.setWordWrap(True);layout.addWidget(note)
         row=FlowLayout()
         self.call_buttons={}
+        call_icons={'INICIAR LLAMADA':'phone','SILENCIAR':'mic-off',
+                    'REANUDAR':'mic','INTERRUMPIR':'pause','FINALIZAR LLAMADA':'stop'}
         for text,callback in [('INICIAR LLAMADA',self.start_call),('SILENCIAR',lambda:self.controller.voice.pause() if self.controller.voice else None),('REANUDAR',lambda:self.controller.voice.resume() if self.controller.voice else None),('INTERRUMPIR',self.controller.cancel_call),('FINALIZAR LLAMADA',self.stop_call)]:
-            widget=self.btn(text,callback);self.call_buttons[text]=widget;row.addWidget(widget)
+            widget=self.btn(text,callback,glyph=call_icons[text])
+            widget.setText('');widget.setAccessibleName(text);widget.setToolTip(text)
+            widget.setFixedWidth(46);widget.setIconSize(QSize(23,23))
+            self.call_buttons[text]=widget;row.addWidget(widget)
         layout.addLayout(row)
         dialog.finished.connect(lambda _:self.stop_call());dialog.show();self.update_call_controls();self.load_voices(False)
     def update_call_controls(self):
@@ -1627,7 +1632,11 @@ class StudioWindow(QMainWindow):
         language=self.cfg['studio'].get('language_voice_out','es').split('-')[0]
         from voice_session import voice_matches_language
         for row in data['voices']:
-            if voice_matches_language(row,language):self.voice_selector.addItem(row['name']+(' · instalada' if row['installed'] else ' · descargar'),row)
+            supported=voice_matches_language(row,language)
+            if supported or row.get('installed'):
+                suffix=(' · instalada' if row['installed'] else ' · descargar')
+                if not supported:suffix+=' · otro idioma'
+                self.voice_selector.addItem(row['name']+suffix,row)
         selected_index=-1
         for i in range(self.voice_selector.count()):
             if self.voice_selector.itemData(i)['id']==selected_voice:selected_index=i;break
@@ -1650,6 +1659,11 @@ class StudioWindow(QMainWindow):
         if not voice or voice.stop_event.is_set():return
         chosen=self.voice_selector.currentData()
         voice.configure_audio(**self.call_audio_options(),voice=chosen if chosen and chosen.get('installed') else None)
+        if hasattr(self,'effective_audio'):
+            routes=' · '.join(f'{self.text(k)}: {v}' for k,v in self._effective_audio.items())
+            self.effective_audio.setText((routes+' · ' if routes else '')+
+                'Velocidad '+str(int(self.voice_rate.value()))+' palabras/min · Volumen '+
+                str(int(self.voice_volume.value()))+' %. Se aplica a la próxima frase.')
     def save_call_audio(self):
         draft=copy.deepcopy(self.cfg);draft['voice'].update(self.call_audio_options())
         draft['studio']['language_voice_in']=self.voice_language.currentData() or 'es'

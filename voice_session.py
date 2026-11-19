@@ -633,10 +633,17 @@ class VoiceSession:
       with sd.RawOutputStream(samplerate=output_rate,channels=output_channels,dtype=dtype,device=device) as output:
        self.event('audio_route',direction='output',selected=selected,
                   effective=audio_device_name(sd,device,'output'),rate=output_rate,channels=output_channels)
-       while not cancelled():
-        raw=wav.readframes(max(1,int(rate*.1)))
+       # Convert at most once per utterance, not every 100 ms in the
+       # PortAudio write loop. Repeated NumPy interpolation caused gaps.
+       source_audio=wav.readframes(wav.getnframes())
+       playback_audio=(source_audio if (rate,channels)==(output_rate,output_channels) else
+                       convert_playback(source_audio,dtype,rate,output_rate,channels,output_channels))
+       byte_step=max(width*output_channels,int(output_rate*.15)*width*output_channels)
+       for offset in range(0,len(playback_audio),byte_step):
+        if cancelled():break
+        raw=playback_audio[offset:offset+byte_step]
         if not raw:break
-        output.write(raw if (rate,channels)==(output_rate,output_channels) else convert_playback(raw,dtype,rate,output_rate,channels,output_channels))
+        output.write(raw)
         if not playing:
          playing=True
          self.event('playback_start')

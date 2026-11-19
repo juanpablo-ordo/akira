@@ -231,7 +231,7 @@
   "default_config.json": "9f446573eaa47a2210a1d2b3e285174ba204c68921bcecf0bdb58d43787da93d",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "a19efb29fbf22abac3c4f764a7b9745fe4b876131dab0705de54da21829e1564",
+  "desktop_qt.py": "6d60c4d35cd7911729382e19b89a5bfe81b36f02f54b179005ed07be3ff6a2ed",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
   "docs/AKIRA_PLAN.md": "881f7e7e00494b5762c2c1a7a31a535380dc8e08dda9c517dafb099781658f45",
@@ -368,7 +368,7 @@
   "studio_settings_qt.py": "0e9e6eed0b4a718de43ecb0b7f8e0f59aa1eaa5d1a4180d3f6b6b1c211bafa9d",
   "studio_theme.py": "a2656c3306c23d4f26414a520bfeef0c2bfb7fc8ccbf19fe5d7d695baa135d27",
   "studio_translations.py": "704526333b3d55323d85cf581f5375f614270775da9301473b76d839ab0113d6",
-  "studio_widgets.py": "01602b20f821a464922123b884ac23a66dd9f06bd67cab94d6485dfb85bd5c6b",
+  "studio_widgets.py": "c65f223efa1338b514b2039ca942bb6313fb09a9c4da9892b968b6f1a6e97259",
   "tape.py": "943750f4e121bc32013bbc9bc0dcf96ddec5c3ab9061848de8e589b348ae1de1",
   "technical_indicator_extensions.py": "ef676280fcb3a2bde179832c32f8b3306387f7eefaa9b6267cf093d23e8b9f29",
   "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -525,7 +525,7 @@
   "video_vision.py": "761e938e011e3276d92eedbef9e7967d0a5304f98170977424490c8e39c8f9c5",
   "voice_akira.py": "3331bf82c82d80e1b6aa735cd9bf8ecfebf818fc2db244bfcf05bea5d4748d95",
   "voice_conversation.py": "5dd5649d4a6bc4b2f25f8bd32a10d810149fbbd2ac0d9feaeea0ef53cb5955f0",
-  "voice_session.py": "b47e3ea0106163327682d9ad375412d95087914dcbeb872a3829d458eb60cbd4",
+  "voice_session.py": "c12ed5c24d212892860b3d1aa60d064202df51a32bd00c91662febb4a904b10c",
   "web_facts.py": "b4e182d9687c25cc34d52fd56568f78aeeb6781e118336b27b6fd7b7fce913ae",
   "windows_identity.py": "12516c28395aaacba01368b0cbea587197e71ae19aa6ecdb1cdc28dc6cda3141",
   "windows_version.txt": "30684554c37c4776b6c6acda4732a4a70bf04988cde1da19ca4e80ca72a0e937",
@@ -534,5 +534,6 @@
   "docs/AKIRA_20_PAGINAS_CONTROL.md": "dee5a3840254b12ae63f1eb4fff7b553dbd7320c3bf56ea3ae88ce17764fa4c3",
   ".github/workflows/akira-android-0.3.yml": "e717eeffe60dd6c8c2b3a39d21c2a0567a8c6a32a050610a7c6a06610e088076",
   "tools/source_archive.py": "bda4f144944034f5500523950845cf2afb68f6246e19b19bfd968b7c86d524d8",
-  "tests/test_retired_sources_qa.py": "56de51946c8817f455e787b029b122f80539861c0f998156f02b7263e5e23f9a"
+  "tests/test_retired_sources_qa.py": "56de51946c8817f455e787b029b122f80539861c0f998156f02b7263e5e23f9a",
+  "tests/test_live_voice_controls.py": "8db32aba6f025579cd59b6f6506cfd142443e1716a6f4dde9fed5130a5a89da6"
 }

@@ -32,6 +32,14 @@ def icon(name,color='#00ddff',size=22):
         for y in (12,16,19):p.drawLine(8,y,16,y)
     elif name=='eye':
         p.drawEllipse(QRectF(2,6,20,12));p.drawEllipse(QRectF(9,9,6,6))
+    elif name in ('mic','mic-off'):
+        p.drawRoundedRect(QRectF(9,2,6,13),3,3);p.drawArc(QRectF(6,7,12,12),180*16,180*16)
+        p.drawLine(12,19,12,22);p.drawLine(8,22,16,22)
+        if name=='mic-off':p.drawLine(3,21,21,3)
+    elif name=='pause':
+        p.drawRect(QRectF(5,4,5,16));p.drawRect(QRectF(14,4,5,16))
+    elif name=='stop':
+        p.drawRoundedRect(QRectF(5,5,14,14),2,2)
     elif name=='phone':
         p.drawPolyline([QPointF(4,3),QPointF(8,2),QPointF(10,7),QPointF(7,10),QPointF(14,17),QPointF(17,14),QPointF(22,17),QPointF(21,21),QPointF(17,22),QPointF(9,17),QPointF(3,9),QPointF(4,3)])
     elif name=='chat':
