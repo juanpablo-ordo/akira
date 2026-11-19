@@ -89,9 +89,12 @@ class WorkerFieldTests(unittest.TestCase):
         cfg=load_config(raw);self.assertEqual(cfg['research']['derivatives_provider'],'public')
         jobs=self.worker.jobs_for({},{});self.assertNotIn('coinglass:BTCUSDm',jobs);self.assertNotIn('coinglass:XAUUSDm',jobs)
         self.assertEqual(jobs['derivatives:BTCUSDm'][0],120)
-    def test_manual_paid_choice_still_preserves_public_fallback(self):
+    def test_retired_paid_choice_still_preserves_public_fallback(self):
         self.cfg['research']['derivatives_provider']='coinglass'
-        jobs=self.worker.jobs_for({},{});self.assertIn('coinglass:BTCUSDm',jobs);self.assertIn('derivatives:BTCUSDm',jobs)
+        jobs=self.worker.jobs_for({},{})
+        self.assertNotIn('coinglass:BTCUSDm',jobs)
+        self.assertNotIn('coinglass_heatmap:BTCUSDm',jobs)
+        self.assertIn('derivatives:BTCUSDm',jobs)
     def test_video_opinion_does_not_become_an_entry_vote(self):
         row={'topic':'BTCUSDm','status':'analyzed','complete':True,'summary':json.dumps({'bias':1,'confidence':1,'source_complete':True})}
         self.worker.sources={'youtube':{'updated':self.now,'data':{'rows':[row]}}}

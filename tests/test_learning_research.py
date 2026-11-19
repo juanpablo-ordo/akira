@@ -73,7 +73,8 @@ class ResearchTests(unittest.TestCase):
         self.source('coinglass:BTCUSDm',{'funding':[{'close':.001}]})
         self.source('derivatives:BTCUSDm',{'premium':{'lastFundingRate':.002}})
         r=self.w.read();self.assertEqual(r['news'][0]['title'],'Dato actual')
-        self.assertEqual(r['coinglass']['BTCUSDm']['funding'][0]['close'],.001)
+        # Retired vendor data must never be fed into a new live analysis.
+        self.assertEqual(r['coinglass'],{})
         from assistant_akira import AkiraAssistant
         self.assertEqual(AkiraAssistant.compact({'research':r})['research']['derivatives']['BTCUSDm']['funding'],.002)
         self.now+=1000;r=self.w.read();self.assertEqual(r['news'],[]);self.assertEqual(r['coinglass'],{})
