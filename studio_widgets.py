@@ -6,7 +6,7 @@ from collections import OrderedDict
 from pathlib import Path
 from PySide6.QtCore import Qt,QRectF,QPointF,QTimer,QSize,QVariantAnimation
 from PySide6.QtGui import QColor,QPainter,QPen,QLinearGradient,QPainterPath,QPixmap,QImage,QFont,QIcon
-from PySide6.QtWidgets import QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QSizePolicy,QCheckBox,QStyledItemDelegate
+from PySide6.QtWidgets import QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QSizePolicy,QCheckBox,QStyledItemDelegate,QProgressBar
 
 INK={'bg':'#020c18','panel':'#041426','line':'#164762','cyan':'#00ddff','pink':'#ff2585','green':'#00e8b5','amber':'#ffc548','text':'#e8f3ff','muted':'#80acc9'}
 
@@ -94,7 +94,7 @@ class Card(QFrame):
             self.symbol=QLabel();self.symbol.setPixmap(icon(glyph,accent or INK['cyan']).pixmap(24,24));self.heading.addWidget(self.symbol)
         self.title=label(title,'cardTitle');self.heading.addWidget(self.title,1);self.body.addLayout(self.heading)
     def paintEvent(self,event):
-        super().paintEvent(event);p=QPainter(self);p.setPen(QPen(QColor(self.property('accent') or INK['cyan']),1));p.drawLine(10,0,36,0)
+        super().paintEvent(event) # No decorative stripe mistaken for a status
 
 class Metric(Card):
     def __init__(self,title,glyph,color=INK['cyan']):
@@ -111,7 +111,7 @@ class Metric(Card):
         action=QPushButton(title);action.setMinimumHeight(20);action.setMaximumHeight(22);action.setCursor(Qt.CursorShape.PointingHandCursor)
         action.setStyleSheet('font-size:11px;padding:1px 5px;');action.clicked.connect(callback);self.name_row.addWidget(action);return action
     def paintEvent(self,event):
-        super().paintEvent(event);p=QPainter(self);color=QColor(self.metric_color);color.setAlpha(24);gradient=QLinearGradient(0,0,65,self.height());gradient.setColorAt(0,color);color.setAlpha(1);gradient.setColorAt(1,color);p.fillRect(QRectF(1,1,62,max(1,self.height()-2)),gradient);p.setPen(QPen(QColor('#15415d'),.7));p.drawLine(64,1,64,self.height()-1)
+        super().paintEvent(event) # No fake left-side warning indicator
 
 class DataTable(QTableWidget):
     """Stable keys; changing ages must not reorder rows or lose the selection."""
@@ -283,7 +283,44 @@ class AvatarWidget(QWidget):
         self.update()
     def _draw(self):self.update()
     def _loading_ring(self):self.update()
+    def _neural_paint(self):
+        """Draw a transparent, state-dependent neural molecule, not a bitmap."""
+        p=QPainter(self)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        p.fillRect(self.rect(),Qt.GlobalColor.transparent)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        options=getattr(self.window(),'_visual_studio',{})
+        state=str(getattr(self,'name','idle'))
+        online=bool(getattr(self.director,'online',False))
+        speaking=bool(getattr(self.director,'playing',False))
+        base=QColor(options.get('secondary',INK['pink']) if speaking or state=='happy' else INK['amber'] if not online or state=='alert' else options.get('accent',INK['cyan']) if state in ('thinking','listening','analyzing') else INK['green'])
+        power=1.0 if speaking or getattr(self.director,'loading',False) or state in ('thinking','analyzing','listening') else .6
+        if not online:power=.3
+        phase=0.0 if self.reduce_motion else time.monotonic()*3.0
+        coords=((.28,.20),(.43,.14),(.59,.15),(.74,.24),(.19,.35),(.36,.32),
+                (.52,.33),(.67,.34),(.82,.41),(.16,.52),(.31,.49),(.46,.50),
+                (.64,.51),(.81,.59),(.25,.68),(.39,.68),(.55,.69),(.70,.71),
+                (.34,.83),(.50,.83),(.63,.83),(.50,.96))
+        length=max(1.,min(self.width()*.95,self.height()*.95))
+        left=(self.width()-length)/2;top=(self.height()-length)/2
+        nodes=[QPointF(left+x*length,top+y*length) for x,y in coords]
+        for i,node in enumerate(nodes):
+            for j in range(i+1,len(nodes)):
+                dx=coords[i][0]-coords[j][0];dy=coords[i][1]-coords[j][1]
+                if .010<dx*dx+dy*dy<.052 and (i+j)%4:
+                    glow=QColor(base);glow.setAlpha(max(12,int((22+80*(.5+.5*math.sin(phase+i*.4+j*.3)))*power)))
+                    p.setPen(QPen(glow,max(.65,length*.004)));p.drawLine(node,nodes[j])
+        p.setPen(Qt.PenStyle.NoPen)
+        for i,node in enumerate(nodes):
+            bright=power*(.6+.4*math.sin(phase-i*.57))
+            size=max(1.5,length*(.013+.005*bright))
+            halo=QColor(base);halo.setAlpha(max(8,int(48*bright)));p.setBrush(halo);p.drawEllipse(node,size*2.2,size*2.2)
+            dot=QColor(base);dot.setAlpha(max(28,int(205*bright)));p.setBrush(dot);p.drawEllipse(node,size,size)
+        p.end()
     def paintEvent(self,event):
+        if getattr(self,'neural_visual',False):
+            self._neural_paint();return
         if not hasattr(self,'selected'):return
         available=(max(1,self.width()-10),max(1,self.height()-10))
         # Dragging a window scales the cached pixmap in Qt. Decode/resample once
@@ -316,30 +353,62 @@ class AvatarWidget(QWidget):
 
 
 class SignalWave(QWidget):
+    """Native animated bars, with colors tied to verified assistant state."""
     def __init__(self,parent=None):
-        super().__init__(parent);self.setFixedHeight(32);self.saving=False;self.timer=QTimer(self);self.timer.setInterval(33);self.timer.setTimerType(Qt.TimerType.PreciseTimer);self.timer.timeout.connect(self.tick)
+        super().__init__(parent);self.setFixedHeight(32);self.saving=False
+        self.timer=QTimer(self);self.timer.setInterval(40)
+        self.timer.setTimerType(Qt.TimerType.PreciseTimer);self.timer.timeout.connect(self.tick)
     def set_saving(self,saving):
         self.saving=bool(saving)
         if self.saving or not self.isVisible():self.timer.stop()
         else:
             profile=getattr(self.window(),'_visual_studio_profile','Equilibrado')
-            self.timer.setInterval(16 if profile=='Rendimiento' else 33 if profile=='Equilibrado' else 100)
-            self.timer.start()
+            self.timer.setInterval(30 if profile=='Rendimiento' else 40);self.timer.start()
         self.update()
     def showEvent(self,event):
         super().showEvent(event);self.set_saving(self.saving)
     def hideEvent(self,event):
         self.timer.stop();super().hideEvent(event)
     def tick(self):
-        if not self.isVisible() or self.window().isMinimized():return
-        if getattr(self.window(),'_visual_studio',{}).get('reduce_motion') or getattr(self.window(),'_render_interval',.4)>=.9:return
-        self.update()
+        if self.isVisible() and not self.window().isMinimized():self.update()
     def paintEvent(self,event):
-        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing);t=0 if self.saving else time.monotonic();style=getattr(self.window(),'_visual_studio',{})
-        for j,color in enumerate((style.get('accent','#00ddff'),style.get('secondary','#ff2585'))):
-            p.setPen(QPen(QColor(color),1));path=QPainterPath()
-            for x in range(0,self.width()+4,4):
-                y=16+math.sin(x/24+t*(1 if j else -1)+j)*7*math.sin(x/max(1,self.width())*math.pi)
-                if x==0:path.moveTo(x,y)
-                else:path.lineTo(x,y)
-            p.drawPath(path)
+        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        p.fillRect(self.rect(),Qt.GlobalColor.transparent)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        director=getattr(self.window(),'director',None)
+        theme=getattr(self.window(),'_visual_studio',{})
+        active=bool(director and (director.loading or director.playing or director.interacting))
+        online=bool(director and director.online)
+        color=QColor(theme.get('secondary',INK['pink']) if director and director.playing else theme.get('accent',INK['cyan']) if active else INK['green'] if online else INK['amber'])
+        amplitude=.80 if active else .34
+        if director and director.playing:amplitude=max(.32,min(1,.22+float(director.mouth_level)*1.8))
+        phase=0 if self.saving or theme.get('reduce_motion') else time.monotonic()*5
+        bars=max(9,min(42,self.width()//10));step=self.width()/bars
+        p.setPen(Qt.PenStyle.NoPen)
+        for i in range(bars):
+            wave=.35+.65*abs(math.sin(i*.44+phase))
+            envelope=.25+.75*math.sin(math.pi*(i+.5)/bars)
+            h=max(2,self.height()*amplitude*wave*envelope)
+            shade=QColor(color);shade.setAlpha(95+int(wave*145));p.setBrush(shade)
+            p.drawRoundedRect(QRectF(i*step+1,(self.height()-h)/2,max(2,step-3),h),2,2)
+        p.end()
+
+class MicLevelWave(QProgressBar):
+    """Mic meter with the existing accessible QProgressBar value semantics."""
+    def __init__(self,parent=None):
+        super().__init__(parent);self.setRange(0,100);self.setValue(0)
+        self.setMinimumHeight(32);self.setMaximumHeight(42)
+    def paintEvent(self,event):
+        p=QPainter(self);p.fillRect(self.rect(),QColor('#051628'))
+        theme=getattr(self.window(),'_visual_studio',{})
+        color=QColor(theme.get('accent',INK['cyan']))
+        level=max(0.,min(1.,self.value()/100))
+        bars=max(12,min(42,self.width()//11));step=self.width()/bars
+        p.setPen(Qt.PenStyle.NoPen)
+        for i in range(bars):
+            h=max(3,self.height()*(.20+.6*abs(math.sin(i*.55+level*6)))*(.45+.55*level))
+            shade=QColor(color if i/bars<level else QColor('#315366'))
+            shade.setAlpha(220 if i/bars<level else 105);p.setBrush(shade)
+            p.drawRoundedRect(QRectF(i*step+2,(self.height()-h)/2,max(2,step-4),h),2,2)
+        p.end()

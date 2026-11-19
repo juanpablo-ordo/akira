@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from PySide6.QtCore import Qt,QTimer,QSize,QUrl,QSettings,QSignalBlocker,QDate,QEvent,QLocale
 from PySide6.QtGui import QFont,QFontDatabase,QIcon,QDesktopServices,QColor
 from PySide6.QtWidgets import QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,QStackedWidget,QSplitter,QLineEdit,QComboBox,QTextBrowser,QPlainTextEdit,QListWidget,QListWidgetItem,QTabWidget,QScrollArea,QDialog,QDialogButtonBox,QFileDialog,QMessageBox,QInputDialog,QCheckBox,QDoubleSpinBox,QFormLayout,QProgressBar,QMenu,QDateEdit
-from studio_widgets import Card,Metric,DataTable,ActivityFeed,CandleChart,AvatarWidget,SignalWave,label,button,icon,INK,Toggle
+from studio_widgets import Card,Metric,DataTable,ActivityFeed,CandleChart,AvatarWidget,SignalWave,MicLevelWave,label,button,icon,INK,Toggle
 from studio_presenter import human,rich_text,set_document,set_plain_document,frame_html,budget_summary,risk_dashboard,plan_summary,report_html,source_abstract,market_activity,INDICATORS
 from studio_editors import ChoiceBox
 from studio_background import BackgroundSurface
@@ -59,13 +59,13 @@ def stylesheet(studio):
     QPushButton {{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 rgba(7,39,61,235),stop:1 rgba(2,18,32,235));border:1px solid #175674;border-radius:4px;padding:7px 12px;color:#bdeaff;font-weight:600;}}
     QPushButton:hover {{border-color:{accent};background:rgba(0,102,143,120);color:white;}}
     QPushButton:pressed {{background:rgba(0,157,202,180);}}
-    QPushButton:checked {{border:1px solid {accent};border-left:3px solid {accent};background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #003b63,stop:1 #032039);color:white;}}
+    QPushButton:checked {{border:1px solid {accent};background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #003b63,stop:1 #032039);color:white;}}
     QPushButton[kind="primary"] {{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {p['BLUE']},stop:1 {QColor(p['BLUE']).darker(140).name()});border:1px solid {accent};color:white;}}
     QPushButton[kind="danger"] {{border-color:{secondary};color:{secondary};}}
     QPushButton:disabled {{color:#436276;border-color:#153042;background:rgba(3,19,30,150);}}
     QPushButton[nav="true"] {{background:transparent;text-align:left;padding:10px 13px;min-height:25px;border-color:transparent;font-size:{round(16*scale)}px;}}
-    QPushButton[nav="true"]:checked {{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #004169,stop:1 #002039);border:1px solid {accent};border-left:3px solid {accent};color:white;}}
-    QLineEdit,QComboBox,QSpinBox,QDoubleSpinBox,QPlainTextEdit,QTextBrowser,QListWidget {{background:rgba(1,17,31,205);border:1px solid #184d69;border-radius:4px;selection-background-color:#00658b;padding:6px;}}
+    QPushButton[nav="true"]:checked {{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #004169,stop:1 #002039);border:1px solid {accent};color:white;}}
+    QLineEdit,QComboBox,QSpinBox,QDoubleSpinBox,QPlainTextEdit,QTextBrowser,QListWidget {{background:rgba(1,17,31,205);border:1px solid #184d69;border-radius:9px;selection-background-color:#00658b;padding:6px;}}
     QLineEdit:focus,QComboBox:focus,QPlainTextEdit:focus {{border-color:{accent};}}
     QComboBox QAbstractItemView {{background:#041526;color:#e8f3ff;selection-background-color:#00658b;}}
     QComboBox::drop-down {{border:0;width:20px;}}
@@ -167,7 +167,7 @@ class StudioWindow(QMainWindow):
     def table(self,columns):
         table=DataTable(columns);self.tables.append(table);table.setHorizontalHeaderLabels([self.text(t) for t in columns]);return table
     def avatar(self,parent,height=160):
-        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.setMinimumWidth(140);widget.setMinimumHeight(height);widget.setMaximumHeight(height+12);self.avatars.append(widget);parent.addWidget(widget);return widget
+        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.neural_visual=True;widget.setMinimumWidth(140);widget.setMinimumHeight(height);widget.setMaximumHeight(height+12);self.avatars.append(widget);parent.addWidget(widget);return widget
 
     def build_sidebar(self,outer):
         from PySide6.QtWidgets import QFrame
@@ -209,18 +209,22 @@ class StudioWindow(QMainWindow):
         for title in ('TODOS','SISTEMA','TRADING','ANÁLISIS','AVISO','ERROR'):
             tab=self.btn(title,lambda _=False,t=title:self.activity_filter.setCurrentText(t));tab.setProperty('activity_filter',title);tab.setCheckable(True);tab.setChecked(title=='TODOS');filters.addWidget(tab);self.activity_tabs.append(tab)
         self.activity_filter.currentTextChanged.connect(lambda current:[b.setChecked(b.property('activity_filter')==current) for b in self.activity_tabs]);activity.body.addLayout(filters)
-        self.activity=ActivityFeed();activity.body.addWidget(self.activity,1)
+        self.activity=ActivityFeed();activity.body.addWidget(self.activity,1);self.activity_panel=activity
         self.activity_empty=label('Esperando actividad del sistema.','muted');self.activity_empty.setWordWrap(True);activity.body.addWidget(self.activity_empty);left.addWidget(activity,3)
         coverage=self.card('COBERTURA DE MERCADO','analysis');grid=QHBoxLayout();self.home_markets={}
         for symbol,title in [('BTCUSDm','Bitcoin'),('XAUUSDm','Oro')]:
             card=self.card(symbol,'bitcoin' if symbol.startswith('BTC') else 'gold');price=label('—','metric',INK['cyan']);card.body.addWidget(price);status=label('','muted');status.setWordWrap(True);card.body.addWidget(status);chart=CandleChart();chart.setMinimumHeight(88);card.body.addWidget(chart,1);grid.addWidget(card,1);self.home_markets[symbol]=(price,status,chart)
         coverage.body.addLayout(grid);left.addWidget(coverage,2)
-        system=self.card('ESTADO DEL SISTEMA','shield');inside=QHBoxLayout();self.avatar(inside,140);self.system_text=label('','body');self.system_text.setWordWrap(True);inside.addWidget(self.system_text,2);system.body.addLayout(inside);system.body.addWidget(SignalWave());right.addWidget(system,3)
+        system=self.card('ESTADO DEL SISTEMA','shield');inside=QHBoxLayout();self.avatar(inside,140);self.system_text=label('','body');self.system_text.setWordWrap(True);inside.addWidget(self.system_text,2);system.body.addLayout(inside)
+        self.system_connectivity=label('● MT5 sin verificar','muted');system.body.addWidget(self.system_connectivity)
+        system.body.addWidget(SignalWave());right.addWidget(system,3)
         quick=self.card('ACCIONES RÁPIDAS','bolt');grid=QGridLayout()
         for i,(title,callback,glyph) in enumerate([('DESCARGAR INFORME',self.export_report,'report'),('NUEVA REVISIÓN',self.verify_all,'refresh'),('ABRIR REGISTROS',lambda:self.navigate(7),'terminal')]):grid.addWidget(self.btn(title,callback,'primary' if i==0 else '',glyph),i//2,i%2)
         quick.body.addLayout(grid);right.addWidget(quick,1)
-        notices=self.card('ALERTAS Y NOTIFICACIONES','bell');self.home_notices=label('','muted');self.home_notices.setWordWrap(True);notices.body.addWidget(self.home_notices);right.addWidget(notices,2)
-        resource=self.card('ESTADO DEL MOTOR','bolt');self.resource_line=label('','muted');self.resource_line.setWordWrap(True);resource.body.addWidget(self.resource_line);resource.body.addWidget(SignalWave());right.addWidget(resource,1)
+        # The bell menu provides alerts; no duplicate empty card.
+        resource=self.card('ESTADO DEL MOTOR','bolt');self.resource_line=label('','muted');self.resource_line.setWordWrap(True);resource.body.addWidget(self.resource_line)
+        self.resource_connectivity=label('● IA sin verificar','muted');resource.body.addWidget(self.resource_connectivity)
+        resource.body.addWidget(SignalWave());right.addWidget(resource,1)
 
     def build_pending(self):
         _,layout=self.page();top=QHBoxLayout();self.pending_metrics={}
@@ -506,6 +510,12 @@ class StudioWindow(QMainWindow):
         if self.isMinimized() or not self.isVisible():
             self.animation_timer.setInterval(750);return
         self.director.refresh()
+        if any(getattr(avatar,'neural_visual',False) for avatar in self.avatars):
+            saving=self._saving_ui or bool(getattr(self,'_visual_studio',{}).get('reduce_motion'))
+            self.animation_timer.setInterval(500 if saving else 32 if self._visual_studio_profile=='Rendimiento' else 40)
+            for avatar in self.avatars:
+                if avatar.isVisible() and getattr(avatar,'neural_visual',False):avatar.update()
+            return
         # Saving mode is a power policy, not a cosmetics-only animation rate.
         # A pending blink from another state must not keep refreshing at 20 FPS
         # when AKIRA is idle; keep speech/loading states responsive.
@@ -701,6 +711,11 @@ class StudioWindow(QMainWindow):
     def render(self,view):
         self.view=view;a=view.get('account') or {};currency=a.get('currency','USD');mode=view.get('mode',self.cfg['mode']);gate=view.get('execution_gate') or {}
         connected=bool(view.get('connected'));self.connection.setText(('● '+self.text('CONECTADO')) if connected else '● '+self.text('ESPERANDO MT5'))
+        self.system_connectivity.setText('● MT5 conectado' if connected else '● MT5 no conectado')
+        self.system_connectivity.setStyleSheet('color:'+(INK['green'] if connected else INK['amber'])+';')
+        ai_ready=bool(self._model_status.get('ready'))
+        self.resource_connectivity.setText('● IA disponible' if ai_ready else '● Respuesta de IA no confirmada')
+        self.resource_connectivity.setStyleSheet('color:'+(INK['green'] if ai_ready else INK['amber'])+';')
         if self.sensitive_field and self._revealed_identity!=(a.get('login'),a.get('server')):
             self.hide_sensitive(redraw=False)
         if connected!=getattr(self,'_connection_ready',None):
@@ -1005,6 +1020,7 @@ class StudioWindow(QMainWindow):
             for tab in self.activity_tabs:tab.setChecked(tab.property('activity_filter')==kind)
             selected=[r for r in rows if kind=='TODOS' or r[2]['activity_category']==kind][:120]
             self.activity.update_rows(selected);self.activity.setVisible(bool(selected));self.activity_empty.setVisible(not selected)
+            self.activity_panel.setMaximumHeight(16777215 if selected else 145)
             if not selected:
                 empty={'TODOS':'Esperando actividad del sistema.','SISTEMA':'No hay eventos de sistema recientes.',
                        'TRADING':'No hay operaciones o gestiones registradas recientemente.',
@@ -1534,7 +1550,7 @@ class StudioWindow(QMainWindow):
         row=FlowLayout();row.addWidget(self.btn('BUSCAR VOCES',lambda:self.load_voices(True)));row.addWidget(self.btn('DESCARGAR VOZ',self.download_voice));row.addWidget(self.btn('DESCARGAR TODAS LAS VOCES',self.download_all_voices));row.addWidget(self.btn('CANCELAR DESCARGA',self.cancel_voice_download));layout.addLayout(row)
         layout.addWidget(self.btn('PROBAR VOZ',self.preview_voice))
         self.voice_error=label('','body',INK['pink']);self.voice_error.setWordWrap(True);self.voice_error.hide();layout.addWidget(self.voice_error)
-        self.voice_level=QProgressBar();self.voice_level.setRange(0,100);self.voice_level.setValue(0);self.voice_level.setFormat('Micrófono · %p%');layout.addWidget(self.voice_level)
+        self.voice_level=MicLevelWave();self.voice_level.setRange(0,100);self.voice_level.setValue(0);self.voice_level.setFormat('Micrófono · %p%');layout.addWidget(self.voice_level)
         self.call_text=QPlainTextEdit();self.call_text.setReadOnly(True)
         self.call_text.setPlaceholderText('Aquí aparecerán lo que AKIRA entendió y su respuesta.');self.call_text.setMaximumHeight(125)
         layout.addWidget(self.call_text)
