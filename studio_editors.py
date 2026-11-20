@@ -15,7 +15,23 @@ class ColorButton(QPushButton):
     def value(self):return self._value
     def setValue(self,value):
         if self._value!=value:self._value=value;self.refresh();self.valueChanged.emit(value)
-    def refresh(self):self.setText('Elegir color' if not self._value else 'Cambiar color');self.setStyleSheet('border-left:22px solid '+(self._value or '#123348')+';padding:6px 12px;')
+    def refresh(self):
+        self.setText('Elegir color' if not self._value else 'Cambiar color')
+        # A round true-color swatch replaces the distracting colored left rail.
+        # Keep theme borders controlled by the common application stylesheet.
+        self.setStyleSheet('padding:6px 10px 6px 36px;')
+        self.setAccessibleName('Personalizar color')
+        self.update()
+    def paintEvent(self,event):
+        super().paintEvent(event)
+        painter=QPainter(self);painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        diameter=max(12,min(20,self.height()-14))
+        bounds=QRectF(9,(self.height()-diameter)/2,diameter,diameter)
+        swatch=QColor(self._value or '#123348')
+        painter.setBrush(swatch)
+        painter.setPen(QPen(QColor('#e9f3ff'),1.3))
+        painter.drawEllipse(bounds)
+        painter.end()
     def choose(self):
         c=QColorDialog.getColor(QColor(self._value or '#061022'),self,'Elige un tono')
         if c.isValid():self.setValue(c.name())
