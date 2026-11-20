@@ -370,6 +370,7 @@ class SignalWave(QWidget):
     """Native animated bars, with colors tied to verified assistant state."""
     def __init__(self,parent=None):
         super().__init__(parent);self.setFixedHeight(32);self.saving=False
+        self.status_source='general'
         self.timer=QTimer(self);self.timer.setInterval(32)
         self.timer.setTimerType(Qt.TimerType.PreciseTimer);self.timer.timeout.connect(self.tick)
     def set_saving(self,saving):
@@ -393,8 +394,17 @@ class SignalWave(QWidget):
         director=getattr(self.window(),'director',None)
         theme=getattr(self.window(),'_visual_studio',{})
         active=bool(director and (director.loading or director.playing or director.interacting))
-        online=bool(director and director.online)
-        color=QColor(theme.get('secondary',INK['pink']) if director and director.playing else theme.get('accent',INK['cyan']) if active else INK['green'] if online else INK['amber'])
+        window=self.window()
+        controller=getattr(window,'controller',None)
+        if self.status_source=='mt5':
+            online=bool((getattr(controller,'view',{}) or {}).get('connected'))
+        elif self.status_source=='ai':
+            online=bool((getattr(window,'_model_status',{}) or {}).get('ready'))
+        else:
+            online=bool(director and director.online)
+        # Never draw a green "connected" wave from AvatarDirector.online,
+        # which describes animation wakefulness, not the broker or LLM.
+        color=QColor(theme.get('secondary',INK['pink']) if online and director and director.playing else theme.get('accent',INK['cyan']) if online and active else INK['green'] if online else INK['amber'])
         amplitude=.80 if active else .34
         if director and director.playing:amplitude=max(.32,min(1,.22+float(director.mouth_level)*1.8))
         phase=0 if self.saving or theme.get('reduce_motion') else time.monotonic()*5

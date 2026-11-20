@@ -20,6 +20,8 @@ class UserFeedbackQt(unittest.TestCase):
                 self.assertFalse(hasattr(w,'home_notices'))
                 self.assertTrue(w.system_connectivity.text())
                 self.assertTrue(w.resource_connectivity.text())
+                self.assertEqual(w.system_wave.status_source,'mt5')
+                self.assertEqual(w.resource_wave.status_source,'ai')
                 self.assertEqual(w.mt5_retry.text(),'')
                 self.assertEqual(w.analysis_refresh.text(),'')
                 self.assertIn('MT5',w.analysis_refresh.accessibleName())

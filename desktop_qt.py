@@ -220,14 +220,16 @@ class StudioWindow(QMainWindow):
         coverage.body.addLayout(grid);left.addWidget(coverage,2)
         system=self.card('ESTADO DEL SISTEMA','shield');inside=QHBoxLayout();self.avatar(inside,140);self.system_text=label('','body');self.system_text.setWordWrap(True);inside.addWidget(self.system_text,2);system.body.addLayout(inside)
         self.system_connectivity=label('● MT5 sin verificar','muted');system.body.addWidget(self.system_connectivity)
-        system.body.addWidget(SignalWave());right.addWidget(system,3)
+        self.system_wave=SignalWave();self.system_wave.status_source='mt5'
+        system.body.addWidget(self.system_wave);right.addWidget(system,3)
         quick=self.card('ACCIONES RÁPIDAS','bolt');grid=QGridLayout()
         for i,(title,callback,glyph) in enumerate([('DESCARGAR INFORME',self.export_report,'report'),('NUEVA REVISIÓN',self.verify_all,'refresh'),('ABRIR REGISTROS',lambda:self.navigate(7),'terminal')]):grid.addWidget(self.btn(title,callback,'primary' if i==0 else '',glyph),i//2,i%2)
         quick.body.addLayout(grid);right.addWidget(quick,1)
         # The bell menu provides alerts; no duplicate empty card.
         resource=self.card('ESTADO DEL MOTOR','bolt');self.resource_line=label('','muted');self.resource_line.setWordWrap(True);resource.body.addWidget(self.resource_line)
         self.resource_connectivity=label('● IA sin verificar','muted');resource.body.addWidget(self.resource_connectivity)
-        resource.body.addWidget(SignalWave());right.addWidget(resource,1)
+        self.resource_wave=SignalWave();self.resource_wave.status_source='ai'
+        resource.body.addWidget(self.resource_wave);right.addWidget(resource,1)
 
     def build_pending(self):
         _,layout=self.page();top=QHBoxLayout();self.pending_metrics={}

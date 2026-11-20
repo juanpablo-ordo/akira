@@ -231,7 +231,7 @@
   "default_config.json": "a907e75ec0e316d021ecb79d56d26a10cd55e8d4082966bc4ab48ba2138cf5a4",
   "desktop.py": "cbbc18e57b46430e17a8f79324553dd9be55073b2462a0e15b12b0ca18ff5ce4",
   "desktop_layout.py": "d94e4125130aea366aba27144939997068975d4793647210b7f14b4ac5185b8c",
-  "desktop_qt.py": "89117ea94af78c7d0be4cc4d7d6f29bcccda2da64b33168fa20b236f91cb4d00",
+  "desktop_qt.py": "766c714ebfaf83a432ae5ea5c5b1da90b9eda908e4ad830ead74c0e5630bc3bf",
   "desktop_services.py": "c74037dbb22f020c101d5e19195b98242a62e856f51d8461133632a4939f440c",
   "diagnostics.py": "fb3887d202561de9ef40f51a83bfea4906d84c4cfa880f769002294246ee31c7",
   "docs/AKIRA_PLAN.md": "881f7e7e00494b5762c2c1a7a31a535380dc8e08dda9c517dafb099781658f45",
@@ -368,7 +368,7 @@
   "studio_settings_qt.py": "9b811b3f23e52e235812e54062b6e8fd34e0dc5d11a3a5900b69591ce35922a4",
   "studio_theme.py": "a2656c3306c23d4f26414a520bfeef0c2bfb7fc8ccbf19fe5d7d695baa135d27",
   "studio_translations.py": "704526333b3d55323d85cf581f5375f614270775da9301473b76d839ab0113d6",
-  "studio_widgets.py": "6b484bb25f509193caa218a05ef178d84807297a055b702d8757d2b3e2642da9",
+  "studio_widgets.py": "19b7b8df69cd85569762233f81ed0c6c3ca461318408694eb0e76606b009db03",
   "tape.py": "943750f4e121bc32013bbc9bc0dcf96ddec5c3ab9061848de8e589b348ae1de1",
   "technical_indicator_extensions.py": "ef676280fcb3a2bde179832c32f8b3306387f7eefaa9b6267cf093d23e8b9f29",
   "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -537,5 +537,5 @@
   "tests/test_retired_sources_qa.py": "56de51946c8817f455e787b029b122f80539861c0f998156f02b7263e5e23f9a",
   "tests/test_live_voice_controls.py": "8db32aba6f025579cd59b6f6506cfd142443e1716a6f4dde9fed5130a5a89da6",
   "docs/AKIRA_REVISION_VIDEO_2026_11_18.md": "3c89a41c693f0ff18ec5c9d1dde138f28cb4dbf22302fda80a54f066184dd5ec",
-  "tests/test_user_feedback_20261118.py": "9a954efccb7d9cf7caff7ca358084519a9dc2a7981e5e44f9c2e037b1f26221a"
+  "tests/test_user_feedback_20261118.py": "4d49a0fb86fae28a57b6cc5cd4c7021e705ae032314dbbacb4f82ec446b15e17"
 }
