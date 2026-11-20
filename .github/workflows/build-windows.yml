@@ -140,7 +140,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Rev21 GPU/ondas no pasó; no compilar' }
 
       - name: Pruebas de regresion principales
-        timeout-minutes: 15
+        # The comprehensive suite requires ~17+ minutes on hosted Windows.
+        # Preserve every test, XML report, zero-skips and strict exit-code check.
+        timeout-minutes: 35
         shell: pwsh
         env:
           AKIRA_TEST_DIAGNOSTICS: diagnostics
