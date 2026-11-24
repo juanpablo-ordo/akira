@@ -170,14 +170,36 @@ class BoundedSources(unittest.TestCase):
 
     def test_repeated_provider_errors_open_circuit(self):
         from research import ContextWorker
-        with tempfile.TemporaryDirectory() as tmp:
-            worker=ContextWorker(load_config(DEFAULT),Path(tmp),clock=lambda:1000)
-            try:
-                with patch.object(worker,'jobs_for',return_value={}):
-                    for _ in range(3):
-                        f=Future();f.set_exception(OSError('getaddrinfo failed'));worker.jobs['venue:Bybit']=f;worker.tick()
-                self.assertTrue(worker.sources['venue:Bybit']['circuit_open']);self.assertGreaterEqual(worker.due['venue:Bybit'],4600)
-            finally:worker.close()
+        from urllib.error import HTTPError
+        for error,kind,cooldown in (
+            (OSError('getaddrinfo failed'),'DNS_ERROR',300),
+            (TimeoutError('timed out'),'TIMEOUT',300),
+            (HTTPError('https://example.org',401,'Unauthorized',{},None),'AUTH_ERROR',3600),
+            (HTTPError('https://example.org',403,'Forbidden',{},None),'ACCESS_DENIED',3600),
+            (HTTPError('https://example.org',429,'Too many requests',{},None),'QUOTA_EXCEEDED',3600),
+        ):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp:
+                now=[1000]
+                worker=ContextWorker(load_config(DEFAULT),Path(tmp),clock=lambda:now[0])
+                try:
+                    with patch.object(worker,'jobs_for',return_value={}):
+                        for _ in range(3):
+                            f=Future();f.set_exception(error);worker.jobs['venue:Bybit']=f;worker.tick()
+                        row=worker.sources['venue:Bybit']
+                        self.assertTrue(row['circuit_open'])
+                        self.assertEqual(row['failure']['kind'],kind)
+                        self.assertEqual(worker.due['venue:Bybit'],1000+cooldown)
+                        self.assertEqual(worker.failures['venue:Bybit'],3)
+                        self.assertTrue(row['error'])
+                        # A genuine successful retry clears the circuit and error;
+                        # failed or old data cannot be relabelled as fresh.
+                        now[0]+=cooldown
+                        f=Future();f.set_result({'fixture':'new data'});worker.jobs['venue:Bybit']=f;worker.tick()
+                        self.assertFalse(worker.sources['venue:Bybit'].get('circuit_open',False))
+                        self.assertEqual(worker.sources['venue:Bybit']['error'],'')
+                        self.assertEqual(worker.sources['venue:Bybit']['updated'],now[0])
+                        self.assertEqual(worker.failures['venue:Bybit'],0)
+                finally:worker.close()
 
 
 class YouTubeRecovery(unittest.TestCase):

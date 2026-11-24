@@ -443,7 +443,7 @@
   "tests/test_studio_rev15_conversation_core.py": "a45b1c1e2208346bd1ff50d2fbecbb03ce0fd8f915e8fc3f326e3919408c69a7",
   "tests/test_studio_rev16_user_requests.py": "bcb13a82e9014ea56c1a79199d133f0cf86dd2a54ba1792e4505796c94998edb",
   "tests/test_studio_rev17_capital_mentor.py": "a16636d4b0fe9e57c217b16e1a891e12f89888662b683956beda3322c01f8f00",
-  "tests/test_studio_rev18_recovery.py": "64cb8f231a9b10f2a912aa1d5ecd577b77eae17c7df901894f22ae7a69c40bff",
+  "tests/test_studio_rev18_recovery.py": "75d2b20c604fc04a0a7ec47002b1cec02f19f92a7cdc4d5bc86689eee4817c56",
   "tests/test_studio_rev5.py": "a591dc0e9f94f4db282b419cadd86d0ad820e97bbfc63463e6292d71416b0748",
   "tests/test_studio_rev6_acceptance.py": "a808ac7fddb12cb5cc2ba9db46ead282a415346aa677fee40572a5ad17dbff40",
   "tests/test_studio_rev6_media_strategy.py": "b9bcfa075cb0564e496b1a14a52e55e298b6ef9954ba89de1e11c18ef43624db",
