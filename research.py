@@ -893,7 +893,11 @@ class ContextWorker:
                     self.evolution.submit(snapshot,videos);self._evolution_marker=evolution_marker
             for name,(interval,fn) in self.jobs_for(snapshot,sources).items():
                 kind=name.split(':')[0]
-                if not self.internet_available and kind not in ('local_ai','preopen_ai','model'):continue
+                # A failed generic probe is not proof that every public source
+                # is offline. Allow one due real provider request at a time,
+                # preserving each provider's existing retry/backoff.
+                if not self.internet_available and kind not in ('local_ai','preopen_ai','model'):
+                    if kind=='cloud' or any(k.split(':')[0] not in ('local_ai','preopen_ai','model','cloud') for k in self.jobs):continue
                 if kind in ('local_ai','cloud','preopen_ai') and PRIORITY.users:continue
                 if name not in self.jobs and now>=self.due.get(name,0):
                     # One local inference at a time. On completion the other

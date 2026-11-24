@@ -22,6 +22,7 @@ on:
       - akira-rev23-recursos-llamada-historial-20261114
       - akira-0.1
       - akira-0.3
+      - akira-0.3-web-voz-recuperacion
 
 permissions:
   contents: read
@@ -35,7 +36,7 @@ concurrency:
 env:
   PYTHONUTF8: '1'
   PYTHONIOENCODING: utf-8
-  AKIRA_RELEASE_VERSION: ${{ (inputs.version != 'auto' && inputs.version) || (github.ref_name == 'akira-0.3' && '0.3.0' || '0.1.0') }}
+  AKIRA_RELEASE_VERSION: ${{ (inputs.version != 'auto' && inputs.version) || ((github.ref_name == 'akira-0.3' || github.ref_name == 'akira-0.3-web-voz-recuperacion') && '0.3.0' || '0.1.0') }}
 
 jobs:
   build-windows:

@@ -31,7 +31,10 @@ def _collect_searches(jobs,timeout,direct_fast=False):
             try:
                 received=future.result();rows.extend(received)
                 if direct_fast and any(row.get('engine')=='official-direct' and row.get('text') for row in received):break
-            except Exception as error:errors.append(futures[future]+':'+type(error).__name__)
+            except Exception as error:
+                from network_tls import connection_message
+                status,_=connection_message(error)
+                errors.append(futures[future]+':'+type(error).__name__+':'+status)
     except TimeoutError:errors.append('search:total_time_budget')
     finally:
         for future in futures:
@@ -336,7 +339,7 @@ def lookup_verified_current_fact(query: str, timeout: float = 6.5, limit: int = 
     year=str(datetime.now(timezone.utc).year)
     query=understood(query);jobs=[('official-direct',_official_presidency,query)]
     for q in _expanded_queries(query):
-        jobs.extend((('duckhtml',_duck_html,q if year in q else q+' '+year),('bing',_bing_rss,q)))
+        jobs.extend((('duckhtml',_duck_html,q if year in q else q+' '+year),('bing',_bing_rss,q),('gnews',_google_news_rss,q)))
     rows,errors=_collect_searches(jobs,timeout,direct_fast=True)
     ranked=_dedupe_diverse(query,[r for r in rows if not _is_wikipedia(r.get('url',''))],max(10,limit*2),strict=True)
     official=[r for r in ranked if r.get('source_class')=='official']

@@ -1572,9 +1572,10 @@ class AkiraAssistant:
             if routing['repair'] and not routing['previous_question']:
                 return 'Me estás reclamando a mí por la respuesta anterior. No tengo una pregunta anterior recuperable en este hilo; tu frase no era una solicitud de definición.'
             trading=self._is_trading_question(message) and not nonliteral
+            # The global connectivity monitor is advisory, not proof that the
+            # actual search providers are unreachable.
             if not trading and not is_personal_conversation(message) and snapshot.get('network_available') is False and needs_web_verification(message):
-                return ('Estoy sin Internet. Puedo usar la IA y los datos locales, pero no verificar ahora «'+str(message)[:220]+
-                        '». La conexión se comprueba automáticamente; cuando vuelva podrás consultar el dato actualizado.')
+                self._progress('WEB · COMPROBANDO','El monitor indica conexión limitada; comprobaré las fuentes directamente.')
             if not trading:
                 instant=self._instant_general_reply(message,snapshot)
                 if instant:
@@ -1633,6 +1634,8 @@ class AkiraAssistant:
                         rows=list(result.get('results') or [])
                     answer=self._evidence_answer(message,rows)
                     if answer:return answer+'\n\nRespuesta tomada directamente de las fuentes; el modelo local no terminó esta consulta.'
+                    if rows:
+                        return self._limited_evidence_reply(message,rows)
                     return ('No pude completar la respuesta del modelo ni confirmar ese dato con fuentes pertinentes. '
                             'La pregunta era «'+str(message)[:220]+'». Puedes reintentar; no voy a sustituirla por resultados de otro tema.')
                 from conversation_core import failure_text

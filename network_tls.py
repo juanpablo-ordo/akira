@@ -43,7 +43,7 @@ def urlopen(url, data=None, timeout=10, **kwargs):
 
 def connection_message(error):
     """Public message only; the original exception stays in diagnostics."""
-    text = str(error).lower()
+    text = (type(error).__name__ + ': ' + str(error)).lower()
     if any(s in text for s in ('11002','getaddrinfo','name resolution','dns_error')):
         return ('ERROR DNS DE ESTA FUENTE','Windows no pudo resolver el dominio. La consulta queda en espera con plazo; se usan fuentes alternativas disponibles. MT5 y el chat mantienen estados independientes.')
     if any(s in text for s in ('certificate_verify_failed','certificate verify failed','local issuer certificate')):
@@ -61,7 +61,15 @@ def connection_message(error):
                 'El límite elegido para la IA no alcanza para esta revisión. Puedes ampliarlo en Ajustes → Aplicación. Los cálculos técnicos continúan y esta revisión no autoriza una orden.')
     if any(s in text for s in ('timeouterror','timed out','timeout','tiempo de espera')):
         return ('REINTENTO PROGRAMADO', 'La fuente tardó demasiado. Akira conserva los datos vigentes y reintentará en segundo plano.')
-    if any(s in text for s in ('urlerror','connectionerror','connection refused','getaddrinfo','name resolution')):
+    if 'sourcecoolingdown' in text or 'próximo intento en' in text:
+        return ('REINTENTO PROGRAMADO', 'Esta fuente está en espera temporal tras un fallo; se consultará cuando venza el plazo.')
+    if any(s in text for s in ('jsondecodeerror','parseerror','xmlsyntaxerror')):
+        return ('RESPUESTA INVÁLIDA', 'El proveedor respondió con un formato inesperado. Se reintentará sin utilizar esos datos.')
+    if any(s in text for s in ('http error 404','http error 410')):
+        return ('RUTA NO DISPONIBLE', 'El proveedor no reconoce la dirección. Se debe revisar el endpoint; las demás fuentes siguen activas.')
+    if any(s in text for s in ('sin observaciones recientes','sin datos','libro vacío','datos externos antiguos')):
+        return ('DATOS NO VIGENTES', 'La fuente no aportó datos utilizables o recientes. No se incorporarán como datos actuales.')
+    if any(s in text for s in ('urlerror','connectionerror','connection refused','getaddrinfo','name resolution','gaierror')):
         return ('SIN CONEXIÓN CON LA FUENTE', 'Esta fuente no respondió. Las demás fuentes siguen activas y se reintentará automáticamente.')
     return ('NO DISPONIBLE', 'Esta consulta no pudo completarse. Se reintentará en segundo plano. Puedes consultar el diagnóstico en Terminal.')
 

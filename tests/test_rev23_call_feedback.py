@@ -12,6 +12,22 @@ from voice_session import VoiceSession, transcribe_with_recovery
 
 
 class CallFeedbackTests(unittest.TestCase):
+    def test_call_searches_general_topics_when_explicitly_requested(self):
+        from voice_conversation import call_web_lookup
+        result={'results':[{'title':'Referencia','url':'https://example.org/','text':'Evidencia'}]}
+        with patch('web_facts.lookup_current_fact',return_value=result) as general,patch('web_facts.lookup_verified_current_fact') as strict:
+            self.assertEqual(call_web_lookup('Busca información sobre las cámaras Nikon'),result)
+            general.assert_called_once()
+            strict.assert_not_called()
+
+    def test_call_keeps_public_office_verification_and_skips_casual_search(self):
+        from voice_conversation import call_web_lookup
+        with patch('web_facts.lookup_current_fact') as general,patch('web_facts.lookup_verified_current_fact',return_value={'results':[]}) as strict:
+            self.assertIsNone(call_web_lookup('Hola'))
+            self.assertEqual(call_web_lookup('Quién es el presidente actual de Guatemala'),{'results':[]})
+            strict.assert_called_once()
+            general.assert_not_called()
+
     def test_short_voice_retries_when_vad_misses_the_entire_utterance(self):
         model = Mock()
         model.transcribe.side_effect = [
