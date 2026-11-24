@@ -859,7 +859,9 @@ class ContextWorker:
                     self.sources[name]['failure']=classify_failure(e)
                     self.due[name]=now+min(600,15*2**min(count,5))
                     if count>=3 and name.split(':')[0] not in ('local_ai','cloud','preopen_ai'):
-                        self.due[name]=max(self.due[name],now+3600)
+                        kind=self.sources[name]['failure']['kind']
+                        cooldown=3600 if kind in ('AUTH_ERROR','ACCESS_DENIED','QUOTA_EXCEEDED') else 300
+                        self.due[name]=max(self.due[name],now+cooldown)
                         self.sources[name]['circuit_open']=True
                     if name.startswith('local_ai:') and count>=2:
                         self.due[name]=max(self.due[name],now+min(3600,600*2**min(count-1,3)))
@@ -891,7 +893,10 @@ class ContextWorker:
                 evolution_marker=(id(self.snapshot),sources.get('youtube',{}).get('updated'))
                 if evolution_marker!=getattr(self,'_evolution_marker',None):
                     self.evolution.submit(snapshot,videos);self._evolution_marker=evolution_marker
-            for name,(interval,fn) in self.jobs_for(snapshot,sources).items():
+            scheduled=self.jobs_for(snapshot,sources)
+            # A limited connection must not starve providers later in the list.
+            order=scheduled.items() if self.internet_available else sorted(scheduled.items(),key=lambda item:self.due.get(item[0],0))
+            for name,(interval,fn) in order:
                 kind=name.split(':')[0]
                 # A failed generic probe is not proof that every public source
                 # is offline. Allow one due real provider request at a time,

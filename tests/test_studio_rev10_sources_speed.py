@@ -106,6 +106,14 @@ class WorkerFieldTests(unittest.TestCase):
         state=self.worker.read()['sources']['local_ai:BTCUSDm']
         self.assertFalse(state['inflight']);self.assertTrue(state['waiting_for_worker']);self.assertIn('TimeoutError',state['error'])
         self.worker.refresh();self.worker.tick();self.assertIs(self.worker.jobs['local_ai:BTCUSDm'],first);self.assertEqual(len(self.pool.calls),1)
+    def test_limited_connectivity_probes_oldest_due_public_provider(self):
+        self.worker.internet_available=False
+        self.pool=fixtures.ControlledPool();self.worker.pool=self.pool
+        self.worker.jobs_for=lambda view,sources:{'fed':(60,lambda:[]),'search:BTCUSDm':(60,lambda:[])}
+        self.worker.due['fed']=self.now-1
+        self.worker.tick()
+        self.assertEqual(list(self.worker.jobs),['search:BTCUSDm'])
+
     def test_repeated_model_errors_lengthen_the_pause_instead_of_loading_forever(self):
         self.restrict_to_reviews();self.cfg['symbols']={'BTCUSDm':True};self.worker.submit({'symbols':{'BTCUSDm':{}}})
         for _ in range(3):

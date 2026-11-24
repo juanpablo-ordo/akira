@@ -12,12 +12,12 @@ def call_research_query(text,history):
     return str(text)
 
 
-def call_web_lookup(text,timeout=5,limit=4):
+def call_web_lookup(text,timeout=5,limit=4,force=False):
     """Use the same general search as chat, not an office-holder lookup for every topic."""
     from conversation_core import needs_research
     from web_facts import lookup_current_fact,lookup_verified_current_fact
     from assistant_akira import AkiraAssistant
-    if not needs_research(text):return None
+    if not force and not needs_research(text):return None
     if AkiraAssistant._strict_current_fact(text):
         return lookup_verified_current_fact(text,timeout=timeout,limit=limit)
     return lookup_current_fact(text,timeout=timeout,limit=limit)
@@ -114,7 +114,7 @@ class CallConversation:
                 if (needs_research(text) or research_query!=text) and not cancel.is_set():
                     self.voice.event('state',text='Consultando fuentes públicas de la pregunta…')
                     try:
-                        research=call_web_lookup(research_query) or {}
+                        research=call_web_lookup(research_query,force=research_query!=text) or {}
                         web_rows=[{'title':r.get('title'),'published':r.get('published'),
                             'url':r.get('url'),'passage':str(r.get('text') or '')[:600]}
                             for r in research.get('results',())[:4] if r.get('url') and r.get('text')]

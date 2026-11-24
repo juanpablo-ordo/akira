@@ -4,6 +4,9 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 
 def classify_failure(error,url=''):
+    original=getattr(error,'source_failure',None)
+    if isinstance(original,dict) and original.get('kind'):
+        return {k:original.get(k) for k in ('kind','domain','error_type','original_error','errno','http_status')}
     reason=getattr(error,'reason',error);message=str(error)
     code=getattr(error,'code',None);err=getattr(reason,'errno',None)
     low=message.lower()
@@ -53,7 +56,9 @@ def guarded_open(opener,url,*args,**kwargs):
     blocked=host if not HTTP_HEALTH.permitted(host) else endpoint
     if not HTTP_HEALTH.permitted(blocked):
         row=HTTP_HEALTH.snapshot()[blocked]
-        raise SourceCoolingDown(f"{host}: {row.get('kind','NETWORK_ERROR')}; próximo intento en {row['retry_after_seconds']:g} s")
+        error=SourceCoolingDown(f"{host}: {row.get('kind','NETWORK_ERROR')}; próximo intento en {row['retry_after_seconds']:g} s")
+        error.source_failure=row
+        raise error
     try:response=opener(url,*args,**kwargs)
     except Exception as exc:
         key=host if classify_failure(exc,target)['kind']=='DNS_ERROR' else endpoint

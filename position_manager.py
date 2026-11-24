@@ -53,7 +53,8 @@ class PositionManager:
                 f=frames.get(exit_tf) if structural_runner else frames.get('M15') or frames.get('M5')
                 if structural_runner and not f:
                     row['protection_state']=f'Runner conserva SL: esperando estructura {exit_tf} confirmada'
-                if not f and not structural_runner:continue
+                # Fresh broker quotes suffice for the configured breakeven floor.
+                # Missing candles defer structure-based trailing, not protection.
                 q=g.quote(p.symbol);exit=q.bid if side==1 else q.ask
                 risk=side*(float(p.price_open)-initial)
                 if risk<=0:continue
@@ -136,7 +137,7 @@ class PositionManager:
                 else:
                     reason='pendiente activada: breakeven/trailing de estructura'
                 if not structural_runner:
-                  if rr>=g.cfg['management']['trail_at_r']:
+                  if f and rr>=g.cfg['management']['trail_at_r']:
                     swings=[v for v,_ in (f.lows if side==1 else f.highs)[-10:] if side*(exit-v)>max(f.atr*.3,noise)]
                     if swings:
                         swing=max(swings) if side==1 else min(swings)

@@ -93,6 +93,12 @@ class ProvidersAndBudgets(unittest.TestCase):
   now=[0];h=SourceHealthManager(clock=lambda:now[0],jitter=lambda:1)
   for n in range(3):h.failure('a',socket.gaierror(11002,'getaddrinfo failed'),'https://a?token=secret')
   r=h.snapshot()['a'];self.assertEqual(r['kind'],'DNS_ERROR');self.assertTrue(r['circuit_open']);self.assertEqual(r['retry_after_seconds'],120);self.assertTrue(h.permitted('b'));self.assertFalse(h.permitted('a'));h.success('a');self.assertTrue(h.permitted('a'))
+ def test_source_cooldown_keeps_original_error_category(self):
+  from network_diagnostics import SourceCoolingDown
+  e=SourceCoolingDown('cooldown')
+  e.source_failure={'kind':'DNS_ERROR','domain':'example.org','error_type':'gaierror','original_error':'DNS','errno':11002,'http_status':None}
+  self.assertEqual(classify_failure(e)['kind'],'DNS_ERROR')
+  self.assertEqual(classify_failure(e)['domain'],'example.org')
  def test_source_statuses_remain_distinct(self):
   from urllib.error import HTTPError
   for status,kind in [(401,'AUTH_ERROR'),(403,'ACCESS_DENIED'),(429,'QUOTA_EXCEEDED'),(500,'HTTP_ERROR')]:self.assertEqual(classify_failure(HTTPError('https://x',status,'bad',{},None))['kind'],kind)

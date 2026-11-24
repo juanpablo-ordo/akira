@@ -61,6 +61,18 @@ class ProgressProtectionTests(PendingCase, unittest.TestCase):
                         self.assertEqual(row['protection_state'],'Protección confirmada en MT5')
                         self.api.positions.remove(p)
 
+    def test_nonstructural_pending_fill_can_protect_progress_without_candles(self):
+        self.cfg['management']['pending_fills_as_runners']=False
+        self.cfg['management']['runner_structure_only']=False
+        for side in (1,-1):
+            with self.subTest(side=side):
+                p=self.position(side=side,symbol='XAUUSDm')
+                tp=p.tp
+                self.manager.step(self.g.snapshot());self.g.reconcile(self.g.snapshot())
+                self.assertGreater(side*(p.sl-p.price_open),0)
+                self.assertEqual(p.tp,tp)
+                self.api.positions.remove(p)
+
     def test_missing_pivot_does_not_silently_veto_progress_floor(self):
         engine=Engine(self.g,self.cfg,self.g.log);self.addCleanup(engine.close);engine.warmup()
         self.manager.planner=engine.planner
