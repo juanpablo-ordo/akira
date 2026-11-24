@@ -1,5 +1,6 @@
 """Account loss circuits use confirmed receipts across both symbols and lanes."""
 import copy,unittest
+from unittest.mock import patch
 from dataclasses import replace
 from entry_safety import loss_pause
 from settings import DEFAULT,load_config
@@ -98,6 +99,27 @@ class ExecutionLossPause(PendingCase,unittest.TestCase):
         e._confirmed_outcomes=owned_outcomes(self.g);v=e.view()
         self.assertTrue(v['capital_protection']['allowed']);self.assertFalse(v['execution_allowed'])
         self.assertIn('Pausa de nuevas entradas',v['execution_block']);self.assertFalse(v['entry_safety']['allowed'])
+    def test_capital_breach_with_public_web_offline_withdraws_owned_pending(self):
+        own=self.api.add_pending(self.plan())
+        manual=self.api.add_pending(self.plan('XAUUSDm'),magic=0)
+        self.g.network_available=False
+        e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)
+        e._confirmed_outcomes=[]
+        with patch.object(self.g,'capital_status',return_value={'enabled':True,'allowed':False,'reason':'Límite de caída alcanzado'}),patch.object(self.g,'daily_loss_reason',return_value=''):
+            e.enforce_capital_protection(self.g.snapshot())
+        self.assertEqual(self.api.orders,[manual])
+        self.assertTrue(self.api.sent)
+        self.assertTrue(all(r['action']==REMOVE and r['order']==own.ticket for r in self.api.sent))
+
+    def test_paused_engine_still_withdraws_after_capital_breach(self):
+        own=self.api.add_pending(self.plan())
+        e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)
+        e._confirmed_outcomes=[];e.paused=True
+        with patch.object(self.g,'capital_status',return_value={'enabled':True,'allowed':False,'reason':'Límite de caída alcanzado'}),patch.object(self.g,'daily_loss_reason',return_value=''):
+            e.enforce_capital_protection(self.g.snapshot())
+        self.assertFalse(self.api.orders)
+        self.assertTrue(all(r['action']==REMOVE and r['order']==own.ticket for r in self.api.sent))
+
     def test_public_network_probe_failure_does_not_prevent_protective_withdrawal_on_a_connected_broker(self):
         self.losses();self.api.add_pending(self.plan());self.g.network_available=False
         e=Engine(self.g,self.cfg,self.g.log);self.addCleanup(e.close)

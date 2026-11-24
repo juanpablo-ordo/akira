@@ -1477,9 +1477,12 @@ class Engine:
         from capital_guard import pending_reduction
         g=self.g
         safety=self.entry_safety()
-        if ((self.paused or getattr(g,'network_available',True) is False) and safety['allowed']) or self.cfg['mode']!='trade' or g.runtime_execution_block:return snap
+        if self.cfg['mode']!='trade' or g.runtime_execution_block:return snap
+        # Public HTTP availability does not describe broker connectivity.
+        # A pause gates new exposure, not withdrawal after a capital breach.
         state=g.capital_status(snap,refresh=True)
         entry_block=g.daily_loss_reason(snap) or (safety['reason'] if not safety['allowed'] else '')
+        if self.paused and safety['allowed'] and state['allowed'] and not entry_block:return snap
         for _ in range(len(snap.orders)):
             choice=pending_reduction(g,snap,g.reservation_ledger(snap),state,entry_block)
             if choice is None:break
@@ -1506,7 +1509,7 @@ class Engine:
             if not lost and not continuous:continue
             if continuous and not self.market_state(o.symbol)['open']:continue
             p=order_plan(o,(self.g.journal.data['orders'].get(str(o.ticket)) or {}).get('plan'))
-            evidence=evaluate(p,self.planner.caches[o.symbol].frames,self._confirmed_outcomes,self.g.clock(),strict=continuous)
+            evidence=evaluate(p,self.planner.caches[o.symbol].frames,self._confirmed_outcomes,self.g.clock(),strict=continuous,config=self.cfg)
             if continuous:
                 from trade_quality_gate import pending_admission
                 admission=pending_admission(self.cfg,p)
@@ -1574,7 +1577,9 @@ class Engine:
 
     def process_pending_verification(self):
         """One read-only MT5 check per cycle, always in the actor thread."""
-        if not self.pending_check_queue or getattr(self.g,'network_available',True) is False:return
+        # This is a read-only broker check. The public-web probe is unrelated
+        # to MT5; snapshot, quote and order_check validate the actual connection.
+        if not self.pending_check_queue:return
         from pending_verification import identity,levels
         from execution import PENDING,MODIFY,BUY_LIMIT,SELL_LIMIT,BUY_STOP,SELL_STOP
         data=self.pending_check_queue.pop(0);pid=identity(data)
