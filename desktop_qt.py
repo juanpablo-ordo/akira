@@ -1084,8 +1084,11 @@ class StudioWindow(QMainWindow):
         text=self.voice_transcript.text().strip()
         if not text:return
         from assistant_akira import AkiraAssistant
-        if AkiraAssistant.is_trade_control_message(text) and not self.confirm('Confirmar transcripción operativa',text):return
+        if AkiraAssistant.is_trade_control_message(text) and not self.confirm('Confirmar transcripción operativa',text):
+            if self.controller.voice:self.controller.voice.cancel_message()
+            return
         if self.controller.ask(text):self.director.busy(True);self.director.publish('thinking')
+        elif self.controller.voice:self.controller.voice.cancel_message()
     def download_voice(self):
         row=self.voice_selector.currentData()
         if row:

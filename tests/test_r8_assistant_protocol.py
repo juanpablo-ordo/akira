@@ -44,7 +44,7 @@ class Understanding(unittest.TestCase):
     def test_current_office_can_read_an_official_source_without_a_working_index(self):
         from web_facts import lookup_verified_current_fact
         official={'title':'Presidencia de Guatemala','url':'https://presidencia.gob.gt/','text':'El presidente Bernardo Arévalo dirige el Gobierno de Guatemala.','engine':'official-direct'}
-        with patch('web_facts._official_presidency',return_value=[official]),patch('web_facts._duck_html',side_effect=OSError('index down')),patch('web_facts._bing_rss',side_effect=OSError('index down')):
+        with patch('web_facts._official_presidency',return_value=[official]),patch('web_facts._duck_html',side_effect=OSError('index down')),patch('web_facts._bing_rss',side_effect=OSError('index down')),patch('web_facts._google_news_rss',side_effect=OSError('index down')):
             result=lookup_verified_current_fact('quien es el actual presidente de guatemala')
         self.assertTrue(result['verified']);self.assertEqual(result['results'][0]['url'],official['url'])
 
@@ -80,13 +80,27 @@ class Understanding(unittest.TestCase):
                 answer=bot.reply('quien es el presidente de Guatemala',{},use_cloud=False)
             self.assertIn('detenido',answer);lookup.assert_not_called()
 
-    def test_known_offline_state_explains_current_fact_limit_without_waiting_for_web(self):
+    def test_negative_connectivity_probe_does_not_block_reachable_web_sources(self):
         with tempfile.TemporaryDirectory() as temporary:
             cfg=copy.deepcopy(DEFAULT);cfg['assistant']['local_runtime_enabled']=False
             bot=AkiraAssistant(cfg,Path(temporary))
-            with patch.object(bot,'local_llm_reply') as model,patch('assistant_akira.lookup_verified_current_fact') as lookup:
+            evidence={'results':[{'title':'Presidencia de Guatemala','url':'https://presidencia.gob.gt/presidente','text':'El presidente Bernardo Arévalo dirige el Gobierno de Guatemala.'}]}
+            with patch.object(bot,'local_llm_reply',side_effect=TimeoutError('modelo ocupado')),patch('assistant_akira.lookup_verified_current_fact',return_value=evidence) as lookup:
                 answer=bot.reply('quien es el actual presdiente de Guatemala',{'network_available':False},use_cloud=False)
-            self.assertIn('sin Internet',answer);model.assert_not_called();lookup.assert_not_called()
+            self.assertIn('Bernardo Arévalo',answer);lookup.assert_called_once()
+
+    def test_empty_web_results_do_not_invent_a_current_fact(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cfg=copy.deepcopy(DEFAULT);cfg['assistant']['local_runtime_enabled']=False
+            bot=AkiraAssistant(cfg,Path(temporary))
+            with patch.object(bot,'local_llm_reply',side_effect=TimeoutError('modelo ocupado')),patch('assistant_akira.lookup_verified_current_fact',return_value={'results':[]}) as lookup:
+                answer=bot.reply('quien es el actual presidente de Guatemala',{'network_available':False},use_cloud=False)
+            self.assertIn('ni confirmar',answer);lookup.assert_called_once()
+
+    def test_exception_type_is_used_for_public_diagnostic(self):
+        from network_tls import connection_message
+        self.assertEqual(connection_message(TimeoutError())[0],'REINTENTO PROGRAMADO')
+        self.assertEqual(connection_message(ConnectionError())[0],'SIN CONEXIÓN CON LA FUENTE')
 
 
 class Protocol(unittest.TestCase):
