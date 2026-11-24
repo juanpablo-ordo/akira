@@ -2,6 +2,16 @@
 import copy,json,re,threading,time
 
 
+def call_research_query(text,history):
+    """Resolve an explicit source follow-up without treating arbitrary speech as a new search."""
+    if re.search(r'(?i)\b(?:otras? fuentes?|m[aá]s fuentes?|otra referencia|investiga m[aá]s|busca m[aá]s)\b',str(text)):
+        for row in reversed(history):
+            previous=str(row.get('content') or '').strip()
+            if row.get('role')=='user' and previous and not re.search(r'(?i)\b(?:otras? fuentes?|m[aá]s fuentes?|busca m[aá]s)\b',previous):
+                return previous
+    return str(text)
+
+
 def call_web_lookup(text,timeout=5,limit=4):
     """Use the same general search as chat, not an office-holder lookup for every topic."""
     from conversation_core import needs_research
@@ -100,10 +110,11 @@ class CallConversation:
                 evidence={'memories':memories,'library':recalled,'state':state}
                 from conversation_core import needs_research
                 web_rows=[]
-                if needs_research(text) and not cancel.is_set():
+                research_query=call_research_query(text,self.history)
+                if (needs_research(text) or research_query!=text) and not cancel.is_set():
                     self.voice.event('state',text='Consultando fuentes públicas de la pregunta…')
                     try:
-                        research=call_web_lookup(text) or {}
+                        research=call_web_lookup(research_query) or {}
                         web_rows=[{'title':r.get('title'),'published':r.get('published'),
                             'url':r.get('url'),'passage':str(r.get('text') or '')[:600]}
                             for r in research.get('results',())[:4] if r.get('url') and r.get('text')]

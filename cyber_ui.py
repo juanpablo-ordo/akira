@@ -79,7 +79,12 @@ def source_presentation(name,row):
         else:
             from network_tls import connection_message
             state,detail=connection_message(error)
-        if row.get('circuit_open'):state='FUENTE AISLADA';detail+=' Se suspendieron los intentos repetidos tras varios fallos.'
+        if row.get('circuit_open'):
+            state='FUENTE AISLADA'
+            failure=row.get('failure') or {}
+            reason=str(failure.get('kind') or '').replace('_',' ')
+            if reason:detail+=' Causa registrada: '+reason+'.'
+            detail+=' Pausa temporal tras varios fallos; la fuente se vuelve a consultar al vencer el plazo.'
     elif row.get('inflight'):state='BUSCANDO';detail=detail or 'Consulta en segundo plano; el mapa técnico sigue activo.'
     elif row.get('usable') is False:
         state='SIN NOVEDADES' if prefix=='global_news' else 'SIN RESULTADOS'

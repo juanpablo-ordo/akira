@@ -65,3 +65,19 @@ class RequiredReviewPriority(unittest.TestCase):
         p={'symbol':'BTCUSDm','key':'a','side':1,'kind':'LIMIT','entry':100,'sl':90,'tp':120};pid=identity(p);snapshot={'symbols':{}}
         self.worker.request_pending_reviews([p],snapshot);attempt=self.worker.pending_queue[pid]['attempt_id'];snapshot['required_pending_reviews']=[pid];self.worker.request_pending_reviews([p],snapshot)
         self.assertEqual(self.worker.pending_queue[pid]['priority'],0);self.assertEqual(self.worker.pending_queue[pid]['attempt_id'],attempt);self.assertEqual(len(self.worker.pending_queue),1)
+
+
+class FinancialEvidenceMetrics(unittest.TestCase):
+    def test_net_profit_factor_and_drawdown_use_actual_signed_results(self):
+        from strategy_lab import measured
+        row=measured([{'pnl':2,'closed_at':1},{'pnl':-1,'closed_at':2},{'pnl':-2,'closed_at':3},{'pnl':4,'closed_at':4}])
+        self.assertEqual(row['net'],3)
+        self.assertEqual(row['profit_factor'],2)
+        self.assertEqual(row['drawdown'],3)
+        self.assertEqual(row['expectancy'],.75)
+
+    def test_no_losses_or_missing_data_do_not_create_an_infinite_factor(self):
+        from strategy_lab import measured
+        self.assertIsNone(measured([{'pnl':2}])['profit_factor'])
+        self.assertEqual(measured([{'pnl':'invalid'},{'pnl':float('nan')}])['n'],0)
+        self.assertIsNone(measured([])['expectancy'])

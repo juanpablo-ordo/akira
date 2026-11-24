@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import json
 import re
+import time
 import urllib.parse
 import urllib.request
 from network_tls import https_context
@@ -338,15 +339,24 @@ def lookup_verified_current_fact(query: str, timeout: float = 6.5, limit: int = 
     """
     year=str(datetime.now(timezone.utc).year)
     query=understood(query);jobs=[('official-direct',_official_presidency,query)]
+    deadline=time.monotonic()+max(.05,float(timeout))
     for q in _expanded_queries(query):
-        jobs.extend((('duckhtml',_duck_html,q if year in q else q+' '+year),('bing',_bing_rss,q),('gnews',_google_news_rss,q)))
+        jobs.extend((('duckhtml',_duck_html,q if year in q else q+' '+year),('bing',_bing_rss,q)))
     rows,errors=_collect_searches(jobs,timeout,direct_fast=True)
     ranked=_dedupe_diverse(query,[r for r in rows if not _is_wikipedia(r.get('url',''))],max(10,limit*2),strict=True)
+    # News snippets are a fallback, not a substitute for direct primary evidence.
+    # Do not spend a second full timeout or crowd out the primary search pool.
+    remaining=deadline-time.monotonic()
+    if not any(r.get('source_class')=='official' for r in ranked) and len(ranked)<2 and remaining>.15:
+        extra,extra_errors=_collect_searches([('gnews',_google_news_rss,query)],remaining)
+        rows.extend(extra);errors.extend(extra_errors)
+        ranked=_dedupe_diverse(query,[r for r in rows if not _is_wikipedia(r.get('url',''))],max(10,limit*2),strict=True)
     official=[r for r in ranked if r.get('source_class')=='official']
     fresh_official=[r for r in official if year in (str(r.get('title',''))+' '+str(r.get('text',''))+' '+str(r.get('published','')))]
     independent=[r for r in ranked if r.get('source_class') in ('reputable','web') and r.get('relevance',0)>=0.22]
     selected=[]
-    primary=(fresh_official or official)
+    direct=[r for r in official if r.get('engine')=='official-direct']
+    primary=direct+[r for r in (fresh_official or official) if r not in direct]
     if primary:selected.append(primary[0])
     for r in independent:
         if _host(r.get('url')) not in {_host(x.get('url')) for x in selected}:

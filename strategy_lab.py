@@ -27,12 +27,20 @@ def wilson(w,n,z=1.96):
  return [max(0,center-delta),min(1,center+delta)]
 
 def measured(rows,key='pnl'):
- rows=[r for r in rows if r.get(key) is not None and math.isfinite(float(r[key]))];n=len(rows)
- rows.sort(key=lambda r:num(r.get('closed_at',r.get('exit_at',0))))
- wins=sum(float(r[key])>0 for r in rows);net=sum(float(r[key]) for r in rows)
+ valid=[]
+ for row in rows:
+  try:value=float(row[key])
+  except (KeyError,TypeError,ValueError,OverflowError):continue
+  if math.isfinite(value):valid.append((num(row.get('closed_at',row.get('exit_at',0))),value))
+ valid.sort(key=lambda r:r[0]);n=len(valid);values=[v for _,v in valid]
+ wins=sum(v>0 for v in values);losses=sum(v<0 for v in values);net=sum(values)
+ gross_profit=sum(v for v in values if v>0);gross_loss=-sum(v for v in values if v<0)
  curve=peak=dd=0
- for r in rows:curve+=float(r[key]);peak=max(peak,curve);dd=max(dd,peak-curve)
- return {'n':n,'wins':wins,'losses':sum(float(r[key])<0 for r in rows),'net':net if n else None,
+ for v in values:curve+=v;peak=max(peak,curve);dd=max(dd,peak-curve)
+ return {'n':n,'wins':wins,'losses':losses,'breakevens':n-wins-losses,'net':net if n else None,
+  'gross_profit':gross_profit if n else None,'gross_loss':gross_loss if n else None,
+  'profit_factor':gross_profit/gross_loss if gross_loss>0 else None,
+  'profit_factor_state':'CALCULADO' if gross_loss>0 else 'SIN PÉRDIDAS OBSERVADAS' if n else 'SIN MUESTRA',
   'win_rate':wins/n if n else None,'win_interval':wilson(wins,n),'expectancy':net/n if n else None,'drawdown':dd if n else None}
 
 def definitions():
@@ -339,9 +347,9 @@ def strategy_text(row,symbol):
  example=m.get('example') or {};p=example.get('plan') or {};indicator_text=[]
  for tf,values in example.get('indicators',{}).items():indicator_text.append(tf+': '+', '.join(k+' '+str(round(v,3)) if isinstance(v,(int,float)) else k+' '+str(v) for k,v in values.items()))
  return '\n'.join([row['name']+' / '+symbol,row['origin'],row['rules'],
-  'REALIZADO EN MT5 · '+rate(actual),'Resultado neto: '+amount(actual,'net')+'; media: '+amount(actual,'expectancy'),
+  'REALIZADO EN MT5 · '+rate(actual),'Resultado neto: '+amount(actual,'net')+'; media: '+amount(actual,'expectancy')+'; factor de beneficio: '+(amount(actual,'profit_factor') if actual.get('profit_factor') is not None else actual.get('profit_factor_state','SIN MUESTRA'))+'; drawdown monetario: '+amount(actual,'drawdown'),
   'EXPERIMENTO PAPER · '+rate(paper),'R netos estimados: '+amount(paper,'net')+'; drawdown R: '+amount(paper,'drawdown'),
-  'FUERA DE MUESTRA · '+rate(test),'Días: '+str(m.get('holdout_days',0))+' · '+str(m.get('state','EN ESTUDIO')),
+  'FUERA DE MUESTRA · '+rate(test),'Días: '+str(m.get('holdout_days',0))+' · '+str(m.get('state','EN ESTUDIO'))+'; expectativa R: '+amount(test,'expectancy')+'; factor de beneficio: '+(amount(test,'profit_factor') if test.get('profit_factor') is not None else test.get('profit_factor_state','SIN MUESTRA')),
   m.get('scope','Aún no hay evidencia. Un índice técnico no es probabilidad de ganancias.'),
   ('EJEMPLO: '+('BUY' if p.get('side')==1 else 'SELL')+' '+str(p.get('kind'))+' · Entrada '+str(p.get('entry'))+' · SL '+str(p.get('sl'))+' · TP '+str(p.get('tp'))) if p else 'Sin ejemplo actual con niveles completos.',
   *indicator_text,

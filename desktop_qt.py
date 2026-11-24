@@ -1043,6 +1043,11 @@ class StudioWindow(QMainWindow):
         if row:
             from studio_presenter import next_query
             set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nÚltimo intento: '+when(row.get('last_attempt'),self.controller.cfg)+'\nÚltimo contenido recibido: '+when(row.get('updated'),self.controller.cfg)+'\nPróxima consulta: '+next_query(row)))
+            failure=row.get('failure') or {}
+            if failure:
+                safe=' · '.join(str(failure[k]) for k in ('kind','domain','error_type','http_status','errno') if failure.get(k) is not None and failure.get(k)!='')
+                if safe:
+                    set_document(self.source_detail,rich_text(str(row['title'])+'\n\n'+str(row['presentation_state'])+'\n'+str(row['presentation_detail'])+'\n\nDiagnóstico: '+safe+'\nÚltimo intento: '+when(row.get('last_attempt'),self.controller.cfg)+'\nÚltimo contenido recibido: '+when(row.get('updated'),self.controller.cfg)+'\nPróxima consulta: '+next_query(row)))
             self.source_detail.setToolTip('')
     def render_logs(self,*args,visible_only=False):
         if not hasattr(self,'terminal_table'):return

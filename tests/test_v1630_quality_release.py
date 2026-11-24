@@ -44,3 +44,15 @@ class ExternalStatusTests(unittest.TestCase):
         self.assertEqual(source_presentation('local_ai',{'error':'TimeoutError: timed out'})[1],'TIEMPO AGOTADO')
         self.assertEqual(source_presentation('global_news:test',{'error':'HTTP Error 403: Forbidden'})[1],'ACCESO DENEGADO')
         self.assertEqual(source_presentation('coinglass:BTCUSDm',{'error':'PLAN_LIMITED'})[1],'PLAN LIMITADO')
+
+
+class PublicSourceRecoveryDisplay(unittest.TestCase):
+    def test_isolated_source_keeps_failure_reason_and_retry_time(self):
+        from cyber_ui import source_presentation
+        from studio_presenter import next_query
+        row={'error':'SourceCoolingDown: next attempt','circuit_open':True,'failure':{'kind':'DNS_ERROR'},'retry_after_seconds':120}
+        title,state,detail=source_presentation('fed',row)
+        self.assertEqual(state,'FUENTE AISLADA')
+        self.assertIn('DNS ERROR',detail)
+        self.assertIn('120 s',detail)
+        self.assertEqual(next_query(row),'En 2 min')

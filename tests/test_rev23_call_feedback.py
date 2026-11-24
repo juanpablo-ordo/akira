@@ -12,6 +12,12 @@ from voice_session import VoiceSession, transcribe_with_recovery
 
 
 class CallFeedbackTests(unittest.TestCase):
+    def test_voice_source_followup_preserves_the_subject(self):
+        from voice_conversation import call_research_query
+        history=[{'role':'user','content':'Busca noticias de Xbox'},{'role':'assistant','content':'Encontré una noticia.'}]
+        self.assertEqual(call_research_query('Dame otras fuentes',history),'Busca noticias de Xbox')
+        self.assertEqual(call_research_query('Hola',history),'Hola')
+
     def test_call_searches_general_topics_when_explicitly_requested(self):
         from voice_conversation import call_web_lookup
         result={'results':[{'title':'Referencia','url':'https://example.org/','text':'Evidencia'}]}
