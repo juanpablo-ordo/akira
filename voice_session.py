@@ -19,29 +19,38 @@ def recognition_model(root,name):
   return _STT_MODEL
 
 def transcribe_with_recovery(model,audio,language='es',beam_size=1,vad_filter=True,on_language=None):
- """Retry suspiciously short speech with stronger decoding, preserving short replies."""
+ """Recover truncated or low-confidence speech before sending it to the assistant."""
  def decode(beam,vad):
   segments,info=model.transcribe(audio,language=language,beam_size=beam,
                                  vad_filter=vad,condition_on_previous_text=False)
   if language is None and (getattr(info,'language_probability',0) or 0)<.60:
-   return ''
-  text=' '.join(segment.text.strip() for segment in segments
-                if getattr(segment,'no_speech_prob',0)<.80).strip()[:1500]
-  if text and on_language:
-   on_language(getattr(info,'language',None) or language)
-  return text
- first=decode(beam_size,vad_filter)
- if not first and vad_filter and 8000<=len(audio)<32000:
+   return '',None,None
+  segments=[row for row in segments if row.text.strip() and getattr(row,'no_speech_prob',0)<.80]
+  text=' '.join(row.text.strip() for row in segments)[:1500]
+  scores=[row.avg_logprob for row in segments if getattr(row,'avg_logprob',None) is not None]
+  return text,getattr(info,'language',None) or language,min(scores) if scores else None
+
+ chosen=first=decode(beam_size,vad_filter)
+ text,_,score=first
+ if not text and vad_filter and 8000<=len(audio)<32000:
   # Capture already gated on voice energy. Whisper's VAD can still cut an
   # entire short utterance, a common case for questions like "¿Me oyes?".
-  return decode(beam_size,False)
- if len(first.split())>=4 or len(audio)<32000 or (beam_size>=5 and not vad_filter):
-  return first
- second=decode(max(5,beam_size),False)
- normalized=lambda text:' '.join(re.findall(r'\w+',text.casefold()))
- if second and len(second.split())>len(first.split()) and (not first or normalized(first) in normalized(second)):
-  return second
- return first
+  chosen=decode(beam_size,False)
+ elif not (beam_size>=5 and not vad_filter):
+  words=re.findall(r'\w+',text.casefold())
+  low_confidence=score is not None and score<-.85 and len(words)>=3
+  if (len(audio)>=32000 and len(words)<4) or (len(audio)>=20000 and low_confidence):
+   second=decode(max(5,beam_size),False)
+   improved=re.findall(r'\w+',second[0].casefold())
+   longer_fragment=len(improved)>len(words) and ' '.join(words) in ' '.join(improved)
+   better_score=low_confidence and second[2] is not None and second[2]>=score+.18
+   shared=len(set(words)&set(improved))>=2 and first[1]==second[1]
+   if improved and (longer_fragment or (better_score and shared)):
+    chosen=second
+ text,detected,_=chosen
+ if text and on_language:
+  on_language(detected)
+ return text
 
 def audio_inventory(sd=None):
  if sd is None:

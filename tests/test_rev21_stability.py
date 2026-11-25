@@ -54,6 +54,20 @@ class WaveAndSettings(unittest.TestCase):
         self.assertTrue(all(1<=fps<=144 for fps in wallpaper_fps_choices(240)))
 
 class SpokenRecognitionRecovery(unittest.TestCase):
+    def test_replaces_low_confidence_transcript_with_more_confident_related_speech(self):
+        from voice_session import transcribe_with_recovery
+        from types import SimpleNamespace as Seg
+        class Model:
+            def transcribe(self,audio,**kwargs):
+                first=kwargs['beam_size']==1
+                text='Bienvenzado de mi cuenta.' if first else 'Dime el saldo de mi cuenta.'
+                return [Seg(text=text,avg_logprob=-1.1 if first else -.4)],Seg(language='es',language_probability=.99)
+        detected=[]
+        result=transcribe_with_recovery(Model(),[0.0]*36000,
+                                        language=None,on_language=detected.append)
+        self.assertEqual(result,'Dime el saldo de mi cuenta.')
+        self.assertEqual(detected,['es'])
+
     def test_restores_partial_speech_via_real_second_decode(self):
         from voice_session import transcribe_with_recovery
         from types import SimpleNamespace as Seg

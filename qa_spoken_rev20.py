@@ -42,14 +42,14 @@ def recognize_qa(audio,stt,root,terms):
     from voice_session import recognition_model,transcribe_with_recovery
     def meaningful(text):
         return len(text.split())>=4 and any(term in text.casefold() for term in terms)
-    first=transcribe_with_recovery(stt,audio,language='es',beam_size=1,vad_filter=False)
-    if meaningful(first):return first,stt
-    # Tiny can drop the beginning of synthetic Piper speech; confirm with
-    # a stronger real Whisper model instead of accepting a truncated fragment.
-    stronger=recognition_model(root,'base')
-    second=transcribe_with_recovery(stronger,audio,language='es',beam_size=5,vad_filter=False)
-    if meaningful(second):return second,stronger
-    raise AssertionError('Reconocimiento incompleto: tiny='+repr(first)+'; base='+repr(second))
+    transcripts=[]
+    for name in ('current','base','small'):
+        model=stt if name=='current' else recognition_model(root,name)
+        text=transcribe_with_recovery(model,audio,language='es',
+            beam_size=1 if name=='current' else 5,vad_filter=False)
+        if meaningful(text):return text,model
+        transcripts.append((name,text))
+    raise AssertionError('Reconocimiento sin el dato solicitado: '+repr(transcripts))
 
 
 def run(report,voice_root,app=None,exe=None,model=None):
@@ -76,7 +76,7 @@ def run(report,voice_root,app=None,exe=None,model=None):
             rate=wav.getframerate();audio=np.frombuffer(wav.readframes(wav.getnframes()),dtype='int16').astype('float32')/32768
         audio=np.interp(np.linspace(0,len(audio)-1,round(len(audio)*16000/rate)),np.arange(len(audio)),audio).astype('float32')
         stt=recognition_model(voice_root,'tiny')
-        heard,stt=recognize_qa(audio,stt,voice_root,('saldo','cuenta','dinero','balance'))
+        heard,stt=recognize_qa(audio,stt,voice_root,('saldo','dinero','balance'))
         result['recognized_synthetic_audio']=heard
         if exe and model:
             from voice_conversation import CallConversation
