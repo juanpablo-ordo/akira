@@ -48,10 +48,10 @@ class MotionSprites:
 
 
 class PixelSprites:
-    """Nine aligned poses shared by all desktop avatars."""
+    """Aligned 3×3 sprite atlases shared by desktop avatars."""
 
-    def __init__(self,root):
-        self.path=Path(root)/'assets/avatar_states/akira_pixel.png'
+    def __init__(self,root,atlas='akira_pixel.png'):
+        self.path=Path(root)/'assets/avatar_states'/atlas
         self.stamp=self.path.stat().st_mtime_ns
 
     def image(self,index,width,height):
@@ -64,3 +64,17 @@ class PixelSprites:
         ratio=min(width/cell_width,height/cell_height)
         return frame.resize((max(1,round(cell_width*ratio)),max(1,round(cell_height*ratio))),
                             Image.Resampling.NEAREST)
+
+
+@lru_cache(maxsize=24)
+def pixel_expression_sheet(root,group):
+    families={
+        'friendly','joy','curious','thinking','listening','speaking',
+        'affection','surprise','sleep','focus','encourage','concern',
+    }
+    if group not in families:
+        return None
+    try:
+        return PixelSprites(root,'pixel_expressions/'+group+'.png')
+    except FileNotFoundError:
+        return None

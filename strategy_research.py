@@ -21,6 +21,18 @@ def _database(path, *, timeout):
 ALLOWED_SYMBOLS=('BTCUSDm','XAUUSDm')
 MAX_BODY=24000
 
+# Public references requested for study and comparison, never trading signals.
+TRADING_CHANNELS=(
+    ('Plan BTC','https://www.youtube.com/channel/UCYP50Ia1diVVE9fwVnqEyqQ',
+     'Estructura de mercado y análisis de BTC.'),
+    ('Billions Crypto','https://www.youtube.com/@billionscryptoyt',
+     'Escenarios de volatilidad, soportes, resistencias y liquidez.'),
+    ('CriptoNoticias','https://www.youtube.com/channel/UC0vGJjvMqsnmKo2A5pZ4scA',
+     'Noticias y entrevistas. Contrastar los hechos con la fuente original.'),
+    ('Alejo Rolls','https://www.youtube.com/channel/UCiP4e9cG1Bv5EcvtrmjbRiw',
+     'Análisis de BTC y niveles para formular escenarios de estudio.'),
+)
+
 def _normalise_url(url):
     url=str(url or '').strip()
     parts=urlsplit(url)

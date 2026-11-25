@@ -1474,8 +1474,10 @@ class StudioWindow(QMainWindow):
             self.controller.job('export_strategies',lambda:{'path':export_html(summary,Path(folder)/'AKIRA_estrategias')},'exported')
     def show_study(self):
         if self.private:self.dialog_text('ESTUDIO Y COMPARACIÓN','Resultados ocultos por privacidad. Pulsa el control de la cuenta para mostrarlos.');return
+        from strategy_research import TRADING_CHANNELS
         fields={key:self.controller.view.get(key) for key in ('quality_study','selection_evidence','selection_configuration','confirmed_strategy_outcomes','position_closures')}
-        self.dialog_text('ESTUDIO Y COMPARACIÓN','Resultados confirmados: '+str(len(fields.get('confirmed_strategy_outcomes') or []))+'\nCierres recibidos: '+str(len(fields.get('position_closures') or []))+'\n\nAkira compara casos simulados y cierres confirmados. Una muestra pequeña no demuestra que una variante sea mejor. El informe conserva cada cierre y sus costes.')
+        references='\n'.join(f'[{name}]({url}) · {topic}' for name,url,topic in TRADING_CHANNELS)
+        self.dialog_text('ESTUDIO Y COMPARACIÓN','Resultados confirmados: '+str(len(fields.get('confirmed_strategy_outcomes') or []))+'\nCierres recibidos: '+str(len(fields.get('position_closures') or []))+'\n\nAkira compara casos simulados y cierres confirmados. Una muestra pequeña no demuestra que una variante sea mejor. El informe conserva cada cierre y sus costes.\n\nCanales para estudiar escenarios e invalidaciones\n'+references)
     def open_memories(self):
         rows=self.controller.assistant.chats.memories();text='\n\n'.join(str(r['id'])+' · '+r['body'] for r in rows)
         dialog,box=self.dialog_text('MEMORIA',text)

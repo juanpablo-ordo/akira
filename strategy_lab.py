@@ -56,10 +56,12 @@ def definitions():
     'origin':'Hipótesis generada por AKIRA a partir de reglas estructurales acotadas','mode':'EXPERIMENTO',
     'rules':indicators+f'; invalidación tras extremo observado con colchón {buffer:g} ATR; objetivo en pivote H1/M15 y R:R mínimo {min_rr:g}. La pendiente experimental caduca a las 2 horas; observación máxima de 24 horas.',
     'spec':spec,'base_family':base,'version':1,'auto_live_activation':False})
- out.append({'id':'LAB_BTC_BEAR_CONTINUATION_V1','name':'BTC · Continuación bajista',
+ for instrument,label in (('BTC','BTC'),('XAU','Oro')):
+  out.append({'id':f'LAB_{instrument}_BEAR_CONTINUATION_V1','name':label+' · Continuación bajista',
     'origin':'Hipótesis registrada para comparación fuera de muestra','mode':'EXPERIMENTO',
     'rules':'H1 y M15 bajistas. Cierre bajo soporte M15 tras retest. SELL STOP debajo del mínimo confirmado con SL sobre el retest y objetivo histórico. R:R mínimo 1.8.',
-    'spec':{'template':'BEAR_CONTINUATION','buffer_atr':.25,'min_rr':1.8,'expiry_seconds':7200,'horizon_seconds':86400},
+    'spec':{'template':'BEAR_CONTINUATION',**({'instrument':instrument} if instrument!='BTC' else {}),'buffer_atr':.25,'min_rr':1.8,
+            'expiry_seconds':7200,'horizon_seconds':86400},
     'base_family':'PENDIENTE_RUPTURA','version':1,'auto_live_activation':False,'research_only':True})
  return out
 
@@ -71,7 +73,7 @@ def propose(definition,symbol,info,now):
  if not 0<=now-(bar+900)<=960:return None
  b=spec['buffer_atr'];prior=bars[-21:-1];lo=min(num(x['low']) for x in prior);hi=max(num(x['high']) for x in prior)
  bearish=spec['template']=='BEAR_CONTINUATION'
- if bearish and not symbol.upper().startswith('BTC'):return None
+ if bearish and not symbol.upper().startswith(spec.get('instrument','BTC')):return None
  for side in ((-1,) if bearish else (1,-1)):
   close=num(last['close']);high=num(last['high']);low=num(last['low']);body=side*(close-num(last['open']))
   trend=side*num(h.get('trend'));key=spec['template'];entry=0;anchor=0

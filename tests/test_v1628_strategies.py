@@ -174,12 +174,14 @@ class LabTests(unittest.TestCase):
  def tick(self):self.lab.submit(self.snap);self.lab.tick();return self.lab.read()
  def test_generated_hypotheses_are_finite_immutable_and_not_live_code(self):
   rows=[d for d in definitions() if d.get('spec')]
-  # Twelve generated neighbors plus the separately registered BTC bearish
-  # continuation hypothesis; none may enter live execution automatically.
-  self.assertEqual(len(rows),13)
-  self.assertEqual(len({r['id'] for r in rows}),13)
-  bearish=next(r for r in rows if r['id']=='LAB_BTC_BEAR_CONTINUATION_V1')
-  self.assertTrue(bearish['research_only'])
+  # Twelve parameter variants and one separate bearish experiment per asset.
+  self.assertEqual(len(rows),14)
+  self.assertEqual(len({r['id'] for r in rows}),14)
+  for asset,other in (('BTC','XAUUSDm'),('XAU','BTCUSDm')):
+   with self.subTest(asset=asset):
+    bearish=next(r for r in rows if r['id']==f'LAB_{asset}_BEAR_CONTINUATION_V1')
+    self.assertTrue(bearish['research_only'])
+    self.assertIsNone(propose(bearish,other,self.snap['symbols']['BTCUSDm'],self.now))
   self.assertTrue(all(r['auto_live_activation'] is False for r in rows))
  def test_detection_retains_exact_levels_and_research_only_scope(self):
   p=propose(next(d for d in definitions() if d.get('spec')),'BTCUSDm',self.snap['symbols']['BTCUSDm'],self.now)

@@ -508,6 +508,14 @@ class VoiceSession:
    import numpy as np,sounddevice as sd
    model_name=str(self.options.get('model','tiny'))
    if model_name not in ('tiny','base','small'):model_name='tiny'
+   if self.options.get('streaming_call') and not self.stop_event.is_set():
+    # Start the owned speech worker while recognition is loading, rather than
+    # paying the process startup cost after the first answer sentence.
+    with self._speech_queue_lock:
+     if not self.stop_event.is_set() and self._speech_server is None:
+      self._speech_server=SpeechServer()
+      try:self._speech_server.start()
+      except OSError:self._speech_server.close()
    self.event('state',text='Preparando reconocimiento. La primera vez puede necesitar Internet para descargar el modelo.')
    model=recognition_model(self.root,model_name)
    if self.stop_event.is_set():return

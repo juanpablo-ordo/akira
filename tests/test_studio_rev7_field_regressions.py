@@ -129,10 +129,12 @@ class QtFieldTests(unittest.TestCase):
         avatar=self.window.avatars[0];self.window.director.publish('idle',force=True);self.app.processEvents();first=avatar.grab().toImage();selected=avatar.selected.id
         self.window.director.blink_frame=2;avatar.update();self.app.processEvents();second=avatar.grab().toImage();self.assertNotEqual(first,second);self.assertEqual(selected,avatar.selected.id)
     def test_continuous_resize_reuses_the_sprite_then_resamples_at_the_final_size(self):
+        from avatar_animation import pixel_expression_sheet
         from studio_widgets import AvatarWidget
         avatar=AvatarWidget(self.window.director,ROOT);avatar.resize(180,180);avatar.show();self.app.processEvents();avatar.grab()
         try:
-            with patch.object(avatar.states,'image',wraps=avatar.states.image) as decode:
+            active_sheet=pixel_expression_sheet(avatar.asset_root,avatar.selected.group) or avatar.pixel_states or avatar.states
+            with patch.object(active_sheet,'image',wraps=active_sheet.image) as decode:
                 for n in range(30):avatar.resize(180+n*3,180+n*2);self.app.processEvents();avatar.grab()
                 self.assertLessEqual(decode.call_count,2)
                 deadline=time.monotonic()+.18

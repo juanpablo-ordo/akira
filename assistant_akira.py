@@ -242,7 +242,7 @@ class AkiraAssistant:
                     self.memory.put({'url':row['url'],'title':row.get('title',''),'topic':query,
                                      'body':row.get('description',''),'summary':row.get('description','')[:3000],
                                      'kind':'youtube_search','status':'discovered'})
-                    try:self.research_ledger.add(url=row['url'],kind='youtube_discovered',title=row.get('title',''),author=row.get('channel',''),body=row.get('description',''),status='discovered')
+                    try:self.research_ledger.add(url=row['url'],kind='youtube_discovered',title=row.get('title',''),author=row.get('author') or row.get('channel',''),body=row.get('description',''),status='discovered')
                     except (ValueError,OSError):pass
             self._progress('YOUTUBE · ENCONTRADO',f'{len(rows)} videos para: {query}')
             return {'query':query,'results':rows,'source':'youtube_search','as_of':time.time()}
@@ -1059,7 +1059,7 @@ class AkiraAssistant:
         if formatting:fresh=False
         factual=not social and (self._should_research_fact(research_query) or self._source_followup(message))
         auto_research=bool(cfg.get('auto_research',True))
-        wants_video=bool(re.search(r'\b(?:youtube|videos?|v[ií]deos?|plan btc|billions crypto|crypto noticias|alejo rolls)\b',message,re.I))
+        wants_video=bool(re.search(r'\b(?:youtube|videos?|v[ií]deos?|plan btc|billions crypto|cr[iy]pto\s?noticias|alejo rolls)\b',message,re.I))
         explicit_research=bool(re.search(r'\b(?:investiga|busca|fuentes?|internet|web|youtube|video|vídeo|noticias?|actualiza)\b',message,re.I))
         deep=bool(re.search(r'\b(?:a fondo|investigaci[oó]n profunda|an[aá]lisis exhaustivo|revisi[oó]n profunda|investiga todo)\b',message,re.I))
         file_request=bool(re.search(r'\b(?:crea|guarda|escribe|genera|modifica|edita|lee|abre)\b.*\b(?:archivo|documento|word|proyecto|zip|c[oó]digo)\b',message,re.I))

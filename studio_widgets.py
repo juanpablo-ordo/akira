@@ -348,6 +348,7 @@ class AvatarWidget(QWidget):
         width,height=self._stable_dimensions;director=self.director
         state=None;entry=self.selected
         pixel=self.pixel_states if not hasattr(entry,'path') else None
+        pixel_key='pixel-motion'
         if hasattr(entry,'path') and director.blink_frame is not None:
             blink=next((item for item in director.catalog.entries if item.state=='blink'),None)
             if blink:entry=blink
@@ -358,17 +359,24 @@ class AvatarWidget(QWidget):
                 state=2
             elif director.blink_frame is not None and not self.reduce_motion:
                 state=director.blink_frame
-            elif director.loading or self.name in ('thinking','curious','analyzing','focused'):
-                state=7
-            elif self.name in ('happy','celebrating','caring','bullish'):
-                state=8
-            elif self.name in ('listening','waking','alert','error'):
-                state=3
             else:
-                state=0
+                from avatar_animation import pixel_expression_sheet
+                sheet=pixel_expression_sheet(self.asset_root,getattr(entry,'group',''))
+                if sheet:
+                    pixel=sheet
+                    pixel_key=entry.id
+                    state=entry.row*3+entry.column
+                elif director.loading or self.name in ('thinking','curious','analyzing','focused'):
+                    state=7
+                elif self.name in ('happy','celebrating','caring','bullish'):
+                    state=8
+                elif self.name in ('listening','waking','alert','error'):
+                    state=3
+                else:
+                    state=0
         elif not hasattr(self.selected,'path'):
             state=15 if not director.online and not director.interacting else 14 if self.name=='waking' else int(time.monotonic()*8)%8 if director.loading else 10 if director.blink_frame==2 else 9 if director.blink_frame is not None else 12 if self.name=='listening' else (13 if director.mouth_level>.035 else 8) if director.playing else 8 if self.name in ('idle','waiting') else None
-        key=(entry.id if state is None else 'pixel' if pixel else 'motion',state,width,height)
+        key=(entry.id if state is None else pixel_key if pixel else 'motion',state,width,height)
         if key not in self.cache:
             image=(pixel or self.states).image(state,width,height) if state is not None else director.catalog.image(entry,width,height)
             image=image.convert('RGBA')
