@@ -15,7 +15,7 @@ class NativeScope(unittest.TestCase):
         from PySide6.QtWidgets import QApplication
         cls.app=QApplication.instance() or QApplication([])
 
-    def test_one_visible_market_workspace_contains_orders_positions_strategy_and_risk(self):
+    def test_market_analysis_and_operations_are_separate_visible_workspaces(self):
         from desktop_qt import StudioWindow
         from akira_version import DISPLAY_VERSION
         import tempfile
@@ -24,13 +24,15 @@ class NativeScope(unittest.TestCase):
             window.show();self.app.processEvents()
             try:
                 self.assertEqual(window.brand.text(),'AKIRA '+DISPLAY_VERSION)
-                self.assertTrue(window.nav[1].isHidden())
+                self.assertFalse(window.nav[1].isHidden())
                 self.assertTrue(window.nav[2].isHidden())
                 self.assertFalse(window.nav[3].isHidden())
                 window.navigate(3)
                 for name in ('analysis_connection_status','analysis_strategy_selector',
                              'analysis_pending_table','analysis_positions_table','analysis_risk_status'):
                     self.assertTrue(hasattr(window,name),name)
+                self.assertTrue(window.pages[1].isAncestorOf(window.analysis_pending_table))
+                self.assertTrue(window.pages[1].isAncestorOf(window.analysis_positions_table))
                 self.assertEqual(window.analysis_strategy_selector.currentData(),window.strategy_selector.currentData())
                 self.assertTrue(window.cloud_choice.isHidden())
                 self.assertTrue(window.settings_panel.fields['studio.brand_name'][0].isHidden())

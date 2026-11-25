@@ -97,9 +97,11 @@ def effective_desktop(desktop,hardware=None):
         limited=small or bool(RELEASE_GOVERNOR.reason)
         graphics=bool(hw.get('dedicated_gpu'))
         chosen='Ahorro de energía' if limited else 'Rendimiento' if graphics else 'Equilibrado'
+        gpu_allowed=bool(result.get('model_use_gpu',True)) and graphics and not limited
         result.update(profile_budget(chosen),performance_profile=chosen,low_resource_active=limited,
                       resource_reason=RELEASE_GOVERNOR.reason or ('Equipo de hasta 9 GB' if small else
                                        'Acelerador detectado' if graphics else 'Recursos disponibles'))
+        result['model_use_gpu']=gpu_allowed
         return result
     mode=result.get('low_resource_mode','auto')
     light=mode=='ultra' or (mode!='off' and 0<float(hw.get('ram_gb',0))<=9 and not hw.get('dedicated_gpu',False))

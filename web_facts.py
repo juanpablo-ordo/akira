@@ -13,6 +13,7 @@ import re
 import time
 import urllib.parse
 import urllib.request
+from answer_grounding import folded
 from network_tls import https_context
 from network_diagnostics import guarded_open
 import xml.etree.ElementTree as ET
@@ -48,7 +49,7 @@ _CURRENT_PATTERNS = (
     r"\bpresidente\b", r"\bprimer ministro\b", r"\bministro\b", r"\bceo\b", r"\bgobernador\b",
     r"\bquién es\b", r"\bquien es\b", r"\bprecio\b", r"\bcotiza\b", r"\bnoticias?\b",
     r"\belecciones?\b", r"\b202[5-9]\b", r"\besta semana\b", r"\beste mes\b",
-    r"\b(lanz[oó]|lanzar|lanzaron|lanzado|lanzamiento|estren[oó]|taquillera|recaudaci[oó]n|acaba|reci[eé]n|reciente|nuev[oa]s?|anunci[oó])\b",
+    r"\b(lanz[oó]|lanzar|lanzaron|lanzado|lanzamiento|estren[oó]|taquillera|recaudaci[oó]n|acaba|reci[eé]n|reciente(?:mente)?|recently|nuev[oa]s?|anunci[oó])\b",
 )
 
 _STOP = {
@@ -67,14 +68,37 @@ _OFFICIAL_HOSTS = {
     "hbo.com", "max.com", "press.wbd.com", "wbd.com", "warnerbros.com", "dc.com", "dcstudios.com",
     "netflix.com", "about.netflix.com", "thewaltdisneycompany.com", "marvel.com", "news.xbox.com",
     "playstation.com", "blog.playstation.com", "apple.com", "google.com", "blog.google", "openai.com",
-    "nvidia.com", "investor.nvidia.com", "coinglass.com"
+    "nvidia.com", "investor.nvidia.com", "coinglass.com", "rockstargames.com", "take2games.com"
 }
 _REPUTABLE_HOSTS = {
     "reuters.com", "apnews.com", "bbc.com", "bbc.co.uk", "cnn.com", "nytimes.com", "washingtonpost.com",
     "theguardian.com", "bloomberg.com", "ft.com", "forbes.com", "cnbc.com", "npr.org",
     "the-numbers.com", "boxofficemojo.com", "variety.com", "deadline.com", "hollywoodreporter.com",
-    "ign.com", "theverge.com", "gamespot.com", "polygon.com",
+    "ign.com", "theverge.com", "gamespot.com", "polygon.com", "eurogamer.net", "vandal.elespanol.com", "3djuegos.com",
 }
+
+_ROCKSTAR = re.compile(r'\b(?:rockstar|gta(?:\s+vi)?|grand theft auto|red dead redemption)\b', re.I)
+
+
+def _matches_requested_publisher(query, row):
+    if not _ROCKSTAR.search(folded(query)):
+        return True
+    if _host(row.get('url','')) in {'rockstargames.com','take2games.com'}:
+        return True
+    text=folded(str(row.get('title') or '')+' '+str(row.get('text') or ''))
+    return _classify(row)=='reputable' and bool(_ROCKSTAR.search(text))
+
+
+def _article_link(url):
+    """Reject aggregator wrappers, anonymous links and publication home pages."""
+    try:
+        parts=urllib.parse.urlsplit(url)
+        return (parts.scheme in ('https','http') and bool(parts.hostname)
+                and not (parts.username or parts.password)
+                and _host(url) not in {'news.google.com','bing.com','duckduckgo.com'}
+                and bool(parts.path.strip('/')))
+    except ValueError:
+        return False
 
 
 def needs_web_verification(message: str) -> bool:
@@ -162,15 +186,18 @@ def _duck_html(query: str, timeout: float = 7.0):
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
     with guarded_open(urllib.request.urlopen,req, timeout=timeout, context=https_context()) as r:
         raw = r.read(1_200_000).decode("utf-8", "replace")
-    links = re.findall(r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', raw, flags=re.I|re.S)
-    snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</(?:a|div)>', raw, flags=re.I|re.S)
+    links=list(re.finditer(r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>',raw,flags=re.I|re.S))
     rows=[]
-    for i,(href,title) in enumerate(links[:10]):
+    for i,match in enumerate(links[:10]):
+        href,title=match.groups()
         href=html.unescape(href)
         m=re.search(r'uddg=([^&]+)',href)
         if m:href=urllib.parse.unquote(m.group(1))
         title=re.sub(r'<[^>]+>',' ',html.unescape(title)); title=re.sub(r'\s+',' ',title).strip()
-        snippet=snippets[i] if i<len(snippets) else ''
+        end=links[i+1].start() if i+1<len(links) else len(raw)
+        snippet_match=re.search(r'class="result__snippet"[^>]*>(.*?)</(?:a|div)>',
+                                raw[match.end():end],flags=re.I|re.S)
+        snippet=snippet_match.group(1) if snippet_match else ''
         snippet=re.sub(r'<[^>]+>',' ',html.unescape(snippet)); snippet=re.sub(r'\s+',' ',snippet).strip()
         if title and href.startswith(('http://','https://')):
             rows.append({"title":title,"url":href,"text":snippet[:1600],"engine":"duck-html"})
@@ -215,7 +242,10 @@ def _google_news_rss(query: str, timeout: float = 7.0):
 def _expanded_queries(query: str):
     q=' '.join(understood(query).split()).strip(); low=q.lower(); out=[q]
     year=str(datetime.now(timezone.utc).year)
-    if re.search(r'president\w*',low) and 'guatemala' in low:
+    if _ROCKSTAR.search(folded(q)):
+        out += [f'site:rockstargames.com/newswire Rockstar Games released available now {year}',
+                f'site:take2games.com Rockstar Games release available worldwide {year}']
+    elif re.search(r'president\w*',low) and 'guatemala' in low:
         out += [f'site:presidencia.gob.gt presidente Guatemala {year}', f'site:agn.gt presidente Guatemala {year}', f'presidente Guatemala {year} Reuters AP']
     elif 'xbox' in low:
         out += [f'site:news.xbox.com {q} {year}', f'site:gearsofwar.com {q} {year}' if 'gears' in low else f'{q} {year} Microsoft Xbox Wire']
@@ -258,6 +288,42 @@ def _official_presidency(query,timeout):
              'source_class':'official','read_status':'official_page_excerpt','retrieved_at':datetime.now(timezone.utc).isoformat()}]
 
 
+def _rockstar_release(query,timeout):
+    """Find a release announcement in the publisher's current press list."""
+    if not _ROCKSTAR.search(folded(query)) or not re.search(r'lanz|estren|released|launch|disponib',folded(query)):
+        return []
+    deadline=time.monotonic()+timeout
+    start='https://www.take2games.com/ir/press-releases'
+
+    def read(url):
+        request=urllib.request.Request(url,headers={'User-Agent':UA,'Accept':'text/html'})
+        with guarded_open(urllib.request.urlopen,request,timeout=max(.1,deadline-time.monotonic()),
+                          context=https_context()) as response:
+            final=response.geturl()
+            if _host(final) not in ('take2games.com','ir.take2games.com'):
+                raise ValueError('El comunicado redirigió fuera del dominio oficial')
+            return final,response.read(1_200_000).decode('utf-8','replace')
+
+    def clean(value):
+        return ' '.join(html.unescape(re.sub(r'<[^>]+>',' ',value)).split())
+
+    _,index=read(start)
+    for href,title in re.findall(r'<a\b[^>]*\bhref=["\x27]([^"\x27]+)["\x27][^>]*>(.*?)</a>',index,re.I|re.S):
+        title=clean(title)
+        if not _ROCKSTAR.search(title) or not re.search(r'\b(now available|launches|available worldwide)\b',title,re.I):
+            continue
+        url=urllib.parse.urljoin(start,html.unescape(href))
+        if _host(url) not in ('take2games.com','ir.take2games.com') or time.monotonic()>=deadline:
+            continue
+        final,page=read(url)
+        paragraphs=[clean(row) for row in re.findall(r'<p\b[^>]*>(.*?)</p>',page,re.I|re.S)]
+        evidence=[row for row in paragraphs if _ROCKSTAR.search(row) and re.search(r'\b(now available|available (?:on|for|at))\b',row,re.I)]
+        if evidence:
+            return [{'title':title,'url':final,'text':'\n'.join(evidence[:4])[:4500],
+                     'engine':'official-direct','read_status':'official_page_excerpt'}]
+    return []
+
+
 def _classify(row):
     url=str(row.get('url') or '')
     host=_host(url)
@@ -285,7 +351,8 @@ def _dedupe_diverse(query,rows,limit=8,strict=False):
     merged=[]; seen=set(); per_host={}
     for r in rows:
         url=str(r.get('url') or '').strip(); title=str(r.get('title') or '').strip()
-        if not url or not title:continue
+        if not url or not title or (r.get('engine')!='official-direct' and not _article_link(url)):continue
+        if r.get('engine')=='google-news-rss' or not _matches_requested_publisher(query,r):continue
         key=url.split('#',1)[0].rstrip('/')
         if key in seen:continue
         seen.add(key)
@@ -294,7 +361,8 @@ def _dedupe_diverse(query,rows,limit=8,strict=False):
         body=(title+' '+str(r.get('text') or '')).lower()
         if re.search(r'\bgears\b',query,re.I) and 'gears' not in body:continue
         if office and not re.search(r'\b(?:president\w*|mandatari\w*|ministro\w*|gobernador\w*|alcalde\w*)\b',body):continue
-        if rr['relevance'] < (.35 if office or strict else .18) and len(_terms(query))>=2:continue
+        publisher_match=_ROCKSTAR.search(folded(query)) and _ROCKSTAR.search(folded(body))
+        if rr['relevance'] < (.35 if office or strict else .18) and len(_terms(query))>=2 and not publisher_match:continue
         merged.append(rr)
     merged.sort(key=lambda r:_rank(query,r,strict),reverse=True)
     out=[]
@@ -313,9 +381,9 @@ def _dedupe_diverse(query,rows,limit=8,strict=False):
 def lookup_current_fact(query: str, timeout: float = 7.0, limit: int = 6):
     """Multi-index public search. Fresh questions never fall back to stale Wikipedia alone."""
     query=understood(query);queries=_expanded_queries(query)
-    jobs=[]
+    jobs=[('rockstar-release',_rockstar_release,query)] if _ROCKSTAR.search(folded(query)) else []
     for q in queries:
-        jobs.extend((('duckhtml',_duck_html,q),('bing',_bing_rss,q),('gnews',_google_news_rss,q)))
+        jobs.extend((('duckhtml',_duck_html,q),('bing',_bing_rss,q)))
     jobs.append(('duckduckgo',_duck,query))
     rows,errors=_collect_searches(jobs,timeout)
     nonwiki=_dedupe_diverse(query,rows,max(limit,4),strict=False)
@@ -339,21 +407,13 @@ def lookup_verified_current_fact(query: str, timeout: float = 6.5, limit: int = 
     """
     year=str(datetime.now(timezone.utc).year)
     query=understood(query);jobs=[('official-direct',_official_presidency,query)]
-    deadline=time.monotonic()+max(.05,float(timeout))
     for q in _expanded_queries(query):
         jobs.extend((('duckhtml',_duck_html,q if year in q else q+' '+year),('bing',_bing_rss,q)))
     rows,errors=_collect_searches(jobs,timeout,direct_fast=True)
     ranked=_dedupe_diverse(query,[r for r in rows if not _is_wikipedia(r.get('url',''))],max(10,limit*2),strict=True)
-    # News snippets are a fallback, not a substitute for direct primary evidence.
-    # Do not spend a second full timeout or crowd out the primary search pool.
-    remaining=deadline-time.monotonic()
-    if not any(r.get('source_class')=='official' for r in ranked) and len(ranked)<2 and remaining>.15:
-        extra,extra_errors=_collect_searches([('gnews',_google_news_rss,query)],remaining)
-        rows.extend(extra);errors.extend(extra_errors)
-        ranked=_dedupe_diverse(query,[r for r in rows if not _is_wikipedia(r.get('url',''))],max(10,limit*2),strict=True)
     official=[r for r in ranked if r.get('source_class')=='official']
     fresh_official=[r for r in official if year in (str(r.get('title',''))+' '+str(r.get('text',''))+' '+str(r.get('published','')))]
-    independent=[r for r in ranked if r.get('source_class') in ('reputable','web') and r.get('relevance',0)>=0.22]
+    independent=[r for r in ranked if r.get('source_class')=='reputable' and r.get('relevance',0)>=0.22]
     selected=[]
     direct=[r for r in official if r.get('engine')=='official-direct']
     primary=direct+[r for r in (fresh_official or official) if r not in direct]

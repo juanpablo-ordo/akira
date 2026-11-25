@@ -45,3 +45,22 @@ class MotionSprites:
         canvas=Image.new('RGBA',(448,448));canvas.alpha_composite(cell,((448-cell.width)//2,440-cell.height))
         ratio=min(max(1,width)/448,max(1,height)/448)
         return canvas.convert('RGBa').resize((max(1,round(448*ratio)),max(1,round(448*ratio))),Image.Resampling.LANCZOS).convert('RGBA')
+
+
+class PixelSprites:
+    """Nine aligned poses shared by all desktop avatars."""
+
+    def __init__(self,root):
+        self.path=Path(root)/'assets/avatar_states/akira_pixel.png'
+        self.stamp=self.path.stat().st_mtime_ns
+
+    def image(self,index,width,height):
+        from PIL import Image
+        atlas=_atlas(str(self.path),self.stamp)
+        column,row=index%3,index//3
+        cell_width,cell_height=atlas.width//3,atlas.height//3
+        frame=atlas.crop((column*cell_width,row*cell_height,
+                         (column+1)*cell_width,(row+1)*cell_height))
+        ratio=min(width/cell_width,height/cell_height)
+        return frame.resize((max(1,round(cell_width*ratio)),max(1,round(cell_height*ratio))),
+                            Image.Resampling.NEAREST)

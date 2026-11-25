@@ -4,10 +4,10 @@ import copy,json
 from pathlib import Path
 from PySide6.QtCore import Qt,QSize,QTimer
 from PySide6.QtGui import QIcon,QPixmap,QColor,QFontDatabase
-from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QFormLayout,QTabWidget,QScrollArea,QLineEdit,QComboBox,QCheckBox,QDoubleSpinBox,QSpinBox,QSlider,QLabel,QFileDialog,QColorDialog,QFontComboBox,QDialog,QDialogButtonBox,QListWidget,QListWidgetItem,QAbstractItemView,QPlainTextEdit
+from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QFormLayout,QTabWidget,QScrollArea,QLineEdit,QComboBox,QCheckBox,QDoubleSpinBox,QSpinBox,QSlider,QLabel,QFileDialog,QColorDialog,QFontComboBox,QDialog,QDialogButtonBox,QInputDialog,QListWidget,QListWidgetItem,QAbstractItemView,QPlainTextEdit
 from studio_editors import ChoiceBox,ColorButton,FontEditor,WallpaperEditor
 from studio_widgets import Card,label,button,INK,Toggle
-from akira_studio import STATES,LOCALES,import_media,import_sprites,suggested_sequences,ordered_entries,import_language_pack
+from akira_studio import STATES,LOCALES,import_media,import_sprites,suggested_sequences,ordered_entries
 
 
 def wallpaper_fps_choices(monitor_hz):
@@ -225,7 +225,7 @@ class SettingsPanel(QWidget):
         names={'auto':'Automático','es':'Español','en':'English','pt':'Português','fr':'Français','de':'Deutsch','it':'Italiano','ja':'日本語','zh':'中文','ko':'한국어','ar':'العربية','ru':'Русский','hi':'हिन्दी','tr':'Türkçe','id':'Bahasa Indonesia','vi':'Tiếng Việt','nl':'Nederlands','pl':'Polski','uk':'Українська'}
         for path,title in [('studio.language_ui','Idioma de la interfaz'),('studio.language_chat','Idioma del chat'),('studio.language_voice_in','Idioma de reconocimiento'),('studio.language_voice_out','Idioma de la voz')]:self.field(card,path,title,[(k,v) for k,v in names.items() if k!='auto' or path!='studio.language_ui'])
         self.translation_status=label('','muted');self.translation_status.setWordWrap(True);card.body.addWidget(self.translation_status)
-        note=label('Importa traducciones en un archivo .json con locale y translations. Ejemplo: {"locale":"es","translations":{"TRADING":"TRADING"}}. Las voces disponibles dependen del idioma.','muted');note.setWordWrap(True);card.body.addWidget(note);self.add_button(card,'IMPORTAR PAQUETE',self.choose_language)
+        self.add_button(card,'BUSCAR IDIOMAS',self.choose_language)
         card=self.card(2,'IA LOCAL Y CONVERSACIÓN','chat')
         self.field(card,'assistant.preload','Precargar y comprobar el modelo local al iniciar')
         for key,title in [('prepare','Preparación local'),('conversation','Generación conversacional'),('sources','Consulta de herramientas'),('deep_research','Investigación profunda'),('trade_review','Revisión de operaciones')]:self.field(card,'assistant.'+key+'_timeout_seconds',title+' (segundos)',limits=(1,900))
@@ -237,7 +237,7 @@ class SettingsPanel(QWidget):
         for path,title in [('assistant.enabled','Asistente activado'),('assistant.allow_live_orders','Permitir solicitudes operativas explícitas del chat'),('assistant.local_runtime_enabled','Motor local incluido'),('assistant.cross_chat_memory','Usar memoria de otras conversaciones')]:
             if get(self.controller.cfg,path) is not None:self.field(card,path,title)
         note=label('Reparar comprueba archivos y una respuesta real. Si falta la IA incluida, intenta recuperarla con una descarga verificada de unos 2,5 GB. Espera el resultado antes de cerrar.','muted');note.setWordWrap(True);card.body.addWidget(note)
-        self.add_button(card,'REPARAR ASISTENTE',self.controller.repair_ai);self.add_button(card,'MOTIVO Y REGISTRO',self.window.show_model_log)
+        self.add_button(card,'COMPROBAR Y RECUPERAR IA LOCAL',self.controller.repair_ai);self.add_button(card,'MOTIVO Y REGISTRO',self.window.show_model_log)
         card=self.card(2,'PREFERENCIAS DE VOZ','sources');self.field(card,'voice.model','Modelo de reconocimiento',('tiny','base','small'))
         self.field(card,'voice.rate','Velocidad de voz',limits=(80,300))
         self.field(card,'voice.volume','Volumen de voz',limits=(0,1))
@@ -297,10 +297,9 @@ class SettingsPanel(QWidget):
             card.body.addLayout(row);self.keys[key]=entry
         note=label('Guardar incluye estas claves. Un campo vacío conserva la clave anterior. Guardar no certifica acceso al proveedor.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
         self.add_button(card,'GUARDAR API',self.save_keys,'primary')
-        note=label('Una clave nueva reemplaza la anterior del mismo proveedor. YouTube no forma parte del análisis automático ni autoriza operaciones.','muted');note.setWordWrap(True);card.body.addWidget(note)
+        note=label('La clave de YouTube es opcional. La búsqueda pública funciona sin ella cuando el servicio lo permite. Los videos pueden servir como referencia, sin autorizar operaciones.','muted');note.setWordWrap(True);card.body.addWidget(note)
         self.add_button(card,'COMPROBAR FUENTES',self.window.check_sources)
         self.add_button(card,'ELIMINAR CLAVES GUARDADAS',self.window.delete_key)
-        self.add_button(card,'RESTABLECER PIN CON WINDOWS',self.window.reset_privacy_pin)
         card=self.card(3,'INVESTIGACIÓN Y CONOCIMIENTO','sources')
         for path,title in [('research.enabled','Investigación de mercado'),('research.coinglass_public_fallback','Derivados públicos de BTC'),('research.global_news','Consultar noticias'),('knowledge.enabled','Actualizar biblioteca de conversación')]:self.field(card,path,title)
         self.field(card,'knowledge.mode','Actualización de conocimiento',(('automatic','Automática'),('request','Solo al solicitarla')))
@@ -359,7 +358,8 @@ class SettingsPanel(QWidget):
         self.effective_profile=label('','muted');self.effective_profile.setWordWrap(True);card.body.addWidget(self.effective_profile)
         profile=self.field(card,'desktop.performance_profile','Perfil de recursos',('Rendimiento','Equilibrado','Ahorro de energía'),hidden=True)
         for path,title,low,high in [('desktop.memory_budget_mb','Presupuesto del modelo (MB)',512,16384),('desktop.model_context_tokens','Contexto (tokens)',1024,16384),('desktop.model_keep_alive_seconds','Mantener modelo cargado (s)',0,600)]:self.field(card,path,title,limits=(low,high),hidden=True)
-        self.field(card,'desktop.model_use_gpu','Usar GPU para el modelo',hidden=True)
+        self.field(card,'desktop.model_use_gpu','Permitir GPU dedicada para la IA',
+                   help='Desactiva esta opción para ejecutar el modelo local por CPU. La detección automática sigue cuidando la memoria.')
         profile.currentTextChanged.connect(self.apply_profile)
         note=label('La IA evalúa Bitcoin y oro por separado. Las revisiones automáticas se espacian diez minutos en ahorro y tres en equilibrio. El resumen general también descansa al terminar. Las revisiones que exijas tienen prioridad. Cotizaciones, órdenes y riesgo mantienen su frecuencia. Los presupuestos del modelo son orientativos.','muted');note.setWordWrap(True);self.tr.bind(note,note.text());card.body.addWidget(note)
     def apply_profile(self,name):
@@ -386,7 +386,6 @@ class SettingsPanel(QWidget):
         self.add_button(updates,'Pausar descarga',lambda:self.controller.update_cancel.set())
         self.install_update_button=self.add_button(updates,'Actualizar y reiniciar',self.window.confirm_update_install)
         self.install_update_button.setEnabled(False)
-        if not self.controller.preview:self.window.build_mobile_controls(self.card(5,'AKIRA MÓVIL','chat'))
         card=self.card(5,'CÓMO TRABAJA EL MOTOR','shield');note=label('Akira comprueba cotizaciones, estructura, órdenes, margen y riesgo antes de cada cambio. Las fuentes aportan contexto cuando están disponibles. Ahorro reduce efectos e IA auxiliar; no retrasa protecciones ni obliga a abrir operaciones.','muted');note.setWordWrap(True);card.body.addWidget(note)
     def draft(self):
         result=copy.deepcopy(self.controller.cfg)
@@ -450,9 +449,23 @@ class SettingsPanel(QWidget):
         self.extra['studio.wallpaper.file']=data['path'];self.media_name.setText(Path(data['path']).name)
         combo=self.fields['studio.wallpaper.kind'][0];combo.setCurrentIndex(combo.findData(data['type']));self.fields['studio.wallpaper.enabled'][0].setChecked(True);self.schedule_preview()
     def choose_language(self):
-        path,_=QFileDialog.getOpenFileName(self,self.text('IMPORTAR PAQUETE'),'','JSON (*.json)')
-        if path:
-            target,locale=import_language_pack(self.controller.folder,path);self.extra['studio.language_pack']=target;combo=self.fields['studio.language_ui'][0];combo.addItem(locale,locale);combo.setCurrentIndex(combo.count()-1);self.message.setText(locale)
+        combo=self.fields['studio.language_ui'][0]
+        options={}
+        for index in range(combo.count()):
+            locale=combo.itemData(index)
+            if locale in ('es','en'):
+                options[combo.itemText(index)+' · incluido']=locale
+            elif locale:
+                options[combo.itemText(index)+' · traducción local']=locale
+        choice,accepted=QInputDialog.getItem(self,'Idiomas disponibles','Idioma de la interfaz',list(options),0,False)
+        if not accepted or choice not in options:
+            return
+        locale=options[choice]
+        draft=copy.deepcopy(self.controller.cfg)
+        draft['studio'].update(language_ui=locale,language_pack='')
+        draft.dirty_paths.update(('studio.language_ui','studio.language_pack'))
+        if self.controller.save(draft):
+            self.translation_status.setText('Aplicando idioma. AKIRA prepara los textos faltantes con la IA local.')
     def choose_font(self):
         path,_=QFileDialog.getOpenFileName(self,'Fuente','','Fonts (*.ttf *.otf)')
         if not path:return

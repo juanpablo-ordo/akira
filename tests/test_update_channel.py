@@ -114,7 +114,8 @@ class UpdateChannelTests(unittest.TestCase):
             (app/'AKIRA.exe').write_bytes(b'new version')
             (profile/'akira_config.json').write_text('{"migrated":true}')
             return SimpleNamespace(returncode=0)
-        with patch.object(updates.ReleaseTrust,'load',return_value=self.trust), \
+        with patch('akira_version.RELEASE_VERSION','0.3.0'), \
+                patch.object(updates.ReleaseTrust,'load',return_value=self.trust), \
                 patch.object(transaction,'wait_for_app',side_effect=wait_error), \
                 patch.object(transaction,'verify_installer'), \
                 patch.object(transaction.subprocess,'run',side_effect=install), \

@@ -63,7 +63,10 @@ class LlamaSetupTests(unittest.TestCase):
         workflow=(ROOT/'.github'/'workflows'/'build-windows.yml').read_text(encoding='utf8')
         self.assertIn('installer/akira.iss',workflow)
         installer=(ROOT/'installer'/'akira.iss').read_text(encoding='utf8')
-        self.assertRegex(RELEASE_VERSION,r'^0\.[1-3]\.0$')
+        from akira_version import RELEASES
+        from release_updates import version_tuple
+        self.assertIn(RELEASE_VERSION, RELEASES)
+        self.assertGreaterEqual(version_tuple(RELEASE_VERSION), (0, 1, 0))
         output='OutputBaseFilename=AKIRA_{#AppVersion}_Windows_x64_IA_INCLUIDA'
         artifact='name: AKIRA-${{ env.AKIRA_RELEASE_VERSION }}-instalador-Windows-IA-INCLUIDA'
         self.assertIn(output, installer.splitlines())

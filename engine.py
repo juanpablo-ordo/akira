@@ -37,6 +37,8 @@ class Engine:
         self.pending_cycles={}
         self.allocation_checks={}
         self._last_view={};self._analysis_evaluations={}
+        self._chart_frames={}
+        self._estimated_heatmaps={}
         self._study_due=0.0
         self.pending_checks={};self.pending_check_queue=[];self.pending_verification_requests={};self._pending_auto_due=0.0
         self.review_requirements={};self.review_account=[]
@@ -1299,15 +1301,21 @@ class Engine:
         symbols={}
         for s,c in self.planner.caches.items():
             q=self.quotes.get(s);frames={}
+            bars_by_timeframe={}
             for name,f in c.frames.items():
-                frames[name]=self.frame_summary(f)
+                key=(s,name)
+                cached=self._chart_frames.get(key)
+                if cached is None or cached[0] is not f:
+                    cached=(f,self.frame_summary(f),[bar.to_dict() for bar in f.bars[-80:]])
+                    self._chart_frames[key]=cached
+                frames[name]=cached[1]
+                bars_by_timeframe[name]=cached[2]
             book=[]
             for o in snap.orders:
                 if o.symbol!=s or not self.g.owned_order(o):continue
                 p=order_plan(o,(self.g.journal.data['orders'].get(str(o.ticket)) or {}).get('plan'))
                 book.append({**p.to_dict(),'ticket':int(o.ticket),'confirmed':True,'state':'MT5 CONFIRMADA'})
             book.extend({**p.to_dict(),'confirmed':False,'state':'CANDIDATA'} for p in self.candidates.get(s,[])[:8])
-            bars_by_timeframe={name:[b.to_dict() for b in f.bars[-80:]] for name,f in c.frames.items()}
             from market_state import MarketDataFreshnessValidator,PERIOD_SECONDS
             chart_time=self.g.clock()
             forming={name:{**b.to_dict(),'closed':False,'source':'MT5'}
@@ -1320,7 +1328,7 @@ class Engine:
             symbols[s]={'bid':q.bid if q else None,'ask':q.ask if q else None,'spread':q.spread if q else None,
                         'quote_time':q.time if q else None,
                         'checked_at':self.last_checked.get(s),'last_analysis_at':self.last_scan.get(s),
-                        'frames':frames,'bars':[b.to_dict() for b in c.frames['M1'].bars[-60:]] if 'M1' in c.frames else [],
+                        'frames':frames,'bars':bars_by_timeframe.get('M1',[])[-60:],
                         'bars_by_timeframe':bars_by_timeframe,
                         'forming_by_timeframe':forming,'freshness':freshness,
                         'transition_request':{k:v for k,v in (transition.get('request') or {}).items()
@@ -1343,8 +1351,15 @@ class Engine:
             # liquidations. Never use them to approve an MT5 order.
             from liquidation_heatmap import estimate_bands
             provider=(self.planner.research_context.get('liquidation_levels') or {}).get(s) or {}
-            symbols[s]['liquidity_heatmap']=(copy.deepcopy(provider) if s.startswith('BTC') and
-                provider.get('status')=='PROVIDER_MODELLED' else estimate_bands(s,c.frames,self.g.clock()))
+            if s.startswith('BTC') and provider.get('status')=='PROVIDER_MODELLED':
+                symbols[s]['liquidity_heatmap']=copy.deepcopy(provider)
+            else:
+                frame=c.frames.get('M15') or c.frames.get('H1')
+                cached=self._estimated_heatmaps.get(s)
+                if cached is None or cached[0] is not frame:
+                    cached=(frame,estimate_bands(s,c.frames,chart_time))
+                    self._estimated_heatmaps[s]=cached
+                symbols[s]['liquidity_heatmap']=cached[1]
             if s.startswith('BTC'):
                 from liquidation_heatmap import realized_liquidations_summary
                 symbols[s]['liquidations_reported']=realized_liquidations_summary(

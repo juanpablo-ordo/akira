@@ -74,6 +74,18 @@ class ChatStore:
  def restore(self,cid):
   with self.lock,self.db() as db:db.execute('UPDATE chats SET archived=0 WHERE id=?',(cid,))
   self.select(cid);return True
+ def purge(self,cid):
+  """Remove one archived conversation, leaving other chats and saved memories."""
+  with self.lock,self.db() as db:
+   db.execute('BEGIN IMMEDIATE')
+   if not db.execute('SELECT 1 FROM chats WHERE id=? AND archived=1',(cid,)).fetchone():
+    return False
+   context=self.root/'state'/'chat_contexts'/cid/'state'/'conversation_context.json'
+   context.unlink(missing_ok=True)
+   db.execute('PRAGMA secure_delete=ON')
+   db.execute('DELETE FROM messages WHERE chat=?',(cid,))
+   db.execute('DELETE FROM chats WHERE id=?',(cid,))
+   return True
  def remember(self,body):
   body=' '.join(str(body).split())[:1500]
   if not body:raise ValueError('El recuerdo está vacío')

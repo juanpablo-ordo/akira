@@ -8,15 +8,17 @@ class UserFeedbackQt(unittest.TestCase):
         from PySide6.QtWidgets import QApplication
         cls.app=QApplication.instance() or QApplication([])
 
-    def test_molecules_and_status_replace_black_sprite_and_blank_badges(self):
+    def test_pixel_avatar_and_status_badges_are_visible(self):
         from desktop_qt import StudioWindow
         with tempfile.TemporaryDirectory() as folder:
             w=StudioWindow(folder,preview=True,start_actor=False)
             w.show();self.app.processEvents()
             try:
                 self.assertTrue(w.avatars)
-                self.assertTrue(all(getattr(a,'neural_visual',False) for a in w.avatars))
+                self.assertTrue(all(not getattr(a,'neural_visual',False) for a in w.avatars))
                 self.assertFalse(w.avatars[0].grab().isNull())
+                self.assertIsNotNone(w.avatars[0].pixel_states)
+                self.assertFalse(hasattr(w,'mobile_status'))
                 self.assertFalse(hasattr(w,'home_notices'))
                 self.assertTrue(w.system_connectivity.text())
                 self.assertTrue(w.resource_connectivity.text())

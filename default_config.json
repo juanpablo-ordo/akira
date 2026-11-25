@@ -524,7 +524,7 @@
     "brand_name": "AKIRA",
     "language_ui": "es",
     "language_chat": "auto",
-    "language_voice_in": "es",
+    "language_voice_in": "auto",
     "language_voice_out": "es",
     "translate_input": false,
     "translate_output": false,

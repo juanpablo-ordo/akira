@@ -18,15 +18,18 @@ def recognition_model(root,name):
    _STT_MODEL=model;_STT_KEY=key
   return _STT_MODEL
 
-def transcribe_with_recovery(model,audio,language='es',beam_size=1,vad_filter=True):
+def transcribe_with_recovery(model,audio,language='es',beam_size=1,vad_filter=True,on_language=None):
  """Retry suspiciously short speech with stronger decoding, preserving short replies."""
  def decode(beam,vad):
   segments,info=model.transcribe(audio,language=language,beam_size=beam,
                                  vad_filter=vad,condition_on_previous_text=False)
   if language is None and (getattr(info,'language_probability',0) or 0)<.60:
    return ''
-  return ' '.join(segment.text.strip() for segment in segments
-                  if getattr(segment,'no_speech_prob',0)<.80).strip()[:1500]
+  text=' '.join(segment.text.strip() for segment in segments
+                if getattr(segment,'no_speech_prob',0)<.80).strip()[:1500]
+  if text and on_language:
+   on_language(getattr(info,'language',None) or language)
+  return text
  first=decode(beam_size,vad_filter)
  if not first and vad_filter and 8000<=len(audio)<32000:
   # Capture already gated on voice energy. Whisper's VAD can still cut an
@@ -524,7 +527,9 @@ class VoiceSession:
     if not final and (len(active)<10 or now<partial_due):continue
     self.event('state',text='Transcribiendo' if final else 'Escuchando · transcripción en directo')
     revision=self._revision;audio=np.concatenate(active[-150:])
-    text=transcribe_with_recovery(model,audio,language=self.options.get('language','es'),beam_size=1,vad_filter=True)
+    detected=[]
+    text=transcribe_with_recovery(model,audio,language=self.options.get('language','es'),beam_size=1,
+                                  vad_filter=True,on_language=detected.append)
     partial_due=time.monotonic()+2
     if self.stop_event.is_set():break
     if self.paused.is_set() or revision!=self._revision:active=[];silence=0;continue
@@ -532,7 +537,7 @@ class VoiceSession:
     if final:
      active=[];silence=0
      if text:
-      self.awaiting.set();self.event('final',text=text);self.event('state',text='Procesando tu mensaje')
+      self.awaiting.set();self.event('final',text=text,language=detected[-1] if detected else None)
      else:self.event('state',text='No entendí con suficiente claridad. Repite la frase.',stage='recognition')
   except Exception as exc:
    if not self.stop_event.is_set():
@@ -638,7 +643,7 @@ class VoiceSession:
        source_audio=wav.readframes(wav.getnframes())
        playback_audio=(source_audio if (rate,channels)==(output_rate,output_channels) else
                        convert_playback(source_audio,dtype,rate,output_rate,channels,output_channels))
-       byte_step=max(width*output_channels,int(output_rate*.15)*width*output_channels)
+       byte_step=max(width*output_channels,int(output_rate*.08)*width*output_channels)
        for offset in range(0,len(playback_audio),byte_step):
         if cancelled():break
         raw=playback_audio[offset:offset+byte_step]

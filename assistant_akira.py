@@ -1059,7 +1059,7 @@ class AkiraAssistant:
         if formatting:fresh=False
         factual=not social and (self._should_research_fact(research_query) or self._source_followup(message))
         auto_research=bool(cfg.get('auto_research',True))
-        auto_youtube=False  # YouTube is an explicit optional extension, never a prerequisite.
+        wants_video=bool(re.search(r'\b(?:youtube|videos?|v[ií]deos?|plan btc|billions crypto|crypto noticias|alejo rolls)\b',message,re.I))
         explicit_research=bool(re.search(r'\b(?:investiga|busca|fuentes?|internet|web|youtube|video|vídeo|noticias?|actualiza)\b',message,re.I))
         deep=bool(re.search(r'\b(?:a fondo|investigaci[oó]n profunda|an[aá]lisis exhaustivo|revisi[oó]n profunda|investiga todo)\b',message,re.I))
         file_request=bool(re.search(r'\b(?:crea|guarda|escribe|genera|modifica|edita|lee|abre)\b.*\b(?:archivo|documento|word|proyecto|zip|c[oó]digo)\b',message,re.I))
@@ -1120,7 +1120,7 @@ class AkiraAssistant:
             # Web y YouTube se descubren EN PARALELO antes de redactar. Trading usa
             # siempre evidencia pública reciente además del snapshot/cache interno.
             aggressive=bool(cfg.get('aggressive_research',True))
-            want_youtube=auto_youtube and (deep or trading or bool(re.search(r'\b(?:youtube|video|vídeo|trader|análisis técnico|analisis tecnico)\b',message,re.I)))
+            want_youtube=wants_video
             variants=self._research_variants(research_query,trading=trading,limit=int(cfg.get('research_query_variants',4) if deep else cfg.get('fast_research_variants',2)))
             jobs={}
             workers=max(2,min(8,len(variants)*(2 if want_youtube else 1)))

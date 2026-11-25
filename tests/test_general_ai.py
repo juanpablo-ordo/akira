@@ -65,6 +65,33 @@ class AkiraGeneralAIRegressions(unittest.TestCase):
         self.assertEqual(result['results'][0]['url'],official['url'])
         news.assert_not_called()
 
+    def test_rockstar_query_uses_publisher_release_without_unrelated_links(self):
+        official={'url':'https://www.take2games.com/ir/news/rockstar-release',
+                  'title':'Rockstar Games Announces Grand Theft Auto VI Now Available',
+                  'text':'Grand Theft Auto VI is now available for PlayStation 5 and Xbox Series X|S.',
+                  'engine':'official-direct'}
+        unrelated=[{'url':'https://caseygames.example/free','title':'Rockstar and GTA free games',
+                    'text':'Rockstar lanzó recientemente juego gratis.'},
+                   {'url':'https://news.google.com/rss/articles/irrelevant','title':'Rockstar',
+                    'text':'Rockstar lanzó recientemente el juego.'}]
+        with patch('web_facts._rockstar_release',return_value=[official]), \
+             patch('web_facts._duck_html',return_value=unrelated), \
+             patch('web_facts._bing_rss',return_value=[]),patch('web_facts._duck',return_value=[]):
+            result=lookup_current_fact('¿Qué juego lanzó Rockstar recientemente?')
+        self.assertEqual([row['url'] for row in result['results']],[official['url']])
+
+    def test_missing_search_snippet_never_inherits_the_next_result_excerpt(self):
+        from contextlib import nullcontext
+        from io import BytesIO
+        from web_facts import _duck_html
+        fixture=b'''<a class="result__a" href="https://caseygames.example/free">Free games</a>
+        <a class="result__a" href="https://www.take2games.com/ir/news/rockstar">Official</a>
+        <a class="result__snippet">Verified Rockstar release.</a>'''
+        with patch('web_facts.https_context'),patch('web_facts.guarded_open',return_value=nullcontext(BytesIO(fixture))):
+            rows=_duck_html('Rockstar')
+        self.assertEqual(rows[0]['text'],'')
+        self.assertEqual(rows[1]['text'],'Verified Rockstar release.')
+
     def test_specific_stable_fact_auto_researches(self):
         bot=AkiraAssistant(self.cfg,self.root); seen=[]
         fake={'results':[{'title':'Breaking Bad reference','url':'https://example.com/bb','text':'The scene identifies mercury fulminate.'}]}

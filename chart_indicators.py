@@ -4,6 +4,32 @@ from strategy import ema_series,frame,Bar
 
 OPTIONS=('Precio','Medias y Bollinger','RSI','MACD','ADX','Volumen y estructura')
 
+def indicator_description(key):
+    """Explain only indicators or measurements actually supplied by the engine."""
+    if key.startswith('ema') and key[3:].isdigit():
+        return f'Media exponencial de {key[3:]} velas para seguir la dirección del precio.'
+    if key.startswith('fib'):
+        return 'Nivel de retroceso medido sobre el último tramo analizado.'
+    return {
+        'rsi':'Momento relativo entre subidas y bajadas.',
+        'macd':'Histograma de impulso entre medias rápidas y lentas.',
+        'adx':'Fuerza de la tendencia, independientemente de su dirección.',
+        'atr':'Rango medio de las velas; mide volatilidad.',
+        'stochastic':'Posición del cierre dentro del rango reciente.',
+        'williams':'Posición relativa del cierre en el rango reciente.',
+        'cci':'Distancia del precio típico respecto a su media.',
+        'mfi':'Presión de compra y venta ponderada por volumen.',
+        'roc':'Variación del precio respecto a velas anteriores.',
+        'obv_slope':'Dirección del volumen acumulado según los cambios de cierre.',
+        'volume_ratio':'Actividad de la vela respecto a su media reciente.',
+        'vwap':'Precio medio ponderado por volumen.',
+        'bos':'Ruptura de la estructura observada.',
+        'sweep':'Barrido de un nivel previo con reacción posterior.',
+        'donchian_high20':'Máximo de la ventana de 20 velas.',
+        'donchian_low20':'Mínimo de la ventana de 20 velas.',
+        'volume_profile_poc_estimated':'Zona de mayor actividad estimada; no es volumen ejecutado por nivel.',
+    }.get(key,'')
+
 def indicator_chart(raw,tf='M15'):
     bars=tuple(Bar(**{k:b[k] for k in ('time','open','high','low','close','volume')}) for b in raw)
     if len(bars)<60:return {'series':{},'detail':'Se necesitan 60 velas cerradas; no se inventan indicadores.'}

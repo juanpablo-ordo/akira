@@ -181,10 +181,12 @@ class AvatarDirector:
         self.publish('AKIRA_046' if active else 'listening',force=True)
 
     def level(self,value):
-        if not self.playing or self.clock()-self.last_level<.16:return
+        if not self.playing or self.clock()-self.last_level<.075:return
         self.last_level=self.clock()
         self.mouth_level=float(value)
         self.publish('AKIRA_047' if float(value)>.035 else 'AKIRA_046',force=True)
+        for avatar in list(self.listeners):
+            if avatar.winfo_ismapped():avatar._draw()
 
 
 class AkiraLive2D(tk.Frame):

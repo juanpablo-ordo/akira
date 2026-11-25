@@ -269,8 +269,10 @@ class StudioController:
         self.call_conversation=CallConversation(self.assistant,lambda:self.cfg,lambda:self.view,voice)
         self.call_conversation.prepare()
 
-    def ask_call(self,text):
-        return bool(self.call_conversation and self.call_conversation.ask(text))
+    def ask_call(self,text,language=None):
+        if not self.call_conversation:
+            return False
+        return bool(self.call_conversation.ask(text,language=language) if language else self.call_conversation.ask(text))
 
     def cancel_call(self):
         if self.call_conversation:self.call_conversation.interrupt()

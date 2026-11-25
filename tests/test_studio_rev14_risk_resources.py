@@ -90,6 +90,10 @@ class LaptopPolicyTests(unittest.TestCase):
     def test_a_known_dedicated_gpu_is_not_silently_disabled(self):
         self.hardware['dedicated_gpu']=True
         self.assertEqual(effective_desktop(self.desktop,self.hardware),self.desktop)
+    def test_automatic_profile_respects_explicit_cpu_choice(self):
+        self.desktop.update(resource_policy='automatic',model_use_gpu=False)
+        result=effective_desktop(self.desktop,{'ram_gb':32,'dedicated_gpu':True})
+        self.assertFalse(result['model_use_gpu'])
     def test_four_logical_laptop_threads_do_not_occupy_both_physical_cores(self):
         from akira_model_runtime import ManagedLlamaProcess,hardware_profile
         managed=ManagedLlamaProcess({'local_runtime_enabled':True},profile=hardware_profile(8,0,4))

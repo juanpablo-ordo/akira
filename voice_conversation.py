@@ -62,16 +62,16 @@ class CallConversation:
                 if not self.closed and not self.busy:self.voice.event('error',text='Preparación de IA: '+str(error)[:200])
         self.preparation=threading.Thread(target=run,name='AkiraCallPreparation',daemon=True);self.preparation.start()
 
-    def ask(self,text):
+    def ask(self,text,language=None):
         if not str(text).strip():return False
         with self.lock:
             if self.closed or self.busy:return False
             self.busy=True;self.cancel=threading.Event()
         self.voice.start_response()
-        threading.Thread(target=self._reply,args=(str(text).strip(),self.cancel),name='AkiraSpokenTurn',daemon=True).start()
+        threading.Thread(target=self._reply,args=(str(text).strip(),self.cancel,language),name='AkiraSpokenTurn',daemon=True).start()
         return True
 
-    def _reply(self,text,cancel):
+    def _reply(self,text,cancel,language=None):
         started=time.monotonic();metrics={'first_token_seconds':None,'complete_seconds':None,'channel':'call'}
         stream=SentenceStream(self.voice.enqueue_speech)
         def visible(cumulative):
@@ -129,8 +129,10 @@ class CallConversation:
                     if recalled:recalled.pop()
                     elif memories:memories.pop()
                     else:break
-                prompt=('Eres AKIRA en una llamada de voz privada. Responde naturalmente en el idioma '+
-                    str(cfg.get('studio',{}).get('language_voice_out','es'))+
+                language_option=cfg.get('studio',{}).get('language_voice_out','es')
+                language_instruction=('el idioma del último mensaje' if not language else language) if language_option=='auto' else language_option
+                prompt=('Eres AKIRA en una llamada de voz privada. Utiliza el siguiente idioma para responder: '+
+                    language_instruction+
                     ', en una o dos frases breves; amplía solo si lo piden. Sin Markdown ni enlaces hablados. '
                     'Tienes una personalidad cercana, despierta y directa; usa humor breve cuando encaje. '
                     'Responde a lo que acaba de decir la persona y enlaza con lo anterior, sin repetir saludos. '

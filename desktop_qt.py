@@ -1,6 +1,6 @@
 """AKIRA Studio native desktop. All displayed trading records come from the actor."""
 from __future__ import annotations
-import copy,html,json,os,re,sys,time
+import copy,html,json,os,re,sqlite3,sys,time
 from datetime import datetime,timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -15,7 +15,7 @@ from studio_translations import Translator
 from studio_controller import StudioController
 from studio_interaction import FlowLayout,WheelGuard
 
-NAV=('TRADING','PENDIENTES','CUENTA','ANÁLISIS Y OPERACIÓN','FUENTES','CHAT','AJUSTES','TERMINAL')
+NAV=('TRADING','OPERACIONES','CUENTA','ANÁLISIS','FUENTES','CHAT','AJUSTES','TERMINAL')
 DETAILS=('Visión general del sistema y actividad en tiempo real','Gestión de órdenes pendientes y oportunidades del mercado','Cuenta, posiciones y control de riesgo','Lectura del mercado, confluencias y decisiones','Contenido realmente recibido y utilizado','Conversaciones, memoria y llamada','Personaliza el comportamiento y la apariencia','Registros, diagnóstico e informes')
 GLYPHS=('trading','pending','account','analysis','sources','chat','settings','terminal')
 
@@ -170,7 +170,7 @@ class StudioWindow(QMainWindow):
     def table(self,columns):
         table=DataTable(columns);self.tables.append(table);table.setHorizontalHeaderLabels([self.text(t) for t in columns]);return table
     def avatar(self,parent,height=160):
-        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.neural_visual=True;widget.setMinimumWidth(140);widget.setMinimumHeight(height);widget.setMaximumHeight(height+12);self.avatars.append(widget);parent.addWidget(widget);return widget
+        widget=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False));widget.setMinimumWidth(140);widget.setMinimumHeight(height);widget.setMaximumHeight(height+12);self.avatars.append(widget);parent.addWidget(widget);return widget
 
     def build_sidebar(self,outer):
         from PySide6.QtWidgets import QFrame
@@ -183,9 +183,7 @@ class StudioWindow(QMainWindow):
         menu=QWidget();nav_box=QVBoxLayout(menu);nav_box.setContentsMargins(0,0,0,0);nav_box.setSpacing(5);scroll.setWidget(menu)
         for index,(name,glyph) in enumerate(zip(NAV,GLYPHS)):
             nav=self.btn(name,lambda _=False,i=index:self.navigate(i),glyph=glyph);nav.setCheckable(True);nav.setProperty('nav',True);nav.setMinimumHeight(36);nav_box.addWidget(nav);self.nav.append(nav)
-            # Keep the two legacy detail pages for existing flows and tests,
-            # but offer one visible MT5 trading workspace in the navigation.
-            if index in (1,2):nav.hide()
+            if index==2:nav.hide()
         nav_box.addStretch(1);box.addWidget(scroll,1);self.side_avatar_panel=panel
         self.connection_footer=label('● MT5 · esperando','body',INK['green']);box.addWidget(self.connection_footer)
         self.clock_label=label('','micro');self.clock_label.setWordWrap(True);box.addWidget(self.clock_label);outer.addWidget(self.sidebar)
@@ -257,6 +255,7 @@ class StudioWindow(QMainWindow):
         action=QGridLayout()
         for i,(title,callback,glyph) in enumerate([('REVISAR SELECCIONADA',self.verify_selected,'refresh'),('VERIFICAR EN MT5',lambda:self.navigate(3),'shield'),('RETIRAR PENDIENTE',self.cancel_selected,'pending')]):action.addWidget(self.btn(title,callback,'primary' if i==1 else '',glyph),i//2,i%2)
         detail.body.addLayout(action);right.addWidget(detail,1)
+        self.build_operation_details(left,right)
 
     def build_account(self):
         _,layout=self.page();self.account_split,(left,right)=self.split(layout,(3,2))
@@ -276,9 +275,6 @@ class StudioWindow(QMainWindow):
     def build_analysis(self):
         _,layout=self.page();top=QHBoxLayout();self.timeframe=ChoiceBox();self.timeframe.addItems(['M1','M5','M15','M30','H1','H4','D1','W1']);self.timeframe.setCurrentText('H1');self.timeframe.currentTextChanged.connect(lambda:self.render_analysis());top.addWidget(self.timeframe);top.addStretch();top.addWidget(self.btn('ESTRATEGIAS',self.show_strategies,glyph='analysis'));top.addWidget(self.btn('ESTUDIO Y COMPARACIÓN',self.show_study,glyph='chart'));top.addWidget(self.btn('ACTUALIZAR',lambda:self.controller.request({'action':'refresh'}),glyph='refresh'));layout.addLayout(top)
         self.applied_strategy=label('','muted');self.applied_strategy.setWordWrap(True);layout.addWidget(self.applied_strategy)
-        # PDF page 8: expose account, strategy, pending exposure, positions and
-        # market analysis in a single, navigable workspace. The previous detail
-        # pages remain available internally for compatibility.
         control=self.card('CUENTA MT5, RIESGO Y ESTRATEGIA','shield')
         self.analysis_connection_status=label('Esperando cuenta y permisos de MT5','body')
         self.analysis_connection_status.setWordWrap(True);control.body.addWidget(self.analysis_connection_status)
@@ -318,7 +314,10 @@ class StudioWindow(QMainWindow):
         self.heatmap_scope=ChoiceBox();self.heatmap_scope.addItems(['Actual','Histórico']);self.heatmap_scope.currentTextChanged.connect(lambda:self.render_analysis());heat.body.addWidget(self.heatmap_scope)
         self.heatmap_table=self.table(['Activo','Zona de precio','Intensidad','Origen']);self.heatmap_table.setMinimumHeight(180);heat.body.addWidget(self.heatmap_table,1)
         self.heatmap_note=label('Mapa de actividad estimada por ticks de MT5.','muted');self.heatmap_note.setWordWrap(True);heat.body.addWidget(self.heatmap_note);right.addWidget(heat,2)
-        operations=self.card('ORDENES Y POSICIONES CONFIRMADAS','pending')
+        decision=self.card('PROCESO DE DECISIÓN','shield');self.decision_text=QTextBrowser();decision.body.addWidget(self.decision_text,1);right.addWidget(decision,2)
+
+    def build_operation_details(self,left,right):
+        operations=self.card('ÓRDENES Y POSICIONES CONFIRMADAS','pending')
         self.analysis_orders=self.table(['Activo','Estado MT5','Entrada','SL','TP'])
         self.analysis_orders.setMinimumHeight(120);operations.body.addWidget(self.analysis_orders,1);right.addWidget(operations,2)
         pending=self.card('PENDIENTES: PROPUESTA, REVISIÓN Y MT5','pending')
@@ -332,12 +331,11 @@ class StudioWindow(QMainWindow):
         pending_actions.addWidget(self.btn('ENVIAR AL BRÓKER',self.send_analysis_selected,'primary','pending'))
         pending_actions.addWidget(self.btn('RETIRAR PENDIENTE',self.cancel_analysis_selected))
         pending.body.addLayout(pending_actions)
-        right.addWidget(pending,2)
+        left.addWidget(pending,2)
         positions_card=self.card('POSICIONES ABIERTAS EN MT5','account')
         self.analysis_positions_table=self.table(['Ticket','Símbolo','Sentido','Lote','SL','TP','P/L'])
         self.analysis_positions_table.setMinimumHeight(150);positions_card.body.addWidget(self.analysis_positions_table,1)
         right.addWidget(positions_card,2)
-        decision=self.card('PROCESO DE DECISIÓN','shield');self.decision_text=QTextBrowser();decision.body.addWidget(self.decision_text,1);right.addWidget(decision,2)
 
     def build_sources(self):
         _,layout=self.page();self.sources_split,(left,right)=self.split(layout,(3,2));card=self.card('FUENTES EN TIEMPO REAL','sources')
@@ -521,15 +519,6 @@ class StudioWindow(QMainWindow):
         if self.isMinimized() or not self.isVisible():
             self.animation_timer.setInterval(750);return
         self.director.refresh()
-        if any(getattr(avatar,'neural_visual',False) for avatar in self.avatars):
-            saving=self._saving_ui or bool(getattr(self,'_visual_studio',{}).get('reduce_motion'))
-            if saving:
-                # No decorative eyelid animation survives a low-power policy.
-                self.director.blink_frame=None
-            self.animation_timer.setInterval(500 if saving else 32 if self._visual_studio_profile=='Rendimiento' else 40)
-            for avatar in self.avatars:
-                if avatar.isVisible() and getattr(avatar,'neural_visual',False):avatar.update()
-            return
         # Saving mode is a power policy, not a cosmetics-only animation rate.
         # A pending blink from another state must not keep refreshing at 20 FPS
         # when AKIRA is idle; keep speech/loading states responsive.
@@ -539,9 +528,6 @@ class StudioWindow(QMainWindow):
             return
         active=self.director.loading or self.director.playing or self.director.blink_frame is not None
         self.animation_timer.setInterval(50 if self.director.blink_frame is not None else (250 if self._saving_ui else 125) if active else max(50,min(500,int((self.director._next_blink-time.monotonic())*1000))))
-        if self.director.loading:
-            for avatar in self.avatars:
-                if avatar.isVisible():avatar.update()
     def poll(self):
         now=time.monotonic();delay=max(0,now-getattr(self,'_last_ui_tick',now)-self.poll_timer.interval()/1000);self._last_ui_tick=now
         from resource_optimizer import ui_poll_ms
@@ -640,7 +626,11 @@ class StudioWindow(QMainWindow):
             self.cfg=self.controller.cfg;self.settings_panel.saved(data);self.settings_panel.save_button.setEnabled(True)
             self.settings_panel.message.setText('Cuenta guardada en Solo análisis. Al conectar, pulsa Activar operativa para autorizar esa cuenta.' if data['result'].get('account_confirmation_required') else 'Guardado. Los nuevos ajustes se usarán al reconectar MT5.' if data['result'].get('connection_pending') else 'Guardado y aplicado · revisión '+str((data['result'].get('configuration') or {}).get('revision','—'))+'.' if data['result'].get('settings_applied') else 'Guardado; esperando confirmación del motor.')
             paths=data.get('paths') or []
-            if any(p.startswith(('studio.','desktop.')) for p in paths):self.apply_visual(self.cfg['studio'])
+            if any(p.startswith('desktop.') or (p.startswith('studio.') and p!='studio.language_voice_in') for p in paths):
+                self.apply_visual(self.cfg['studio'])
+            if any(p.startswith('voice.') or p=='studio.language_voice_in' for p in paths):
+                if getattr(self,'call_dialog',None) and self.call_dialog.isVisible():
+                    self.voice_state.setText('Preferencias de voz guardadas.')
             if any(p=='studio.avatar' or p.startswith('studio.avatar.') for p in paths):self.set_avatar(self.cfg['studio']['avatar'])
             self.render_budget(self.controller.view)
         elif kind=='mt5_account_detected':
@@ -703,7 +693,7 @@ class StudioWindow(QMainWindow):
             if data.get('ready'):
                 self.director.publish('happy','IA reparada',force=True);self._avatar_reaction_until=time.monotonic()+6;dialog,box=self.dialog_text('¡La IA se ha reparado!','Akira generó una respuesta real y ya está lista para conversar.',620)
                 sticker=AvatarWidget(self.director,self.asset_root,self.cfg['studio'].get('reduce_motion',False),dialog)
-                sticker.neural_visual=True;sticker.setFixedSize(110,110)
+                sticker.setFixedSize(110,110)
                 dialog.layout().insertWidget(1,sticker)
             else:self.information('Reparación pendiente',human(data.get('detail') or data.get('error') or 'No se confirmó la reparación. Revisa la conexión y vuelve a intentarlo.'))
         elif kind=='knowledge':self.controller.notify('Biblioteca de conversación',str(data.get('detail') or data.get('stage') or 'Estado actualizado'))
@@ -757,6 +747,12 @@ class StudioWindow(QMainWindow):
         for key,metric in self.metrics.items():
             value=a.get(key) if key in a else view.get(key)
             metric.value.setText(('••••••' if self.private else number(value)+' '+currency) if key!='cycle_ms' else number(value,0)+' ms')
+        timing=view.get('cycle_breakdown_ms') or {}
+        if timing:
+            self.metrics['cycle_ms'].setToolTip('\n'.join(
+                f'{name} · {number(timing.get(key),1)} ms' for key,name in (
+                    ('analysis_execution','Análisis y MT5'),('snapshot_ui','Preparar datos para pantalla'),
+                    ('postprocessing','Trabajo posterior'))))
         self.render_budget(view)
         self.mode_label.setText(('VISTA PREVIA · ' if self.controller.preview else '')+('Sin conexión con MT5: no se pueden enviar órdenes.' if not connected and not self.controller.preview else str(gate.get('reason')) if gate.get('reason') else self.text('SOLO ANÁLISIS · NO ENVÍA ÓRDENES') if mode!='trade' else self.text('OPERATIVA AUTORIZADA')))
         self.mode_button.setText(self.text('INICIAR OPERATIVA') if mode!='trade' or view.get('paused') else self.text('PAUSAR NUEVAS ENTRADAS'))
@@ -830,6 +826,7 @@ class StudioWindow(QMainWindow):
         self.pending_metrics['confirmed'].value.setText(str(len(view.get('orders') or [])));self.pending_metrics['review'].value.setText(str(active));self.pending_metrics['rejected'].value.setText(str(sum(1 for rows in (view.get('audit') or {}).values() for row in rows if row.get('status')=='PENDING_REJECTED')))
         if self.pending_table.currentRow()<0 and display:self.pending_table.selectRow(0)
         self.pending_selected()
+        self.render_operation_details(view,rows)
     def selected_plan(self):return self.pending_table.rows.get(self.pending_table.selected_key())
     def pending_selected(self):
         plan=self.selected_plan()
@@ -904,7 +901,7 @@ class StudioWindow(QMainWindow):
 
     def render_analysis(self):
         if not hasattr(self,'analysis_widgets'):return
-        from chart_indicators import order_levels,price_overlays
+        from chart_indicators import indicator_description,order_levels,price_overlays
         v=self.controller.view;tf=self.timeframe.currentText()
         strategy=v.get('strategy_applied') or {}
         self.applied_strategy.setText('Estrategia aplicada · '+str(strategy.get('name') or 'Esperando al motor')+
@@ -918,10 +915,15 @@ class StudioWindow(QMainWindow):
             ' · '+str(len(orders))+' pendientes, '+str(len(positions))+' posiciones')
         budget=risk_dashboard(v,self.cfg,self.private)
         self.analysis_risk_status.setText(budget['state']+'\n'+budget['configured']+'\n'+budget['usage'])
+        self.render_market_indicators(v,tf,orders,indicator_description,order_levels,price_overlays)
+
+    def render_operation_details(self,view,pending_rows):
+        orders=view.get('orders') or ()
+        positions=view.get('positions') or ()
         self.analysis_pending_table.update_rows([
             (str(key),[row.get('symbol'),('BUY' if row.get('side') in (1,'BUY') else 'SELL')+' '+str(row.get('kind') or ''),
              number(row.get('entry')),number(row.get('sl')),number(row.get('tp')),str(row.get('status_label') or row.get('display_state') or 'PROPUESTA')],row)
-            for key,row in self.pending_rows()][:120])
+            for key,row in pending_rows][:120])
         self.analysis_pending_selected()
         self.analysis_positions_table.update_rows([
             (str(row.get('ticket')),[row.get('ticket'),row.get('symbol'),
@@ -934,6 +936,8 @@ class StudioWindow(QMainWindow):
             for row in collection:
                 rows.append((str(row.get('ticket'))+state,[row.get('symbol'),state,number(row.get('entry')),number(row.get('sl')),number(row.get('tp'))],{}))
         self.analysis_orders.update_rows(rows)
+
+    def render_market_indicators(self,v,tf,orders,indicator_description,order_levels,price_overlays):
         for symbol,widget in self.asset_activity_labels.items():widget.setText(market_activity(v,symbol)['text'])
         for symbol,(price,table,chart,legend) in self.analysis_widgets.items():
             info=(v.get('symbols') or {}).get(symbol) or {};frames=info.get('frames') or {};values=frames.get(tf) or {};price.setText(number(info.get('bid')))
@@ -951,21 +955,29 @@ class StudioWindow(QMainWindow):
                 value=observed.get(key)
                 if value is None:continue
                 if not isinstance(value,(int,float)):continue
-                rows.append((key,[INDICATORS.get(key,key.replace('_',' ').upper()),number(value),tf],{}))
+                rows.append((key,[INDICATORS.get(key,key.replace('_',' ').upper()),number(value),indicator_description(key) or tf],{}))
             self.analysis_widgets[symbol][3].setToolTip(str(len(rows))+' indicadores numéricos disponibles del motor en '+tf)
             table.update_rows(rows)
             bars=(info.get('bars_by_timeframe') or {}).get(tf) or []
             last=bars[-1]['time'] if bars else None
             freshness=(info.get('freshness') or {}).get(tf,{})
             stale=freshness.get('ready') is False or not v.get('connected')
-            overlays=price_overlays(bars,values) if bars and not stale else {}
+            cache_key=(tf,last,len(bars),tuple(values.get(key) for key in ('ema9','ema21','ema50','ema200')))
+            cached=getattr(chart,'_closed_overlays',None)
+            if bars and not stale:
+                if cached is None or cached[0]!=cache_key:
+                    cached=(cache_key,price_overlays(bars,values))
+                    chart._closed_overlays=cached
+                overlays=cached[1]
+            else:overlays={}
             forming=(info.get('forming_by_timeframe') or {}).get(tf)
             if forming and not stale:
                 bars=[*bars,forming]
                 overlays={name:[*series,None] for name,series in overlays.items()}
             levels=order_levels(info,orders,symbol)
             chart.set_data(bars,levels,overlays)
-            chart.setToolTip('\n'.join(f'{name}  {number(value)}' for name,value in levels.items()))
+            series_guide=[f'{name}: {indicator_description(name.lower().replace(" ",""))}' for name in overlays]
+            chart.setToolTip('\n'.join(series_guide+[f'{name}  {number(value)}' for name,value in levels.items()]))
             legend.setText((f'MT5 · {tf} · última vela cerrada {when(last,self.cfg)}' if last else f'{tf} · sin velas disponibles')+
                 (f' · {self.cfg["locale"]["timezone"]}' if last else '')+
                 (' · datos vencidos' if last and stale else '')+
@@ -1476,8 +1488,43 @@ class StudioWindow(QMainWindow):
         text,ok=QInputDialog.getItem(self,'Eliminar recuerdo','Recuerdo',values,0,False)
         if ok and text:self.controller.assistant.chats.forget(int(text.split(' · ')[0]))
     def open_chat_trash(self):
-        rows=self.controller.assistant.chats.trash();values=[r['title'] for r in rows];text,ok=QInputDialog.getItem(self,'Restaurar conversación','Conversación',values,0,False)
-        if ok and text:self.controller.assistant.chats.restore(rows[values.index(text)]['id']);self.controller.assistant.switch_chat(rows[values.index(text)]['id']);self.render_chat()
+        store=self.controller.assistant.chats
+        rows=store.trash()
+        if not rows:
+            self.information('Papelera','La papelera está vacía.')
+            return
+        dialog=QDialog(self)
+        dialog.setWindowTitle('Papelera de conversaciones')
+        layout=QVBoxLayout(dialog)
+        choices=QListWidget(dialog)
+        for row in rows:
+            item=QListWidgetItem(f"{row['title']} · {when(row['updated'],self.cfg)}")
+            item.setData(Qt.ItemDataRole.UserRole,row['id'])
+            choices.addItem(item)
+        layout.addWidget(choices)
+        def restore():
+            item=choices.currentItem()
+            if item and not self.controller.chat_busy:
+                chat_id=item.data(Qt.ItemDataRole.UserRole)
+                store.restore(chat_id)
+                self.controller.assistant.switch_chat(chat_id)
+                self.render_chat()
+                dialog.accept()
+        def purge():
+            item=choices.currentItem()
+            if item and self.confirm('Eliminar definitivamente',f'¿Borrar «{item.text()}» de la papelera? Esta acción es permanente.'):
+                try:
+                    if store.purge(item.data(Qt.ItemDataRole.UserRole)):
+                        choices.takeItem(choices.row(item))
+                except (OSError,sqlite3.Error) as error:
+                    self.show_error(str(error))
+        controls=QHBoxLayout()
+        controls.addWidget(self.btn('Restaurar',restore))
+        controls.addWidget(self.btn('Eliminar definitivamente',purge))
+        controls.addWidget(self.btn('Cerrar',dialog.reject))
+        layout.addLayout(controls)
+        choices.setCurrentRow(0)
+        dialog.exec()
     def attach_file(self):
         paths,_=QFileDialog.getOpenFileNames(self,self.text('ADJUNTAR'),'','Text (*.txt *.md *.csv *.json *.pdf *.docx)')
         if not paths:return
@@ -1663,10 +1710,9 @@ class StudioWindow(QMainWindow):
         from voice_session import voice_matches_language
         for row in data['voices']:
             supported=voice_matches_language(row,language)
-            if supported or row.get('installed'):
-                suffix=(' · instalada' if row['installed'] else ' · descargar')
-                if not supported:suffix+=' · otro idioma'
-                self.voice_selector.addItem(row['name']+suffix,row)
+            suffix=(' · instalada' if row['installed'] else ' · descargar')
+            if not supported:suffix+=' · otro idioma'
+            self.voice_selector.addItem(row['name']+suffix,row)
         selected_index=-1
         for i in range(self.voice_selector.count()):
             if self.voice_selector.itemData(i)['id']==selected_voice:selected_index=i;break
@@ -1767,8 +1813,13 @@ class StudioWindow(QMainWindow):
             except OSError:pass
         if kind=='partial':pass
         elif kind=='final':
+            language=data.get('language')
+            if language and self.voice_language.currentData()=='auto':
+                names={'es':'español','en':'inglés','pt':'portugués','fr':'francés','de':'alemán','it':'italiano'}
+                self.voice_state.setText('Idioma detectado: '+names.get(language,language)+' · preparando respuesta…')
             if hasattr(self,'call_text'):self.call_text.setPlainText('Tú · '+str(text))
-            if not self.controller.ask_call(text) and self.controller.voice:
+            queued=self.controller.ask_call(text,language=language) if language else self.controller.ask_call(text)
+            if not queued and self.controller.voice:
                 self.controller.voice.cancel_message();self.voice_state.setText('La llamada está terminando la respuesta. Vuelve a hablar en un momento.')
         elif kind in ('playback_start','playback_end'):self.director.playback(kind=='playback_start')
         elif kind=='playback_level':self.director.level(data.get('level',0))
@@ -1808,8 +1859,11 @@ class StudioWindow(QMainWindow):
         from voice_session import VoiceDownloadBatch
         self._voice_batch=VoiceDownloadBatch(self.controller.folder,lambda row:self.controller.emit('voice_download',row),self.controller.stop);self._voice_batch.start()
     def cancel_voice_download(self):
+        active=getattr(self,'_voice_single_active',False) or getattr(getattr(self,'_voice_batch',None),'active',False)
         if hasattr(self,'_voice_download_cancel'):self._voice_download_cancel.set()
         if hasattr(self,'_voice_batch'):self._voice_batch.cancel()
+        if active and getattr(self,'call_dialog',None) and self.call_dialog.isVisible():
+            self.voice_state.setText('Cancelando descarga…')
     def voice_download_event(self,data):
         if not hasattr(self,'voice_state'):return
         if not isinstance(data,dict):self.voice_state.setText(str(data));return
