@@ -1,0 +1,97 @@
+name: AKIRA · publicar release firmado
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Etiqueta exacta, por ejemplo v0.4.0'
+        required: true
+        type: string
+      build_run_id:
+        description: 'ID de la ejecución build-windows aprobada'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Rechazar provisión incompleta
+        shell: pwsh
+        env:
+          ED25519_KEY: ${{ secrets.AKIRA_ED25519_PRIVATE_KEY_PEM }}
+          AUTH_CERT: ${{ secrets.AKIRA_AUTHENTICODE_PFX_BASE64 }}
+          AUTH_PASSWORD: ${{ secrets.AKIRA_AUTHENTICODE_PFX_PASSWORD }}
+          TRUST_JSON: ${{ vars.AKIRA_RELEASE_TRUST_JSON }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($item in @(@{n='AKIRA_ED25519_PRIVATE_KEY_PEM';v=$env:ED25519_KEY}, @{n='AKIRA_AUTHENTICODE_PFX_BASE64';v=$env:AUTH_CERT}, @{n='AKIRA_AUTHENTICODE_PFX_PASSWORD';v=$env:AUTH_PASSWORD}, @{n='AKIRA_RELEASE_TRUST_JSON';v=$env:TRUST_JSON})) {
+            if ([string]::IsNullOrWhiteSpace($item.v)) { throw "Falta la provisión obligatoria: $($item.n). No se publica." }
+          }
+          $trust = $env:TRUST_JSON | ConvertFrom-Json
+          if ($trust.public_key.Length -ne 44) { throw 'La clave pública Ed25519 no tiene el formato esperado.' }
+          if ($trust.certificate_sha256 -notmatch '^[0-9a-fA-F]{64}$') { throw 'La huella Authenticode no es SHA-256.' }
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Descargar instalador aprobado
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path release_input | Out-Null
+          $version = '${{ inputs.tag }}'.TrimStart('v')
+          gh run download '${{ inputs.build_run_id }}' -R '${{ github.repository }}' -n "AKIRA-$version-instalador-Windows-IA-INCLUIDA" -D release_input
+          gh run download '${{ inputs.build_run_id }}' -R '${{ github.repository }}' -n 'AKIRA-Windows-diagnosticos' -D diagnostics
+          $setup = Get-ChildItem release_input -Recurse -Filter '*.exe' | Select-Object -First 1
+          if ($null -eq $setup) { throw 'La ejecución indicada no contiene un instalador.' }
+          Add-Content $env:GITHUB_ENV "SETUP=$($setup.FullName)"
+
+      - name: Firmar Authenticode con el certificado del propietario
+        shell: pwsh
+        env:
+          PFX_B64: ${{ secrets.AKIRA_AUTHENTICODE_PFX_BASE64 }}
+          PFX_PASSWORD: ${{ secrets.AKIRA_AUTHENTICODE_PFX_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'akira-release.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:PFX_B64))
+          $signtool = (Get-ChildItem "$env:ProgramFiles(x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1).FullName
+          if (!$signtool) { throw 'No se encontró signtool.' }
+          & $signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:PFX_PASSWORD $env:SETUP
+          if ($LASTEXITCODE) { throw 'Authenticode rechazó el instalador.' }
+
+      - name: Generar manifiesto Ed25519
+        shell: pwsh
+        env:
+          ED25519_KEY: ${{ secrets.AKIRA_ED25519_PRIVATE_KEY_PEM }}
+          TRUST_JSON: ${{ vars.AKIRA_RELEASE_TRUST_JSON }}
+          AKIRA_RELEASE_VERSION: ${{ inputs.tag }}
+        run: |
+          $trust = Join-Path $env:RUNNER_TEMP 'release_trust.json'
+          [IO.File]::WriteAllText($trust, $env:TRUST_JSON, [Text.UTF8Encoding]::new($false))
+          $key = Join-Path $env:RUNNER_TEMP 'ed25519.pem'
+          [IO.File]::WriteAllText($key, $env:ED25519_KEY, [Text.UTF8Encoding]::new($false))
+          Copy-Item $trust release_trust.json
+          $notes = Join-Path $env:RUNNER_TEMP 'notes.md'; '# AKIRA ${{ inputs.tag }}' | Set-Content $notes
+          $env:AKIRA_RELEASE_VERSION = $env:AKIRA_RELEASE_VERSION.TrimStart('v')
+          python tools/release_files.py manifest --installer $env:SETUP --verification diagnostics/INSTALLED_LOCAL_AI.json --trust $trust --signing-key $key --url "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/$([IO.Path]::GetFileName($env:SETUP))" --minimum-version '0.3.0' --notes $notes --output release.json
+
+      - name: Publicar GitHub Release y manifiesto
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create '${{ inputs.tag }}' $env:SETUP release.json release_trust.json --repo '${{ github.repository }}' --title 'AKIRA ${{ inputs.tag }}' --notes-file (Join-Path $env:RUNNER_TEMP 'notes.md')
