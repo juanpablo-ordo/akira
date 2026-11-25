@@ -384,7 +384,7 @@ class SettingsPanel(QWidget):
         self.download_update_button=self.add_button(updates,'Descargar actualización',self.controller.fetch_update)
         self.download_update_button.setEnabled(False)
         self.add_button(updates,'Pausar descarga',lambda:self.controller.update_cancel.set())
-        self.install_update_button=self.add_button(updates,'Instalar actualización',self.window.confirm_update_install)
+        self.install_update_button=self.add_button(updates,'Actualizar y reiniciar',self.window.confirm_update_install)
         self.install_update_button.setEnabled(False)
         if not self.controller.preview:self.window.build_mobile_controls(self.card(5,'AKIRA MÓVIL','chat'))
         card=self.card(5,'CÓMO TRABAJA EL MOTOR','shield');note=label('Akira comprueba cotizaciones, estructura, órdenes, margen y riesgo antes de cada cambio. Las fuentes aportan contexto cuando están disponibles. Ahorro reduce efectos e IA auxiliar; no retrasa protecciones ni obliga a abrir operaciones.','muted');note.setWordWrap(True);card.body.addWidget(note)

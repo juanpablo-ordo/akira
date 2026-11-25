@@ -36,7 +36,7 @@ concurrency:
 env:
   PYTHONUTF8: '1'
   PYTHONIOENCODING: utf-8
-  AKIRA_RELEASE_VERSION: ${{ (inputs.version != 'auto' && inputs.version) || ((github.ref_name == 'akira-0.3' || github.ref_name == 'akira-0.3-web-voz-recuperacion') && '0.3.0' || '0.1.0') }}
+  AKIRA_RELEASE_VERSION: ${{ (inputs.version != 'auto' && inputs.version) || (github.ref_name == 'akira-0.3-web-voz-recuperacion' && '0.4.0') || (github.ref_name == 'akira-0.3' && '0.3.0') || '0.1.0' }}
 
 jobs:
   build-windows:
@@ -63,6 +63,21 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'No se pudieron instalar las dependencias verificadas.' }
           python -m pip check
           if ($LASTEXITCODE -ne 0) { throw 'El entorno bloqueado contiene dependencias incompatibles.' }
+
+      - name: Incorporar identidad pública del canal de actualizaciones
+        shell: pwsh
+        env:
+          TRUST_JSON: ${{ vars.AKIRA_RELEASE_TRUST_JSON }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TRUST_JSON)) {
+            Write-Host 'Compilación de desarrollo: canal pendiente de identidad pública del propietario.'
+          } else {
+            $trustPath = Join-Path $env:RUNNER_TEMP 'akira-release-trust.json'
+            [IO.File]::WriteAllText($trustPath, $env:TRUST_JSON, [Text.UTF8Encoding]::new($false))
+            python -c "import sys; from release_updates import ReleaseTrust; ReleaseTrust.load(sys.argv[1])" $trustPath
+            if ($LASTEXITCODE -ne 0) { throw 'Identidad pública inválida; no compilar.' }
+            Add-Content $env:GITHUB_ENV "AKIRA_RELEASE_TRUST_CONFIG=$trustPath"
+          }
 
       - name: Compilar el diálogo autenticado de Windows Hello
         shell: cmd

@@ -36,6 +36,7 @@ class StudioController:
         self.voice=None;self.call_conversation=None;self.voice_rows=[];self.resources={};self._usage_due=0;self._usage_loading=False
         self._closure_seen=set();self._pending_signature=None
         self.update_cancel=threading.Event();self.update_offer=None;self.update_artifact=None
+        self._update_due=0
         self.reporter=Reporter(self.folder/'logs',callback=lambda row:self.emit('log',row),console=False)
         self.assistant=AkiraAssistant(self.cfg,self.folder,trade_callback=self.bridge.request,
             progress_callback=lambda row:self.emit('chat_progress',row),auto_prepare=False)
@@ -56,6 +57,16 @@ class StudioController:
             from knowledge_update import KnowledgeUpdater
             self.knowledge=KnowledgeUpdater(self.cfg,self.folder,lambda row:self.emit('knowledge',row));self.knowledge.start(initial_delay_seconds=45)
             self.check_updates()
+            result_path=self.folder/'state'/'update-result.json'
+            if result_path.is_file():
+                try:
+                    result=json.loads(result_path.read_text(encoding='utf-8'))
+                    if result.get('status')=='PASSED':
+                        self.notify('AKIRA actualizado','Ya estás usando AKIRA '+str(result.get('version',''))+'. Tus datos se conservan.')
+                    else:
+                        self.notify('Actualización no completada',str(result.get('error','Se conservó la versión anterior.')),'warning')
+                    result_path.unlink()
+                except (OSError,ValueError):pass
 
     def _start_actor(self):
         if self.closed or (self.actor and self.actor.is_alive()):return
@@ -120,6 +131,9 @@ class StudioController:
         with self._snapshot_lock:self._latest=view
 
     def poll(self):
+        if (self._services_started and not self.preview and not self.closed
+                and time.monotonic()>=self._update_due):
+            self.check_updates()
         with self._snapshot_lock:view=self._latest;self._latest=None
         results=[]
         if view is not None:
@@ -482,23 +496,36 @@ class StudioController:
         return self.job('export_report',export,'exported')
 
     def check_updates(self,explicit=False):
+        with self._jobs_lock:
+            if self._jobs.intersection(('download_update','install_update')):return False
+        self._update_due=time.monotonic()+6*3600
         def check():
             from release_updates import ReleaseTrust, UpdateError, check_channel
             try:
                 trust=ReleaseTrust.load()
                 release=check_channel(trust)
             except (UpdateError, OSError) as error:
+                self._update_due=time.monotonic()+15*60
                 return {'available':False,'detail':str(error),'explicit':explicit}
+            if release is None:
+                self.update_offer=None
+                return {'available':False,'detail':'AKIRA está actualizado.','explicit':explicit}
             self.update_offer=(release,trust)
+            if self.notices.add_once('Actualización disponible',
+                    'AKIRA '+release.version+' está disponible. Abre Ajustes → Actualizaciones para descargarla.',
+                    'update:'+release.version,category='system'):
+                self.emit('notice',{'title':'Actualización disponible',
+                    'body':'AKIRA '+release.version+' está disponible en Ajustes → Actualizaciones.','severity':'info'})
             return {'available':True,'version':release.version,'size':release.metadata['size'],
                     'notes':str(release.metadata.get('notes',''))[:2000],'explicit':explicit}
         return self.job('check_updates',check,'update_checked')
 
     def fetch_update(self):
         if not self.update_offer:return False
+        offer=self.update_offer
         def download():
             from release_updates import download_installer
-            release,trust=self.update_offer
+            release,trust=offer
             self.update_cancel.clear()
             last_progress=[0.0]
             def progress(done,size):

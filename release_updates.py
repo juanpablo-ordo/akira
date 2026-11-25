@@ -154,7 +154,8 @@ def check_channel(trust, installed=RELEASE_VERSION):
         raw = response.read(65_537)
     if len(raw)>65_536:
         raise UpdateError('El manifiesto supera el tamaño admitido.')
-    return verified_release(raw, trust, installed)
+    release = verified_release(raw, trust, installed, allow_same=True)
+    return None if release.version == installed else release
 
 
 def sha256_file(path):

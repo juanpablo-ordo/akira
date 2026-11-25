@@ -1,31 +1,45 @@
-name: AKIRA · publicar release firmado
-
+name: AKIRA · publicar actualización verificada
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Etiqueta exacta, por ejemplo v0.4.0'
+      version:
+        description: 'Versión nueva, por ejemplo 0.4.0; aumenta para cada actualización'
         required: true
         type: string
       build_run_id:
-        description: 'ID de la ejecución build-windows aprobada'
+        description: 'Ejecución build-windows aprobada del MISMO commit seleccionado'
         required: true
         type: string
-
 permissions:
-  contents: write
+  contents: read
   actions: read
-
+concurrency:
+  group: akira-publish-stable
+  cancel-in-progress: false
 jobs:
   publish:
+    if: github.repository == 'juanpablo-ordo/akira' && github.ref == 'refs/heads/akira-0.3-web-voz-recuperacion'
     runs-on: windows-latest
+    timeout-minutes: 90
     environment: release
+    permissions:
+      contents: write
+      actions: read
+    env:
+      AKIRA_RELEASE_VERSION: ${{ inputs.version }}
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
+      PYTHONUTF8: '1'
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-
-      - name: Rechazar provisión incompleta
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Validar versión, ejecución y provisión
         shell: pwsh
         env:
           ED25519_KEY: ${{ secrets.AKIRA_ED25519_PRIVATE_KEY_PEM }}
@@ -34,33 +48,44 @@ jobs:
           TRUST_JSON: ${{ vars.AKIRA_RELEASE_TRUST_JSON }}
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($item in @(@{n='AKIRA_ED25519_PRIVATE_KEY_PEM';v=$env:ED25519_KEY}, @{n='AKIRA_AUTHENTICODE_PFX_BASE64';v=$env:AUTH_CERT}, @{n='AKIRA_AUTHENTICODE_PFX_PASSWORD';v=$env:AUTH_PASSWORD}, @{n='AKIRA_RELEASE_TRUST_JSON';v=$env:TRUST_JSON})) {
-            if ([string]::IsNullOrWhiteSpace($item.v)) { throw "Falta la provisión obligatoria: $($item.n). No se publica." }
+          if ($env:AKIRA_RELEASE_VERSION -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Versión inválida.' }
+          if ($env:BUILD_RUN_ID -notmatch '^[0-9]+$') { throw 'ID de ejecución inválido.' }
+          foreach ($name in @('ED25519_KEY','AUTH_CERT','AUTH_PASSWORD','TRUST_JSON')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Provisión pendiente: $name. No se publica." }
           }
-          $trust = $env:TRUST_JSON | ConvertFrom-Json
-          if ($trust.public_key.Length -ne 44) { throw 'La clave pública Ed25519 no tiene el formato esperado.' }
-          if ($trust.certificate_sha256 -notmatch '^[0-9a-fA-F]{64}$') { throw 'La huella Authenticode no es SHA-256.' }
-
-      - name: Preparar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Descargar instalador aprobado
+          python -c "import akira_version"
+          if ($LASTEXITCODE) { throw 'La versión no está declarada en el código.' }
+          gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:BUILD_RUN_ID" > run.json
+          if ($LASTEXITCODE) { throw 'No se pudo consultar la ejecución.' }
+          python tools/release_files.py validate-run --run run.json --expected-commit $env:GITHUB_SHA --repository $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE) { throw 'La ejecución no corresponde al código aprobado.' }
+          $trustPath = Join-Path $env:RUNNER_TEMP 'akira-release-trust.json'
+          [IO.File]::WriteAllText($trustPath, $env:TRUST_JSON, [Text.UTF8Encoding]::new($false))
+          Add-Content $env:GITHUB_ENV "AKIRA_RELEASE_TRUST_CONFIG=$trustPath"
+      - name: Instalar herramientas de verificación bloqueadas
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Force -Path release_input | Out-Null
-          $version = '${{ inputs.tag }}'.TrimStart('v')
-          gh run download '${{ inputs.build_run_id }}' -R '${{ github.repository }}' -n "AKIRA-$version-instalador-Windows-IA-INCLUIDA" -D release_input
-          gh run download '${{ inputs.build_run_id }}' -R '${{ github.repository }}' -n 'AKIRA-Windows-diagnosticos' -D diagnostics
-          $setup = Get-ChildItem release_input -Recurse -Filter '*.exe' | Select-Object -First 1
-          if ($null -eq $setup) { throw 'La ejecución indicada no contiene un instalador.' }
-          Add-Content $env:GITHUB_ENV "SETUP=$($setup.FullName)"
-
-      - name: Firmar Authenticode con el certificado del propietario
+          python -m pip install --require-hashes -r requirements-windows-x64.lock
+          if ($LASTEXITCODE) { throw 'No se pudieron instalar las herramientas verificadas.' }
+          python -m pip check
+          if ($LASTEXITCODE) { throw 'Dependencias incompatibles.' }
+      - name: Descargar y contrastar los artefactos aprobados
+        shell: pwsh
+        run: |
+          gh run download $env:BUILD_RUN_ID -R $env:GITHUB_REPOSITORY -n "AKIRA-$env:AKIRA_RELEASE_VERSION-instalador-Windows-IA-INCLUIDA" -D release_input
+          if ($LASTEXITCODE) { throw 'Falta el instalador aprobado.' }
+          gh run download $env:BUILD_RUN_ID -R $env:GITHUB_REPOSITORY -n 'AKIRA-Windows-diagnosticos' -D build_diagnostics
+          if ($LASTEXITCODE) { throw 'Faltan los diagnósticos aprobados.' }
+          $setups = @(Get-ChildItem release_input -Recurse -Filter '*.exe')
+          if ($setups.Count -ne 1) { throw 'Debe existir exactamente un instalador.' }
+          Add-Content $env:GITHUB_ENV "AKIRA_SETUP=$($setups[0].FullName)"
+          $reports = @(Get-ChildItem build_diagnostics -Recurse -Filter 'VERIFICATION_REV19.json')
+          if ($reports.Count -ne 1) { throw 'Falta la verificación integral.' }
+          $evidence = Get-Content -Raw -LiteralPath $reports[0].FullName | ConvertFrom-Json
+          if ($evidence.status -ne 'PASSED' -or $evidence.source_commit -ne $env:GITHUB_SHA -or $evidence.release_version -ne $env:AKIRA_RELEASE_VERSION -or "$($evidence.workflow_run_id)" -ne $env:BUILD_RUN_ID) { throw 'Evidencia de otra ejecución o versión.' }
+          if ((Get-FileHash $setups[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant() -ne $evidence.installer_sha256) { throw 'El instalador no coincide con las pruebas.' }
+          Add-Content $env:GITHUB_ENV "AKIRA_REPORTS=$($reports[0].DirectoryName)"
+      - name: Firmar el instalador con la identidad del propietario
         shell: pwsh
         env:
           PFX_B64: ${{ secrets.AKIRA_AUTHENTICODE_PFX_BASE64 }}
@@ -68,30 +93,43 @@ jobs:
         run: |
           $pfx = Join-Path $env:RUNNER_TEMP 'akira-release.pfx'
           [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:PFX_B64))
-          $signtool = (Get-ChildItem "$env:ProgramFiles(x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1).FullName
-          if (!$signtool) { throw 'No se encontró signtool.' }
-          & $signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:PFX_PASSWORD $env:SETUP
-          if ($LASTEXITCODE) { throw 'Authenticode rechazó el instalador.' }
-
-      - name: Generar manifiesto Ed25519
+          try {
+            $signtool = (Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1).FullName
+            if (!$signtool) { throw 'No se encontró signtool.' }
+            & $signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:PFX_PASSWORD $env:AKIRA_SETUP
+            if ($LASTEXITCODE) { throw 'No se pudo firmar el instalador.' }
+            python -c "import os; from release_updates import ReleaseTrust,authenticode; authenticode(os.environ['AKIRA_SETUP'],ReleaseTrust.load(os.environ['AKIRA_RELEASE_TRUST_CONFIG']))"
+            if ($LASTEXITCODE) { throw 'El certificado no coincide con la identidad publicada.' }
+          } finally { [IO.File]::Delete($pfx) }
+      - name: Probar el instalador firmado y su canal incorporado
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'AKIRA_SIGNED_RELEASE_CHECK'
+          python -m installer.check_installed_ai --setup $env:AKIRA_SETUP --root $root --report "$env:AKIRA_REPORTS/INSTALLED_LOCAL_AI.json"
+          if ($LASTEXITCODE) { throw 'El instalador firmado no pasó la instalación real.' }
+          $installed = Get-Content -Raw "$env:AKIRA_REPORTS/INSTALLED_LOCAL_AI.json" | ConvertFrom-Json
+          if ($installed.update_trust_verified -ne $true) { throw 'Falta el canal configurado dentro del instalador. Reconstruir con la variable pública.' }
+          python -m installer.summarize_revision --diagnostics $env:AKIRA_REPORTS --installer $env:AKIRA_SETUP
+          if ($LASTEXITCODE) { throw 'Evidencia incompleta del instalador firmado.' }
+      - name: Firmar el manifiesto Ed25519
         shell: pwsh
         env:
           ED25519_KEY: ${{ secrets.AKIRA_ED25519_PRIVATE_KEY_PEM }}
-          TRUST_JSON: ${{ vars.AKIRA_RELEASE_TRUST_JSON }}
-          AKIRA_RELEASE_VERSION: ${{ inputs.tag }}
         run: |
-          $trust = Join-Path $env:RUNNER_TEMP 'release_trust.json'
-          [IO.File]::WriteAllText($trust, $env:TRUST_JSON, [Text.UTF8Encoding]::new($false))
-          $key = Join-Path $env:RUNNER_TEMP 'ed25519.pem'
+          $key = Join-Path $env:RUNNER_TEMP 'akira-ed25519.pem'
           [IO.File]::WriteAllText($key, $env:ED25519_KEY, [Text.UTF8Encoding]::new($false))
-          Copy-Item $trust release_trust.json
-          $notes = Join-Path $env:RUNNER_TEMP 'notes.md'; '# AKIRA ${{ inputs.tag }}' | Set-Content $notes
-          $env:AKIRA_RELEASE_VERSION = $env:AKIRA_RELEASE_VERSION.TrimStart('v')
-          python tools/release_files.py manifest --installer $env:SETUP --verification diagnostics/INSTALLED_LOCAL_AI.json --trust $trust --signing-key $key --url "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/$([IO.Path]::GetFileName($env:SETUP))" --minimum-version '0.3.0' --notes $notes --output release.json
-
-      - name: Publicar GitHub Release y manifiesto
+          try {
+            $notes = "Actualización de AKIRA $env:AKIRA_RELEASE_VERSION. Código verificado: $env:GITHUB_SHA. Se conservan los datos del usuario."
+            [IO.File]::WriteAllText('release-notes.md', $notes, [Text.UTF8Encoding]::new($false))
+            $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:AKIRA_RELEASE_VERSION/$([IO.Path]::GetFileName($env:AKIRA_SETUP))"
+            python tools/release_files.py manifest --installer $env:AKIRA_SETUP --verification "$env:AKIRA_REPORTS/VERIFICATION_REV19.json" --trust $env:AKIRA_RELEASE_TRUST_CONFIG --signing-key $key --url $url --minimum-version '0.3.0' --notes release-notes.md --expected-commit $env:GITHUB_SHA --output release.json
+            if ($LASTEXITCODE) { throw 'No se pudo firmar y comprobar el manifiesto.' }
+          } finally { [IO.File]::Delete($key) }
+      - name: Publicar instalador y manifiesto juntos
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create '${{ inputs.tag }}' $env:SETUP release.json release_trust.json --repo '${{ github.repository }}' --title 'AKIRA ${{ inputs.tag }}' --notes-file (Join-Path $env:RUNNER_TEMP 'notes.md')
+          $tag = "v$env:AKIRA_RELEASE_VERSION"
+          gh release create $tag $env:AKIRA_SETUP release.json "$env:AKIRA_REPORTS/VERIFICATION_REV19.json" --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --draft --title "AKIRA $env:AKIRA_RELEASE_VERSION" --notes-file release-notes.md
+          if ($LASTEXITCODE) { throw 'No se pudo crear el borrador; no sobrescribir una versión publicada.' }
+          gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false --latest
+          if ($LASTEXITCODE) { throw 'La publicación sigue en borrador; revisar antes de reintentar.' }

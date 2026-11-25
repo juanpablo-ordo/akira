@@ -62,6 +62,14 @@ def validate_installed_payload(root):
 
 def check_installed_ai(root, *, log_path=None):
     files = validate_installed_payload(root)
+    trust_verified=False
+    if os.environ.get('AKIRA_RELEASE_TRUST_CONFIG'):
+        from release_updates import ReleaseTrust
+        expected=ReleaseTrust.load(os.environ['AKIRA_RELEASE_TRUST_CONFIG'])
+        actual=ReleaseTrust.load(Path(root)/'_internal'/'release_trust.json')
+        if actual!=expected:
+            raise ValueError('El canal de actualización instalado no coincide con el configurado.')
+        trust_verified=True
     with tempfile.TemporaryDirectory(prefix='akira-installed-components-') as temporary:
         report=Path(temporary)/'components.json'
         result=subprocess.run([str(files['application']),'--local-components-check',str(report),'--app-root',temporary],
@@ -88,7 +96,8 @@ def check_installed_ai(root, *, log_path=None):
         smoke(files['cpu_server'], files['model'], log_path=log_path)
     return {'status': 'PASSED', 'model_sha256': SHA, 'model_present_after_setup': True,
             'visible_chat_verified': True, 'model_downloaded_by_check': False,
-            'installed_components_verified': True, 'installed_studio_verified':True,'installed_sprite_ai_verified':True,'live_account_used': False, 'root': str(Path(root).resolve())}
+            'installed_components_verified': True, 'installed_studio_verified':True,'installed_sprite_ai_verified':True,
+            'update_trust_verified':trust_verified,'live_account_used': False, 'root': str(Path(root).resolve())}
 
 
 def main(argv=None):

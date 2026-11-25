@@ -606,8 +606,9 @@ class StudioWindow(QMainWindow):
         elif kind=='update_progress':
             self.settings_panel.update_status.setText('Descargando instalador · '+number(100*data['done']/data['size'],0)+'%')
         elif kind=='update_downloaded':
-            self.settings_panel.update_status.setText(f"Instalador de AKIRA {data['version']} verificado.")
+            self.settings_panel.update_status.setText(f"AKIRA {data['version']} listo para actualizar y reiniciar.")
             self.settings_panel.install_update_button.setEnabled(True)
+            self.confirm_update_install()
         elif kind=='update_exit':
             self.close()
         elif kind=='privacy_reset':
@@ -1568,8 +1569,10 @@ class StudioWindow(QMainWindow):
         positions=len(view.get('positions') or ())
         body=(f'MT5 muestra {positions} posiciones y {orders} pendientes. Se pausarán las entradas '
               'nuevas y se conciliarán las solicitudes. La instalación cerrará AKIRA durante la '
-              'actualización. Los SL y TP del bróker siguen vigentes durante el cierre.')
-        if self.confirm('Instalar actualización verificada',body):
+              'actualización y volverá a abrirse al terminar. Tus chats y ajustes se conservan. '
+              'Los SL y TP del bróker siguen vigentes durante el cierre, pero las protecciones '
+              'gestionadas por AKIRA no funcionan mientras está cerrado.')
+        if self.confirm('Actualizar y reiniciar AKIRA',body):
             self.controller.install_update()
 
     def open_call(self):

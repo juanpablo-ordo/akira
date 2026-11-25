@@ -26,6 +26,9 @@ def stage_install(profile, installer, release, current_exe=None):
         raise UpdateError('La ubicación de AKIRA y sus datos debe verificarse antes de actualizar.')
     if not (profile/'akira_config.json').is_file():
         raise UpdateError('No se encontró la configuración que debe conservarse.')
+    trust=ReleaseTrust.load()
+    release=verified_release(release.envelope,trust)
+    verify_installer(installer,release,trust)
     work=Path(tempfile.mkdtemp(prefix='AKIRA-actualizacion-',dir=profile.parent))
     runtime=work/'runtime'
     runtime.mkdir()
@@ -87,16 +90,19 @@ def run_install_job(ticket):
     profile=Path(job['profile']).resolve()
     exe=app/'AKIRA.exe'
     installer=Path(job['installer']).resolve()
-    trust=ReleaseTrust.load()
     state={'status':'FAILED','error':'La actualización no se completó.'}
     touched=False
+    app_exited=False
     backups=None
     try:
+        trust=ReleaseTrust.load()
         if (ticket.name!='update-job.json' or work.parent!=profile.parent or not exe.is_file()
-                or not installer.is_relative_to(profile/'state'/'updates') or app in profile.parents):
+                or not installer.is_relative_to(profile/'state'/'updates')
+                or app==profile or app in profile.parents or profile in app.parents):
             raise UpdateError('La solicitud de instalación no corresponde a esta aplicación.')
         release=verified_release(base64.b64decode(job['envelope'],validate=True),trust,RELEASE_VERSION)
         wait_for_app(job['pid'])
+        app_exited=True
         verify_installer(installer,release,trust)
         app_work=Path(tempfile.mkdtemp(prefix='AKIRA-respaldo-',dir=app.parent))
         backups=(app_work/'binarios',work/'datos')
@@ -122,7 +128,7 @@ def run_install_job(ticket):
                              previous_error=state['error'])
     state['diagnostics']=str(work)
     (work/'result.json').write_bytes(canonical_json(state))
-    if state['status'] in ('PASSED','RESTORED'):
+    if state['status'] in ('PASSED','RESTORED') or (state['status']=='FAILED' and app_exited):
         (profile/'state').mkdir(parents=True,exist_ok=True)
         (profile/'state'/'update-result.json').write_bytes(canonical_json(state))
         launch_env=os.environ.copy()
